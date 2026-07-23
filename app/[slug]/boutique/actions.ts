@@ -1,0 +1,52 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { currentDiner } from "@/lib/auth/diner";
+import { getCafe } from "@/lib/data";
+import { redeemAtCounter } from "@/lib/db";
+
+export type RedeemState = {
+  error?: string;
+  ok?: { code: string; label: string; balance: number };
+};
+
+/**
+ * The Reward (§10 · moment 3) — SERVER-AUTHORITATIVE.
+ *
+ * The browser sends a reward id and nothing else. Identity comes from the signed
+ * session; the cost is read from the owner's catalogue inside the RPC, never
+ * from the client; the balance check and the debit are one atomic step behind an
+ * advisory lock, so a double-tap can't spend the same points twice.
+ */
+export async function redeemAction(
+  slug: string,
+  _prev: RedeemState,
+  formData: FormData,
+): Promise<RedeemState> {
+  const rewardId = String(formData.get("rewardId") ?? "");
+  if (!rewardId) return { error: "Récompense invalide." };
+
+  const phone = await currentDiner();
+  if (!phone) return { error: "Connecte-toi pour échanger." };
+
+  const cafe = await getCafe(slug);
+  if (!cafe) return { error: "Café introuvable." };
+
+  let res;
+  try {
+    res = await redeemAtCounter(cafe.id, phone, rewardId);
+  } catch {
+    return { error: "Échange impossible pour le moment." };
+  }
+
+  if (!res.ok) {
+    if (res.reason === "insufficient") {
+      return { error: `Il te manque ${res.needed} points.` };
+    }
+    return { error: "Récompense indisponible." };
+  }
+
+  revalidatePath(`/${slug}`);
+  revalidatePath(`/${slug}/boutique`);
+  return { ok: { code: res.code, label: res.label, balance: res.balance } };
+}

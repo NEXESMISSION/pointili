@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pointili — Design Overhaul Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Purple (brand anchor) */
+    --p50:#F4F0FF; --p100:#E9E0FF; --p200:#D3C2FF; --p300:#B49AFF; --p400:#9877FF;
+    --p500:#7B61FF; --p600:#6A4FE6; --p700:#5A3FD1; --p800:#4A32AD; --p900:#3A2687;
+    /* Gold (reward / points / win) */
+    --g50:#FFF8E6; --g100:#FFEFBF; --g200:#FFE083; --g300:#FFD24D; --g400:#FFC01F;
+    --g500:#FBAE00; --g600:#E09400; --g700:#B87400;
+    /* Coral (streak / energy pop) */
+    --c400:#FF7A9A; --c500:#FF5C8A; --c600:#F43F73;
+    /* Cool neutrals (replace old warm-brown) */
+    --ink:#1B1533; --n700:#3B3358; --n500:#6B6488; --n300:#A8A2C0;
+    --line:#E4E0F2; --n100:#EEEBF7; --canvas:#F7F5FF; --white:#fff;
+    /* Semantics */
+    --ok:#12B886; --warn:#F59F00; --bad:#FA5252; --info:#4DABF7;
+    --grad:linear-gradient(135deg,#8466FF,#5A3FD1);
+    --grad-gold:linear-gradient(135deg,#FFC01F,#FBAE00);
+    --sh-sm:0 1px 2px rgba(27,21,51,.06), 0 6px 16px -8px rgba(90,63,209,.18);
+    --sh-md:0 2px 6px rgba(27,21,51,.06), 0 20px 40px -18px rgba(90,63,209,.26);
+    --sh-gold:0 10px 26px -8px rgba(251,174,0,.5);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:var(--canvas);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 34px}
+  h1,h2,h3,h4{font-family:'Poppins',sans-serif;letter-spacing:-.02em;line-height:1.1}
+  .mono{font-variant-numeric:tabular-nums}
+  section{padding:44px 0}
+  .eyebrow{font-family:'Poppins';font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--p600)}
+
+  /* HERO */
+  .hero{background:var(--grad);color:#fff;border-radius:0 0 40px 40px;padding:58px 0 66px;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,192,31,.45),transparent 62%)}
+  .hero::before{content:"";position:absolute;left:-90px;bottom:-140px;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,rgba(255,92,138,.4),transparent 60%)}
+  .hero .wrap{position:relative;z-index:2}
+  .badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(6px);padding:7px 14px;border-radius:999px;font-weight:600;font-size:13px}
+  .hero h1{font-size:52px;font-weight:800;margin:20px 0 14px;max-width:15ch}
+  .hero p{font-size:19px;max-width:60ch;color:rgba(255,255,255,.92)}
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--ink);font-weight:600;font-size:13px;padding:9px 15px;border-radius:999px;box-shadow:var(--sh-sm)}
+  .chip .dot{width:12px;height:12px;border-radius:50%}
+
+  /* DIAGNOSIS */
+  .grid{display:grid;gap:18px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:24px;padding:24px;box-shadow:var(--sh-sm)}
+  .prob{border-left:5px solid var(--c500)}
+  .prob h4{font-size:16px;margin-bottom:7px;display:flex;gap:9px;align-items:center}
+  .prob p{font-size:14px;color:var(--n500)}
+  .tag-bad{font-size:11px;font-weight:700;color:var(--bad);background:#FFECEC;padding:3px 9px;border-radius:999px}
+  code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:.86em;background:var(--n100);color:var(--p700);padding:2px 7px;border-radius:6px;font-weight:600}
+
+  h2.big{font-size:34px;font-weight:800;margin:6px 0 4px}
+  .lead{font-size:17px;color:var(--n500);max-width:70ch;margin-bottom:26px}
+
+  /* PALETTE */
+  .ramp{display:flex;border-radius:16px;overflow:hidden;box-shadow:var(--sh-sm);border:1px solid var(--line)}
+  .ramp>div{flex:1;height:66px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-size:10px;font-weight:700;color:rgba(255,255,255,.9)}
+  .rlabel{display:flex;justify-content:space-between;margin:14px 2px 6px;font-weight:700;font-size:14px}
+  .rlabel span{color:var(--n500);font-weight:500;font-size:12.5px}
+  .swrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+  .sw{width:76px}
+  .sw .box{height:52px;border-radius:12px;box-shadow:var(--sh-sm)}
+  .sw small{display:block;margin-top:6px;font-size:10.5px;color:var(--n500);text-align:center;font-weight:600}
+
+  /* TYPE */
+  .spec{background:#fff;border:1px solid var(--line);border-radius:24px;padding:28px 30px;box-shadow:var(--sh-sm)}
+  .spec .d1{font-family:'Poppins';font-weight:800;font-size:44px;letter-spacing:-.03em}
+  .spec .d2{font-family:'Poppins';font-weight:700;font-size:26px;margin-top:6px}
+  .spec .b1{font-size:15px;color:var(--n700);margin-top:12px;max-width:62ch}
+  .spec .meta{margin-top:18px;font-size:12.5px;color:var(--n500);display:flex;gap:22px;flex-wrap:wrap}
+  .spec .meta b{color:var(--ink)}
+
+  /* COMPONENTS SHOWCASE */
+  .demo{background:#fff;border:1px solid var(--line);border-radius:24px;padding:26px;box-shadow:var(--sh-sm)}
+  .btn{font-family:'Poppins';font-weight:700;font-size:15px;border:none;border-radius:16px;padding:13px 22px;cursor:pointer}
+  .btn-p{background:var(--grad);color:#fff;box-shadow:0 12px 24px -10px rgba(123,97,255,.7)}
+  .btn-g{background:var(--grad-gold);color:#4a2d00;box-shadow:var(--sh-gold)}
+  .btn-o{background:#fff;color:var(--p700);border:2px solid var(--p200)}
+  .pill{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;padding:8px 14px;border-radius:999px}
+  .pill-gold{background:var(--g100);color:var(--g700)}
+  .pill-coral{background:#FFE3EC;color:var(--c600)}
+  .pill-ok{background:#DEF7EC;color:#0B7285}
+  .coin{display:inline-flex;align-items:center;gap:9px;background:var(--grad-gold);color:#4a2d00;font-family:'Poppins';font-weight:800;font-size:22px;padding:10px 18px;border-radius:16px;box-shadow:var(--sh-gold)}
+
+  /* BEFORE / AFTER */
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:stretch}
+  .phone{border-radius:30px;padding:22px;min-height:340px;position:relative;overflow:hidden}
+  .p-old{background:#F7F5F2;border:1px solid #EFEAE3}
+  .p-new{background:linear-gradient(180deg,#F4F0FF,#fff);border:1px solid var(--line);box-shadow:var(--sh-md)}
+  .tagline{position:absolute;top:14px;right:16px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:999px}
+  .t-old{background:#EDE7DF;color:#8a8072}
+  .t-new{background:var(--p100);color:var(--p700)}
+  .oldcard{background:#fff;border:1px solid #EFEAE3;border-radius:14px;padding:16px;margin-top:34px}
+  .oldcard .h{font-weight:700;color:#1A1410;font-size:16px}
+  .oldcard .s{color:#71695F;font-size:13px;margin-top:4px}
+  .oldpts{color:#71695F;font-weight:700;margin-top:14px;font-size:14px}
+  .oldbtn{margin-top:14px;background:#7B61FF;color:#fff;text-align:center;padding:10px;border-radius:10px;font-size:13px;font-weight:600}
+
+  .newcard{background:#fff;border-radius:22px;padding:18px;margin-top:34px;box-shadow:var(--sh-md);border:1px solid var(--line)}
+  .newcard .row{display:flex;justify-content:space-between;align-items:center}
+  .newcard .h{font-family:'Poppins';font-weight:800;color:var(--ink);font-size:18px}
+  .newcard .s{color:var(--n500);font-size:13px;margin-top:3px}
+  .streak{background:var(--grad-gold);color:#4a2d00;font-family:'Poppins';font-weight:800;font-size:15px;padding:8px 13px;border-radius:14px;box-shadow:var(--sh-gold);display:flex;gap:6px;align-items:center}
+  .prog{height:12px;border-radius:999px;background:var(--n100);margin-top:16px;overflow:hidden}
+  .prog>div{height:100%;width:64%;background:var(--grad);border-radius:999px}
+  .rewrow{display:flex;gap:9px;margin-top:16px}
+  .rewpill{flex:1;background:var(--p50);border:1px solid var(--p100);border-radius:14px;padding:10px;text-align:center;font-size:11.5px;font-weight:700;color:var(--p700)}
+  .newbtn{margin-top:16px;background:var(--grad);color:#fff;text-align:center;padding:13px;border-radius:15px;font-family:'Poppins';font-weight:700;font-size:14px;box-shadow:0 12px 22px -10px rgba(123,97,255,.7)}
+  .newnav{display:flex;justify-content:space-around;margin-top:16px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px;box-shadow:var(--sh-sm)}
+  .newnav span{font-size:11px;font-weight:700;color:var(--n300)}
+  .newnav span.on{color:#fff;background:var(--grad);padding:6px 14px;border-radius:999px}
+
+  /* SURFACE PLAN */
+  .surf{display:flex;gap:16px;align-items:flex-start;padding:20px 0;border-bottom:1px solid var(--line)}
+  .surf:last-child{border-bottom:none}
+  .snum{flex:none;width:46px;height:46px;border-radius:14px;background:var(--grad);color:#fff;font-family:'Poppins';font-weight:800;font-size:19px;display:flex;align-items:center;justify-content:center;box-shadow:var(--sh-sm)}
+  .surf h4{font-size:18px;font-weight:700;margin-bottom:3px}
+  .surf .who{font-size:12.5px;color:var(--p600);font-weight:700;margin-bottom:8px}
+  .surf ul{list-style:none;display:grid;gap:5px}
+  .surf li{font-size:14px;color:var(--n700);padding-left:20px;position:relative}
+  .surf li::before{content:"→";position:absolute;left:0;color:var(--p400);font-weight:700}
+
+  /* ROADMAP */
+  .road{display:grid;gap:14px}
+  .ph{display:grid;grid-template-columns:120px 1fr 96px;gap:18px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px 22px;box-shadow:var(--sh-sm)}
+  .ph .pnum{font-family:'Poppins';font-weight:800;font-size:15px;color:#fff;background:var(--grad);border-radius:12px;padding:8px 12px;text-align:center}
+  .ph h4{font-size:16px}
+  .ph p{font-size:13px;color:var(--n500);margin-top:3px}
+  .effort{text-align:right;font-weight:700;font-size:13px;color:var(--p700)}
+  .effort small{display:block;color:var(--n300);font-weight:600;font-size:11px}
+
+  .guard{display:flex;gap:12px;align-items:flex-start}
+  .guard .k{flex:none;width:34px;height:34px;border-radius:10px;background:var(--p50);color:var(--p600);display:flex;align-items:center;justify-content:center;font-size:17px}
+  .guard b{font-size:14.5px}
+  .guard p{font-size:13px;color:var(--n500)}
+
+  .foot{background:var(--ink);color:#fff;border-radius:32px;padding:40px;text-align:center;margin:20px 0 50px}
+  .foot h3{font-size:26px;font-weight:800;margin-bottom:8px}
+  .foot p{color:rgba(255,255,255,.7);max-width:56ch;margin:0 auto 20px}
+  .foot .chips{justify-content:center}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  @media print{ section{padding:30px 0} .hero{border-radius:0 0 30px 30px} }
+</style>
+</head>
+<body>
+<h2 class="sr-only">Pointili design overhaul plan: diagnosis, a unified playful purple-and-gold design system, surface-by-surface changes, and a phased roadmap.</h2>
+
+<div class="hero">
+  <div class="wrap">
+    <span class="badge">✦ Pointili · Design Overhaul Plan</span>
+    <h1>From three clashing skins to one delightful system.</h1>
+    <p>A full redesign of the landing page, the customer loyalty hub, the games, and the admin — unified under one bold, playful, reward-driven visual language.</p>
+    <div class="chips">
+      <span class="chip"><span class="dot" style="background:var(--p500)"></span>Playful &amp; vibrant</span>
+      <span class="chip"><span class="dot" style="background:var(--g500)"></span>Purple + Gold rewards</span>
+      <span class="chip"><span class="dot" style="background:#fff;border:1px solid #ddd"></span>Light theme</span>
+      <span class="chip">🅐 Poppins + Inter</span>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">01 · The diagnosis</span>
+    <h2 class="big">Why it looks off today</h2>
+    <p class="lead">It isn't one bad page — the app is wearing <b>three disconnected visual languages</b> at once, and the customer-facing pages still carry the old coffee-shop skin. Grounded in the actual code:</p>
+    <div class="grid g2">
+      <div class="card prob">
+        <h4>☕ The loyalty hub still wears the old café palette <span class="tag-bad">worst offender</span></h4>
+        <p>The screens customers actually see (<code>FidelityHub</code>, wheel, store) hardcode warm brown-black text <code>#1A1410</code> on beige lines <code>#EFEAE3</code> — leftovers from Scaniha's menu product — with purple just bolted on top. It reads muddy and unbranded.</p>
+      </div>
+      <div class="card prob">
+        <h4>🔤 Arabic fonts on a French product <span class="tag-bad">high impact</span></h4>
+        <p>The landing's primary typeface is <code>Tajawal</code> / <code>Cairo</code> — Arabic-optimised fonts — used for French copy. The intended <b>Poppins + Inter</b> were never wired, so everything falls back to a generic, slightly-wrong look.</p>
+      </div>
+      <div class="card prob">
+        <h4>🎨 No design system — 91 ad-hoc colors</h4>
+        <p>91 distinct hardcoded hex values across the client + landing code. Landing, client, and admin each invented their own palette and spacing. Nothing shares tokens, so nothing looks like one product.</p>
+      </div>
+      <div class="card prob">
+        <h4>🌀 Dated, noisy motion</h4>
+        <p>The landing leans on drifting blur "orbs", shimmer sweeps, a logo marquee and floating images — 2021-era effects that add noise, not delight, and hurt performance (no <code>next/font</code>, render-blocking font imports).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="background:linear-gradient(180deg,#fff,var(--canvas))">
+  <div class="wrap">
+    <span class="eyebrow">02 · The new direction</span>
+    <h2 class="big">One system: playful, vibrant, rewarding</h2>
+    <p class="lead">Purple stays the anchor (your brand), but we give it a scale, cool neutrals, and a <b>gold reward accent</b> — the color of points, coins and wins. Coral adds energy for streaks. Big rounded shapes, colored soft shadows, springy motion.</p>
+
+    <div class="rlabel">Purple — brand / primary <span>buttons, nav, links, headings accent</span></div>
+    <div class="ramp">
+      <div style="background:var(--p50);color:#7B61FF">50</div>
+      <div style="background:var(--p100);color:#7B61FF">100</div>
+      <div style="background:var(--p200);color:#4A32AD">200</div>
+      <div style="background:var(--p300)">300</div>
+      <div style="background:var(--p400)">400</div>
+      <div style="background:var(--p500)">500</div>
+      <div style="background:var(--p600)">600</div>
+      <div style="background:var(--p700)">700</div>
+      <div style="background:var(--p800)">800</div>
+      <div style="background:var(--p900)">900</div>
+    </div>
+
+    <div class="rlabel">Gold — reward / points / win <span>coins, points balance, "you won", streak flames</span></div>
+    <div class="ramp">
+      <div style="background:var(--g50);color:#B87400">50</div>
+      <div style="background:var(--g100);color:#B87400">100</div>
+      <div style="background:var(--g200);color:#B87400">200</div>
+      <div style="background:var(--g300);color:#7a4d00">300</div>
+      <div style="background:var(--g400);color:#7a4d00">400</div>
+      <div style="background:var(--g500);color:#4a2d00">500</div>
+      <div style="background:var(--g600)">600</div>
+      <div style="background:var(--g700)">700</div>
+    </div>
+
+    <div class="swrow" style="margin-top:22px">
+      <div class="sw"><div class="box" style="background:var(--c500)"></div><small>Coral / streak</small></div>
+      <div class="sw"><div class="box" style="background:var(--ink)"></div><small>Ink text</small></div>
+      <div class="sw"><div class="box" style="background:var(--n500)"></div><small>Muted</small></div>
+      <div class="sw"><div class="box" style="background:var(--line)"></div><small>Line</small></div>
+      <div class="sw"><div class="box" style="background:var(--canvas);border:1px solid var(--line)"></div><small>Canvas</small></div>
+      <div class="sw"><div class="box" style="background:var(--ok)"></div><small>Success</small></div>
+      <div class="sw"><div class="box" style="background:var(--warn)"></div><small>Warning</small></div>
+      <div class="sw"><div class="box" style="background:var(--bad)"></div><small>Danger</small></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">03 · Typography</span>
+    <h2 class="big">Poppins for punch, Inter for clarity</h2>
+    <p class="lead">Wired properly via <code>next/font</code> (self-hosted, zero flash-of-unstyled-text). Poppins gives headings and numbers a friendly, confident, "game" feel; Inter keeps body + UI crisp and legible in French.</p>
+    <div class="spec">
+      <div class="d1">Plus de café. Plus de points.</div>
+      <div class="d2">Votre carte de fidélité 🎁</div>
+      <div class="b1">Gagnez des points à chaque visite, jouez à la roue et remportez de vraies récompenses. Inter reste parfaitement lisible sur les longs textes, les formulaires et le tableau de bord.</div>
+      <div class="meta">
+        <span><b>Display:</b> Poppins 600 / 700 / 800</span>
+        <span><b>Body &amp; UI:</b> Inter 400 / 500 / 600</span>
+        <span><b>Numbers:</b> tabular, Poppins 800 <span class="mono">1&nbsp;250 pts</span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="background:linear-gradient(180deg,var(--canvas),#fff)">
+  <div class="wrap">
+    <span class="eyebrow">04 · Component language</span>
+    <h2 class="big">Chunky, rounded, springy</h2>
+    <p class="lead">One kit shared by every surface. Generous radii (cards 24px, buttons 16px, chips full), purple-tinted soft shadows, gold glow on rewards, and a satisfying press on every tap.</p>
+    <div class="demo">
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-p">Commencer — c'est parti</button>
+        <button class="btn btn-g">🎉 Récupérer ma récompense</button>
+        <button class="btn btn-o">En savoir plus</button>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:22px">
+        <span class="pill pill-gold">⭐ 1 250 points</span>
+        <span class="pill pill-coral">🔥 Série de 7 jours</span>
+        <span class="pill pill-ok">✓ Tout le monde gagne</span>
+        <span class="coin">🪙 250 pts</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">05 · The money surface</span>
+    <h2 class="big">The loyalty card: before → after</h2>
+    <p class="lead">This is what every customer sees when they scan a QR. Left: today's muddy warm-on-beige card. Right: the new playful, gold-rewarded, on-brand hub.</p>
+    <div class="ba">
+      <div class="phone p-old">
+        <span class="tagline t-old">Aujourd'hui</span>
+        <div class="oldcard">
+          <div class="h">Votre carte de fidélité</div>
+          <div class="s">Gagnez à chaque visite</div>
+          <div class="oldpts">◔ 1250 points</div>
+          <div class="oldbtn">Voir mes récompenses</div>
+        </div>
+        <p style="color:#8a8072;font-size:12px;margin-top:20px;text-align:center">Warm brown text, beige lines,<br>flat purple button — no life.</p>
+      </div>
+      <div class="phone p-new">
+        <span class="tagline t-new">Nouveau</span>
+        <div class="newcard">
+          <div class="row">
+            <div>
+              <div class="h">Ma carte</div>
+              <div class="s">Niveau Or · Karim</div>
+            </div>
+            <div class="streak">🔥 7</div>
+          </div>
+          <div class="row" style="margin-top:16px">
+            <span class="coin" style="font-size:20px">🪙 1 250 pts</span>
+            <span class="pill pill-gold" style="font-size:11px">+250 vers Platine</span>
+          </div>
+          <div class="prog"><div></div></div>
+          <div class="rewrow">
+            <div class="rewpill">☕<br>Café · 50</div>
+            <div class="rewpill">🍰<br>Dessert · 100</div>
+            <div class="rewpill">🎁<br>-20% · 200</div>
+          </div>
+          <div class="newbtn">🎡 Tourner la roue</div>
+          <div class="newnav"><span class="on">Ma carte</span><span>Jeux</span><span>Boutique</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="background:linear-gradient(180deg,#fff,var(--canvas))">
+  <div class="wrap">
+    <span class="eyebrow">06 · Surface by surface</span>
+    <h2 class="big">What changes on each screen</h2>
+    <div class="card" style="padding:8px 26px;margin-top:8px">
+      <div class="surf">
+        <div class="snum">1</div>
+        <div>
+          <h4>Customer loyalty hub &amp; onboarding</h4>
+          <div class="who">Highest value · seen by every customer</div>
+          <ul>
+            <li>Rip out the warm-brown palette; rebuild <code>FidelityHub</code> (Ma carte / Jeux / Boutique) on the new tokens</li>
+            <li>Gold points balance with count-up animation; level card, streak flame, achievements as playful stickers</li>
+            <li>Value-first auth screen redesigned; the "bientôt disponible" state made friendly, not dead</li>
+            <li>Reward store cards with gold price tags + real redeem celebration</li>
+          </ul>
+        </div>
+      </div>
+      <div class="surf">
+        <div class="snum">2</div>
+        <div>
+          <h4>The games</h4>
+          <div class="who">The reason people come back</div>
+          <ul>
+            <li>Roulette wheel: crisper segments, gold rim, motion-blur spin, satisfying tick + ease-out landing</li>
+            <li>Slot 777: chunkier reels, gold wins, near-miss anticipation</li>
+            <li>Win moment: full-screen confetti + gold burst + prize card — make winning feel like winning</li>
+            <li>Consistent "one tap = one delight" feedback (spring, haptic-style scale, sound-ready)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="surf">
+        <div class="snum">3</div>
+        <div>
+          <h4>Landing page</h4>
+          <div class="who">First impression for café owners</div>
+          <ul>
+            <li>Kill Arabic fonts → Poppins/Inter; drop orb-soup, marquee, floating images</li>
+            <li>Rebuild hero around a real product shot of the new hub + a single confident CTA</li>
+            <li>Purposeful scroll motion (spring reveals, count-ups), gold-accented "rewards" storytelling</li>
+            <li>Clear owner value sections, honest social proof, refined pricing cards</li>
+          </ul>
+        </div>
+      </div>
+      <div class="surf">
+        <div class="snum">4</div>
+        <div>
+          <h4>Admin &amp; super-admin</h4>
+          <div class="who">Already cleanest · needs alignment</div>
+          <ul>
+            <li>Re-point the v2 kit tokens to the new shared scale (one source of truth)</li>
+            <li>Warmer, more playful data cards; gold for revenue/points KPIs; better empty states</li>
+            <li>Tighten the dark sidebar + floating nav; consistent chips, toasts, dialogs</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">07 · Roadmap</span>
+    <h2 class="big">Phased, highest-value first</h2>
+    <p class="lead">Foundation once, then the surfaces customers see, then the owner funnel. Each phase ships independently — nothing is a big-bang rewrite.</p>
+    <div class="road">
+      <div class="ph"><span class="pnum">Phase&nbsp;1</span>
+        <div><h4>Design foundation</h4><p>Tokens (Tailwind theme + CSS vars), Poppins/Inter via next/font, shared kit primitives, purge the 91 ad-hoc hex + warm-brown consts.</p></div>
+        <div class="effort">~1 day<small>unblocks all</small></div></div>
+      <div class="ph"><span class="pnum">Phase&nbsp;2</span>
+        <div><h4>Customer hub + games</h4><p>Reskin FidelityHub, auth, store, wheel, slot, win celebration. The screens every customer touches.</p></div>
+        <div class="effort">~2–3 days<small>biggest impact</small></div></div>
+      <div class="ph"><span class="pnum">Phase&nbsp;3</span>
+        <div><h4>Landing page</h4><p>Full rebuild on the new system with real fonts, tamed motion, product-led hero.</p></div>
+        <div class="effort">~1.5–2 days<small>owner funnel</small></div></div>
+      <div class="ph"><span class="pnum">Phase&nbsp;4</span>
+        <div><h4>Admin polish</h4><p>Align kit to shared tokens, elevate KPI cards, empty states, nav consistency.</p></div>
+        <div class="effort">~1 day<small>alignment</small></div></div>
+      <div class="ph"><span class="pnum">Phase&nbsp;5</span>
+        <div><h4>Auth, pricing, edges</h4><p>Login/signup, pricing, 404, misc — sweep everything onto the system + QA pass.</p></div>
+        <div class="effort">~0.5 day<small>finish</small></div></div>
+    </div>
+  </div>
+</section>
+
+<section style="background:linear-gradient(180deg,var(--canvas),#fff)">
+  <div class="wrap">
+    <span class="eyebrow">08 · Guardrails</span>
+    <h2 class="big">So it stays great</h2>
+    <div class="grid g2" style="margin-top:8px">
+      <div class="guard"><div class="k">🎯</div><div><b>Token discipline</b><p>Every color/space/radius from the token set. Lint rule to reject raw hex in components — no more 91-color drift.</p></div></div>
+      <div class="guard"><div class="k">♿</div><div><b>Accessibility (AA)</b><p>Contrast-checked pairs, focus rings, reduced-motion honored, 44px tap targets. Playful ≠ inaccessible.</p></div></div>
+      <div class="guard"><div class="k">⚡</div><div><b>Performance</b><p>next/font self-hosting, no render-blocking imports, motion via transform/opacity only. Fast on café Wi-Fi.</p></div></div>
+      <div class="guard"><div class="k">🧩</div><div><b>One kit, every surface</b><p>Landing, client, admin all import the same Button/Card/Chip/Field. Fix once, fixed everywhere.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="foot">
+    <h3>Ready when you are.</h3>
+    <p>You picked: playful &amp; vibrant, purple + gold, light theme, plan-first. This is that plan. Approve the direction (or tweak the accent) and I'll start Phase 1 — the foundation everything else builds on.</p>
+    <div class="chips">
+      <span class="chip"><span class="dot" style="background:var(--p500)"></span>Purple anchor</span>
+      <span class="chip"><span class="dot" style="background:var(--g500)"></span>Gold rewards</span>
+      <span class="chip"><span class="dot" style="background:var(--c500)"></span>Coral energy</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

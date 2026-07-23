@@ -1,0 +1,335 @@
+import "server-only";
+import { createAdminClient } from "./supabase/admin";
+import type { ActiveCode } from "./types";
+
+/**
+ * The data layer — Supabase.
+ *
+ * Every value-changing call goes through a Postgres RPC (see
+ * supabase/migrations/0003_rpcs.sql), which is where the rules actually live:
+ * balance checks, the welcome-once rule, cooldowns, and prize odds. Those RPCs
+ * are `security definer` and revoked from anon/authenticated, so the service-role
+ * key used here is the ONLY way to reach them — and it never leaves the server.
+ *
+ * The browser never sends a points figure, a prize, or a cost. It sends an id
+ * and a session cookie; the server decides everything else.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Accounts (diners — phone + PIN, not Supabase Auth)                          */
+/* -------------------------------------------------------------------------- */
+
+export type AccountRow = { phone: string; pin_hash: string; name: string | null };
+
+export async function getAccount(phone: string): Promise<AccountRow | null> {
+  const db = createAdminClient();
+  const { data } = await db
+    .from("accounts")
+    .select("phone, pin_hash, name")
+    .eq("phone", phone)
+    .maybeSingle();
+  return data ?? null;
+}
+
+export async function createAccount(phone: string, pinHash: string, name: string | null) {
+  const db = createAdminClient();
+  const { error } = await db.from("accounts").insert({ phone, pin_hash: pinHash, name });
+  if (error) throw new Error(error.message);
+}
+
+/* -------------------------------------------------------------------------- */
+/* PIN throttling — a 4-digit PIN is 10k combinations                          */
+/* -------------------------------------------------------------------------- */
+
+export async function pinLockedFor(phone: string): Promise<number> {
+  const db = createAdminClient();
+  const { data } = await db.rpc("pin_locked_for", { p_phone: phone });
+  return (data as number | null) ?? 0;
+}
+
+export async function pinFail(phone: string) {
+  const db = createAdminClient();
+  await db.rpc("pin_fail", { p_phone: phone, p_max: 5, p_minutes: 15 });
+}
+
+export async function pinClear(phone: string) {
+  const db = createAdminClient();
+  await db.rpc("pin_clear", { p_phone: phone });
+}
+
+/* -------------------------------------------------------------------------- */
+/* Points                                                                      */
+/* -------------------------------------------------------------------------- */
+
+export async function getBalance(businessId: string, phone: string): Promise<number> {
+  const db = createAdminClient();
+  const { data } = await db.rpc("pointili_balance", {
+    p_business_id: businessId,
+    p_phone: phone,
+  });
+  return (data as number | null) ?? 0;
+}
+
+export type CreditResult =
+  | { ok: true; earned: number; welcome: number; balance: number; multiplier: number }
+  | { ok: false; reason: string };
+
+/** Consume → Earn. The RPC computes the points from the owner's rate. */
+export async function creditPoints(
+  businessId: string,
+  phone: string,
+  amountTnd: number,
+): Promise<CreditResult> {
+  const db = createAdminClient();
+  const { data, error } = await db.rpc("credit_points", {
+    p_business_id: businessId,
+    p_phone: phone,
+    p_amount_tnd: amountTnd,
+  });
+  if (error) return { ok: false, reason: error.message };
+  return data as CreditResult;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Play                                                                        */
+/* -------------------------------------------------------------------------- */
+
+export type PlayRpcResult =
+  | {
+      ok: true;
+      prizeId: string;
+      prizeIndex: number;
+      prizeLabel: string;
+      isLose: boolean;
+      code: string | null;
+      nextPlayAt: string;
+    }
+  | { ok: false; reason: "cooldown"; nextPlayAt: string }
+  | { ok: false; reason: "not_found" | "inactive" };
+
+/** The Spin. The server picks the prize by the owner's weights. */
+export async function playGame(
+  slug: string,
+  phone: string,
+  device: string | null,
+): Promise<PlayRpcResult> {
+  const db = createAdminClient();
+  const { data, error } = await db.rpc("play_game", {
+    p_slug: slug,
+    p_phone: phone,
+    p_device: device,
+  });
+  if (error) throw new Error(error.message);
+  return data as PlayRpcResult;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Redeem + codes                                                              */
+/* -------------------------------------------------------------------------- */
+
+export type RedeemRpcResult =
+  | { ok: true; code: string; label: string; balance: number }
+  | { ok: false; reason: "insufficient"; balance: number; needed: number }
+  | { ok: false; reason: "unavailable" };
+
+export async function redeemAtCounter(
+  businessId: string,
+  phone: string,
+  rewardId: string,
+): Promise<RedeemRpcResult> {
+  const db = createAdminClient();
+  const { data, error } = await db.rpc("redeem_at_counter", {
+    p_business_id: businessId,
+    p_phone: phone,
+    p_reward_id: rewardId,
+  });
+  if (error) throw new Error(error.message);
+  return data as RedeemRpcResult;
+}
+
+export async function getCodes(businessId: string, phone: string): Promise<ActiveCode[]> {
+  const db = createAdminClient();
+  const { data } = await db.rpc("diner_codes", {
+    p_business_id: businessId,
+    p_phone: phone,
+  });
+  return (data as ActiveCode[] | null) ?? [];
+}
+
+export type PeekResult =
+  | { found: false; status: "not_found" }
+  | {
+      found: true;
+      label: string;
+      kind: "win" | "reward";
+      status: "valid" | "expired" | "claimed";
+    };
+
+/**
+ * Look up a code WITHOUT serving it (read-only).
+ *
+ * The counter flow is two-step on purpose: staff first sees what a code is and
+ * whether it can be served, then decides to collect it — a diner sometimes just
+ * wants to show it, not spend it. This never changes state.
+ */
+export async function peekCode(businessId: string, code: string): Promise<PeekResult> {
+  const db = createAdminClient();
+  const { data, error } = await db.rpc("peek_code", {
+    p_business_id: businessId,
+    p_code: code,
+  });
+  if (error) return { found: false, status: "not_found" };
+  return data as PeekResult;
+}
+
+export type ClaimResult =
+  | { ok: true; label: string; kind: "win" | "reward" }
+  | { ok: false; reason: string };
+
+/** Claim a counter code — exactly once, guarded inside the RPC. */
+export async function claimCode(businessId: string, code: string): Promise<ClaimResult> {
+  const db = createAdminClient();
+  const { data, error } = await db.rpc("claim_code", {
+    p_business_id: businessId,
+    p_code: code,
+  });
+  if (error) return { ok: false, reason: error.message };
+  return data as ClaimResult;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Wallet — every café where this phone has a card                             */
+/* -------------------------------------------------------------------------- */
+
+export type WalletCafe = {
+  businessId: string;
+  name: string;
+  slug: string;
+  primaryColor: string;
+  logoUrl: string | null;
+  balance: number;
+  pendingWins: number;
+  pendingRewards: number;
+};
+
+/**
+ * Record that this diner has a card at this café (the "passport").
+ *
+ * Idempotent. This is the membership marker: it makes the café show up in the
+ * diner's wallet even before they've earned a single point — so joining always
+ * creates a visible card, and the "am I enrolled here?" check can't loop when a
+ * café's welcome bonus happens to be zero.
+ */
+export async function enrollDiner(cafeId: string, phone: string): Promise<void> {
+  const db = createAdminClient();
+  await db
+    .from("diner_cafes")
+    .upsert({ phone, business_id: cafeId }, { onConflict: "phone,business_id", ignoreDuplicates: true });
+}
+
+/**
+ * The diner's whole wallet: one card per café they've ever earned or played at.
+ *
+ * The account (phone + PIN) is GLOBAL — one identity everywhere — but points are
+ * strictly PER café (the ledger is keyed by business_id + phone), so each café
+ * is its own card with its own balance. This lets a diner see all their cards
+ * and jump between them without re-scanning a QR.
+ */
+export async function dinerWallet(phone: string): Promise<WalletCafe[]> {
+  const db = createAdminClient();
+  const { data } = await db.rpc("diner_wallet", { p_phone: phone });
+  return (data as WalletCafe[] | null) ?? [];
+}
+
+/* -------------------------------------------------------------------------- */
+/* Activity                                                                    */
+/* -------------------------------------------------------------------------- */
+
+export type Activity = {
+  delta: number;
+  reason: "earn" | "redeem" | "welcome" | "adjust" | "expire" | "collected";
+  /** Set for 'collected' rows — the prize/reward the diner picked up. */
+  label: string | null;
+  at: string;
+};
+
+/**
+ * The diner's recent history: points events PLUS what they collected at the
+ * counter, merged into one timeline (see the diner_history RPC).
+ *
+ * "Where did my points come from?" is the first question anyone asks of a
+ * loyalty balance — and "what did I already pick up?" is the second. A card that
+ * can't answer either feels like a black box.
+ */
+export async function getActivity(
+  businessId: string,
+  phone: string,
+  limit = 8,
+): Promise<Activity[]> {
+  const db = createAdminClient();
+  const { data } = await db.rpc("diner_history", {
+    p_business_id: businessId,
+    p_phone: phone,
+    p_limit: limit,
+  });
+  return (data as Activity[] | null) ?? [];
+}
+
+/* -------------------------------------------------------------------------- */
+/* Café creation                                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * "Café de l'Étoile & Co" → "cafe-de-letoile-co".
+ *
+ * The slug is the café's public URL, so it has to survive a French keyboard:
+ * accents, apostrophes, ampersands. Apostrophes are DROPPED rather than turned
+ * into separators — "l'étoile" should read "letoile", not "l-etoile".
+ */
+export function slugify(input: string): string {
+  return input
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // strip accents: é → e
+    .replace(/['’`]/g, "") // l'étoile → letoile
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40)
+    .replace(/-+$/g, "");
+}
+
+export type CreateCafeResult =
+  | { ok: true; id: string; slug: string }
+  | { ok: false; reason: "slug_taken" | "slug_reserved" | "slug_invalid" };
+
+export async function createCafe(
+  ownerId: string,
+  name: string,
+  slug: string,
+): Promise<CreateCafeResult> {
+  const db = createAdminClient();
+  const { data, error } = await db.rpc("create_cafe", {
+    p_owner_id: ownerId,
+    p_name: name,
+    p_slug: slug,
+  });
+  if (error) return { ok: false, reason: "slug_invalid" };
+  return data as CreateCafeResult;
+}
+
+/** When may this diner spin again? null = now. */
+export async function nextPlayAt(gameId: string, phone: string, cooldownHours: number) {
+  const db = createAdminClient();
+  const { data } = await db
+    .from("plays")
+    .select("created_at")
+    .eq("game_id", gameId)
+    .eq("phone", phone)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return null;
+  const next = new Date(data.created_at).getTime() + cooldownHours * 3600_000;
+  return next > Date.now() ? new Date(next) : null;
+}

@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pointili — Web App Build Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1E1830; --ink2:#4A4363; --mut:#7A7392; --line:#E6E2F0; --line2:#EFECF7;
+    --paper:#fff; --canvas:#F7F5FF; --brand:#5B3FD1; --brand2:#7B61FF; --brand-soft:#EEE9FF;
+    --gold:#B8860B; --gold-soft:#F6ECCB; --seal:#C0341C; --ok:#2F855A; --kraft:#EAE0CC;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:var(--canvas);line-height:1.6;font-size:14.5px}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 30px}
+  h1,h2,h3,h4{font-family:'Fraunces',Georgia,serif;letter-spacing:-.01em;line-height:1.15}
+  code,.mono{font-family:'Space Mono',monospace}
+  section{padding:34px 0;border-top:1px solid var(--line)}
+  section:first-of-type{border-top:none}
+  .eyebrow{font-family:'Space Mono';font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--brand)}
+  h2{font-size:27px;font-weight:900;margin:6px 0 4px}
+  h3{font-size:18px;font-weight:600;margin:22px 0 8px}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 20px}
+  li{margin:4px 0}
+  code{background:var(--brand-soft);color:var(--brand);padding:1.5px 6px;border-radius:5px;font-size:.86em;font-weight:700}
+  b{color:var(--ink)}
+  a{color:var(--brand);text-decoration:none}
+
+  /* hero */
+  .hero{background:linear-gradient(135deg,#2A1E5C,#171128);color:#fff;border-radius:0 0 30px 30px;padding:52px 0 46px;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;right:-90px;top:-90px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(184,134,11,.4),transparent 62%)}
+  .hero .wrap{position:relative;z-index:2}
+  .hero .kicker{font-family:'Space Mono';font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:#C9BEEF}
+  .hero h1{font-size:46px;font-weight:900;margin:12px 0 10px}
+  .hero p{font-size:17px;color:rgba(255,255,255,.85);max-width:64ch}
+  .hero b, .foot b{color:#fff}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}
+  .chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);padding:6px 13px;border-radius:999px;font-size:12.5px;font-weight:600;font-family:'Space Mono'}
+  .chip.warn{background:rgba(184,134,11,.22);border-color:rgba(214,168,60,.5);color:#FBE7B0}
+
+  .lead{font-size:16px;color:var(--ink2);max-width:74ch}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(30,24,48,.04),0 12px 28px -20px rgba(30,24,48,.25)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .callout{border-left:4px solid var(--brand);background:var(--brand-soft);border-radius:0 12px 12px 0;padding:14px 18px;margin:16px 0}
+  .callout.gold{border-color:var(--gold);background:var(--gold-soft)}
+  .callout.warn{border-color:var(--seal);background:#FBE9E4}
+  .callout b{display:block;margin-bottom:2px}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line)}
+  th{background:var(--canvas);font-family:'Space Mono';font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);font-weight:700}
+  td code{font-size:.82em}
+  tr:last-child td{border-bottom:none}
+
+  pre{background:#1E1830;color:#E8E3F5;border-radius:12px;padding:16px 18px;overflow-x:auto;margin:12px 0;font-family:'Space Mono';font-size:12.5px;line-height:1.6}
+  pre .c{color:#A99AE0}
+  pre .k{color:#F0B45A}
+  pre .s{color:#8FD8A0}
+
+  .moment{border:1px solid var(--line);border-radius:16px;padding:0;overflow:hidden;margin:18px 0;background:var(--paper)}
+  .moment .top{display:flex;align-items:center;gap:12px;padding:16px 20px;background:linear-gradient(90deg,var(--brand-soft),transparent)}
+  .moment .top .em{font-size:26px}
+  .moment .top h3{margin:0;font-size:20px;font-weight:900;font-family:'Fraunces'}
+  .moment .top .tag{margin-left:auto;font-family:'Space Mono';font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--mut)}
+  .moment .body{padding:8px 20px 18px}
+  .mrow{display:grid;grid-template-columns:130px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line2)}
+  .mrow:first-child{border-top:none}
+  .mrow .k{font-family:'Space Mono';font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--brand);font-weight:700;padding-top:2px}
+  .owner-pill{display:inline-block;background:var(--gold-soft);color:var(--gold);font-family:'Space Mono';font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px}
+
+  .num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:var(--brand);color:#fff;font-family:'Space Mono';font-weight:700;font-size:13px;margin-right:8px}
+  .phase{display:grid;grid-template-columns:88px 1fr;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .phase:last-child{border-bottom:none}
+  .phase .p{font-family:'Space Mono';font-weight:700;font-size:13px;color:#fff;background:var(--brand);border-radius:8px;padding:6px 8px;text-align:center;height:fit-content}
+  .check li{list-style:none;position:relative;padding-left:26px}
+  .check li::before{content:"☐";position:absolute;left:0;color:var(--brand);font-size:16px}
+  .toc{columns:2;gap:24px;font-size:13.5px}
+  .toc a{display:block;padding:3px 0;color:var(--ink2)}
+  .toc a b{color:var(--brand);font-family:'Space Mono';font-size:11px;margin-right:6px}
+  .foot{background:var(--ink);color:#fff;border-radius:20px;padding:28px 30px;margin:26px 0 50px;text-align:center}
+  .foot h3{font-size:22px;font-weight:900}
+  .foot p{color:rgba(255,255,255,.72);max-width:60ch;margin:8px auto 0}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  @media print{ section{padding:24px 0} .hero{border-radius:0 0 20px 20px} pre{white-space:pre-wrap} }
+</style>
+</head>
+<body>
+<h2 class="sr-only">Pointili developer build specification: goal, scope, Supabase data model, client and owner mobile apps, owner-controlled engagement mechanics, moment-by-moment plan, and build order.</h2>
+
+<div class="hero">
+  <div class="wrap">
+    <div class="kicker">Developer Build Spec · v1</div>
+    <h1>Build Pointili — the web app.</h1>
+    <p>A café loyalty + games platform. This spec is everything a developer needs to build the <b>app</b> (client hub, games, owner dashboard, caisse) on a <b>Supabase</b> backend. It excludes the marketing landing page.</p>
+    <div class="chips">
+      <span class="chip">Next.js + Supabase</span>
+      <span class="chip">Postgres · Auth · Storage · RLS</span>
+      <span class="chip warn">📱 Mobile view ONLY</span>
+      <span class="chip warn">🎛️ Owner-controlled</span>
+      <span class="chip">No landing page</span>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">00 · The goal</span>
+    <h2>What we're building & why</h2>
+    <p class="lead"><b>Pointili turns one-time café customers into regulars — by rewarding them for coming back.</b> The whole product is one loop, and it <b>starts and ends with consuming</b> (buying). Games and rewards are the fun in the middle that pulls people back to buy again.</p>
+    <div class="callout">
+      <b>The loop (memorise this — the entire app serves it)</b>
+      <b style="font-weight:900;color:var(--ink);font-size:15px;margin-top:6px">☕ Consume → ⭐ Earn points → 🎡 Play &amp; 🎁 Redeem → 🚶 Return → ☕ Consume…</b>
+    </div>
+    <p>Points are earned by <b>buying</b> (credited by staff at the caisse), <b>never</b> by playing. Playing the wheel gives prize codes; points buy real rewards. The developer's job is to make this loop <b>fun, useful, and nice</b> for the client — and <b>fully configurable by the owner</b>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">01 · Scope</span>
+    <h2>What to build (and not)</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3 style="margin-top:0">✅ In scope</h3>
+        <ul>
+          <li><b>Client web app</b> (the diner): auth, loyalty card, games, reward store.</li>
+          <li><b>Owner web app</b>: dashboard, caisse (credit/redeem), and the full control panel.</li>
+          <li><b>Staff caisse</b> access (PIN).</li>
+          <li><b>Supabase backend</b>: schema, RLS, auth, storage, server-authoritative RPCs.</li>
+          <li>Super-admin basics (create cafés, toggle features) — optional for v1.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">🚫 Out of scope</h3>
+        <ul>
+          <li><b>Marketing landing page</b> — do not build.</li>
+          <li><b>Desktop / tablet layouts</b> — see the mobile-only mandate below.</li>
+          <li>QR menu / ordering / POS — Pointili is games + loyalty only.</li>
+          <li>Native mobile apps — this is a web app (opened by scanning a QR).</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout warn">
+      <b>📱 MOBILE-ONLY MANDATE — read carefully (this saves ~40% of the work)</b>
+      Build <b>only the mobile view</b> (design at 375–430px width). The client reaches the app by scanning a QR on their phone; the owner manages from their phone too. <b>Do not build any desktop or tablet layout.</b> On wider screens, just center the phone-width app in a <code>max-w-[480px]</code> column — no <code>md:</code> / <code>lg:</code> breakpoints, no responsive grids. One layout, phone-sized, everywhere.
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow">02 · Contents</span>
+    <h2>Report map</h2>
+    <div class="toc">
+      <a href="#stack"><b>03</b> Tech stack &amp; architecture</a>
+      <a href="#roles"><b>04</b> Roles &amp; auth</a>
+      <a href="#data"><b>05</b> Supabase data model</a>
+      <a href="#security"><b>06</b> Security: RLS + server RPCs</a>
+      <a href="#client"><b>07</b> The client app (screens)</a>
+      <a href="#owner"><b>08</b> The owner app (screens)</a>
+      <a href="#control"><b>09</b> Owner control panel — every knob</a>
+      <a href="#moments"><b>10</b> Moment-by-moment build spec</a>
+      <a href="#makebreak"><b>11</b> The 3 make-or-break improvements</a>
+      <a href="#order"><b>12</b> Build order (phases)</a>
+      <a href="#done"><b>13</b> Definition of done</a>
+    </div>
+  </div>
+</section>
+
+<section id="stack">
+  <div class="wrap">
+    <span class="eyebrow">03 · Architecture</span>
+    <h2>Tech stack</h2>
+    <table>
+      <tr><th>Layer</th><th>Choice</th><th>Notes</th></tr>
+      <tr><td>Frontend</td><td>Next.js (App Router) + React + TypeScript</td><td>Server components for reads, client components for interactive hub/games.</td></tr>
+      <tr><td>Styling</td><td>Tailwind CSS</td><td>Mobile-only. Design tokens for the brand (see design system).</td></tr>
+      <tr><td>Backend</td><td><b>Supabase</b></td><td>Postgres + Auth + Storage + Row-Level Security + Edge/RPC.</td></tr>
+      <tr><td>Privileged writes</td><td>Next.js API routes w/ Supabase <b>service-role</b> + Postgres <b>RPC</b> functions</td><td>All value-affecting mutations (points, spins, redemptions) run server-side.</td></tr>
+      <tr><td>Auth</td><td>Supabase Auth (owners) · custom phone+PIN (diners) · PIN (staff)</td><td>See §04.</td></tr>
+      <tr><td>Storage</td><td>Supabase Storage (public <code>reward-images</code> bucket)</td><td>Reward &amp; logo images.</td></tr>
+      <tr><td>Hosting</td><td>Vercel (frontend) + Supabase cloud</td><td>Env vars: <code>NEXT_PUBLIC_SUPABASE_URL</code>, <code>*_ANON_KEY</code>, <code>SERVICE_ROLE_KEY</code>.</td></tr>
+    </table>
+    <div class="callout"><b>The golden rule of the backend</b>The client never decides anything that has value. Balances, prize outcomes, cooldowns, and redemptions are computed by <b>Postgres RPCs</b> or service-role routes. The browser only <i>requests</i> — the server <i>decides</i>. This is the anti-cheat foundation.</div>
+  </div>
+</section>
+
+<section id="roles">
+  <div class="wrap">
+    <span class="eyebrow">04 · Roles</span>
+    <h2>Who uses it &amp; how they log in</h2>
+    <table>
+      <tr><th>Role</th><th>Auth</th><th>What they do</th></tr>
+      <tr><td><b>Diner</b> (client)</td><td>Phone number + 4-digit PIN (custom, NOT Supabase Auth). One <b>global</b> identity across all cafés. Session = signed token in localStorage.</td><td>Earn points, play, redeem, track their card. Onboards in ~10s, no email, no app.</td></tr>
+      <tr><td><b>Owner</b></td><td>Supabase Auth (email + password).</td><td>Manages one café: dashboard, caisse, and the control panel.</td></tr>
+      <tr><td><b>Staff</b></td><td>Owner enables a PIN; staff act inside the owner's café.</td><td>Run the caisse: credit points, validate reward codes.</td></tr>
+      <tr><td><b>Super-admin</b></td><td>Supabase Auth + <code>role='super_admin'</code> in <code>profiles</code>.</td><td>Create cafés, toggle features platform-wide. (v1: minimal.)</td></tr>
+    </table>
+    <div class="callout gold"><b>Why phone+PIN for diners</b>Zero friction is the whole game. No email verification, no app install, no password. Scan QR → enter phone → 4-digit PIN → done. First visit grants the welcome bonus instantly (see §11).</div>
+  </div>
+</section>
+
+<section id="data">
+  <div class="wrap">
+    <span class="eyebrow">05 · Backend</span>
+    <h2>Supabase data model</h2>
+    <p class="lead">Postgres tables. Every café is a tenant (<code>businesses</code>); all café-scoped data carries <code>business_id</code>. Points are an append-only <b>ledger</b> — a balance is <code>sum(delta)</code>, never a mutable column (auditable, race-safe).</p>
+    <table>
+      <tr><th>Table</th><th>Key columns</th><th>Purpose</th></tr>
+      <tr><td><code>profiles</code></td><td>id→auth.users, role, email</td><td>Owner / super-admin accounts.</td></tr>
+      <tr><td><code>businesses</code></td><td>id, owner_id, name, <b>slug UNIQUE</b>, status, primary_color, logo_url, <b>design_settings jsonb</b></td><td>The café (tenant). <code>design_settings</code> holds most owner toggles.</td></tr>
+      <tr><td><code>accounts</code> (diners)</td><td>phone (global), pin_hash, name</td><td>Global diner identity across cafés.</td></tr>
+      <tr><td><code>loyalty_programs</code></td><td>business_id PK, active, <b>points_per_tnd</b>, <b>welcome_points</b>, redeem_expiry_hours</td><td>Per-café points config.</td></tr>
+      <tr><td><code>loyalty_rewards</code></td><td>id, business_id, label, <b>points_cost</b>, image_url, active, position</td><td>The reward catalogue (the boutique).</td></tr>
+      <tr><td><code>points_ledger</code></td><td>id, business_id, customer_phone, <b>delta</b>, reason, created_at</td><td><b>Source of truth for balances.</b> +earn / −redeem / welcome / adjust.</td></tr>
+      <tr><td><code>loyalty_redemptions</code></td><td>id, business_id, phone, reward_id, <b>code</b>, status, expires_at</td><td>A pending/claimed reward code, validated at the counter.</td></tr>
+      <tr><td><code>games</code></td><td>id, business_id, type, active, <b>config jsonb</b></td><td>The wheel/slot. <code>config</code> = mode, odds, cooldown, gates, slot settings.</td></tr>
+      <tr><td><code>prizes</code></td><td>id, game_id, label, position, active</td><td>Wheel segments. Weights/isLose live in <code>games.config.prizeConfig</code>.</td></tr>
+      <tr><td><code>plays</code></td><td>id, business_id, phone, device, game_id, created_at</td><td>Play log — powers cooldown/rate-limit.</td></tr>
+      <tr><td><code>wins</code></td><td>id, business_id, phone, prize_id, <b>code</b>, status, expires_at</td><td>A won prize code, claimed at the counter.</td></tr>
+      <tr><td><code>diner_streaks</code></td><td>phone, current, longest, xp, freeze, play-counters</td><td>Streaks + XP/levels + achievements source (global per phone).</td></tr>
+      <tr><td><code>diner_cafes</code></td><td>phone, business_id, first_played_at</td><td>"Passport" — cafés a diner has visited.</td></tr>
+      <tr><td><code>cafe_events</code></td><td>id, business_id, kind, multiplier, starts_at, ends_at</td><td>Owner-scheduled boosts (double points/XP).</td></tr>
+      <tr><td><code>app_staff</code></td><td>business_id, pin, caps</td><td>Staff caisse identities.</td></tr>
+    </table>
+    <div class="callout"><b>Balance query (the one to memorise)</b><code>select coalesce(sum(delta),0) from points_ledger where business_id=$1 and customer_phone=$2</code> — points are stored by <b>(café, phone)</b>, so a diner can be credited before they even sign up (points wait for them).</div>
+  </div>
+</section>
+
+<section id="security">
+  <div class="wrap">
+    <span class="eyebrow">06 · Security</span>
+    <h2>RLS + server-authoritative RPCs</h2>
+    <h3>Row-Level Security (RLS) — on for every table</h3>
+    <ul>
+      <li><b>Owners</b> read/write only rows where <code>business_id ∈ (their businesses)</code>.</li>
+      <li><b>Public/anon</b> may read only <code>active/paused</code> cafés + their public reward list (for the client hub).</li>
+      <li><b>Super-admin</b> policy grants full access where <code>profiles.role='super_admin'</code>.</li>
+      <li><b>Service role</b> bypasses RLS — used only inside trusted server routes/RPCs.</li>
+    </ul>
+    <h3>Server-authoritative RPCs (Postgres functions, <code>security definer</code>)</h3>
+    <p>These are the only way value changes. The client calls a route → the route calls the RPC → the RPC decides &amp; writes atomically.</p>
+    <pre><span class="c">-- Consume → Earn: staff credits a phone at the caisse</span>
+credit_points(business_id, phone, amount_tnd) <span class="k">returns</span> balance
+  <span class="c">-- writes +points to points_ledger (points_per_tnd × amount), grants welcome bonus once</span>
+
+<span class="c">-- Play: server picks the prize, enforces cooldown, everyone-wins</span>
+play_game(slug, phone, device) <span class="k">returns</span> { prizeIndex, code, nextPlayAt }
+  <span class="c">-- validates cooldown from plays; picks prize by config weights; writes plays + wins</span>
+  <span class="c">-- NEVER trust prize/odds from the client</span>
+
+<span class="c">-- Redeem: atomic spend</span>
+redeem_at_counter(business_id, phone, reward_id) <span class="k">returns</span> code
+  <span class="c">-- checks balance ≥ cost, writes −points + a redemption code, all-or-nothing</span>
+
+<span class="c">-- Engagement</span>
+touch_diner_streak(phone, xp) <span class="k">returns</span> streak   <span class="c">-- consecutive-day count + XP</span>
+diner_wallet(phone)            <span class="k">returns</span> cards    <span class="c">-- all cafés with activity</span></pre>
+    <div class="callout warn"><b>Non-negotiable</b>If the browser can set its own points or pick its own prize, the product is broken. Cooldowns, odds, balances, and redemptions are <b>server-side only</b>.</div>
+  </div>
+</section>
+
+<section id="client">
+  <div class="wrap">
+    <span class="eyebrow">07 · Client app</span>
+    <h2>The diner experience (mobile)</h2>
+    <p class="lead">Reached at <code>pointili.app/&lt;café-slug&gt;</code> by scanning the café's QR. One space, persistent bottom nav: <b>Ma carte · Jeux · Boutique</b>.</p>
+    <table>
+      <tr><th>Screen</th><th>Job</th><th>Key elements</th></tr>
+      <tr><td><b>Onboarding / Auth</b></td><td>Convert a scan into an account in ~10s.</td><td>Value-first intro (points + spin + rewards) → phone → 4-digit PIN → welcome bonus lands.</td></tr>
+      <tr><td><b>Ma carte</b></td><td>The home: status + the "almost there" nudge.</td><td>Points balance, progress to next reward, streak, level (secondary), active reward codes.</td></tr>
+      <tr><td><b>Jeux</b></td><td>The fun: play the wheel/slot.</td><td>Anticipation build-up → everyone-wins reveal → celebration (confetti + receipt).</td></tr>
+      <tr><td><b>Boutique</b></td><td>Spend points on real rewards.</td><td>Reward ladder (cheap→aspirational), tap to redeem → code to show at counter.</td></tr>
+      <tr><td><b>Win / Receipt</b></td><td>Make winning feel like winning.</td><td>Printed-receipt style prize, code + expiry, "add to my card".</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="owner">
+  <div class="wrap">
+    <span class="eyebrow">08 · Owner app</span>
+    <h2>The owner experience (mobile)</h2>
+    <table>
+      <tr><th>Screen</th><th>Job</th></tr>
+      <tr><td><b>Dashboard</b></td><td>Proof it works: repeat customers, points issued, rewards redeemed, plays — the return-rate trend.</td></tr>
+      <tr><td><b>Caisse</b></td><td>The core daily action: enter a phone (or scan the diner's QR) → credit points for a purchase; validate a reward/win code.</td></tr>
+      <tr><td><b>Rewards</b></td><td>Manage the boutique catalogue (label, cost, image, active, order).</td></tr>
+      <tr><td><b>Games</b></td><td>Configure the wheel/slot: prizes, odds, cooldown, gates.</td></tr>
+      <tr><td><b>Events</b></td><td>Schedule boosts (double points/XP for a weekend).</td></tr>
+      <tr><td><b>Settings</b></td><td>Brand (logo, name, colour), loyalty on/off, points rate, welcome bonus, expiry.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="control">
+  <div class="wrap">
+    <span class="eyebrow">09 · Owner control</span>
+    <h2>Every knob the owner controls</h2>
+    <p class="lead">This is a hard requirement: <b>every engagement mechanic is owner-configurable.</b> Each control below maps to a column or a <code>design_settings</code> / <code>games.config</code> key. Ship sensible defaults so a café works out-of-the-box, but expose all of it.</p>
+    <table>
+      <tr><th>Control</th><th>Where it lives</th><th>Default</th></tr>
+      <tr><td>Loyalty on / off</td><td><code>design_settings.loyaltyEnabled</code></td><td>on</td></tr>
+      <tr><td>Points per dinar</td><td><code>loyalty_programs.points_per_tnd</code></td><td>1</td></tr>
+      <tr><td>Welcome bonus (on + amount)</td><td><code>loyalty_programs.welcome_points</code></td><td>10</td></tr>
+      <tr><td>Reward catalogue + prices</td><td><code>loyalty_rewards</code> rows</td><td>3 seeded</td></tr>
+      <tr><td>Reward-code expiry (hrs)</td><td><code>loyalty_programs.redeem_expiry_hours</code></td><td>48</td></tr>
+      <tr><td>Wheel on / off</td><td><code>games.active</code></td><td>off</td></tr>
+      <tr><td>Slot machine on / off</td><td><code>games.config.slotEnabled</code></td><td>off</td></tr>
+      <tr><td>Prizes + win odds (everyone-wins)</td><td><code>prizes</code> + <code>games.config.prizeConfig</code> (weights, isLose)</td><td>—</td></tr>
+      <tr><td>Play frequency (cooldown hrs)</td><td><code>games.config.cooldownHours</code></td><td>24</td></tr>
+      <tr><td>"Scan to play" presence gate</td><td><code>games.config.qrGate</code></td><td>off</td></tr>
+      <tr><td>Play gates (survey/follow to unlock)</td><td><code>games.config.gates</code></td><td>off</td></tr>
+      <tr><td>Events (double points/XP)</td><td><code>cafe_events</code> rows</td><td>none</td></tr>
+      <tr><td>Points expiry (on + months)</td><td><code>design_settings.pointsExpiryMonths</code> <span class="owner-pill">new</span></td><td>off</td></tr>
+      <tr><td>Streaks / levels shown</td><td><code>design_settings.showEngagement</code> <span class="owner-pill">new</span></td><td>on</td></tr>
+      <tr><td>Brand: logo / name / colour</td><td><code>businesses.logo_url / name / primary_color</code></td><td>—</td></tr>
+    </table>
+    <div class="callout gold"><b>Design principle for the panel</b>Group controls by moment (Earn / Play / Reward / Return), not by table. The owner thinks "how often can they spin?", not "which jsonb key". Every control needs a plain-French label + one-line helper.</div>
+  </div>
+</section>
+
+<section id="moments">
+  <div class="wrap">
+    <span class="eyebrow">10 · The core</span>
+    <h2>Moment-by-moment build spec</h2>
+    <p class="lead">The loop has four moments. Each one has a bar to clear, the client experience, the <span class="owner-pill">owner controls</span>, the backend, and a "done when". <b>Build the app to serve these four moments.</b></p>
+
+    <div class="moment">
+      <div class="top"><span class="em">☕</span><h3>1 · Consume → Earn</h3><span class="tag">at the caisse</span></div>
+      <div class="body">
+        <div class="mrow"><div class="k">The bar</div><div>Points land <b>instantly and visibly</b>, zero friction.</div></div>
+        <div class="mrow"><div class="k">Client sees</div><div>A "<b>+12 points</b>" pop with a sound; balance grows; first-ever visit shows the welcome bonus landing.</div></div>
+        <div class="mrow"><div class="k">Owner controls</div><div><span class="owner-pill">points per dinar</span> <span class="owner-pill">welcome bonus on/amount</span> <span class="owner-pill">points expiry</span></div></div>
+        <div class="mrow"><div class="k">Backend</div><div><code>credit_points()</code> RPC via a staff caisse route; writes <code>points_ledger</code>; grants welcome bonus once per (café, phone).</div></div>
+        <div class="mrow"><div class="k">Done when</div><div>Staff credits a phone in &lt;5s and the diner's balance + "+points" animation update live.</div></div>
+      </div>
+    </div>
+
+    <div class="moment">
+      <div class="top"><span class="em">🎡</span><h3>2 · The Spin</h3><span class="tag">the fun core</span></div>
+      <div class="body">
+        <div class="mrow"><div class="k">The bar</div><div>Feels like <b>play, not gambling</b> — and never "you lost".</div></div>
+        <div class="mrow"><div class="k">Client sees</div><div>Real <b>anticipation</b> (slow-down + tick), an <b>everyone-wins</b> reveal, then a <b>celebration</b> (confetti + printed receipt). One free spin per visit/day.</div></div>
+        <div class="mrow"><div class="k">Owner controls</div><div><span class="owner-pill">wheel on/off</span> <span class="owner-pill">slot on/off</span> <span class="owner-pill">prizes + odds</span> <span class="owner-pill">cooldown</span> <span class="owner-pill">scan-to-play gate</span> <span class="owner-pill">unlock gates</span></div></div>
+        <div class="mrow"><div class="k">Backend</div><div><code>play_game()</code> RPC — server picks the prize by owner weights, enforces cooldown from <code>plays</code>, writes <code>wins</code>. Odds never trusted from client.</div></div>
+        <div class="mrow"><div class="k">Done when</div><div>Every spin returns a prize, respects the owner's cooldown, and can't be re-triggered by the browser.</div></div>
+      </div>
+    </div>
+
+    <div class="moment">
+      <div class="top"><span class="em">🎁</span><h3>3 · The Reward</h3><span class="tag">the payoff</span></div>
+      <div class="body">
+        <div class="mrow"><div class="k">The bar</div><div>Rewards are <b>desirable AND reachable</b> (the #1 thing people get wrong).</div></div>
+        <div class="mrow"><div class="k">Client sees</div><div>A <b>ladder</b> (cheap→aspirational), and always "<b>just 40 pts to your free coffee</b>". Redeem → code to show at counter.</div></div>
+        <div class="mrow"><div class="k">Owner controls</div><div><span class="owner-pill">reward catalogue</span> <span class="owner-pill">point costs</span> <span class="owner-pill">images</span> <span class="owner-pill">code expiry</span></div></div>
+        <div class="mrow"><div class="k">Backend</div><div><code>redeem_at_counter()</code> RPC — checks balance, writes −points + a code atomically. Staff validates the code in the caisse.</div></div>
+        <div class="mrow"><div class="k">Done when</div><div>A diner with enough points redeems, gets a code, and staff can mark it used — once.</div></div>
+      </div>
+    </div>
+
+    <div class="moment">
+      <div class="top"><span class="em">🚶</span><h3>4 · The Return</h3><span class="tag">the whole point</span></div>
+      <div class="body">
+        <div class="mrow"><div class="k">The bar</div><div>A reason to come back that's <b>worth the trip</b> — without nagging.</div></div>
+        <div class="mrow"><div class="k">Client sees</div><div><b>Streaks</b> ("keep your 7-day streak 🔥"), "<b>your spin is ready</b>", weekend <b>events</b>, an almost-full reward they won't abandon.</div></div>
+        <div class="mrow"><div class="k">Owner controls</div><div><span class="owner-pill">events (double pts)</span> <span class="owner-pill">streaks shown</span> <span class="owner-pill">cooldown = spin cadence</span></div></div>
+        <div class="mrow"><div class="k">Backend</div><div><code>touch_diner_streak()</code> on each play; <code>cafe_events</code> multiplier applied in <code>credit_points</code>/<code>play_game</code>.</div></div>
+        <div class="mrow"><div class="k">Done when</div><div>A returning diner sees their streak advance and any active event boost applied automatically.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="makebreak">
+  <div class="wrap">
+    <span class="eyebrow">11 · Make or break</span>
+    <h2>The 3 things — each owner-controlled</h2>
+
+    <div class="card" style="margin-bottom:14px">
+      <h3 style="margin-top:0"><span class="num">1</span>Instant first value</h3>
+      <p>On visit #1, the diner gets <b>welcome points + a free spin</b> before doing anything. Never make them wait to see the point.</p>
+      <p><span class="owner-pill">owner controls</span> welcome bonus on/off + amount · whether visit-1 grants a free spin.</p>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <h3 style="margin-top:0"><span class="num">2</span>Always "almost there"</h3>
+      <p>Show progress to the next reward <b>everywhere</b> ("40 pts to a free coffee"). This goal-gradient nudge drives more returns than anything else. Computed from balance vs the cheapest reward the diner can't yet afford.</p>
+      <p><span class="owner-pill">owner controls</span> the reward ladder &amp; prices define how near "almost there" feels — this is the tuning lever.</p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0"><span class="num">3</span>Everyone wins + celebrate</h3>
+      <p>No losing feeling — the wheel always gives something — and every win/milestone gets a real moment (confetti, receipt, "+points").</p>
+      <p><span class="owner-pill">owner controls</span> the prize set + odds (incl. small "consolation" prizes) so "everyone wins" stays true and affordable.</p>
+    </div>
+
+    <div class="callout warn" style="margin-top:18px"><b>The "nice" trap — enforce simplicity</b>The app already has points, levels, XP, achievements, passport, leaderboard, events. <b>Do not show all of it at once.</b> Core loop stays dead simple — <b>points → spin → reward</b>. Levels/passport/leaderboard are quiet secondary layers (behind a tap), and the owner can hide them (<code>showEngagement</code>). Simplicity <i>is</i> "nice".</div>
+  </div>
+</section>
+
+<section id="order">
+  <div class="wrap">
+    <span class="eyebrow">12 · How to do it</span>
+    <h2>Build order</h2>
+    <div class="phase"><div class="p">Phase 1</div><div><b>Supabase foundation.</b> Create the project; run the schema (§05); enable RLS + policies (§06); set up Auth + the <code>reward-images</code> bucket; write the core RPCs.</div></div>
+    <div class="phase"><div class="p">Phase 2</div><div><b>Owner core.</b> Owner signup/login, create café (unique-slug logic), dashboard shell — all mobile.</div></div>
+    <div class="phase"><div class="p">Phase 3</div><div><b>Diner + Ma carte.</b> Phone+PIN auth, the loyalty card with balance + "almost there" nudge.</div></div>
+    <div class="phase"><div class="p">Phase 4</div><div><b>Caisse (Consume→Earn).</b> Staff credits a phone; <code>credit_points</code>; welcome bonus; the "+points" moment.</div></div>
+    <div class="phase"><div class="p">Phase 5</div><div><b>Games (the Spin).</b> Wheel with server <code>play_game</code>, everyone-wins, cooldown, anticipation + celebration.</div></div>
+    <div class="phase"><div class="p">Phase 6</div><div><b>Boutique (the Reward).</b> Catalogue + <code>redeem_at_counter</code> + code validation in the caisse.</div></div>
+    <div class="phase"><div class="p">Phase 7</div><div><b>Owner control panel.</b> Every knob from §09, grouped by moment.</div></div>
+    <div class="phase"><div class="p">Phase 8</div><div><b>Return layer.</b> Streaks/daily, events, "your spin is ready", secondary meta-games (hideable).</div></div>
+    <div class="phase"><div class="p">Phase 9</div><div><b>Polish + mobile QA.</b> Celebrations, empty states, error states — all at 375–430px.</div></div>
+  </div>
+</section>
+
+<section id="done">
+  <div class="wrap">
+    <span class="eyebrow">13 · Definition of done</span>
+    <h2>Acceptance checklist</h2>
+    <ul class="check">
+      <li>A diner scans a QR, signs up with phone+PIN in ~10s, and receives the welcome bonus.</li>
+      <li>Staff credit points to a phone at the caisse; the diner's balance updates live with a "+points" moment.</li>
+      <li>The wheel always returns a prize, respects the owner's cooldown, and cannot be re-triggered from the browser.</li>
+      <li>A diner redeems a reward, gets a code, and staff can mark it used exactly once.</li>
+      <li>"Almost there" progress to the next reward shows on Ma carte and the Boutique.</li>
+      <li>The owner can change points rate, welcome bonus, rewards+prices, prizes+odds, cooldown, and events — and the client reflects it.</li>
+      <li>Streaks advance on return; an active event multiplier is applied automatically.</li>
+      <li>All value logic is server-side (RPC/service-role); RLS blocks cross-café reads/writes.</li>
+      <li><b>Every screen is built and tested at phone width (375–430px) only. No desktop layout exists.</b></li>
+    </ul>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="foot">
+    <h3>That's the build.</h3>
+    <p>One loop — consume, earn, play, redeem, return — made fun, useful, and nice for the diner, and fully controlled by the owner. Supabase backend, server-authoritative, mobile-only. Ship it phase by phase.</p>
+  </div>
+</div>
+
+</body>
+</html>

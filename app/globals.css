@@ -1,26 +1,185 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+  ═══════════════════════════════════════════════════════════════════
+  pointili.app — the brand design system (see the brand guide).
+  Modern, Royal Mauve, Poppins headings + Inter body. One look across the
+  landing, the diner app, the owner app and the super-admin console.
+
+  The legacy Le Ticket token NAMES (paper/ink/line…) are kept but REMAPPED to
+  modern values, so every page that still references them shifts automatically.
+  New code should prefer the modern names (royal / charcoal / slate / hair).
+  ═══════════════════════════════════════════════════════════════════
+*/
+@theme {
+  /* — surfaces —
+     The page is a clearly-tinted lavender so WHITE cards pop against it, and
+     borders are dark enough to actually see. The earlier values were all within
+     a few % of each other (page #f4f2fa, cards #f6f3ff, border #ece9f5) — which
+     read as "0 contrast": you couldn't tell a card or an input from the page. */
+  --color-cloud: #eae5f6;      /* app / page background (tinted) */
+  --color-lilac: #e7e0ff;      /* soft lilac — badges, tints */
+  --color-lilac-2: #f4f1ff;    /* lightest wash (hovers) */
+  --color-hair: #d3cde6;       /* visible hairline borders */
+
+  /* — text — */
+  --color-charcoal: #1a1330;   /* near-black */
+  --color-slate: #625c7d;      /* muted, but readable (was too light) */
+
+  /* — primary (Royal Mauve) — */
+  --color-royal: #5b3fd1;
+  --color-royal2: #7b61ff;
+  --color-lavender: #b79cff;
+  --color-deep: #24123b;
+
+  /* — accents — */
+  --color-gold: #c98a00;       /* points / rewards */
+  --color-gold-deep: #a06e00;
+  --color-gold-soft: #fbedc2;
+  --color-ok: #2f9e6e;         /* success */
+  --color-seal: #e5484d;       /* danger / alert */
+  --color-seal-soft: #fdecec;
+
+  /* ── legacy Le Ticket names, remapped to modern ── */
+  --color-kraft: #eae5f6;
+  --color-kraft2: #e7e0ff;
+  --color-canvas: #eae5f6;
+  --color-paper: #ffffff;      /* cards — white, pops on the tinted page */
+  --color-paper2: #ffffff;     /* inputs / raised — also white + a visible border */
+  --color-ink: #1a1330;
+  --color-ink2: #625c7d;
+  --color-mut: #7d7796;
+  --color-line: #d3cde6;
+  --color-faint: #948da8;
+  --color-brand: #5b3fd1;
+  --color-brand2: #7b61ff;
+  --color-purple-deep: #40268f;
+  --color-brand-soft: #ece7ff;
+
+  /* — type: Poppins display, Inter body, mono for codes/numbers — */
+  --font-display: var(--font-poppins-var), var(--font-inter), sans-serif;
+  --font-poppins: var(--font-poppins-var), var(--font-inter), sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), monospace;
+
+  --app-max-width: 480px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-cloud);
+  color: var(--color-charcoal);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-poppins);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+/* modern surfaces opt in; now the same as the default, kept for existing markup */
+.modern {
+  background: #ffffff;
+  color: var(--color-charcoal);
+  font-family: var(--font-body);
+}
+
+/* the phone column (mobile-only mandate, §01) */
+.app-shell {
+  width: 100%;
+  max-width: var(--app-max-width);
+  margin-inline: auto;
+  min-height: 100dvh;
+  background: var(--color-cloud);
+  position: relative;
+}
+
+/* ── shared helpers (modernised from the old "printed toolkit") ────── */
+
+/* small eyebrow label — Inter, uppercase, tracked (was mono "ticket voice") */
+.ticket-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-slate);
+}
+
+/* a clean divider (was the perforated tear edge) */
+.tear,
+.rule-dash {
+  height: 0;
+  border-top: 1px solid var(--color-hair);
+}
+
+/* a modern pill (was the rotated rubber stamp) */
+.rubber {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-royal);
+  background: var(--color-lilac);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+/* subtle lilac wash (was kraft grain) */
+.paper-grain {
+  background-image: radial-gradient(rgba(123, 97, 255, 0.05) 1px, transparent 1.4px);
+  background-size: 18px 18px;
+}
+
+/*
+  Print — the QR table tent has to come out clean.
+*/
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  html,
+  body,
+  .app-shell {
+    background: #fff !important;
+    max-width: none;
+    min-height: 0;
+  }
+  header,
+  nav {
+    display: none !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* celebration — every win gets a real moment (§11 #3) */
+@keyframes pointili-fall {
+  0% {
+    transform: translateY(-8vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(92vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*="pointili-fall"] {
+    animation: none !important;
+    opacity: 0 !important;
+  }
 }

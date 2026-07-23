@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pointili — Le Ticket Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500;1,9..144,600&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --kraft:#EAE0CC; --kraft2:#E1D5BC; --paper:#F7F1E4; --paper2:#FCF8EF;
+    --ink:#241C10; --ink2:#5A4A32; --mut:#9A835C; --line:#C9B78E; --faint:#B7A47C;
+    --purple:#5B3FD1; --purpled:#40268F; --purplesoft:#E0D8F5;
+    --red:#C0341C; --redsoft:#F1D9CF;
+    --gold:#B8860B; --goldd:#946a00; --goldsoft:#EFE0B4;
+    --ok:#3E7C4E;
+    --dash:1.5px dashed var(--line);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--kraft);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(rgba(120,90,50,.09) 1px,transparent 1.4px);background-size:9px 9px}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 34px}
+  .mono{font-family:'Space Mono',monospace}
+  h1,h2,h3,h4{font-family:'Fraunces',serif;letter-spacing:-.01em;line-height:1.06}
+  .eb{font-family:'Space Mono';font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+  section{padding:40px 0;border-bottom:var(--dash)}
+  .lead{color:var(--ink2);font-size:16px;max-width:74ch;margin-top:8px}
+  h2.big{font-size:32px;font-weight:900;margin-top:8px}
+
+  /* stamp label pattern reused */
+  .metalabel{font-family:'Space Mono';font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}
+
+  /* ---------- HERO ---------- */
+  .hero{padding:52px 0 40px;position:relative}
+  .hero .tape{position:absolute;left:50%;top:22px;transform:translateX(-50%) rotate(-2deg);background:rgba(192,52,28,.16);border:1px dashed var(--red);color:var(--red);font-family:'Space Mono';font-size:11px;letter-spacing:.2em;text-transform:uppercase;padding:5px 16px}
+  .hero h1{font-size:56px;font-weight:900;letter-spacing:-.025em;margin:26px 0 10px}
+  .hero h1 em{font-style:italic;font-weight:600;color:var(--purple)}
+  .hero p{color:var(--ink2);font-size:18px;max-width:60ch}
+  .hero .rubber{display:inline-block;margin-top:20px;font-family:'Fraunces';font-weight:900;font-size:15px;color:var(--red);border:2.5px solid var(--red);border-radius:8px;padding:6px 12px;transform:rotate(-3deg);opacity:.85;text-transform:uppercase;letter-spacing:.03em}
+
+  /* ---------- PALETTE ---------- */
+  .swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:20px}
+  .sw{border:1px solid var(--faint);border-radius:8px;overflow:hidden;background:var(--paper)}
+  .sw .c{height:70px}
+  .sw .t{padding:8px 9px}
+  .sw .t b{font-size:12.5px;display:block}
+  .sw .t small{font-family:'Space Mono';font-size:10px;color:var(--mut)}
+
+  /* ---------- TYPE ---------- */
+  .type{background:var(--paper);border:var(--dash);border-radius:14px;padding:26px 28px}
+  .type .d{font-family:'Fraunces';font-weight:900;font-size:40px;letter-spacing:-.02em}
+  .type .d em{font-style:italic;font-weight:600;color:var(--purple)}
+  .type .m{font-family:'Space Mono';font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);margin-top:14px}
+  .type .b{font-size:15px;color:var(--ink2);margin-top:10px;max-width:64ch}
+  .type .roles{display:flex;gap:24px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:var(--dash)}
+  .type .roles div{font-size:12.5px;color:var(--mut)}
+  .type .roles b{color:var(--ink);display:block;font-family:'Space Mono';font-size:11px;letter-spacing:.06em}
+
+  /* ---------- COMPONENTS ---------- */
+  .kit{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .kbox{background:var(--paper);border:var(--dash);border-radius:14px;padding:20px}
+  .kbox h4{font-size:16px;margin-bottom:14px;font-weight:900}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  /* buttons */
+  .btn{font-family:'Space Mono';font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;border:none;border-radius:9px;padding:12px 18px;cursor:pointer}
+  .btn-ink{background:var(--ink);color:var(--paper)}
+  .btn-purple{background:var(--purple);color:#fff}
+  .btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+  .btn-gold{background:var(--gold);color:#fff}
+  /* stamps */
+  .stamps{display:flex;gap:8px}
+  .stamp{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .stamp.on{background:var(--purple);color:#fff;box-shadow:inset 0 0 0 2px var(--purpled)}
+  .stamp.off{border:1.5px dashed var(--faint);color:#cbb98f}
+  /* badges (rubber stamp) */
+  .rb{font-family:'Fraunces';font-weight:900;font-size:12px;border:2px solid;border-radius:6px;padding:4px 9px;text-transform:uppercase;letter-spacing:.03em;display:inline-block}
+  .rb-p{color:var(--purple);border-color:var(--purple);transform:rotate(-4deg)}
+  .rb-r{color:var(--red);border-color:var(--red);transform:rotate(3deg)}
+  .rb-g{color:var(--gold);border-color:var(--gold);transform:rotate(-2deg)}
+  /* chips */
+  .chip{font-family:'Space Mono';font-size:11px;text-transform:uppercase;letter-spacing:.06em;border:1px solid var(--line);border-radius:999px;padding:5px 11px;background:var(--paper2)}
+  /* input */
+  .field label{font-family:'Space Mono';font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);display:block;margin-bottom:6px}
+  .field input{width:100%;background:var(--paper2);border:1.5px solid var(--line);border-radius:8px;padding:11px 13px;font-family:'Space Mono';font-size:14px;color:var(--ink)}
+  .field input::placeholder{color:var(--faint)}
+  /* coupon */
+  .coupon{position:relative;background:var(--paper2);border:1.5px dashed var(--line);border-radius:10px;padding:13px 15px;display:flex;justify-content:space-between;align-items:center}
+  .coupon::before,.coupon::after{content:"";position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:var(--paper);transform:translateY(-50%)}
+  .coupon::before{left:-8px}.coupon::after{right:-8px}
+  .coupon .l b{font-size:14px}.coupon .l small{display:block;font-family:'Space Mono';font-size:10px;color:var(--mut)}
+  .coupon .p{font-family:'Space Mono';font-weight:700;color:var(--gold);font-size:14px}
+
+  /* ---------- SCREENS ---------- */
+  .screens{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+  .phone{background:var(--kraft);border:10px solid var(--ink);border-radius:34px;padding:14px;box-shadow:0 26px 46px -24px rgba(40,26,10,.7)}
+  .scr{background:var(--paper);border-radius:20px;overflow:hidden;min-height:150px}
+  .scap{font-family:'Space Mono';font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);text-align:center;margin-top:12px}
+
+  /* hub */
+  .hubtop{background:var(--ink);color:var(--paper);padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+  .hubtop .b{font-family:'Fraunces';font-weight:900;font-size:17px}
+  .hubtop .s{font-family:'Space Mono';font-size:10px;color:rgba(247,241,228,.6);letter-spacing:.1em}
+  .hubtop .tk{font-family:'Space Mono';font-size:10px;border:1px dashed rgba(247,241,228,.4);padding:3px 7px;border-radius:5px;color:rgba(247,241,228,.8)}
+  .hubbody{padding:16px}
+  .ptsbig{font-family:'Fraunces';font-weight:900;font-size:38px;color:var(--ink);display:flex;align-items:baseline;gap:8px}
+  .ptsbig small{font-family:'Space Mono';font-size:12px;color:var(--mut);letter-spacing:.1em}
+  .prog-lbl{display:flex;justify-content:space-between;margin:14px 0 8px}
+  .stamprow{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+  .st{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .st.on{background:var(--purple);color:#fff}
+  .st.off{border:1.4px dashed var(--faint);color:#cbb98f}
+  .divtear{height:12px;margin:16px -16px;background:
+    radial-gradient(circle at 8px -2px, transparent 6px, var(--paper) 6.5px) repeat-x;
+    background-size:16px 12px;border-top:var(--dash)}
+  .cbtn{margin-top:6px;background:var(--purple);color:#fff;text-align:center;font-family:'Space Mono';font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:13px;border-radius:9px}
+  .hubnav{display:flex;justify-content:space-around;padding:11px 8px;border-top:var(--dash);background:var(--paper2)}
+  .hubnav span{font-family:'Space Mono';font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+  .hubnav span.on{color:var(--ink)}
+  .hubnav span.on::before{content:"◆ "}
+
+  /* game */
+  .gwrap{padding:20px 16px;text-align:center;background:var(--paper)}
+  .wheel{width:168px;height:168px;border-radius:50%;margin:6px auto 0;position:relative;
+    background:conic-gradient(var(--purple) 0 60deg,var(--gold) 60deg 120deg,var(--red) 120deg 180deg,var(--ink) 180deg 240deg,var(--purple) 240deg 300deg,var(--gold) 300deg 360deg);
+    box-shadow:0 0 0 8px var(--paper2),0 0 0 10px var(--ink),0 16px 24px -14px rgba(40,26,10,.6)}
+  .wheel::after{content:"";position:absolute;inset:40%;border-radius:50%;background:var(--paper);box-shadow:inset 0 0 0 2px var(--ink)}
+  .wheel .pin{position:absolute;top:-12px;left:50%;transform:translateX(-50%);color:var(--red);font-size:20px}
+  .gjouer{font-family:'Space Mono';font-weight:700;font-size:16px;letter-spacing:.2em;margin-top:18px;text-transform:uppercase}
+  .gsub{font-family:'Space Mono';font-size:10px;letter-spacing:.2em;color:var(--mut);margin-top:5px;text-transform:uppercase}
+  /* win receipt */
+  .receipt{background:var(--paper2);border:var(--dash);border-radius:8px;padding:14px;margin:16px 12px 0;text-align:center;position:relative}
+  .receipt .rh{font-family:'Fraunces';font-weight:900;font-size:20px}
+  .receipt .rl{font-family:'Space Mono';font-size:10px;color:var(--mut);letter-spacing:.14em;text-transform:uppercase;margin:3px 0 10px}
+  .receipt .rprize{font-family:'Fraunces';font-weight:900;font-size:16px;color:var(--purple);border-top:var(--dash);border-bottom:var(--dash);padding:9px 0}
+  .receipt .rcode{font-family:'Space Mono';font-size:13px;letter-spacing:.2em;margin-top:9px}
+
+  /* wide screens */
+  .wide{background:var(--paper);border:var(--dash);border-radius:16px;overflow:hidden}
+  /* landing */
+  .land{padding:30px 30px 26px;position:relative;background:var(--paper);
+    background-image:radial-gradient(rgba(120,90,50,.08) 1px,transparent 1.3px);background-size:8px 8px}
+  .land .eb2{font-family:'Space Mono';font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+  .land h3{font-size:40px;font-weight:900;letter-spacing:-.025em;margin:12px 0 10px;max-width:16ch}
+  .land h3 em{font-style:italic;font-weight:600;color:var(--purple)}
+  .land p{color:var(--ink2);font-size:15px;max-width:44ch}
+  .land .cta{display:flex;gap:12px;margin-top:18px;align-items:center}
+  .land .tkcard{position:absolute;right:30px;top:30px;width:210px;background:var(--paper2);border:1.5px dashed var(--line);border-radius:12px;padding:14px;transform:rotate(3deg);box-shadow:0 20px 34px -20px rgba(40,26,10,.6)}
+  .land .tkcard .h{font-family:'Fraunces';font-weight:900;font-size:16px}
+  .land .tkcard .s{font-family:'Space Mono';font-size:9px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase}
+  .land .tkcard .st2{display:flex;gap:5px;margin:12px 0 8px}
+  .land .tkcard .st2 i{width:20px;height:20px;border-radius:50%;display:block}
+  .land .steps{display:flex;gap:26px;margin-top:26px;padding-top:20px;border-top:var(--dash)}
+  .land .steps div{font-size:12.5px;color:var(--ink2)}
+  .land .steps b{font-family:'Space Mono';font-size:11px;color:var(--purple);display:block}
+
+  /* admin */
+  .admin{display:grid;grid-template-columns:150px 1fr;min-height:300px}
+  .aside{background:var(--ink);color:var(--paper);padding:16px 12px}
+  .aside .brand{font-family:'Fraunces';font-weight:900;font-size:15px;margin-bottom:16px}
+  .aside .brand span{color:var(--gold)}
+  .aside a{display:block;font-family:'Space Mono';font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:rgba(247,241,228,.55);padding:8px 9px;border-radius:7px;margin-bottom:3px}
+  .aside a.on{background:var(--paper);color:var(--ink)}
+  .amain{padding:20px 22px}
+  .amain .ah{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .amain h4{font-size:22px;font-weight:900}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .kpi{background:var(--paper2);border:var(--dash);border-radius:11px;padding:14px}
+  .kpi .l{font-family:'Space Mono';font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+  .kpi .v{font-family:'Fraunces';font-weight:900;font-size:28px;margin-top:6px}
+  .kpi .v.g{color:var(--gold)}
+  .kpi .d{font-family:'Space Mono';font-size:10px;color:var(--ok);margin-top:3px}
+  .achart{margin-top:14px;background:var(--paper2);border:var(--dash);border-radius:11px;padding:14px}
+  .achart .l{font-family:'Space Mono';font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin-bottom:10px}
+  .bars{display:flex;align-items:flex-end;gap:8px;height:70px}
+  .bars i{flex:1;background:var(--purple);border-radius:3px 3px 0 0;display:block;opacity:.85}
+
+  .foot{padding:44px 0 60px;text-align:center}
+  .foot h3{font-size:26px;font-weight:900}
+  .foot p{color:var(--ink2);max-width:60ch;margin:8px auto 0;font-size:15px}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+</style>
+</head>
+<body>
+<h2 class="sr-only">Le Ticket — the full Pointili design system: palette, typography, components, and the aesthetic applied to the customer loyalty hub, the game and win screens, the landing page, and the admin dashboard.</h2>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="tape">✦ Direction retenue · Le Ticket ✦</div>
+    <div class="eb">Pointili · Design System</div>
+    <h1>The whole app, printed on <em>a ticket</em>.</h1>
+    <p>Kraft paper, coffee stamps, perforations, rubber seals and monospace numbers — a warm, tactile, unmistakably-café world. Here's Le Ticket built out into a real system and applied to every surface.</p>
+    <div class="rubber">Bon pour toute l'app</div>
+  </div>
+</div>
+
+<section><div class="wrap">
+  <div class="eb">01 · Palette</div>
+  <h2 class="big">Ink on kraft, stamped in purple &amp; gold</h2>
+  <p class="lead">Warm paper surfaces, espresso ink for text, purple as the "stamp ink" (primary action), gold for points &amp; rewards, red reserved for seals &amp; alerts.</p>
+  <div class="swatches">
+    <div class="sw"><div class="c" style="background:#EAE0CC"></div><div class="t"><b>Kraft</b><small>#EAE0CC · canvas</small></div></div>
+    <div class="sw"><div class="c" style="background:#F7F1E4"></div><div class="t"><b>Paper</b><small>#F7F1E4 · cards</small></div></div>
+    <div class="sw"><div class="c" style="background:#241C10"></div><div class="t"><b>Ink</b><small>#241C10 · text</small></div></div>
+    <div class="sw"><div class="c" style="background:#5B3FD1"></div><div class="t"><b>Stamp</b><small>#5B3FD1 · primary</small></div></div>
+    <div class="sw"><div class="c" style="background:#B8860B"></div><div class="t"><b>Gold</b><small>#B8860B · rewards</small></div></div>
+    <div class="sw"><div class="c" style="background:#C0341C"></div><div class="t"><b>Seal</b><small>#C0341C · alert</small></div></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="eb">02 · Typography</div>
+  <h2 class="big">Serif headline, monospace receipt</h2>
+  <div class="type" style="margin-top:18px">
+    <div class="d">Plus de café. <em>Plus de points.</em></div>
+    <div class="m">— Carte fidélité · N° 0247 —</div>
+    <div class="b">Fraunces gives headlines a warm, slightly vintage character. Space Mono is the "ticket voice" for labels, codes and numbers. Inter keeps body copy and forms perfectly legible in French.</div>
+    <div class="roles">
+      <div><b>Fraunces 900 / italic</b>Display &amp; headings</div>
+      <div><b>Space Mono 700</b>Labels · numbers · codes</div>
+      <div><b>Inter 400–600</b>Body &amp; UI</div>
+    </div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="eb">03 · Component kit</div>
+  <h2 class="big">The printed toolkit</h2>
+  <div class="kit" style="margin-top:18px">
+    <div class="kbox"><h4>Buttons</h4>
+      <div class="row"><button class="btn btn-ink">Tourner la roue</button><button class="btn btn-purple">S'inscrire</button><button class="btn btn-gold">Récompense</button><button class="btn btn-ghost">Annuler</button></div>
+    </div>
+    <div class="kbox"><h4>Stamps &amp; progress</h4>
+      <div class="stamps"><div class="stamp on">☕</div><div class="stamp on">☕</div><div class="stamp on">☕</div><div class="stamp off">☕</div><div class="stamp off">★</div></div>
+      <div class="metalabel" style="margin-top:10px">3 / 5 · prochain : café offert</div>
+    </div>
+    <div class="kbox"><h4>Rubber-stamp badges</h4>
+      <div class="row"><span class="rb rb-p">Membre Or</span><span class="rb rb-r">Nouveau</span><span class="rb rb-g">Validé ✓</span></div>
+    </div>
+    <div class="kbox"><h4>Chips &amp; tags</h4>
+      <div class="row"><span class="chip">Tout le monde gagne</span><span class="chip">1 DT = 1 pt</span><span class="chip">Série · 7j</span></div>
+    </div>
+    <div class="kbox"><h4>Form field</h4>
+      <div class="field"><label>Numéro de téléphone</label><input placeholder="+216 •• ••• •••"></div>
+    </div>
+    <div class="kbox"><h4>Reward coupon</h4>
+      <div class="coupon"><div class="l"><b>☕ Café offert</b><small>expire dans 48h</small></div><div class="p">50 PTS</div></div>
+    </div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="eb">04 · The screens</div>
+  <h2 class="big">Le Ticket, everywhere</h2>
+  <p class="lead">Same language on every surface — customer, games, landing and the owner's dashboard.</p>
+
+  <div class="screens" style="margin-top:22px">
+    <!-- HUB -->
+    <div>
+      <div class="phone"><div class="scr">
+        <div class="hubtop"><div><div class="b">Chez Karim</div><div class="s">MEMBRE OR · KARIM</div></div><div class="tk">N° 0247</div></div>
+        <div class="hubbody">
+          <div class="metalabel">Solde de points</div>
+          <div class="ptsbig">1 250 <small>PTS</small></div>
+          <div class="prog-lbl"><span class="metalabel">Carte café · 7/10</span><span class="rb rb-r" style="font-size:10px">🔥 7 JRS</span></div>
+          <div class="stamprow">
+            <div class="st on">☕</div><div class="st on">☕</div><div class="st on">☕</div><div class="st on">☕</div><div class="st on">☕</div>
+            <div class="st on">☕</div><div class="st on">☕</div><div class="st off">☕</div><div class="st off">☕</div><div class="st off">★</div>
+          </div>
+          <div class="divtear"></div>
+          <div class="coupon" style="margin-bottom:9px"><div class="l"><b>☕ Café offert</b><small>50 points</small></div><div class="p">ÉCHANGER</div></div>
+          <div class="cbtn">✦ Tourner la roue ✦</div>
+        </div>
+        <div class="hubnav"><span class="on">Ma carte</span><span>Jeux</span><span>Boutique</span></div>
+      </div></div>
+      <div class="scap">Customer loyalty hub</div>
+    </div>
+
+    <!-- GAME + WIN -->
+    <div>
+      <div class="phone"><div class="scr">
+        <div class="hubtop"><div class="b" style="font-size:15px">La roue de la chance</div><div class="tk">1 tour</div></div>
+        <div class="gwrap">
+          <div class="wheel"><div class="pin">▼</div></div>
+          <div class="gjouer">Jouer</div>
+          <div class="gsub">appuie pour tourner</div>
+        </div>
+        <div class="receipt">
+          <div class="rh">Tu as gagné !</div>
+          <div class="rl">— reçu · pointili —</div>
+          <div class="rprize">🍰 Dessert offert</div>
+          <div class="rcode">CODE · 7K2-M9Q</div>
+        </div>
+        <div class="hubnav" style="margin-top:14px"><span>Ma carte</span><span class="on">Jeux</span><span>Boutique</span></div>
+      </div></div>
+      <div class="scap">Game &amp; win (printed receipt)</div>
+    </div>
+  </div>
+
+  <!-- LANDING -->
+  <div style="margin-top:26px">
+    <div class="wide land">
+      <div class="eb2">Pour les cafés</div>
+      <h3>Vos clients reviennent. <em>Encore et encore.</em></h3>
+      <p>Un programme de fidélité que vos clients adorent : ils tamponnent, jouent, gagnent — et reviennent.</p>
+      <div class="cta"><button class="btn btn-ink">Commencer — c'est parti</button><span class="chip">✓ essai 7 jours</span></div>
+      <div class="steps">
+        <div><b>01 — Scannez</b>Le client scanne le QR du café</div>
+        <div><b>02 — Jouez</b>Un tour de roue, tout le monde gagne</div>
+        <div><b>03 — Revenez</b>Les points s'accumulent, la série grandit</div>
+      </div>
+      <div class="tkcard">
+        <div class="h">Chez Karim</div>
+        <div class="s">Carte fidélité</div>
+        <div class="st2"><i style="background:#5B3FD1"></i><i style="background:#5B3FD1"></i><i style="background:#5B3FD1"></i><i style="background:#5B3FD1"></i><i style="border:1.4px dashed #B7A47C"></i></div>
+        <div class="mono" style="font-size:13px;font-weight:700">1 250 PTS</div>
+      </div>
+    </div>
+    <div class="scap">Landing page (owner funnel)</div>
+  </div>
+
+  <!-- ADMIN -->
+  <div style="margin-top:26px">
+    <div class="wide">
+      <div class="admin">
+        <div class="aside">
+          <div class="brand">✦ pointili<span>.app</span></div>
+          <a class="on">◆ Aperçu</a><a>Fidélité</a><a>La roue</a><a>Clients</a><a>Récompenses</a><a>Partage</a>
+        </div>
+        <div class="amain">
+          <div class="ah"><h4>Aperçu</h4><span class="rb rb-p" style="font-size:11px">Chez Karim</span></div>
+          <div class="kpis">
+            <div class="kpi"><div class="l">Points distribués</div><div class="v g">48 200</div><div class="d">▲ 12% cette semaine</div></div>
+            <div class="kpi"><div class="l">Clients fidèles</div><div class="v">312</div><div class="d">▲ 8 nouveaux</div></div>
+            <div class="kpi"><div class="l">Tours joués</div><div class="v">1 044</div><div class="d">▲ 23% </div></div>
+          </div>
+          <div class="achart">
+            <div class="l">Visites · 7 derniers jours</div>
+            <div class="bars"><i style="height:40%"></i><i style="height:62%"></i><i style="height:48%"></i><i style="height:80%"></i><i style="height:66%"></i><i style="height:92%"></i><i style="height:74%"></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="scap">Admin dashboard — kept clean &amp; legible on paper</div>
+  </div>
+
+</div></section>
+
+<div class="wrap">
+  <div class="foot">
+    <div class="rubber" style="border-color:var(--purple);color:var(--purple)">Prêt à imprimer</div>
+    <h3 style="margin-top:16px">Approve this world → I build Phase 1.</h3>
+    <p>If Le Ticket feels right across all four surfaces, I'll start the foundation: wire Fraunces + Space Mono + Inter via next/font, lay down the token set, and build the shared kit (buttons, stamps, coupons, fields, nav). Then roll it surface by surface — hub &amp; games first.</p>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pointili — Comment ça marche</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --kraft:#EAE0CC; --kraft2:#E1D5BC; --paper:#F7F1E4; --paper2:#FCF8EF;
+    --ink:#241C10; --ink2:#5A4A32; --mut:#9A835C; --faint:#B7A47C; --line:#C9B78E;
+    --stamp:#5B3FD1; --stamp7:#40268F; --gold:#B8860B; --gold7:#946A00; --seal:#C0341C;
+    --soft:0 1px 2px rgba(40,26,10,.06), 0 10px 26px -14px rgba(40,26,10,.3);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:var(--kraft);
+    background-image:radial-gradient(rgba(120,90,50,.08) 1px,transparent 1.4px);background-size:9px 9px;
+    -webkit-font-smoothing:antialiased;line-height:1.5}
+  .wrap{max-width:940px;margin:0 auto;padding:44px 34px 56px}
+  .mono{font-family:'Space Mono',monospace}
+  h1,h2,h3{font-family:'Fraunces',Georgia,serif;letter-spacing:-.02em;line-height:1.05}
+
+  .eyebrow{font-family:'Space Mono';font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--mut);text-align:center}
+  .title{font-weight:900;font-size:44px;text-align:center;margin:8px 0 6px}
+  .sub{text-align:center;color:var(--ink2);font-size:16px;max-width:60ch;margin:0 auto 4px}
+  .kick{text-align:center;margin-top:12px}
+  .kick b{background:var(--stamp);color:#fff;font-family:'Space Mono';font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding:6px 14px;border-radius:999px}
+
+  /* cycle */
+  .cyc-head{display:flex;align-items:center;gap:10px;margin:40px 0 16px}
+  .cyc-head h2{font-size:22px;font-weight:900}
+  .cyc-head .n{font-family:'Space Mono';font-size:12px;color:var(--mut);letter-spacing:.16em}
+  .loop{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;justify-content:center}
+  .step{position:relative;background:var(--paper);border:1.5px dashed var(--line);border-radius:14px;
+    padding:16px 14px 15px;width:190px;box-shadow:var(--soft)}
+  .step::before,.step::after{content:'';position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:var(--kraft);transform:translateY(-50%)}
+  .step::before{left:-8px}.step::after{right:-8px}
+  .step .ic{font-size:30px;line-height:1}
+  .step .lab{font-family:'Space Mono';font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--stamp);margin-top:8px;font-weight:700}
+  .step h3{font-size:18px;font-weight:900;margin-top:2px}
+  .step p{font-size:12.5px;color:var(--mut);margin-top:4px}
+  .arrow{display:flex;align-items:center;justify-content:center;width:42px;color:var(--gold);font-size:22px;font-weight:700}
+  .arrow.wrap-back{width:100%;margin-top:12px;gap:10px;color:var(--ink2)}
+  .arrow.wrap-back span{font-family:'Space Mono';font-size:11px;text-transform:uppercase;letter-spacing:.14em}
+
+  /* lanes */
+  .lanes{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:14px}
+  .lane{position:relative;background:var(--paper);border:1.5px dashed var(--line);border-radius:16px;padding:24px;box-shadow:var(--soft)}
+  .lane::before,.lane::after{content:'';position:absolute;top:56px;width:16px;height:16px;border-radius:50%;background:var(--kraft);transform:translateY(-50%)}
+  .lane::before{left:-9px}.lane::after{right:-9px}
+  .lane .who{display:flex;align-items:center;gap:10px}
+  .lane .who .em{width:44px;height:44px;border-radius:12px;background:var(--paper2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:22px}
+  .lane .who h3{font-size:22px;font-weight:900}
+  .lane .who .tag{font-family:'Space Mono';font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--mut)}
+  .row{margin-top:18px}
+  .row .k{font-family:'Space Mono';font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold7);font-weight:700}
+  .row .v{font-size:14.5px;color:var(--ink);margin-top:3px}
+  .row.proof .v{color:var(--ink2)}
+  .row.proof .k{color:var(--stamp)}
+  .hr{height:1px;background:var(--line);margin:16px 0;opacity:.6}
+
+  .oneliner{margin-top:30px;background:var(--ink);color:var(--paper);border-radius:18px;padding:26px 30px;text-align:center}
+  .oneliner .q{font-family:'Fraunces';font-style:italic;font-weight:500;font-size:24px;line-height:1.3}
+  .oneliner .q b{font-style:normal;font-weight:900;color:#F0C24B}
+  .stamp-badge{display:inline-block;font-family:'Fraunces';font-weight:900;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;
+    border:2px solid var(--seal);color:var(--seal);border-radius:6px;padding:3px 8px;transform:rotate(-4deg);margin-top:14px}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  @media(max-width:720px){.lanes{grid-template-columns:1fr}.step{width:100%}}
+</style>
+</head>
+<body>
+<h2 class="sr-only">Comment marche Pointili : le cycle consommer → gagner → jouer/échanger → revenir, et l'expérience pour le client et le propriétaire.</h2>
+<div class="wrap">
+
+  <div class="eyebrow">◆ Pointili · Comment ça marche ◆</div>
+  <h1 class="title">On récompense vos clients<br>de revenir.</h1>
+  <p class="sub">Les points ne se gagnent pas en jouant — ils se gagnent en <b>consommant</b>. Le jeu et les récompenses, c'est le plaisir au milieu qui donne envie de revenir.</p>
+  <div class="kick"><b>Le cycle commence et finit par la consommation 🔁</b></div>
+
+  <!-- CYCLE -->
+  <div class="cyc-head"><span class="n">01</span><h2>Le cycle</h2></div>
+  <div class="loop">
+    <div class="step">
+      <div class="ic">☕</div>
+      <div class="lab">Départ</div>
+      <h3>Consommer</h3>
+      <p>Le client achète au café.</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="ic">⭐</div>
+      <div class="lab">À la caisse</div>
+      <h3>Gagner des points</h3>
+      <p>1 dinar = 1 point, crédité par le staff.</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="ic">🎡</div>
+      <div class="lab">Le plaisir</div>
+      <h3>Jouer & Échanger</h3>
+      <p>Roue (tout le monde gagne) + vraies récompenses.</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="step">
+      <div class="ic">🚶</div>
+      <div class="lab">Le résultat</div>
+      <h3>Revenir</h3>
+      <p>Une vraie raison de repasser.</p>
+    </div>
+    <div class="arrow wrap-back">↺ <span>… et ça recommence par une nouvelle consommation</span></div>
+  </div>
+
+  <!-- LANES -->
+  <div class="cyc-head"><span class="n">02</span><h2>Pour les deux côtés</h2></div>
+  <div class="lanes">
+
+    <div class="lane">
+      <div class="who"><div class="em">🧑</div><div><div class="tag">Le client</div><h3>Ma carte</h3></div></div>
+      <div class="row"><div class="k">On fait quoi</div><div class="v">Chaque achat rapporte des points, un jeu à chaque visite (tout le monde gagne), et vos points deviennent de vraies récompenses.</div></div>
+      <div class="hr"></div>
+      <div class="row"><div class="k">L'objectif qu'on aide</div><div class="v">Être vraiment récompensé d'aller dans un café qu'on aime déjà.</div></div>
+      <div class="hr"></div>
+      <div class="row proof"><div class="k">La preuve</div><div class="v">Le solde de points monte à chaque visite — et on repart avec un code récompense à récupérer au comptoir.</div></div>
+    </div>
+
+    <div class="lane">
+      <div class="who"><div class="em">🏪</div><div><div class="tag">Le propriétaire</div><h3>Le tableau de bord</h3></div></div>
+      <div class="row"><div class="k">On fait quoi</div><div class="v">On transforme chaque vente en raison de revenir : points à la caisse, jeux, récompenses.</div></div>
+      <div class="hr"></div>
+      <div class="row"><div class="k">L'objectif qu'on aide</div><div class="v">Des clients qui reviennent <b>plus souvent</b> et dépensent <b>plus</b>.</div></div>
+      <div class="hr"></div>
+      <div class="row proof"><div class="k">La preuve</div><div class="v">Le tableau de bord le montre : clients fidèles, points émis, récompenses échangées, parties jouées — le taux de retour qui grimpe.</div></div>
+    </div>
+
+  </div>
+
+  <!-- ONE-LINER -->
+  <div class="oneliner">
+    <div class="q">« Pointili transforme les clients de passage en <b>habitués</b> — en les récompensant de revenir. »</div>
+    <div class="stamp-badge">★ Consommer · Gagner · Revenir ★</div>
+  </div>
+
+</div>
+</body>
+</html>

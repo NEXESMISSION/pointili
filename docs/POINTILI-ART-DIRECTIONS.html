@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pointili — Art Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{font-family:'Inter',system-ui,sans-serif;background:#0E0B18;color:#fff;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 32px}
+  .mono{font-family:'Space Mono',monospace}
+
+  /* intro */
+  .top{padding:52px 0 30px;text-align:center}
+  .top .eb{font-family:'Space Mono';font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:#9D7BFF}
+  .top h1{font-family:'Fraunces';font-weight:900;font-size:46px;letter-spacing:-.02em;margin:14px 0 12px;line-height:1.05}
+  .top h1 em{font-style:italic;color:#FFD54D}
+  .top p{color:rgba(255,255,255,.62);max-width:64ch;margin:0 auto;font-size:16px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;padding:16px 0 40px}
+  .concept{border-radius:26px;overflow:hidden;background:#161122;border:1px solid rgba(255,255,255,.08)}
+  .chead{display:flex;align-items:baseline;justify-content:space-between;padding:20px 22px 14px}
+  .chead .no{font-family:'Space Mono';font-size:12px;color:rgba(255,255,255,.4);letter-spacing:.2em}
+  .chead h2{font-family:'Fraunces';font-weight:900;font-size:26px;letter-spacing:-.01em}
+  .chead .sub{font-size:12.5px;color:rgba(255,255,255,.55);margin-top:2px}
+  .stage{margin:0 16px;border-radius:18px;overflow:hidden;height:400px;position:relative;display:flex;align-items:center;justify-content:center}
+  .cfoot{padding:16px 22px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .kw{display:flex;gap:6px;flex-wrap:wrap}
+  .kw span{font-family:'Space Mono';font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.16);padding:4px 9px;border-radius:999px}
+  .dots{display:flex;gap:5px;flex:none}
+  .dots i{width:16px;height:16px;border-radius:50%;display:block;border:1px solid rgba(255,255,255,.2)}
+
+  /* ============== 1 · LE TICKET (analog / stamp / receipt) ============== */
+  .s-ticket{background:#EDE4D2;background-image:radial-gradient(rgba(120,90,50,.10) 1px,transparent 1.4px);background-size:9px 9px}
+  .ticketcard{width:300px;background:#F7F1E4;border:2px dashed #6E5B3E;border-radius:14px;padding:18px 18px 16px;position:relative;box-shadow:0 18px 30px -18px rgba(60,40,10,.6)}
+  .ticketcard::before,.ticketcard::after{content:"";position:absolute;top:50%;width:20px;height:20px;border-radius:50%;background:#EDE4D2;transform:translateY(-50%)}
+  .ticketcard::before{left:-12px}.ticketcard::after{right:-12px}
+  .tk-top{display:flex;justify-content:space-between;align-items:center;font-family:'Space Mono';font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8a7350}
+  .tk-h{font-family:'Fraunces';font-weight:900;font-size:27px;color:#241C10;margin:6px 0 2px;letter-spacing:-.01em}
+  .tk-sub{font-family:'Space Mono';font-size:11px;color:#9a835c}
+  .stamps{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 8px}
+  .stamp{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .stamp.on{background:#5B3FD1;color:#fff;box-shadow:inset 0 0 0 2px #40268f}
+  .stamp.off{border:1.5px dashed #B7A47C;color:#cbb98f}
+  .tk-line{border-top:1px dashed #C9B78E;margin:8px 0;padding-top:8px;display:flex;justify-content:space-between;align-items:flex-end}
+  .tk-pts{font-family:'Space Mono';font-weight:700;font-size:22px;color:#241C10}
+  .tk-pts small{font-size:11px;color:#9a835c}
+  .rubber{position:absolute;right:-6px;top:74px;font-family:'Fraunces';font-weight:900;font-size:15px;color:#C0341C;border:2.5px solid #C0341C;border-radius:8px;padding:5px 9px;transform:rotate(-11deg);opacity:.82;letter-spacing:.02em;text-transform:uppercase}
+  .tk-btn{margin-top:12px;background:#241C10;color:#F7F1E4;text-align:center;font-family:'Space Mono';font-weight:700;font-size:12px;letter-spacing:.1em;padding:11px;border-radius:8px;text-transform:uppercase}
+
+  /* ============== 2 · BOLD PLAY (neo-brutalist) ============== */
+  .s-bold{background:#EFE9FF}
+  .boldcard{width:300px;background:#fff;border:3px solid #14101F;border-radius:20px;box-shadow:7px 7px 0 #14101F;padding:18px}
+  .bd-row{display:flex;justify-content:space-between;align-items:flex-start}
+  .bd-h{font-family:'Archivo Black';font-size:30px;line-height:.92;color:#14101F;letter-spacing:-.02em}
+  .bd-badge{background:#FFC01F;border:2.5px solid #14101F;border-radius:10px;box-shadow:3px 3px 0 #14101F;font-family:'Archivo Black';font-size:13px;color:#14101F;padding:6px 9px;transform:rotate(4deg)}
+  .bd-pts{margin:16px 0 4px;display:flex;align-items:baseline;gap:6px}
+  .bd-pts b{font-family:'Archivo Black';font-size:52px;color:#7B61FF;line-height:.8;-webkit-text-stroke:2px #14101F}
+  .bd-pts span{font-family:'Archivo Black';font-size:16px;color:#14101F}
+  .bd-chips{display:flex;gap:8px;margin-top:14px}
+  .bd-chip{flex:1;border:2.5px solid #14101F;border-radius:12px;box-shadow:2px 2px 0 #14101F;text-align:center;font-weight:800;font-size:11px;padding:9px 4px;color:#14101F}
+  .bd-btn{margin-top:16px;background:#7B61FF;border:3px solid #14101F;border-radius:14px;box-shadow:4px 4px 0 #14101F;color:#fff;text-align:center;font-family:'Archivo Black';font-size:15px;padding:12px;text-transform:uppercase;letter-spacing:.02em}
+
+  /* ============== 3 · ARCADE (retro coin-op neon) ============== */
+  .s-arcade{background:radial-gradient(circle at 50% 40%,#241a52,#0c0820 72%)}
+  .s-arcade::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.045) 0 1px,transparent 1px 4px);pointer-events:none}
+  .arcadecard{width:300px;text-align:center;position:relative;z-index:2}
+  .ar-wheel{width:150px;height:150px;border-radius:50%;margin:0 auto;background:conic-gradient(#9D7BFF 0 60deg,#FFD54D 60deg 120deg,#FF5C8A 120deg 180deg,#5BE0C6 180deg 240deg,#9D7BFF 240deg 300deg,#FFD54D 300deg 360deg);box-shadow:0 0 0 6px #1a1140,0 0 34px 6px rgba(157,123,255,.7),inset 0 0 22px rgba(0,0,0,.4);position:relative}
+  .ar-wheel::after{content:"";position:absolute;inset:38%;border-radius:50%;background:#0c0820;box-shadow:0 0 14px rgba(255,213,77,.6)}
+  .ar-play{font-family:'Space Grotesk';font-weight:700;font-size:23px;letter-spacing:.14em;color:#fff;margin-top:20px;text-shadow:0 0 10px #9D7BFF,0 0 22px #7B61FF}
+  .ar-sub{font-family:'Space Mono';font-size:11px;letter-spacing:.28em;color:#FFD54D;margin-top:6px;text-shadow:0 0 10px rgba(255,213,77,.7)}
+  .ar-score{display:inline-flex;gap:8px;align-items:center;margin-top:18px;border:1.5px solid rgba(157,123,255,.6);border-radius:999px;padding:7px 16px;font-family:'Space Mono';font-weight:700;color:#fff;box-shadow:0 0 18px rgba(157,123,255,.35);background:rgba(157,123,255,.08)}
+  .ar-score b{color:#FFD54D;text-shadow:0 0 10px rgba(255,213,77,.8)}
+  .spark{position:absolute;color:#FFD54D;font-size:18px;text-shadow:0 0 10px #FFD54D;z-index:3}
+
+  /* ============== 4 · L'ATELIER (editorial / riso / grain) ============== */
+  .s-atelier{background:#F6EFE3;position:relative}
+  .s-atelier::after{content:"";position:absolute;inset:0;opacity:.5;mix-blend-mode:multiply;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/></svg>");pointer-events:none}
+  .atcard{width:320px;position:relative;z-index:2}
+  .at-blob{position:absolute;right:2px;top:-6px;width:120px;height:120px;border-radius:50%;background:#F0603A;mix-blend-mode:multiply;opacity:.9}
+  .at-blob2{position:absolute;right:44px;top:22px;width:96px;height:96px;border-radius:50%;background:#7B61FF;mix-blend-mode:multiply;opacity:.85;background-image:radial-gradient(#5B3FD1 1px,transparent 1.6px);background-size:7px 7px}
+  .at-no{font-family:'Space Mono';font-size:11px;letter-spacing:.2em;color:#9a8a72;text-transform:uppercase}
+  .at-h{font-family:'Fraunces';font-weight:900;font-size:44px;line-height:.98;color:#221B12;letter-spacing:-.02em;margin:4px 0 2px}
+  .at-h em{font-style:italic;font-weight:500;color:#F0603A}
+  .at-rule{height:2px;background:#221B12;margin:16px 0 12px;width:60px}
+  .at-body{font-size:13px;color:#5f5240;max-width:30ch}
+  .at-pts{font-family:'Fraunces';font-weight:900;font-size:30px;color:#221B12;margin-top:16px;display:flex;align-items:baseline;gap:8px}
+  .at-pts u{text-decoration:none;border-bottom:3px solid #E0A100}
+  .at-pts small{font-family:'Space Mono';font-size:11px;color:#9a8a72;letter-spacing:.1em}
+  .at-btn{margin-top:16px;display:inline-block;font-family:'Space Mono';font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#221B12;border-bottom:2px solid #221B12;padding-bottom:3px}
+
+  /* how to choose */
+  .choose{background:#161122;border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:30px 34px;margin:6px 0 60px}
+  .choose h3{font-family:'Fraunces';font-weight:900;font-size:24px;margin-bottom:8px}
+  .choose p{color:rgba(255,255,255,.62);font-size:15px;max-width:80ch}
+  .choose .mix{margin-top:14px;font-size:14px;color:rgba(255,255,255,.82)}
+  .choose .mix b{color:#FFD54D}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+</style>
+</head>
+<body>
+<h2 class="sr-only">Four distinct artistic design directions for Pointili — Le Ticket (analog stamp card), Bold Play (neo-brutalist), Arcade (retro neon), and L'Atelier (editorial riso) — each shown as a loyalty card mockup.</h2>
+
+<div class="wrap">
+  <div class="top">
+    <div class="eb">Pointili · Art Direction Explorer</div>
+    <h1>Four ways to look like <em>nothing else</em>.</h1>
+    <p>Not the usual rounded-SaaS look. Each direction below is a real point of view — same loyalty card, four completely different souls. Pick one to build the whole app around, or tell me to blend two.</p>
+  </div>
+
+  <div class="grid">
+
+    <!-- 1 TICKET -->
+    <div class="concept">
+      <div class="chead">
+        <div><h2>Le Ticket</h2><div class="sub">Analog loyalty · stamps, perforations, receipt paper</div></div>
+        <div class="no">№ 01</div>
+      </div>
+      <div class="stage s-ticket">
+        <div class="ticketcard">
+          <div class="tk-top"><span>◆ Carte Fidélité</span><span>N° 0247</span></div>
+          <div class="tk-h">Chez Karim</div>
+          <div class="tk-sub">— membre depuis 2024 —</div>
+          <div class="stamps">
+            <div class="stamp on">☕</div><div class="stamp on">☕</div><div class="stamp on">☕</div>
+            <div class="stamp on">☕</div><div class="stamp on">☕</div><div class="stamp on">☕</div>
+            <div class="stamp on">☕</div><div class="stamp off">☕</div><div class="stamp off">☕</div>
+            <div class="stamp off">★</div>
+          </div>
+          <div class="tk-line"><div class="tk-pts">1 250 <small>PTS</small></div><div class="tk-sub">7 / 10 · café offert</div></div>
+          <div class="tk-btn">Tourner la roue ✦</div>
+          <div class="rubber">★ Membre Or ★</div>
+        </div>
+      </div>
+      <div class="cfoot">
+        <div class="kw"><span>Nostalgic</span><span>Tactile</span><span>Warm</span></div>
+        <div class="dots"><i style="background:#EDE4D2"></i><i style="background:#241C10"></i><i style="background:#5B3FD1"></i><i style="background:#C0341C"></i></div>
+      </div>
+    </div>
+
+    <!-- 2 BOLD -->
+    <div class="concept">
+      <div class="chead">
+        <div><h2>Bold Play</h2><div class="sub">Neo-brutalist · hard shadows, fat type, flat pop</div></div>
+        <div class="no">№ 02</div>
+      </div>
+      <div class="stage s-bold">
+        <div class="boldcard">
+          <div class="bd-row">
+            <div class="bd-h">MA<br>CARTE</div>
+            <div class="bd-badge">🔥 7 JRS</div>
+          </div>
+          <div class="bd-pts"><b>1250</b><span>PTS</span></div>
+          <div class="bd-chips">
+            <div class="bd-chip" style="background:#EFE9FF">☕ 50</div>
+            <div class="bd-chip" style="background:#FFF3D1">🍰 100</div>
+            <div class="bd-chip" style="background:#FFE3EC">🎁 200</div>
+          </div>
+          <div class="bd-btn">Tourner la roue →</div>
+        </div>
+      </div>
+      <div class="cfoot">
+        <div class="kw"><span>Confident</span><span>Loud</span><span>Modern</span></div>
+        <div class="dots"><i style="background:#14101F"></i><i style="background:#7B61FF"></i><i style="background:#FFC01F"></i><i style="background:#FF5C8A"></i></div>
+      </div>
+    </div>
+
+    <!-- 3 ARCADE -->
+    <div class="concept">
+      <div class="chead">
+        <div><h2>Arcade</h2><div class="sub">Retro coin-op · neon glow, scanlines, game-first</div></div>
+        <div class="no">№ 03</div>
+      </div>
+      <div class="stage s-arcade">
+        <span class="spark" style="left:34px;top:40px">✦</span>
+        <span class="spark" style="right:40px;top:60px;font-size:13px">✦</span>
+        <span class="spark" style="left:60px;bottom:60px;font-size:14px">★</span>
+        <div class="arcadecard">
+          <div class="ar-wheel"></div>
+          <div class="ar-play">JOUER</div>
+          <div class="ar-sub">appuie pour tourner</div>
+          <div class="ar-score">SCORE <b>1250</b> 🪙</div>
+        </div>
+      </div>
+      <div class="cfoot">
+        <div class="kw"><span>Electric</span><span>Fun</span><span>Night-mode</span></div>
+        <div class="dots"><i style="background:#0c0820"></i><i style="background:#9D7BFF"></i><i style="background:#FFD54D"></i><i style="background:#5BE0C6"></i></div>
+      </div>
+    </div>
+
+    <!-- 4 ATELIER -->
+    <div class="concept">
+      <div class="chead">
+        <div><h2>L'Atelier</h2><div class="sub">Editorial riso · display serif, grain, spot color</div></div>
+        <div class="no">№ 04</div>
+      </div>
+      <div class="stage s-atelier">
+        <div class="atcard">
+          <div class="at-blob"></div><div class="at-blob2"></div>
+          <div class="at-no">№ 01 — Fidélité</div>
+          <div class="at-h">Plus de<br>points, <em>moins</em><br>d'efforts.</div>
+          <div class="at-rule"></div>
+          <div class="at-body">Chaque visite compte. Jouez, gagnez, revenez.</div>
+          <div class="at-pts"><u>1 250</u> <small>POINTS</small></div>
+          <div class="at-btn">Tourner la roue →</div>
+        </div>
+      </div>
+      <div class="cfoot">
+        <div class="kw"><span>Artsy</span><span>Premium</span><span>Editorial</span></div>
+        <div class="dots"><i style="background:#F6EFE3"></i><i style="background:#221B12"></i><i style="background:#F0603A"></i><i style="background:#7B61FF"></i></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="choose">
+    <h3>How to choose</h3>
+    <p><b style="color:#fff">Le Ticket</b> leans hardest into the loyalty story (it literally looks like a punch-card + arcade ticket) — warm, human, unmistakably a café. <b style="color:#fff">Bold Play</b> is the most "wow, not usual" and the easiest to make feel premium + playful at once. <b style="color:#fff">Arcade</b> is pure fun and game-forward, but it's dark — best as the *games zone* inside a lighter app. <b style="color:#fff">L'Atelier</b> is the most sophisticated/artistic — big serif + riso texture, feels like a design studio made it.</p>
+    <p class="mix">My pick for you: <b>Bold Play as the backbone</b> (confident, unusual, works light) with <b>Le Ticket's stamp/punch-card motif</b> for the loyalty card itself, and <b>Arcade</b> reserved for the game/spin moments. That combo is special AND coherent. — Tell me which one speaks to you, or say "mix 1 + 2" and I'll develop the full system.</p>
+  </div>
+</div>
+
+</body>
+</html>
