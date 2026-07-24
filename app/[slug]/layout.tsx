@@ -2,8 +2,7 @@ import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
 import { Logo } from "@/components/Logo";
 import { TopBar } from "@/components/TopBar";
-import { getCafe, getDiner } from "@/lib/data";
-import { dinerWallet } from "@/lib/db";
+import { getCafe } from "@/lib/data";
 
 export default async function CafeLayout({
   children,
@@ -26,11 +25,6 @@ export default async function CafeLayout({
   */
   if (!cafe.live) return <CafeDark name={cafe.name} />;
 
-  // For the top bar: does this diner hold more than one card (→ show the switch
-  // chevron)? Null when not yet a member.
-  const diner = await getDiner(cafe.id);
-  const wallet = diner ? await dinerWallet(diner.phone) : [];
-
   return (
     /*
       The mockup look: a deep-purple loyalty CARD. The café's brand colour drives
@@ -50,7 +44,7 @@ export default async function CafeLayout({
         slug={cafe.slug}
         cafeName={cafe.name}
         logoUrl={cafe.logoUrl}
-        multiCard={wallet.length > 1}
+        businessTypeKey={cafe.businessType}
       />
 
       <main className="flex flex-1 flex-col">{children}</main>

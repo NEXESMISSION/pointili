@@ -2,7 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { currentOwner } from "@/lib/auth/owner";
-import { createCafe, slugify } from "@/lib/db";
+import { BUSINESS_TYPES } from "@/lib/businessTypes";
+import { createCafe, setBusinessType, slugify } from "@/lib/db";
+
+const TYPE_KEYS = new Set(BUSINESS_TYPES.map((t) => t.key));
 
 export type CreateState = { error?: string };
 
@@ -39,6 +42,10 @@ export async function createCafeAction(
     }
     return { error: "Adresse invalide : 3 à 40 caractères, lettres et chiffres." };
   }
+
+  // Category, validated against the known keys so nothing arbitrary is stored.
+  const type = String(formData.get("businessType") ?? "");
+  if (TYPE_KEYS.has(type) && type !== "other") await setBusinessType(res.id, type);
 
   redirect("/owner");
 }

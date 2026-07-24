@@ -16,6 +16,8 @@ export type Cafe = {
   status: "active" | "paused" | "disabled";
   primaryColor: string;
   logoUrl: string | null;
+  /** Category key (see lib/businessTypes) — how a diner tells this card apart. */
+  businessType: string;
   designSettings: DesignSettings;
 
   /* — platform state (super-admin controlled) — */
@@ -80,6 +82,8 @@ export type ActiveCode = {
 /** What the diner sees on Ma carte. Balance is always sum(ledger.delta). */
 export type Diner = {
   phone: string;
+  /** Opaque, scannable id shown at the counter in place of the phone. */
+  publicId: string;
   name: string | null;
   balance: number;
   /** Stamps toward the current card (0 when stamps are off / none yet). */

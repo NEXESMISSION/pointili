@@ -1,18 +1,14 @@
 /**
- * Instant skeleton for the diner app.
+ * Instant, quiet loader for the diner app.
  *
- * The pages read live data from Zurich, so a navigation used to sit blank until
- * the round-trip returned — which reads as "slow / frozen". This renders the
- * moment you tap, so the app always feels responsive; the real content swaps in
- * when it arrives.
+ * A single centred spinner rather than pulsing skeleton blocks — the skeletons
+ * read as broken layout for the split second they show. This just says "loading"
+ * and gets out of the way when the real content arrives.
  */
 export default function Loading() {
   return (
-    <div className="animate-pulse space-y-4 px-5 pt-6">
-      <div className="h-14 rounded-2xl bg-white/10" />
-      <div className="h-52 rounded-3xl bg-white/10" />
-      <div className="h-16 rounded-2xl bg-white/[0.07]" />
-      <div className="h-16 rounded-2xl bg-white/[0.07]" />
+    <div className="flex flex-1 items-center justify-center py-28">
+      <span className="h-9 w-9 animate-spin rounded-full border-[3px] border-white/20 border-t-white" />
     </div>
   );
 }

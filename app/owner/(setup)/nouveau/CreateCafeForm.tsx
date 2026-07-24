@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { BusinessTypePicker } from "@/components/BusinessTypePicker";
 import { createCafeAction, type CreateState } from "./actions";
 
 const field =
@@ -48,6 +49,14 @@ export function CreateCafeForm() {
           className={field}
         />
       </label>
+
+      <div>
+        <span className="ticket-label mb-1.5 block">Type de commerce</span>
+        <BusinessTypePicker defaultValue="cafe" />
+        <span className="mt-1.5 block text-[11.5px] leading-snug text-mut">
+          Vos clients le verront sur leur carte pour la reconnaître.
+        </span>
+      </div>
 
       <label className="block">
         <span className="ticket-label mb-1 block">Adresse de votre carte</span>

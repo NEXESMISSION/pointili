@@ -116,15 +116,20 @@ export default function Landing() {
         <div className="mt-7 space-y-3">
           <Link
             href="/owner/signup"
-            className="flex items-center justify-center gap-2 rounded-2xl bg-royal py-4 text-[15.5px] font-bold text-white shadow-[0_12px_28px_-10px_rgba(91,63,209,.6)] active:scale-[0.99]"
+            className="flex flex-col items-center justify-center rounded-2xl bg-royal py-3.5 shadow-[0_12px_28px_-10px_rgba(91,63,209,.6)] active:scale-[0.99]"
           >
-            Créer mon compte gratuit <Arrow />
+            <span className="flex items-center gap-2 text-[15.5px] font-bold text-white">
+              Lancer ma boutique <Arrow />
+            </span>
+            <span className="text-[11.5px] font-semibold text-white/75">
+              14 jours gratuits · sans carte bancaire
+            </span>
           </Link>
           <Link
             href="/owner/login"
             className="flex items-center justify-center rounded-2xl border-2 border-hair bg-white py-4 text-[15.5px] font-bold text-charcoal active:scale-[0.99]"
           >
-            J&apos;ai déjà un compte
+            Se connecter
           </Link>
         </div>
 

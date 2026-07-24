@@ -73,7 +73,7 @@ check("owner signs in with Supabase Auth", !staff.url().includes("/login"), staf
  */
 async function credit(amount, expectBalance) {
   await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await staff.fill('input[name="phone"]', PHONE);
+  await staff.fill('input[name="customer"]', PHONE);
   await staff.fill('input[name="amount"]', String(amount));
   await staff.locator('form:has(input[name="amount"]) button[type="submit"]').click();
   await staff
@@ -210,7 +210,7 @@ if (redeemCode) {
   // and the change must actually reach the caisse
   const newPhone = `2${String(Date.now()).slice(-7)}`;
   await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await staff.fill('input[name="phone"]', newPhone);
+  await staff.fill('input[name="customer"]', newPhone);
   await staff.fill('input[name="amount"]', "10");
   await staff.locator('form:has(input[name="amount"]) button[type="submit"]').click();
   await staff.waitForSelector('[role="status"]', { timeout: 20000 }).catch(() => {});
@@ -331,7 +331,7 @@ if (redeemCode) {
   const stampSec = 'section:has(h2:has-text("Ajouter un tampon"))';
   const stamp = async () => {
     await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-    await staff.fill(`${stampSec} input[name="phone"]`, PHONE);
+    await staff.fill(`${stampSec} input[name="customer"]`, PHONE);
     await staff.locator(`${stampSec} button:has-text("tampon")`).click();
     await staff.locator(`${stampSec} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
     return staff.locator(stampSec).innerText().catch(() => "");
@@ -361,18 +361,29 @@ if (redeemCode) {
   const hist = await diner.locator("main").innerText();
   check("collected stamp reward appears in diner history", /Café offert \(tampons\)/i.test(hist));
 
-  // and the owner can find this cardholder on the Clients page
+  // the owner can find this cardholder on the Clients page (searchable by number,
+  // but the row shows the name + opaque id — never the raw phone)
   await staff.goto(`${BASE}/owner/clients`, { waitUntil: "networkidle" });
   await staff.locator('input[inputmode="search"]').fill(PHONE);
   const found = await staff
-    .waitForFunction(
-      (p) => (document.querySelector("main")?.innerText ?? "").includes(p),
-      `+216${PHONE}`,
-      { timeout: 10000 },
-    )
+    .waitForFunction(() => /E2E/.test(document.querySelector("main")?.innerText ?? ""), undefined, { timeout: 10000 })
     .then(() => true)
     .catch(() => false);
-  check("owner Clients lists and finds a cardholder by number", found);
+  check("owner Clients finds a cardholder (searchable by number)", found);
+  const clientsTxt = await staff.locator("main").innerText();
+  check("Clients list never exposes the raw phone number", !clientsTxt.includes(`+216${PHONE}`), "phone hidden");
+
+  // ── 11e. Privacy: credit by the scannable ID, no phone typed ──
+  const { data: acc } = await admin.from("accounts").select("public_id").eq("phone", `+216${PHONE}`).single();
+  const CRED = 'section:has(h2:has-text("Créditer"))';
+  await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await staff.fill(`${CRED} input[name="customer"]`, acc.public_id);
+  await staff.fill(`${CRED} input[name="amount"]`, "5");
+  await staff.locator(`${CRED} button[type="submit"]`).click();
+  await staff.locator(`${CRED} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
+  const credTxt = await staff.locator(CRED).innerText();
+  check("crediting by scannable ID works", /\+5/.test(credTxt), credTxt.split("\n").find((l) => /\+5/.test(l)) ?? "");
+  check("credit result shows a name, not the phone", !credTxt.includes(`+216${PHONE}`));
 
   await admin.from("loyalty_programs").update({ stamps_enabled: false }).eq("business_id", biz.id);
 }

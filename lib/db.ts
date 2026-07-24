@@ -19,16 +19,25 @@ import type { ActiveCode } from "./types";
 /* Accounts (diners — phone + PIN, not Supabase Auth)                          */
 /* -------------------------------------------------------------------------- */
 
-export type AccountRow = { phone: string; pin_hash: string; name: string | null };
+export type AccountRow = { phone: string; pin_hash: string; name: string | null; public_id: string };
 
 export async function getAccount(phone: string): Promise<AccountRow | null> {
   const db = createAdminClient();
   const { data } = await db
     .from("accounts")
-    .select("phone, pin_hash, name")
+    .select("phone, pin_hash, name, public_id")
     .eq("phone", phone)
     .maybeSingle();
   return data ?? null;
+}
+
+/** Resolve a scanned/typed public id to a phone — the phone stays server-side. */
+export async function accountByPublicId(
+  publicId: string,
+): Promise<{ phone: string; name: string | null; publicId: string } | null> {
+  const db = createAdminClient();
+  const { data } = await db.rpc("account_by_public_id", { p_public_id: publicId });
+  return (data as { phone: string; name: string | null; publicId: string } | null) ?? null;
 }
 
 export async function createAccount(phone: string, pinHash: string, name: string | null) {
@@ -232,9 +241,11 @@ export type WalletCafe = {
   businessId: string;
   name: string;
   slug: string;
+  businessType: string;
   primaryColor: string;
   logoUrl: string | null;
   balance: number;
+  stamps: number;
   pendingWins: number;
   pendingRewards: number;
 };
@@ -329,6 +340,12 @@ export type CreateCafeResult =
   | { ok: true; id: string; slug: string }
   | { ok: false; reason: "slug_taken" | "slug_reserved" | "slug_invalid" };
 
+/** Set the café's category (validated key) — used at creation and in settings. */
+export async function setBusinessType(businessId: string, type: string): Promise<void> {
+  const db = createAdminClient();
+  await db.from("businesses").update({ business_type: type }).eq("id", businessId);
+}
+
 export async function createCafe(
   ownerId: string,
   name: string,
@@ -350,6 +367,7 @@ export async function createCafe(
 
 export type OwnerCard = {
   phone: string;
+  publicId: string | null;
   name: string | null;
   balance: number;
   stamps: number;

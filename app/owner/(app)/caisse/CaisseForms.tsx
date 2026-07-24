@@ -1,17 +1,154 @@
 "use client";
 
-import { useActionState, useState, type ReactNode } from "react";
-import { CheckIcon, Sparkle, StampIcon } from "@/components/icons";
+import { useActionState, useState, useTransition, type ReactNode } from "react";
+import { QrScanner } from "@/components/QrScanner";
+import { CheckIcon, QrIcon, Sparkle, StampIcon } from "@/components/icons";
 import {
   addStampAction,
   collectAction,
   creditAction,
   peekAction,
+  resolveCustomerAction,
   type CollectState,
   type CreditState,
   type PeekState,
+  type ResolveState,
   type StampState,
 } from "./actions";
+
+/** Group the opaque id so it's readable/typable: ABCDE FGHIJ. */
+function formatId(id: string): string {
+  return id.replace(/(.{5})(.{1,5})/, "$1 $2");
+}
+
+/** Accept a raw id or a URL that carries it (?c= or last path segment). */
+function extractCode(text: string): string {
+  const t = text.trim();
+  try {
+    const u = new URL(t);
+    return u.searchParams.get("c") || u.pathname.split("/").filter(Boolean).pop() || t;
+  } catch {
+    return t;
+  }
+}
+
+/* ── scan a customer's QR → credit or stamp, never touching the phone ──── */
+
+export function ScanPanel({ stampsEnabled }: { stampsEnabled: boolean }) {
+  const [scanning, setScanning] = useState(false);
+  const [customer, setCustomer] = useState<NonNullable<ResolveState["customer"]> | null>(null);
+  const [error, setError] = useState("");
+  const [resolving, startResolve] = useTransition();
+
+  function handleScan(text: string) {
+    setScanning(false);
+    setError("");
+    startResolve(async () => {
+      const res = await resolveCustomerAction(extractCode(text));
+      if (res.error) {
+        setCustomer(null);
+        setError(res.error);
+      } else {
+        setCustomer(res.customer ?? null);
+      }
+    });
+  }
+
+  return (
+    <section className="o-card p-5">
+      <div className="flex items-center gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-royal text-white shadow-[0_8px_18px_-8px_rgba(91,63,209,.7)]">
+          <QrIcon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-[17px] font-extrabold leading-tight text-charcoal">Scanner un client</h2>
+          <p className="text-[12px] text-slate">Scannez son QR pour créditer ou tamponner.</p>
+        </div>
+      </div>
+
+      {scanning ? (
+        <QrScanner onScan={handleScan} onClose={() => setScanning(false)} />
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setError("");
+            setScanning(true);
+          }}
+          className="o-btn mt-4"
+        >
+          Ouvrir la caméra
+        </button>
+      )}
+
+      {resolving && <p className="mt-3 text-center text-[13px] font-semibold text-slate">Recherche…</p>}
+      {error && (
+        <p role="alert" className="mt-3 rounded-xl bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal">
+          {error}
+        </p>
+      )}
+      {customer && !resolving && <ResolvedCustomer customer={customer} stampsEnabled={stampsEnabled} />}
+    </section>
+  );
+}
+
+function ResolvedCustomer({
+  customer,
+  stampsEnabled,
+}: {
+  customer: NonNullable<ResolveState["customer"]>;
+  stampsEnabled: boolean;
+}) {
+  const [credit, creditForm, crediting] = useActionState<CreditState, FormData>(creditAction, {});
+  const [stamp, stampForm, stamping] = useActionState<StampState, FormData>(addStampAction, {});
+
+  return (
+    <div className="o-inset mt-4 p-4">
+      <p className="text-[15px] font-extrabold text-charcoal">{customer.name ?? "Client"}</p>
+      <p className="mt-0.5 text-[12.5px] font-semibold text-slate">
+        {customer.balance} points{stampsEnabled ? ` · ${customer.stamps} tampons` : ""}
+      </p>
+      <p className="mt-0.5 font-mono text-[11px] text-slate/70">ID {formatId(customer.publicId)}</p>
+
+      <form action={creditForm} className="mt-3 flex gap-2">
+        <input type="hidden" name="customer" value={customer.publicId} />
+        <input name="amount" inputMode="decimal" required placeholder="Montant en dinars" className="o-field !bg-white" />
+        <button type="submit" disabled={crediting} className="o-btn !w-auto shrink-0 whitespace-nowrap px-4">
+          {crediting ? "· ·" : "Créditer"}
+        </button>
+      </form>
+      {credit.ok && (
+        <p role="status" className="mt-2 text-[12.5px] font-semibold text-ok">
+          +{credit.ok.earned} points{credit.ok.welcome > 0 ? ` (+${credit.ok.welcome} bienvenue)` : ""} · solde {credit.ok.balance}
+        </p>
+      )}
+      {credit.error && <p role="alert" className="mt-2 text-[12.5px] font-semibold text-seal">{credit.error}</p>}
+
+      {stampsEnabled && (
+        <>
+          <form action={stampForm} className="mt-2">
+            <input type="hidden" name="customer" value={customer.publicId} />
+            <button
+              type="submit"
+              disabled={stamping}
+              className="w-full rounded-xl border border-hair bg-white py-2.5 text-[13px] font-bold text-charcoal active:scale-[0.99] disabled:opacity-55"
+            >
+              {stamping ? "· ·" : "+1 tampon"}
+            </button>
+          </form>
+          {stamp.ok && (
+            <p role="status" className="mt-2 text-[12.5px] font-semibold text-ok">
+              {stamp.ok.completed
+                ? `Carte pleine ! ${stamp.ok.label} — code ${stamp.ok.code}`
+                : `${stamp.ok.count} / ${stamp.ok.required} tampons`}
+            </p>
+          )}
+          {stamp.error && <p role="alert" className="mt-2 text-[12.5px] font-semibold text-seal">{stamp.error}</p>}
+        </>
+      )}
+    </div>
+  );
+}
 
 /* The daily action — big, focused, thumb-friendly. */
 export function CreditForm({ pointsPerTnd }: { pointsPerTnd: number }) {
@@ -35,11 +172,11 @@ export function CreditForm({ pointsPerTnd }: { pointsPerTnd: number }) {
 
       <form action={formAction} className="mt-4 space-y-2.5">
         <input
-          name="phone"
-          type="tel"
-          inputMode="tel"
+          name="customer"
+          type="text"
+          inputMode="text"
           required
-          placeholder="Numéro du client"
+          placeholder="Numéro ou ID du client"
           className="o-field"
         />
         <input
@@ -67,7 +204,7 @@ export function CreditForm({ pointsPerTnd }: { pointsPerTnd: number }) {
             +{state.ok.earned}
           </p>
           <p className="mt-1.5 text-[13px] font-semibold text-charcoal">
-            points crédités à {state.ok.phone}
+            points crédités à {state.ok.label}
           </p>
           {state.ok.welcome > 0 && (
             <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-gold-soft px-2.5 py-1 text-[11.5px] font-bold text-gold-deep">
@@ -100,7 +237,7 @@ export function StampForm({ required }: { required: number }) {
       </div>
 
       <form action={formAction} className="mt-4 flex gap-2.5">
-        <input name="phone" type="tel" inputMode="tel" required placeholder="Numéro du client" className="o-field" />
+        <input name="customer" type="text" inputMode="text" required placeholder="Numéro ou ID du client" className="o-field" />
         <button type="submit" disabled={pending} className="o-btn !w-auto shrink-0 whitespace-nowrap px-5">
           {pending ? "· ·" : "+1 tampon"}
         </button>
@@ -142,7 +279,7 @@ export function StampForm({ required }: { required: number }) {
           ) : (
             <p className="mt-3 text-[13px] font-semibold text-charcoal">
               {state.ok.count} / {state.ok.required} tampons ·{" "}
-              <span className="text-slate">{state.ok.phone}</span>
+              <span className="text-slate">{state.ok.who}</span>
             </p>
           )}
         </div>

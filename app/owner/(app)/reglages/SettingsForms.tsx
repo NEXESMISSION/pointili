@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useActionState, type ReactNode } from "react";
+import { BusinessTypePicker } from "@/components/BusinessTypePicker";
 import type { Cafe, LoyaltyProgram, Reward } from "@/lib/types";
 import {
   deleteRewardAction,
@@ -401,6 +402,14 @@ export function CafeForm({ cafe }: { cafe: Cafe }) {
           </span>
           <input name="name" defaultValue={cafe.name} maxLength={60} className="o-field" />
         </label>
+
+        <div className="py-2.5">
+          <span className="block text-[13.5px] font-semibold text-charcoal">Type de commerce</span>
+          <span className="mt-0.5 mb-2.5 block text-[11.5px] text-slate">
+            Vos clients le voient pour reconnaître votre carte.
+          </span>
+          <BusinessTypePicker defaultValue={cafe.businessType} />
+        </div>
 
         <ColorField cafe={cafe} />
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { businessType } from "@/lib/businessTypes";
 import { getCafe, getDiner } from "@/lib/data";
 import { dinerWallet, type WalletCafe } from "@/lib/db";
 import { logoutDinerAction } from "../actions";
@@ -41,16 +42,23 @@ export default async function Profil({
       </section>
 
       {/* cards */}
-      <h2 className="text-[15px] font-extrabold text-white">
-        {others.length > 0 ? "Mes cartes" : "Ma carte"}
-      </h2>
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-[15px] font-extrabold text-white">
+          {others.length > 0 ? "Mes cartes" : "Ma carte"}
+        </h2>
+        <Link href="/cartes" className="text-[12.5px] font-bold text-white/70">
+          Voir tout
+        </Link>
+      </div>
       <ul className="mt-2.5 space-y-2">
         {/* the card you're on right now */}
         <li className="flex items-center gap-3 rounded-2xl border-2 border-white/30 bg-white/[0.08] px-3.5 py-3">
-          <CardBadge name={cafe.name} logoUrl={cafe.logoUrl} color={cafe.primaryColor} />
+          <CardBadge name={cafe.name} logoUrl={cafe.logoUrl} color={cafe.primaryColor} typeKey={cafe.businessType} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[14.5px] font-bold text-white">{cafe.name}</span>
-            <span className="block text-[12px] font-bold text-[#ffd27a]">{diner.balance} points 🪙</span>
+            <span className="block text-[11.5px] font-medium text-white/60">
+              {businessType(cafe.businessType).label} · {diner.balance} pts
+            </span>
           </span>
           <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.04em] text-charcoal">
             Actuelle
@@ -73,16 +81,25 @@ export default async function Profil({
   );
 }
 
-function CardBadge({ name, logoUrl, color }: { name: string; logoUrl: string | null; color: string }) {
+function CardBadge({
+  logoUrl,
+  color,
+  typeKey,
+}: {
+  name: string;
+  logoUrl: string | null;
+  color: string;
+  typeKey: string;
+}) {
   return logoUrl ? (
     // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
     <img src={logoUrl} alt="" className="h-10 w-10 shrink-0 rounded-xl object-cover" />
   ) : (
     <span
-      className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[15px] font-bold text-white"
+      className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[19px]"
       style={{ background: color }}
     >
-      {name.charAt(0).toUpperCase()}
+      {businessType(typeKey).emoji}
     </span>
   );
 }
@@ -95,13 +112,13 @@ function WalletChip({ cafe }: { cafe: WalletCafe }) {
         href={`/${cafe.slug}`}
         className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.06] px-3.5 py-3 active:scale-[0.99]"
       >
-        <CardBadge name={cafe.name} logoUrl={cafe.logoUrl} color={cafe.primaryColor} />
+        <CardBadge name={cafe.name} logoUrl={cafe.logoUrl} color={cafe.primaryColor} typeKey={cafe.businessType} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[14.5px] font-bold text-white">{cafe.name}</span>
-          <span className="block text-[12px] font-bold text-[#ffd27a]">
-            {cafe.balance} points 🪙
+          <span className="block text-[11.5px] font-medium text-white/60">
+            {businessType(cafe.businessType).label} · {cafe.balance} pts
             {cafe.pendingWins + cafe.pendingRewards > 0 && (
-              <span className="font-semibold text-white/55">
+              <span className="font-semibold text-[#ffd27a]">
                 {" "}
                 · {cafe.pendingWins + cafe.pendingRewards} code(s)
               </span>

@@ -30,6 +30,11 @@ function ago(iso: string | null): string {
   return d === 1 ? "hier" : `il y a ${d} j`;
 }
 
+/** Staff identify a card by its opaque ID, not the phone — which stays private. */
+function formatId(id: string | null): string {
+  return id ? id.replace(/(.{5})(.{1,5})/, "$1 $2") : "—";
+}
+
 export function ClientsView({
   initial,
   stampsEnabled,
@@ -88,7 +93,7 @@ export function ClientsView({
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rechercher un nom ou un numéro…"
+          placeholder="Rechercher un nom, un ID ou un numéro…"
           /* !pl-11: .o-field is non-layered CSS and its padding beats a plain
              pl-* utility, so the text would sit under the search icon. */
           className="o-field !pl-11"
@@ -200,8 +205,8 @@ function CardRow({
           <span className="block truncate text-[14.5px] font-bold text-charcoal">
             {card.name ?? "Sans nom"}
           </span>
-          <span className="block truncate text-[11.5px] text-slate">
-            {card.phone} · {ago(card.lastAt)}
+          <span className="block truncate font-mono text-[11.5px] text-slate">
+            {formatId(card.publicId)} · {ago(card.lastAt)}
           </span>
         </span>
         <span className="shrink-0 text-right">

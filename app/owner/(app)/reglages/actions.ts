@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { ownerCafe } from "@/lib/auth/owner";
+import { BUSINESS_TYPES } from "@/lib/businessTypes";
 import { createClient } from "@/lib/supabase/server";
+
+const TYPE_KEYS = new Set(BUSINESS_TYPES.map((t) => t.key));
 
 export type SettingsState = { error?: string; saved?: string };
 
@@ -134,6 +137,8 @@ export async function saveCafeAction(
   const name = String(formData.get("name") ?? cafe.name).trim().slice(0, 60) || cafe.name;
   const rawColor = String(formData.get("primaryColor") ?? "").trim();
   const primaryColor = HEX.test(rawColor) ? rawColor.toLowerCase() : cafe.primaryColor;
+  const rawType = String(formData.get("businessType") ?? "");
+  const businessType = TYPE_KEYS.has(rawType) ? rawType : cafe.businessType;
 
   const db = await createClient();
   const { data, error } = await db
@@ -141,6 +146,7 @@ export async function saveCafeAction(
     .update({
       name,
       primary_color: primaryColor,
+      business_type: businessType,
       design_settings: {
         ...cafe.designSettings,
         showEngagement: formData.get("showEngagement") === "on",

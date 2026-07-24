@@ -35,6 +35,7 @@ type BusinessRow = {
   status: Cafe["status"];
   primary_color: string;
   logo_url: string | null;
+  business_type: string | null;
   design_settings: Record<string, unknown> | null;
   plan: Cafe["plan"];
   plan_expires_at: string | null;
@@ -43,7 +44,7 @@ type BusinessRow = {
 };
 
 const CAFE_COLS =
-  "id, name, slug, status, primary_color, logo_url, design_settings, plan, plan_expires_at, suspended_at, suspended_reason";
+  "id, name, slug, status, primary_color, logo_url, business_type, design_settings, plan, plan_expires_at, suspended_at, suspended_reason";
 
 function toCafe(b: BusinessRow): Cafe {
   const d = b.design_settings ?? {};
@@ -61,6 +62,7 @@ function toCafe(b: BusinessRow): Cafe {
     status: b.status,
     primaryColor: b.primary_color,
     logoUrl: b.logo_url,
+    businessType: b.business_type ?? "other",
     designSettings: {
       loyaltyEnabled: (d.loyaltyEnabled as boolean) ?? true,
       showEngagement: (d.showEngagement as boolean) ?? true,
@@ -262,6 +264,7 @@ export async function getDiner(cafeId: string): Promise<Diner | null> {
 
   return {
     phone,
+    publicId: account.public_id,
     name: account.name,
     balance,
     stamps,
