@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { GiftIcon, ScanIcon, Sparkle } from "@/components/icons";
-import { getCafe, getDiner, getLoyaltyProgram, getRewards, nextRewardNudge } from "@/lib/data";
-import { dinerWallet, touchCardOpened } from "@/lib/db";
+import { getCafe, getLoyaltyProgram, getMember, getRewards, nextRewardNudge } from "@/lib/data";
+import { touchCardOpened } from "@/lib/db";
 import type { LoyaltyProgram } from "@/lib/types";
 
 /**
@@ -20,20 +20,21 @@ export default async function Carte({
   const cafe = await getCafe(slug);
   if (!cafe) notFound();
 
-  const diner = await getDiner(cafe.id);
+  /*
+    Signed in AND a member here. A diner who scans a NEW café's QR is signed in
+    but has no card yet — /rejoindre enrolls them (welcome bonus + per-shop code)
+    so the card never renders empty.
+  */
+  const diner = await getMember(cafe.id);
   if (!diner) redirect(`/${slug}/rejoindre`);
-
-  // Signed in, but a member here? A diner who scans a NEW café's QR lands here
-  // directly — send them through /rejoindre to enroll so the card never renders
-  // empty.
-  const wallet = await dinerWallet(diner.phone);
-  if (!wallet.some((w) => w.slug === cafe.slug)) redirect(`/${slug}/rejoindre`);
 
   // Record the visit so the wallet can sort by "recently opened".
   await touchCardOpened(cafe.id, diner.phone);
 
   const [program, rewards] = await Promise.all([getLoyaltyProgram(cafe.id), getRewards(cafe.id)]);
   const offers = [...rewards].sort((a, b) => a.pointsCost - b.pointsCost).slice(0, 3);
+
+  const stampView = stampCardView(diner.stamps, diner.stampsStartedAt, program);
 
   return (
     <div className="flex flex-1 flex-col pb-6">
@@ -65,7 +66,7 @@ export default async function Carte({
       {/* the main card */}
       <div className="px-5">
         {program.stampsEnabled ? (
-          <StampCard stamps={diner.stamps} startedAt={diner.stampsStartedAt} program={program} />
+          <StampCard shown={stampView.shown} expiry={stampView.expiry} program={program} />
         ) : (
           <PointsCard balance={diner.balance} rewards={rewards} />
         )}
@@ -168,33 +169,32 @@ export default async function Carte({
   );
 }
 
-/** The punch card: dots that fill toward the reward slot. */
+/**
+ * The punch card: dots that fill toward the reward slot.
+ *
+ * `shown` and `expiry` are computed by the (server) page, not here — what we
+ * display has to match what the next stamp will actually do, and that depends on
+ * the current time, which a component must not read.
+ */
 function StampCard({
-  stamps,
-  startedAt,
+  shown,
+  expiry,
   program,
 }: {
-  stamps: number;
-  startedAt: string | null;
+  shown: number;
+  expiry: string | null;
   program: LoyaltyProgram;
 }) {
   const required = program.stampsRequired;
-  const remaining = Math.max(0, required - stamps);
-  const pct = Math.min(100, Math.round((stamps / required) * 100));
+  const remaining = Math.max(0, required - shown);
+  const pct = Math.min(100, Math.round((shown / required) * 100));
   const size = required > 10 ? "h-9 w-9" : "h-11 w-11";
-
-  // Show the card's expiry when the owner set one and a card is in progress.
-  let expiry: string | null = null;
-  if (program.stampExpiryDays > 0 && startedAt && stamps > 0) {
-    const at = new Date(new Date(startedAt).getTime() + program.stampExpiryDays * 86_400_000);
-    expiry = at.toLocaleDateString("fr-FR", { day: "2-digit", month: "long" });
-  }
 
   return (
     <div className="d-card px-5 pb-5 pt-6">
       <div className="flex flex-wrap justify-center gap-2.5">
         {Array.from({ length: required }).map((_, i) => {
-          const filled = i < stamps;
+          const filled = i < shown;
           const isReward = i === required - 1;
           return (
             <span
@@ -235,7 +235,7 @@ function StampCard({
           <span />
         )}
         <span className="text-[11.5px] font-semibold tabular-nums text-white/55">
-          {stamps} / {required}
+          {shown} / {required}
         </span>
       </div>
     </div>
@@ -279,6 +279,36 @@ function PointsCard({ balance, rewards }: { balance: number; rewards: Parameters
       )}
     </div>
   );
+}
+
+/**
+ * What the stamp card should DISPLAY — which has to match what the next stamp
+ * will actually do, so the card never promises the wrong thing:
+ *   • a card past its expiry hasn't been reset yet (add_stamp does that on the
+ *     next visit) — show it empty, not stale progress with a date in the past;
+ *   • a resting card can never look "full": if the owner lowered the requirement
+ *     below someone's count, clamp it, or it reads "8 / 5" and announces a
+ *     reward that no code was ever issued for.
+ */
+function stampCardView(
+  stamps: number,
+  startedAt: string | null,
+  program: LoyaltyProgram,
+): { shown: number; expiry: string | null } {
+  const expiresAt =
+    program.stampExpiryDays > 0 && startedAt
+      ? new Date(startedAt).getTime() + program.stampExpiryDays * 86_400_000
+      : null;
+  const lapsed = expiresAt !== null && stamps > 0 && expiresAt < Date.now();
+  const shown = lapsed ? 0 : Math.min(stamps, Math.max(0, program.stampsRequired - 1));
+
+  return {
+    shown,
+    expiry:
+      expiresAt !== null && shown > 0 && !lapsed
+        ? new Date(expiresAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long" })
+        : null,
+  };
 }
 
 /** "expire dans 5 h" — the countdown a diner needs before a code lapses. */

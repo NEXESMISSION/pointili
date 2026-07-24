@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { GiftIcon } from "@/components/icons";
-import { getCafe, getDiner, getRewards, nextRewardNudge } from "@/lib/data";
+import { getCafe, getMember, getRewards, nextRewardNudge } from "@/lib/data";
 import { RedeemForm } from "./RedeemForm";
 
 export const metadata = { title: "Offres" };
@@ -14,7 +14,7 @@ export default async function Offres({
   const cafe = await getCafe(slug);
   if (!cafe) notFound();
 
-  const [diner, rewards] = await Promise.all([getDiner(cafe.id), getRewards(cafe.id)]);
+  const [diner, rewards] = await Promise.all([getMember(cafe.id), getRewards(cafe.id)]);
   if (!diner) redirect(`/${slug}/rejoindre`);
 
   const nudge = nextRewardNudge(diner.balance, rewards);

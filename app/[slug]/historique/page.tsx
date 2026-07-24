@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { getCafe, getDiner } from "@/lib/data";
+import { getCafe, getMember } from "@/lib/data";
 import { getActivity, type Activity } from "@/lib/db";
 
 export const metadata = { title: "Historique" };
@@ -33,7 +33,7 @@ export default async function Historique({
   const cafe = await getCafe(slug);
   if (!cafe) notFound();
 
-  const diner = await getDiner(cafe.id);
+  const diner = await getMember(cafe.id);
   if (!diner) redirect(`/${slug}/rejoindre`);
 
   const activity = await getActivity(cafe.id, diner.phone, 30);

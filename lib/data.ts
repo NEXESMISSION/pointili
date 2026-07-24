@@ -279,6 +279,32 @@ export async function getDiner(cafeId: string): Promise<Diner | null> {
 }
 
 /**
+ * The signed-in diner IF they hold a card at this café, else null.
+ *
+ * Being signed in is not the same as being a member HERE: the account is global
+ * (one phone, many cafés) but a card is per café. Every diner page must use this
+ * — checking only `getDiner()` let someone with a card at café A open café B's
+ * pages, where their per-shop code is empty (a blank QR on "Ma carte") and the
+ * balance is a meaningless zero. Callers redirect to /[slug]/rejoindre, which
+ * enrolls them properly.
+ */
+export async function getMember(cafeId: string): Promise<Diner | null> {
+  const diner = await getDiner(cafeId);
+  if (!diner) return null;
+
+  /*
+    Gate on the per-shop CODE, not on wallet membership.
+
+    The code is created by enroll_diner, so its presence is the real proof of a
+    card here — and it's the thing the pages need. Someone can be "in the wallet"
+    on ledger rows alone (a cashier credited their phone before they ever signed
+    up), and with an empty code "Ma carte" fed "" to the QR encoder, which throws.
+    No code → /rejoindre, which enrolls them properly.
+  */
+  return diner.code ? diner : null;
+}
+
+/**
  * "Always almost there" (§11 #2) — the goal-gradient nudge that drives returns.
  * The next reward is the cheapest one the diner CAN'T yet afford.
  */

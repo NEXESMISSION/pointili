@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { GiftIcon } from "@/components/icons";
-import { getCafe, getDiner } from "@/lib/data";
+import { getCafe, getMember } from "@/lib/data";
 
 export const metadata = { title: "Mes codes" };
 
@@ -24,7 +24,7 @@ export default async function Codes({
   const cafe = await getCafe(slug);
   if (!cafe) notFound();
 
-  const diner = await getDiner(cafe.id);
+  const diner = await getMember(cafe.id);
   if (!diner) redirect(`/${slug}/rejoindre`);
 
   const codes = diner.codes;

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode";
-import { getCafe, getDiner } from "@/lib/data";
+import { getCafe, getMember } from "@/lib/data";
 
 export const metadata = { title: "Ma carte" };
 
@@ -18,7 +18,7 @@ export default async function Scanner({
   const cafe = await getCafe(slug);
   if (!cafe) notFound();
 
-  const diner = await getDiner(cafe.id);
+  const diner = await getMember(cafe.id);
   if (!diner) redirect(`/${slug}/rejoindre`);
 
   const qr = await QRCode.toString(diner.code, {

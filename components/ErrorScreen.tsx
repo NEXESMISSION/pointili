@@ -16,24 +16,39 @@ export function ErrorScreen({
   reset,
   homeHref,
   homeLabel,
+  tone = "light",
 }: {
   title: string;
   message: string;
   reset?: () => void;
   homeHref?: string;
   homeLabel?: string;
+  /**
+   * "dark" for the diner app, whose shell is a deep-purple gradient — the light
+   * palette rendered charcoal-on-purple there, i.e. barely readable.
+   */
+  tone?: "light" | "dark";
 }) {
+  const dark = tone === "dark";
   return (
     <div className="grid min-h-[70dvh] place-items-center px-6 text-center">
       <div className="w-full max-w-sm">
         <span
           aria-hidden
-          className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-lilac text-[22px] font-black text-royal"
+          className={`mx-auto grid h-12 w-12 place-items-center rounded-2xl text-[22px] font-black ${
+            dark ? "bg-white/15 text-white" : "bg-lilac text-royal"
+          }`}
         >
           !
         </span>
-        <h1 className="mt-4 text-[21px] font-extrabold text-charcoal">{title}</h1>
-        <p className="mx-auto mt-2 max-w-[32ch] text-[14px] leading-relaxed text-slate">
+        <h1 className={`mt-4 text-[21px] font-extrabold ${dark ? "text-white" : "text-charcoal"}`}>
+          {title}
+        </h1>
+        <p
+          className={`mx-auto mt-2 max-w-[32ch] text-[14px] leading-relaxed ${
+            dark ? "text-white/70" : "text-slate"
+          }`}
+        >
           {message}
         </p>
         <div className="mt-6 flex flex-col gap-2.5">
@@ -41,7 +56,9 @@ export function ErrorScreen({
             <button
               type="button"
               onClick={reset}
-              className="w-full rounded-2xl bg-royal py-3.5 text-[14.5px] font-bold text-white active:scale-[0.99]"
+              className={`w-full rounded-2xl py-3.5 text-[14.5px] font-bold active:scale-[0.99] ${
+                dark ? "bg-white text-charcoal" : "bg-royal text-white"
+              }`}
             >
               Réessayer
             </button>
@@ -49,7 +66,11 @@ export function ErrorScreen({
           {homeHref && (
             <Link
               href={homeHref}
-              className="w-full rounded-2xl border border-hair bg-white py-3.5 text-[14px] font-bold text-charcoal active:scale-[0.99]"
+              className={`w-full rounded-2xl border py-3.5 text-[14px] font-bold active:scale-[0.99] ${
+                dark
+                  ? "border-white/25 text-white/85"
+                  : "border-hair bg-white text-charcoal"
+              }`}
             >
               {homeLabel ?? "Retour"}
             </Link>

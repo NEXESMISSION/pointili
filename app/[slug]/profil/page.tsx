@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { GiftIcon, HistoryIcon, ScanIcon, StampIcon } from "@/components/icons";
 import { BRAND_COLOR } from "@/lib/brand";
 import { businessType } from "@/lib/businessTypes";
-import { getCafe, getDiner } from "@/lib/data";
+import { getCafe, getMember } from "@/lib/data";
 import { logoutDinerAction } from "../actions";
 
 export const metadata = { title: "Profil" };
@@ -22,7 +22,7 @@ export default async function Profil({
   const cafe = await getCafe(slug);
   if (!cafe) notFound();
 
-  const diner = await getDiner(cafe.id);
+  const diner = await getMember(cafe.id);
   if (!diner) redirect(`/${slug}/rejoindre`);
 
   const type = businessType(cafe.businessType);

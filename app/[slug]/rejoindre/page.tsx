@@ -46,7 +46,9 @@ export default async function Rejoindre({
           Ta carte de fidélité
         </h1>
         <p className="mt-2 text-[14.5px] leading-relaxed text-white/75">
-          {program.welcomePoints > 0 ? (
+          {/* Only promise the bonus when it will actually be granted — the grant
+              is gated on program.active too (see joinAction + credit_points). */}
+          {program.active && program.welcomePoints > 0 ? (
             <>
               <b className="text-white">{program.welcomePoints} points offerts ⭐</b> à
               l&apos;inscription. En 10 secondes, sans app ni e-mail.

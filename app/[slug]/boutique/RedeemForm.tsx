@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useTransition } from "react";
 import type { Reward } from "@/lib/types";
 import { redeemAction, type RedeemState } from "./actions";
 
@@ -26,12 +26,22 @@ export function RedeemForm({
   const router = useRouter();
   const action = redeemAction.bind(null, slug);
   const [state, formAction, pending] = useActionState<RedeemState, FormData>(action, {});
+  const [refreshing, startRefresh] = useTransition();
 
-  // A successful buy changed the balance — re-fetch so the rest of the shop
-  // (header total, other rewards' affordability) reflects it.
+  /*
+    A successful buy changed the balance — re-fetch so the rest of the shop
+    (header total, every reward's affordability) reflects it.
+
+    The refresh runs inside a transition and the button stays disabled until it
+    lands: otherwise `affordable` is briefly STALE, a second tap gets rejected
+    server-side, and that error state overwrites the code we just issued — a
+    successful redemption looking like a failure.
+  */
   useEffect(() => {
-    if (state.ok) router.refresh();
+    if (state.ok) startRefresh(() => router.refresh());
   }, [state.ok, router]);
+
+  const busy = pending || refreshing;
 
   return (
     <div className="flex shrink-0 flex-col items-end gap-1.5">
@@ -52,7 +62,7 @@ export function RedeemForm({
           <input type="hidden" name="rewardId" value={reward.id} />
           <button
             type="submit"
-            disabled={pending}
+            disabled={busy}
             onClick={(e) => {
               if (!confirm(`Échanger ${reward.pointsCost} points contre « ${reward.label} » ?`)) {
                 e.preventDefault();
@@ -60,7 +70,7 @@ export function RedeemForm({
             }}
             className="rounded-xl bg-white px-3.5 py-2 text-[10.5px] font-bold text-charcoal active:scale-95 disabled:opacity-60"
           >
-            {pending ? "· · ·" : state.ok ? "Échanger encore" : "Échanger"}
+            {busy ? "· · ·" : state.ok ? "Échanger encore" : "Échanger"}
           </button>
         </form>
       ) : (
