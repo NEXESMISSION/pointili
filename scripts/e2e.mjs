@@ -73,6 +73,7 @@ check("owner signs in with Supabase Auth", !staff.url().includes("/login"), staf
  */
 async function credit(amount, expectBalance) {
   await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await staff.locator('summary:has-text("Saisie manuelle")').click();
   await staff.fill('input[name="customer"]', PHONE);
   await staff.fill('input[name="amount"]', String(amount));
   await staff.locator('form:has(input[name="amount"]) button[type="submit"]').click();
@@ -210,6 +211,7 @@ if (redeemCode) {
   // and the change must actually reach the caisse
   const newPhone = `2${String(Date.now()).slice(-7)}`;
   await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await staff.locator('summary:has-text("Saisie manuelle")').click();
   await staff.fill('input[name="customer"]', newPhone);
   await staff.fill('input[name="amount"]', "10");
   await staff.locator('form:has(input[name="amount"]) button[type="submit"]').click();
@@ -252,9 +254,10 @@ if (redeemCode) {
   const { data: biz } = await admin.from("businesses").select("id").eq("slug", SLUG).single();
 
   await staff.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
-  // the file input is hidden inside its label; setInputFiles targets it directly.
+  await staff.locator('summary:has-text("Ma boutique")').click(); // collapsible section
+  // Scope to the LOGO input (reward rows now add their own image inputs too).
   // The uploader downscales on a canvas and auto-saves, so wait for the verdict.
-  await staff.setInputFiles('input[type="file"][accept*="image"]', "public/logo-icon.png");
+  await staff.setInputFiles('label:has-text("logo") input[type="file"]', "public/logo-icon.png");
   await staff.locator("text=Enregistré ✦").first().waitFor({ timeout: 20000 }).catch(() => {});
 
   const { data: withLogo } = await admin.from("businesses").select("logo_url").eq("id", biz.id).single();
@@ -269,19 +272,7 @@ if (redeemCode) {
   await diner.goto(`${BASE}/${SLUG}`, { waitUntil: "networkidle" });
   check("logo appears on the client card header", (await diner.locator("header img").count()) > 0);
 
-  // brand colour saves too — the color input is controlled, so set + dispatch
-  await staff.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
-  const cafeForm = 'form:has(input[name="name"])';
-  await staff.$eval(`${cafeForm} input[name="primaryColor"]`, (el) => {
-    el.value = "#0f9d58";
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-  });
-  await staff.locator(`${cafeForm} button[type="submit"]`).click();
-  await staff.locator(`${cafeForm} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
-  const { data: colored } = await admin.from("businesses").select("primary_color").eq("id", biz.id).single();
-  check("brand colour persists", colored?.primary_color === "#0f9d58", colored?.primary_color ?? "—");
-
-  await admin.from("businesses").update({ logo_url: null, primary_color: "#5b3fd1" }).eq("id", biz.id);
+  await admin.from("businesses").update({ logo_url: null }).eq("id", biz.id);
 }
 
 // ── 11c. A returning cardholder signs back in (new device / no cookie) ─
@@ -331,6 +322,7 @@ if (redeemCode) {
   const stampSec = 'section:has(h2:has-text("Ajouter un tampon"))';
   const stamp = async () => {
     await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+    await staff.locator('summary:has-text("Saisie manuelle")').click();
     await staff.fill(`${stampSec} input[name="customer"]`, PHONE);
     await staff.locator(`${stampSec} button:has-text("tampon")`).click();
     await staff.locator(`${stampSec} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
@@ -383,6 +375,7 @@ if (redeemCode) {
   check("customer has a short 4-char shop code", typeof card?.code === "string" && card.code.length === 4, card?.code ?? "none");
   const CRED = 'section:has(h2:has-text("Créditer"))';
   await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await staff.locator('summary:has-text("Saisie manuelle")').click();
   await staff.fill(`${CRED} input[name="customer"]`, card.code);
   await staff.fill(`${CRED} input[name="amount"]`, "5");
   await staff.locator(`${CRED} button[type="submit"]`).click();

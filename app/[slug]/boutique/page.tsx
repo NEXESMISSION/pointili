@@ -33,6 +33,11 @@ export default async function Offres({
             {nudge.target.label.toLowerCase()} !
           </p>
         )}
+        {ladder.length > 0 && (
+          <p className="mt-2 rounded-xl bg-white/[0.07] px-3.5 py-2 text-[12px] leading-snug text-white/70 ring-1 ring-white/10">
+            Échange tes points → tu reçois un <b className="text-white">code</b> à montrer au comptoir.
+          </p>
+        )}
       </section>
 
       {ladder.length === 0 ? (

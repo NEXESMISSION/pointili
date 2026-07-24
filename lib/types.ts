@@ -43,6 +43,8 @@ export type LoyaltyProgram = {
   stampsEnabled: boolean;
   stampsRequired: number;
   stampReward: string;
+  /** Days before an in-progress stamp card lapses; 0 = never. */
+  stampExpiryDays: number;
 };
 
 export type Reward = {
@@ -88,6 +90,8 @@ export type Diner = {
   balance: number;
   /** Stamps toward the current card (0 when stamps are off / none yet). */
   stamps: number;
+  /** When the current stamp card started — for the expiry note. */
+  stampsStartedAt: string | null;
   streak: number;
   xp: number;
   codes: ActiveCode[];

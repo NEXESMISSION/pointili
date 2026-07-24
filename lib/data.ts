@@ -153,7 +153,7 @@ export const getLoyaltyProgram = cache(async (cafeId: string): Promise<LoyaltyPr
   const { data } = await db
     .from("loyalty_programs")
     .select(
-      "active, points_per_tnd, welcome_points, redeem_expiry_hours, stamps_enabled, stamps_required, stamp_reward",
+      "active, points_per_tnd, welcome_points, redeem_expiry_hours, stamps_enabled, stamps_required, stamp_reward, stamp_expiry_days",
     )
     .eq("business_id", cafeId)
     .maybeSingle();
@@ -167,6 +167,7 @@ export const getLoyaltyProgram = cache(async (cafeId: string): Promise<LoyaltyPr
     stampsEnabled: data?.stamps_enabled ?? false,
     stampsRequired: data?.stamps_required ?? 10,
     stampReward: data?.stamp_reward ?? "Une récompense offerte",
+    stampExpiryDays: data?.stamp_expiry_days ?? 0,
   };
 })
 
@@ -268,7 +269,8 @@ export async function getDiner(cafeId: string): Promise<Diner | null> {
     code,
     name: account.name,
     balance,
-    stamps,
+    stamps: stamps.count,
+    stampsStartedAt: stamps.startedAt,
     streak: 0,
     xp: 0,
     codes,

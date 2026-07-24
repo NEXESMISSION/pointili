@@ -92,15 +92,18 @@ export async function getBalance(businessId: string, phone: string): Promise<num
   return (data as number | null) ?? 0;
 }
 
-export async function getStamps(businessId: string, phone: string): Promise<number> {
+export async function getStamps(
+  businessId: string,
+  phone: string,
+): Promise<{ count: number; startedAt: string | null }> {
   const db = createAdminClient();
   const { data } = await db
     .from("loyalty_stamps")
-    .select("count")
+    .select("count, started_at")
     .eq("business_id", businessId)
     .eq("phone", phone)
     .maybeSingle();
-  return data?.count ?? 0;
+  return { count: data?.count ?? 0, startedAt: data?.started_at ?? null };
 }
 
 export type StampResult =
@@ -257,11 +260,22 @@ export type WalletCafe = {
   businessType: string;
   primaryColor: string;
   logoUrl: string | null;
+  lastOpenedAt: string | null;
   balance: number;
   stamps: number;
   pendingWins: number;
   pendingRewards: number;
 };
+
+/** Mark that the diner just opened this card — powers the wallet's recency sort. */
+export async function touchCardOpened(businessId: string, phone: string): Promise<void> {
+  const db = createAdminClient();
+  await db
+    .from("diner_cafes")
+    .update({ last_opened_at: new Date().toISOString() })
+    .eq("business_id", businessId)
+    .eq("phone", phone);
+}
 
 /**
  * Record that this diner has a card at this café (the "passport").

@@ -1,10 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { currentDiner } from "@/lib/auth/diner";
 
 /**
  * Marketing landing — the real pointili.online brand (modern, Royal Mauve, Poppins).
  * Rebuilt to match the mockup; mobile-first. Not Le Ticket — this is the brand
  * guide's identity. §01 lists a landing page as out of scope; built on request.
+ *
+ * This root is the BUSINESS front door. A diner who lands here (they have a card
+ * session) is a customer, not a prospective shop owner — send them to their
+ * wallet so the two audiences never bleed into each other.
  */
 
 export const metadata = {
@@ -64,7 +70,10 @@ const trust = [
   { Icon: Shield, label: "Support\nréactif" },
 ];
 
-export default function Landing() {
+export default async function Landing() {
+  // Customers never see the owner marketing page — straight to their wallet.
+  if (await currentDiner()) redirect("/cartes");
+
   return (
     <div className="modern min-h-dvh bg-white">
       {/* ── top bar ─────────────────────────────────────────── */}

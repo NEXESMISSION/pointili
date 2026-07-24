@@ -43,7 +43,6 @@ export type Stats = {
   pointsIssued: number;
   pointsRedeemed: number;
   outstandingPoints: number; // liability: points owed but not yet spent
-  plays: number;
   rewardsClaimed: number;
   pendingCodes: number;
 
@@ -64,14 +63,14 @@ const DAY = 86_400_000;
 export async function getStats(businessId: string): Promise<Stats> {
   const db = createAdminClient();
 
-  const [{ data: ledger }, { data: plays }, { data: wins }, { data: redemptions }, { data: program }] =
+  const [{ data: ledger }, { data: stampRewards }, { data: wins }, { data: redemptions }, { data: program }] =
     await Promise.all([
       db
         .from("points_ledger")
         .select("customer_phone, delta, reason, created_at")
         .eq("business_id", businessId)
         .order("created_at"),
-      db.from("plays").select("id, created_at").eq("business_id", businessId),
+      db.from("stamp_rewards").select("status, label").eq("business_id", businessId),
       db.from("wins").select("status, prize_id, prizes(label)").eq("business_id", businessId),
       db
         .from("loyalty_redemptions")
@@ -184,6 +183,10 @@ export async function getStats(businessId: string): Promise<Stats> {
     const label = joinLabel(w.prizes);
     claimed.set(label, (claimed.get(label) ?? 0) + 1);
   }
+  for (const sr of (stampRewards ?? []) as { status: string; label: string }[]) {
+    if (sr.status !== "claimed") continue;
+    claimed.set(sr.label, (claimed.get(sr.label) ?? 0) + 1);
+  }
   const topRewards = [...claimed.entries()]
     .map(([label, n]) => ({ label, claimed: n }))
     .sort((a, b) => b.claimed - a.claimed)
@@ -191,7 +194,8 @@ export async function getStats(businessId: string): Promise<Stats> {
 
   const pendingCodes =
     ((wins ?? []) as { status: string }[]).filter((w) => w.status === "pending").length +
-    ((redemptions ?? []) as { status: string }[]).filter((r) => r.status === "pending").length;
+    ((redemptions ?? []) as { status: string }[]).filter((r) => r.status === "pending").length +
+    ((stampRewards ?? []) as { status: string }[]).filter((sr) => sr.status === "pending").length;
 
   const round = (n: number) => Math.round(n * 100) / 100;
 
@@ -216,7 +220,6 @@ export async function getStats(businessId: string): Promise<Stats> {
     pointsIssued,
     pointsRedeemed,
     outstandingPoints,
-    plays: (plays ?? []).length,
     rewardsClaimed: [...claimed.values()].reduce((s, n) => s + n, 0),
     pendingCodes,
 

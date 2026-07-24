@@ -92,7 +92,7 @@ export async function resolveCustomerAction(idOrPhone: string): Promise<ResolveS
     getStamps(cafe.id, who.phone),
   ]);
   if (!code) return { error: "Ce client n'a pas encore de carte ici." };
-  return { customer: { code, name: who.name, balance, stamps } };
+  return { customer: { code, name: who.name, balance, stamps: stamps.count } };
 }
 
 export type PeekState = {

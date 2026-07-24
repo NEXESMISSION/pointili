@@ -43,13 +43,16 @@ export default async function Reglages() {
       </div>
 
       <Section
+        emoji="⭐"
         title="Les points"
         subtitle="Comment vos clients gagnent des points, à la caisse."
+        defaultOpen
       >
         <EarnForm cafe={cafe} program={program} />
       </Section>
 
       <Section
+        emoji="🎁"
         title="Les récompenses"
         subtitle="Ce que vos clients échangent contre leurs points."
       >
@@ -61,6 +64,7 @@ export default async function Reglages() {
       </Section>
 
       <Section
+        emoji="🎟️"
         title="Carte à tampons"
         subtitle="Une carte de fidélité par visite — en plus des points, si vous voulez."
       >
@@ -68,6 +72,7 @@ export default async function Reglages() {
       </Section>
 
       <Section
+        emoji="🏪"
         title="Ma boutique"
         subtitle="Le logo, le nom et la couleur que voient vos clients."
       >
@@ -77,7 +82,7 @@ export default async function Reglages() {
       {/* The owner's own plan — always visible, not only once it's nearly too
           late. "When does this stop working, and what am I on?" should never
           require asking. */}
-      <Section title="Abonnement" tag={PLAN_LABEL[cafe.plan]}>
+      <Section emoji="💳" title="Abonnement" tag={PLAN_LABEL[cafe.plan]}>
         <div className="flex items-start justify-between gap-3 px-4 py-3.5">
           <span>
             <span className="block text-[13.5px] font-semibold text-charcoal">
@@ -111,7 +116,7 @@ export default async function Reglages() {
         )}
       </Section>
 
-      <Section title="Compte" tag={owner?.role === "super_admin" ? "super-admin" : "propriétaire"}>
+      <Section emoji="👤" title="Compte" tag={owner?.role === "super_admin" ? "super-admin" : "propriétaire"}>
         <div className="px-4 py-3.5">
           <p className="font-mono text-[12px] text-charcoal">{owner?.email ?? "—"}</p>
           <p className="mt-0.5 font-mono text-[10.5px] text-slate">pointili.online/{cafe.slug}</p>
@@ -131,31 +136,55 @@ export default async function Reglages() {
   );
 }
 
+/**
+ * A collapsible settings card. The page opens as a clean, scannable list of
+ * section headers (only "Les points" expanded); the owner reveals the rest as
+ * needed, so nothing feels packed. Native <details>, server-rendered — no JS.
+ */
 function Section({
+  emoji,
   title,
   subtitle,
   tag,
+  defaultOpen = false,
   children,
 }: {
+  emoji: string;
   title: string;
   subtitle?: string;
   tag?: string;
+  defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <section className="o-card overflow-hidden">
-      <div className="border-b border-hair px-4 py-3.5">
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-[17px] font-extrabold text-charcoal">{title}</h2>
-          {tag && (
-            <span className="ml-auto rounded-full bg-lilac px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em] text-royal">
-              {tag}
-            </span>
-          )}
-        </div>
-        {subtitle && <p className="mt-0.5 text-[12px] leading-snug text-slate">{subtitle}</p>}
-      </div>
-      {children}
-    </section>
+    <details open={defaultOpen} className="o-card group overflow-hidden">
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 [&::-webkit-details-marker]:hidden">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-lilac-2 text-[18px]">
+          {emoji}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15.5px] font-extrabold text-charcoal">{title}</span>
+          {subtitle && <span className="mt-0.5 block text-[11.5px] leading-snug text-slate">{subtitle}</span>}
+        </span>
+        {tag && (
+          <span className="shrink-0 rounded-full bg-lilac px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.05em] text-royal">
+            {tag}
+          </span>
+        )}
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4 shrink-0 text-slate transition-transform group-open:rotate-180"
+          aria-hidden
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </summary>
+      <div className="border-t border-hair">{children}</div>
+    </details>
   );
 }

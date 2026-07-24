@@ -97,9 +97,11 @@ export async function saveStampsAction(
 
   const required = num(formData.get("stampsRequired"), 1, 100);
   const reward = String(formData.get("stampReward") ?? "").trim().slice(0, 80);
+  const expiryDays = num(formData.get("stampExpiryDays"), 0, 3650);
 
   if (required === null) return { error: "Nombre de tampons : entre 1 et 100." };
   if (!reward) return { error: "Décrivez la récompense de la carte." };
+  if (expiryDays === null) return { error: "Validité : entre 0 et 3650 jours." };
 
   const db = await createClient();
   const { data, error } = await db
@@ -108,6 +110,7 @@ export async function saveStampsAction(
       stamps_enabled: formData.get("stampsEnabled") === "on",
       stamps_required: Math.round(required),
       stamp_reward: reward,
+      stamp_expiry_days: Math.round(expiryDays),
     })
     .eq("business_id", cafe.id)
     .select("business_id");
@@ -223,6 +226,61 @@ export async function removeLogoAction(): Promise<SettingsState> {
   revalidatePath("/owner/reglages");
   revalidatePath(`/${cafe.slug}`);
   return { saved: "Logo retiré" };
+}
+
+/**
+ * A photo for a reward, shown to diners in the boutique. Same hardened path as
+ * the logo: the browser downscales to a small WebP before it ever reaches here,
+ * and we still validate type + byte cap on the server.
+ */
+export async function saveRewardImageAction(rewardId: string, dataUri: string): Promise<SettingsState> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { error: "Non autorisé." };
+  if (typeof dataUri !== "string" || !LOGO_PREFIX.test(dataUri)) {
+    return { error: "Image invalide (PNG, JPG ou WebP)." };
+  }
+  if (dataUri.length > LOGO_MAX_CHARS) {
+    return { error: "Image trop lourde — essayez une image plus petite." };
+  }
+  const b64 = dataUri.slice(dataUri.indexOf(",") + 1);
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) return { error: "Image invalide." };
+
+  const db = await createClient();
+  const { data, error } = await db
+    .from("loyalty_rewards")
+    .update({ image_url: dataUri })
+    .eq("id", rewardId)
+    .eq("business_id", cafe.id) // RLS enforces this too; belt + braces
+    .select("id");
+
+  const failed = assertWrote(data, error);
+  if (failed) return failed;
+
+  revalidatePath("/owner/reglages");
+  revalidatePath(`/${cafe.slug}/boutique`);
+  revalidatePath(`/${cafe.slug}`);
+  return { saved: "Image" };
+}
+
+export async function removeRewardImageAction(rewardId: string): Promise<SettingsState> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { error: "Non autorisé." };
+
+  const db = await createClient();
+  const { data, error } = await db
+    .from("loyalty_rewards")
+    .update({ image_url: null })
+    .eq("id", rewardId)
+    .eq("business_id", cafe.id)
+    .select("id");
+
+  const failed = assertWrote(data, error);
+  if (failed) return failed;
+
+  revalidatePath("/owner/reglages");
+  revalidatePath(`/${cafe.slug}/boutique`);
+  revalidatePath(`/${cafe.slug}`);
+  return { saved: "Image retirée" };
 }
 
 /* -------------------------------------------------------------------------- */

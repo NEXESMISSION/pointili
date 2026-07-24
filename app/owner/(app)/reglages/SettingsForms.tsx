@@ -2,14 +2,18 @@
 
 import { useState, useTransition, useActionState, type ReactNode } from "react";
 import { BusinessTypePicker } from "@/components/BusinessTypePicker";
+import { GiftIcon } from "@/components/icons";
+import { BRAND_COLOR } from "@/lib/brand";
 import type { Cafe, LoyaltyProgram, Reward } from "@/lib/types";
 import {
   deleteRewardAction,
   removeLogoAction,
+  removeRewardImageAction,
   saveCafeAction,
   saveEarnAction,
   saveLogoAction,
   saveRewardAction,
+  saveRewardImageAction,
   saveStampsAction,
   type SettingsState,
 } from "./actions";
@@ -217,6 +221,13 @@ export function StampsForm({ program }: { program: LoyaltyProgram }) {
             className="o-field"
           />
         </label>
+        <Num
+          name="stampExpiryDays"
+          label="Validité de la carte"
+          help="Jours avant qu'une carte en cours ne s'efface. 0 = jamais."
+          value={program.stampExpiryDays}
+          suffix="jours"
+        />
       </div>
 
       <Feedback state={state} />
@@ -308,7 +319,7 @@ function LogoUploader({ cafe }: { cafe: Cafe }) {
         {/* preview */}
         <span
           className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-hair"
-          style={{ background: logo ? "#fff" : cafe.primaryColor }}
+          style={{ background: logo ? "#fff" : BRAND_COLOR }}
         >
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element -- data-URI preview
@@ -352,41 +363,6 @@ function LogoUploader({ cafe }: { cafe: Cafe }) {
   );
 }
 
-function ColorField({ cafe }: { cafe: Cafe }) {
-  const [color, setColor] = useState(cafe.primaryColor);
-  return (
-    <label className="block py-2.5">
-      <span className="block text-[13.5px] font-semibold text-charcoal">Couleur de la carte</span>
-      <span className="mt-0.5 mb-2.5 block text-[11.5px] leading-snug text-slate">
-        La couleur de fond de la carte de vos clients.
-      </span>
-      <span className="flex items-center gap-3">
-        <span
-          className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl border border-hair"
-          style={{ background: color }}
-        >
-          <input
-            type="color"
-            name="primaryColor"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            aria-label="Couleur de la carte"
-          />
-        </span>
-        <span className="font-mono text-[13px] font-semibold uppercase text-slate">{color}</span>
-        {/* a little live preview so the choice is concrete */}
-        <span
-          className="ml-auto rounded-xl px-3 py-1.5 text-[11px] font-bold text-white"
-          style={{ background: color }}
-        >
-          Aperçu
-        </span>
-      </span>
-    </label>
-  );
-}
-
 export function CafeForm({ cafe }: { cafe: Cafe }) {
   const [state, action, pending] = useActionState<SettingsState, FormData>(saveCafeAction, {});
   return (
@@ -411,8 +387,6 @@ export function CafeForm({ cafe }: { cafe: Cafe }) {
           <BusinessTypePicker defaultValue={cafe.businessType} />
         </div>
 
-        <ColorField cafe={cafe} />
-
         <Advanced>
           <Toggle
             name="showEngagement"
@@ -433,11 +407,90 @@ export function CafeForm({ cafe }: { cafe: Cafe }) {
 
 /* Les récompenses --------------------------------------------------------- */
 
+/** A photo for one reward — instant-save, hard-downscaled like the logo. */
+function RewardImageUploader({ reward }: { reward: Reward }) {
+  const [img, setImg] = useState<string | null>(reward.imageUrl);
+  const [msg, setMsg] = useState<SettingsState>({});
+  const [pending, start] = useTransition();
+
+  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setMsg({});
+    if (!file.type.startsWith("image/") || file.type === "image/svg+xml") {
+      setMsg({ error: "Choisissez une image PNG, JPG ou WebP." });
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      setMsg({ error: "Image trop lourde (12 Mo max)." });
+      return;
+    }
+    let dataUri: string;
+    try {
+      dataUri = await fileToLogoDataUri(file);
+    } catch {
+      setMsg({ error: "Impossible de lire cette image." });
+      return;
+    }
+    start(async () => {
+      const res = await saveRewardImageAction(reward.id, dataUri);
+      setMsg(res);
+      if (!res.error) setImg(dataUri);
+    });
+  }
+
+  function onRemove() {
+    setMsg({});
+    start(async () => {
+      const res = await removeRewardImageAction(reward.id);
+      setMsg(res);
+      if (!res.error) setImg(null);
+    });
+  }
+
+  return (
+    <div className="mb-2.5">
+      <div className="flex items-center gap-3">
+        <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl border border-hair bg-lilac-2">
+          {img ? (
+            // eslint-disable-next-line @next/next/no-img-element -- data-URI preview
+            <img src={img} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <GiftIcon className="h-5 w-5 text-slate" />
+          )}
+        </span>
+        <label
+          className={`flex cursor-pointer items-center rounded-xl border border-hair bg-white px-3 py-2 text-[12px] font-bold text-charcoal active:scale-[0.99] ${
+            pending ? "opacity-55" : ""
+          }`}
+        >
+          {pending ? "· ·" : img ? "Changer la photo" : "Ajouter une photo"}
+          <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onPick} disabled={pending} className="sr-only" />
+        </label>
+        {img && (
+          <button
+            type="button"
+            onClick={onRemove}
+            disabled={pending}
+            className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-seal underline underline-offset-2 disabled:opacity-55"
+          >
+            Retirer
+          </button>
+        )}
+      </div>
+      <Feedback state={msg} />
+    </div>
+  );
+}
+
 /** One row per reward — the ladder is the main tuning lever for returns. */
 function RewardRow({ reward }: { reward: Reward | null }) {
   const [state, action, pending] = useActionState<SettingsState, FormData>(saveRewardAction, {});
   return (
-    <form action={action} className="border-b border-hair/60 px-4 py-3.5 last:border-b-0">
+    <div className="border-b border-hair/60 px-4 py-3.5 last:border-b-0">
+      {reward && <RewardImageUploader reward={reward} />}
+      <form action={action}>
       {reward && <input type="hidden" name="id" value={reward.id} />}
       <div className="flex items-center gap-2.5">
         <input
@@ -490,7 +543,8 @@ function RewardRow({ reward }: { reward: Reward | null }) {
         </span>
       </div>
       <Feedback state={state} />
-    </form>
+      </form>
+    </div>
   );
 }
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { GiftIcon, ScanIcon, Sparkle } from "@/components/icons";
 import { getCafe, getDiner, getLoyaltyProgram, getRewards, nextRewardNudge } from "@/lib/data";
-import { dinerWallet } from "@/lib/db";
+import { dinerWallet, touchCardOpened } from "@/lib/db";
 import type { LoyaltyProgram } from "@/lib/types";
 
 /**
@@ -28,6 +28,9 @@ export default async function Carte({
   // empty.
   const wallet = await dinerWallet(diner.phone);
   if (!wallet.some((w) => w.slug === cafe.slug)) redirect(`/${slug}/rejoindre`);
+
+  // Record the visit so the wallet can sort by "recently opened".
+  await touchCardOpened(cafe.id, diner.phone);
 
   const [program, rewards] = await Promise.all([getLoyaltyProgram(cafe.id), getRewards(cafe.id)]);
   const offers = [...rewards].sort((a, b) => a.pointsCost - b.pointsCost).slice(0, 3);
@@ -62,7 +65,7 @@ export default async function Carte({
       {/* the main card */}
       <div className="px-5">
         {program.stampsEnabled ? (
-          <StampCard stamps={diner.stamps} program={program} />
+          <StampCard stamps={diner.stamps} startedAt={diner.stampsStartedAt} program={program} />
         ) : (
           <PointsCard balance={diner.balance} rewards={rewards} />
         )}
@@ -166,11 +169,26 @@ export default async function Carte({
 }
 
 /** The punch card: dots that fill toward the reward slot. */
-function StampCard({ stamps, program }: { stamps: number; program: LoyaltyProgram }) {
+function StampCard({
+  stamps,
+  startedAt,
+  program,
+}: {
+  stamps: number;
+  startedAt: string | null;
+  program: LoyaltyProgram;
+}) {
   const required = program.stampsRequired;
   const remaining = Math.max(0, required - stamps);
   const pct = Math.min(100, Math.round((stamps / required) * 100));
   const size = required > 10 ? "h-9 w-9" : "h-11 w-11";
+
+  // Show the card's expiry when the owner set one and a card is in progress.
+  let expiry: string | null = null;
+  if (program.stampExpiryDays > 0 && startedAt && stamps > 0) {
+    const at = new Date(new Date(startedAt).getTime() + program.stampExpiryDays * 86_400_000);
+    expiry = at.toLocaleDateString("fr-FR", { day: "2-digit", month: "long" });
+  }
 
   return (
     <div className="d-card px-5 pb-5 pt-6">
@@ -210,9 +228,16 @@ function StampCard({ stamps, program }: { stamps: number; program: LoyaltyProgra
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="mt-1.5 text-right text-[11.5px] font-semibold tabular-nums text-white/55">
-        {stamps} / {required}
-      </p>
+      <div className="mt-1.5 flex items-center justify-between">
+        {expiry ? (
+          <span className="text-[10.5px] font-medium text-white/45">Valable jusqu&apos;au {expiry}</span>
+        ) : (
+          <span />
+        )}
+        <span className="text-[11.5px] font-semibold tabular-nums text-white/55">
+          {stamps} / {required}
+        </span>
+      </div>
     </div>
   );
 }

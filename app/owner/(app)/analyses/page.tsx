@@ -128,7 +128,7 @@ export default async function Analytics() {
 
       <p className="pt-1 text-center text-[10.5px] font-semibold text-slate/80">
         {s.customers} {plural(s.customers, "client", "clients")} · {s.pointsIssued} points émis ·{" "}
-        {s.plays} {plural(s.plays, "tour joué", "tours joués")}
+        {s.rewardsClaimed} {plural(s.rewardsClaimed, "récompense servie", "récompenses servies")}
       </p>
     </div>
   );
