@@ -5,40 +5,41 @@ import { isValidPhone, normalisePhone } from "@/lib/auth/crypto";
 import { ownerCafe } from "@/lib/auth/owner";
 import { getLoyaltyProgram } from "@/lib/data";
 import {
-  accountByPublicId,
   addStamp,
+  cardByCode,
   claimCode,
   creditPoints,
   getAccount,
   getBalance,
+  getCardCode,
   getStamps,
   peekCode,
 } from "@/lib/db";
 
 /**
- * A customer is identified at the counter by their scannable ID (preferred, so
- * the phone never shows) OR, as a fallback, their phone number. Letters ⇒ it's
- * an ID; all-digits ⇒ a phone (with an ID fallback for rare all-digit IDs). The
- * phone we resolve stays server-side — the browser only ever sent an id, and the
- * result shows a NAME (or a masked number), never the raw phone.
+ * A customer is identified at the counter by their short per-shop CODE
+ * (preferred — scanned or typed, so the phone never shows) OR, as a fallback,
+ * their phone number. Letters ⇒ it's a code; all-digits ⇒ a phone (with a code
+ * fallback). The phone we resolve stays server-side — the result shows a NAME
+ * (or a masked number), never the raw phone.
  */
 type Resolved = { phone: string; name: string | null };
 
-async function resolveCustomer(raw: string): Promise<Resolved | { error: string }> {
+async function resolveCustomer(cafeId: string, raw: string): Promise<Resolved | { error: string }> {
   const cleaned = String(raw ?? "").trim().replace(/[\s-]/g, "");
-  if (!cleaned) return { error: "Numéro ou ID du client requis." };
+  if (!cleaned) return { error: "Numéro ou code du client requis." };
 
   if (/[A-Za-z]/.test(cleaned)) {
-    const acc = await accountByPublicId(cleaned);
-    return acc ? { phone: acc.phone, name: acc.name } : { error: "Client introuvable — vérifiez l'ID." };
+    const card = await cardByCode(cafeId, cleaned);
+    return card ? { phone: card.phone, name: card.name } : { error: "Client introuvable — vérifiez le code." };
   }
   const phone = normalisePhone(cleaned);
   if (isValidPhone(phone)) {
     const acc = await getAccount(phone);
     return { phone, name: acc?.name ?? null };
   }
-  const acc = await accountByPublicId(cleaned);
-  return acc ? { phone: acc.phone, name: acc.name } : { error: "Numéro ou ID invalide." };
+  const card = await cardByCode(cafeId, cleaned);
+  return card ? { phone: card.phone, name: card.name } : { error: "Numéro ou code invalide." };
 }
 
 /** "+216 24 ••• 123" — enough to confirm the right person, never the full number. */
@@ -71,27 +72,27 @@ export type StampState = {
 
 export type ResolveState = {
   error?: string;
-  customer?: { publicId: string; name: string | null; balance: number; stamps: number };
+  customer?: { code: string; name: string | null; balance: number; stamps: number };
 };
 
 /**
- * Resolve a scanned code (or typed id/phone) to the customer for the scan panel.
- * Returns the public id + name + current balance/stamps — never the phone.
+ * Resolve a scanned code (or typed code/phone) to the customer for the scan
+ * panel. Returns the short code + name + current balance/stamps — never the phone.
  */
 export async function resolveCustomerAction(idOrPhone: string): Promise<ResolveState> {
   const cafe = await ownerCafe();
   if (!cafe) return { error: "Non autorisé." };
 
-  const who = await resolveCustomer(idOrPhone);
+  const who = await resolveCustomer(cafe.id, idOrPhone);
   if ("error" in who) return { error: who.error };
 
-  const [acc, balance, stamps] = await Promise.all([
-    getAccount(who.phone),
+  const [code, balance, stamps] = await Promise.all([
+    getCardCode(cafe.id, who.phone),
     getBalance(cafe.id, who.phone),
     getStamps(cafe.id, who.phone),
   ]);
-  if (!acc) return { error: "Ce client n'a pas encore de carte." };
-  return { customer: { publicId: acc.public_id, name: acc.name, balance, stamps } };
+  if (!code) return { error: "Ce client n'a pas encore de carte ici." };
+  return { customer: { code, name: who.name, balance, stamps } };
 }
 
 export type PeekState = {
@@ -127,7 +128,7 @@ export async function creditAction(
   if (!Number.isFinite(amount) || amount <= 0) return { error: "Montant invalide." };
   if (amount > 10_000) return { error: "Montant trop élevé." };
 
-  const who = await resolveCustomer(String(formData.get("customer") ?? formData.get("phone") ?? ""));
+  const who = await resolveCustomer(cafe.id, String(formData.get("customer") ?? formData.get("phone") ?? ""));
   if ("error" in who) return { error: who.error };
 
   const program = await getLoyaltyProgram(cafe.id);
@@ -161,7 +162,7 @@ export async function addStampAction(
   const cafe = await ownerCafe();
   if (!cafe) return { error: "Non autorisé." };
 
-  const who = await resolveCustomer(String(formData.get("customer") ?? formData.get("phone") ?? ""));
+  const who = await resolveCustomer(cafe.id, String(formData.get("customer") ?? formData.get("phone") ?? ""));
   if ("error" in who) return { error: who.error };
 
   const program = await getLoyaltyProgram(cafe.id);

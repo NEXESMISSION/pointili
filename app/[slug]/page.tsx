@@ -75,7 +75,7 @@ export default async function Carte({
           className="d-soft flex items-center justify-center gap-2 py-3 text-[13.5px] font-bold text-white active:scale-[0.99]"
         >
           <ScanIcon className="h-[18px] w-[18px]" />
-          Montrer mon numéro au comptoir
+          Montrer mon code au comptoir
         </Link>
       </div>
 

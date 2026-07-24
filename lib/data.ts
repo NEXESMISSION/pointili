@@ -252,19 +252,20 @@ export async function getDiner(cafeId: string): Promise<Diner | null> {
   const phone = await currentDiner();
   if (!phone) return null;
 
-  const { getAccount, getBalance, getCodes, getStamps } = await import("./db");
+  const { getAccount, getBalance, getCodes, getStamps, getCardCode } = await import("./db");
   const account = await getAccount(phone);
   if (!account) return null;
 
-  const [balance, codes, stamps] = await Promise.all([
+  const [balance, codes, stamps, code] = await Promise.all([
     getBalance(cafeId, phone),
     getCodes(cafeId, phone),
     getStamps(cafeId, phone),
+    getCardCode(cafeId, phone),
   ]);
 
   return {
     phone,
-    publicId: account.public_id,
+    code,
     name: account.name,
     balance,
     stamps,

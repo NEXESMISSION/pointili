@@ -5,9 +5,9 @@ import { getCafe, getDiner } from "@/lib/data";
 export const metadata = { title: "Ma carte" };
 
 /**
- * The diner's "I'm here" screen. Staff scans this QR (or types the short ID) to
- * credit points / add a stamp — so it encodes the account's opaque PUBLIC ID,
- * never the phone number. The phone is never shown here or to the cashier.
+ * The diner's "I'm here" screen. Staff scans this QR (or types the short 4-char
+ * CODE) to credit points / add a stamp — so it encodes the per-shop code, never
+ * the phone number. The phone is never shown here or to the cashier.
  */
 export default async function Scanner({
   params,
@@ -21,7 +21,7 @@ export default async function Scanner({
   const diner = await getDiner(cafe.id);
   if (!diner) redirect(`/${slug}/rejoindre`);
 
-  const qr = await QRCode.toString(diner.publicId, {
+  const qr = await QRCode.toString(diner.code, {
     type: "svg",
     errorCorrectionLevel: "M",
     margin: 0,
@@ -39,12 +39,12 @@ export default async function Scanner({
         <div className="mx-auto w-[200px] [&>svg]:h-auto [&>svg]:w-full">
           <div dangerouslySetInnerHTML={{ __html: qr }} />
         </div>
-        <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">Mon ID</p>
-        <p className="mt-0.5 font-mono text-[22px] font-extrabold tracking-[0.12em] text-charcoal">
-          {formatId(diner.publicId)}
+        <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">Mon code</p>
+        <p className="mt-1 font-mono text-[32px] font-extrabold tracking-[0.3em] text-charcoal">
+          {diner.code}
         </p>
         <p className="mx-auto mt-4 max-w-[30ch] text-[12.5px] leading-relaxed text-slate">
-          Le serveur scanne ce code (ou saisit l&apos;ID) — pas besoin de donner ton numéro.
+          Le serveur scanne ce QR (ou saisit le code) — pas besoin de donner ton numéro.
         </p>
       </div>
 
@@ -54,9 +54,4 @@ export default async function Scanner({
       </div>
     </div>
   );
-}
-
-/** ABCDE FGHIJ — grouped for reading aloud / typing. */
-function formatId(id: string): string {
-  return id.replace(/(.{5})(.{1,5})/, "$1 $2");
 }

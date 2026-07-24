@@ -82,8 +82,8 @@ export type ActiveCode = {
 /** What the diner sees on Ma carte. Balance is always sum(ledger.delta). */
 export type Diner = {
   phone: string;
-  /** Opaque, scannable id shown at the counter in place of the phone. */
-  publicId: string;
+  /** Short per-shop code shown at the counter in place of the phone. */
+  code: string;
   name: string | null;
   balance: number;
   /** Stamps toward the current card (0 when stamps are off / none yet). */

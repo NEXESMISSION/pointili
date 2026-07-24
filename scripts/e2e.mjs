@@ -373,16 +373,22 @@ if (redeemCode) {
   const clientsTxt = await staff.locator("main").innerText();
   check("Clients list never exposes the raw phone number", !clientsTxt.includes(`+216${PHONE}`), "phone hidden");
 
-  // ── 11e. Privacy: credit by the scannable ID, no phone typed ──
-  const { data: acc } = await admin.from("accounts").select("public_id").eq("phone", `+216${PHONE}`).single();
+  // ── 11e. Privacy: credit by the short per-shop code, no phone typed ──
+  const { data: card } = await admin
+    .from("diner_cafes")
+    .select("code")
+    .eq("business_id", biz.id)
+    .eq("phone", `+216${PHONE}`)
+    .single();
+  check("customer has a short 4-char shop code", typeof card?.code === "string" && card.code.length === 4, card?.code ?? "none");
   const CRED = 'section:has(h2:has-text("Créditer"))';
   await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await staff.fill(`${CRED} input[name="customer"]`, acc.public_id);
+  await staff.fill(`${CRED} input[name="customer"]`, card.code);
   await staff.fill(`${CRED} input[name="amount"]`, "5");
   await staff.locator(`${CRED} button[type="submit"]`).click();
   await staff.locator(`${CRED} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
   const credTxt = await staff.locator(CRED).innerText();
-  check("crediting by scannable ID works", /\+5/.test(credTxt), credTxt.split("\n").find((l) => /\+5/.test(l)) ?? "");
+  check("crediting by the short code works", /\+5/.test(credTxt), credTxt.split("\n").find((l) => /\+5/.test(l)) ?? "");
   check("credit result shows a name, not the phone", !credTxt.includes(`+216${PHONE}`));
 
   await admin.from("loyalty_programs").update({ stamps_enabled: false }).eq("business_id", biz.id);

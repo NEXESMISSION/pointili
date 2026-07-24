@@ -31,13 +31,26 @@ export async function getAccount(phone: string): Promise<AccountRow | null> {
   return data ?? null;
 }
 
-/** Resolve a scanned/typed public id to a phone — the phone stays server-side. */
-export async function accountByPublicId(
-  publicId: string,
-): Promise<{ phone: string; name: string | null; publicId: string } | null> {
+/** Resolve a scanned/typed short code (within one shop) → the customer. */
+export async function cardByCode(
+  businessId: string,
+  code: string,
+): Promise<{ phone: string; name: string | null } | null> {
   const db = createAdminClient();
-  const { data } = await db.rpc("account_by_public_id", { p_public_id: publicId });
-  return (data as { phone: string; name: string | null; publicId: string } | null) ?? null;
+  const { data } = await db.rpc("card_by_code", { p_business_id: businessId, p_code: code });
+  return (data as { phone: string; name: string | null } | null) ?? null;
+}
+
+/** This diner's short per-shop code (for the "show at counter" card). */
+export async function getCardCode(businessId: string, phone: string): Promise<string> {
+  const db = createAdminClient();
+  const { data } = await db
+    .from("diner_cafes")
+    .select("code")
+    .eq("business_id", businessId)
+    .eq("phone", phone)
+    .maybeSingle();
+  return data?.code ?? "";
 }
 
 export async function createAccount(phone: string, pinHash: string, name: string | null) {
@@ -260,9 +273,8 @@ export type WalletCafe = {
  */
 export async function enrollDiner(cafeId: string, phone: string): Promise<void> {
   const db = createAdminClient();
-  await db
-    .from("diner_cafes")
-    .upsert({ phone, business_id: cafeId }, { onConflict: "phone,business_id", ignoreDuplicates: true });
+  // The RPC is idempotent and also assigns the short per-shop code on first join.
+  await db.rpc("enroll_diner", { p_business_id: cafeId, p_phone: phone });
 }
 
 /**
@@ -367,7 +379,8 @@ export async function createCafe(
 
 export type OwnerCard = {
   phone: string;
-  publicId: string | null;
+  /** Short per-shop code used to identify the card (never the phone). */
+  code: string | null;
   name: string | null;
   balance: number;
   stamps: number;

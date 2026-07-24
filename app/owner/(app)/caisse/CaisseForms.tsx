@@ -16,12 +16,7 @@ import {
   type StampState,
 } from "./actions";
 
-/** Group the opaque id so it's readable/typable: ABCDE FGHIJ. */
-function formatId(id: string): string {
-  return id.replace(/(.{5})(.{1,5})/, "$1 $2");
-}
-
-/** Accept a raw id or a URL that carries it (?c= or last path segment). */
+/** Accept a raw code or a URL that carries it (?c= or last path segment). */
 function extractCode(text: string): string {
   const t = text.trim();
   try {
@@ -108,10 +103,10 @@ function ResolvedCustomer({
       <p className="mt-0.5 text-[12.5px] font-semibold text-slate">
         {customer.balance} points{stampsEnabled ? ` · ${customer.stamps} tampons` : ""}
       </p>
-      <p className="mt-0.5 font-mono text-[11px] text-slate/70">ID {formatId(customer.publicId)}</p>
+      <p className="mt-0.5 font-mono text-[11px] text-slate/70">Code {customer.code}</p>
 
       <form action={creditForm} className="mt-3 flex gap-2">
-        <input type="hidden" name="customer" value={customer.publicId} />
+        <input type="hidden" name="customer" value={customer.code} />
         <input name="amount" inputMode="decimal" required placeholder="Montant en dinars" className="o-field !bg-white" />
         <button type="submit" disabled={crediting} className="o-btn !w-auto shrink-0 whitespace-nowrap px-4">
           {crediting ? "· ·" : "Créditer"}
@@ -127,7 +122,7 @@ function ResolvedCustomer({
       {stampsEnabled && (
         <>
           <form action={stampForm} className="mt-2">
-            <input type="hidden" name="customer" value={customer.publicId} />
+            <input type="hidden" name="customer" value={customer.code} />
             <button
               type="submit"
               disabled={stamping}
@@ -176,7 +171,7 @@ export function CreditForm({ pointsPerTnd }: { pointsPerTnd: number }) {
           type="text"
           inputMode="text"
           required
-          placeholder="Numéro ou ID du client"
+          placeholder="Numéro ou code du client"
           className="o-field"
         />
         <input
@@ -237,7 +232,7 @@ export function StampForm({ required }: { required: number }) {
       </div>
 
       <form action={formAction} className="mt-4 flex gap-2.5">
-        <input name="customer" type="text" inputMode="text" required placeholder="Numéro ou ID du client" className="o-field" />
+        <input name="customer" type="text" inputMode="text" required placeholder="Numéro ou code du client" className="o-field" />
         <button type="submit" disabled={pending} className="o-btn !w-auto shrink-0 whitespace-nowrap px-5">
           {pending ? "· ·" : "+1 tampon"}
         </button>
