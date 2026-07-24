@@ -10,7 +10,7 @@ import Link from "next/link";
 export const metadata = {
   title: "pointili.online — Vos clients de passage, en habitués",
   description:
-    "Le programme de fidélité pour cafés, restaurants et commerçants : points à la caisse, roue à gagner, récompenses réelles, et les analyses qui prouvent que vos clients reviennent. Sans app à installer.",
+    "Le programme de fidélité pour cafés, restaurants et commerçants : points à la caisse, récompenses réelles, et les analyses qui prouvent que vos clients reviennent. Sans app à installer.",
 };
 
 /* — marketing-only icons, kept local — */
@@ -54,7 +54,7 @@ function BrandMark({ dark = false }: { dark?: boolean }) {
 const steps = [
   { n: "01", Icon: Cup, title: "Le client consomme", text: "Comme d'habitude." },
   { n: "02", Icon: Qr, title: "Vous créditez ses points", text: "À la caisse, en 5 secondes." },
-  { n: "03", Icon: Gift, title: "Il joue & gagne", text: "Il tourne la roue — tout le monde gagne quelque chose." },
+  { n: "03", Icon: Gift, title: "Il cumule des points", text: "Chaque dinar dépensé le rapproche d'une récompense." },
   { n: "04", Icon: Chart, title: "Vous suivez les résultats", text: "Il échange ses points contre du réel. Et il revient." },
 ];
 
@@ -94,8 +94,7 @@ export default function Landing() {
         </h1>
 
         <p className="mt-4 text-[15.5px] leading-relaxed text-slate">
-          Ils gagnent des points en consommant, jouent et repartent avec de
-          vraies récompenses — chez vous.
+          Ils gagnent des points en consommant et les échangent contre de vraies récompenses — chez vous.
         </p>
         <p className="mt-3 text-[15.5px] leading-relaxed text-slate">
           Et vous voyez enfin, chiffres à l&apos;appui, s&apos;ils reviennent.
@@ -242,7 +241,7 @@ export default function Landing() {
 
         <ul className="mt-5 grid gap-2.5">
           {[
-            "Programme de points + roue à gagner",
+            "Programme de points + récompenses",
             "Analyses : qui revient, combien vous encaissez",
             "QR + autocollants (ou présentoir) pour vos tables",
             "Sans app à installer — vos clients scannent, c'est tout",

@@ -81,58 +81,33 @@ export async function saveEarnAction(
   return { saved: "Gagner" };
 }
 
-export async function savePlayAction(
+/* -------------------------------------------------------------------------- */
+/* Café identity — name, brand colour, and the shop logo                       */
+/* -------------------------------------------------------------------------- */
+
+const HEX = /^#[0-9a-fA-F]{6}$/;
+
+export async function saveCafeAction(
   _prev: SettingsState,
   formData: FormData,
 ): Promise<SettingsState> {
   const cafe = await ownerCafe();
   if (!cafe) return { error: "Non autorisé." };
 
-  const cooldown = num(formData.get("cooldownHours"), 0, 8760);
-  if (cooldown === null) return { error: "Fréquence de jeu : entre 0 h et 1 an." };
-
-  const db = await createClient();
-  const { data: game } = await db
-    .from("games")
-    .select("id, config")
-    .eq("business_id", cafe.id)
-    .maybeSingle();
-  if (!game) return { error: "Aucun jeu configuré." };
-
-  // Merge, don't replace: config also holds prizeConfig, gates and qrGate —
-  // overwriting it would silently wipe the owner's prize odds.
-  const config = { ...(game.config as object), cooldownHours: Math.round(cooldown) };
-
-  const { data, error } = await db
-    .from("games")
-    .update({ active: formData.get("wheelActive") === "on", config })
-    .eq("id", game.id)
-    .select("id");
-
-  const failed = assertWrote(data, error);
-  if (failed) return failed;
-
-  revalidatePath("/owner/reglages");
-  revalidatePath(`/${cafe.slug}/jeux`);
-  return { saved: "Jouer" };
-}
-
-export async function saveReturnAction(
-  _prev: SettingsState,
-  formData: FormData,
-): Promise<SettingsState> {
-  const cafe = await ownerCafe();
-  if (!cafe) return { error: "Non autorisé." };
+  const name = String(formData.get("name") ?? cafe.name).trim().slice(0, 60) || cafe.name;
+  const rawColor = String(formData.get("primaryColor") ?? "").trim();
+  const primaryColor = HEX.test(rawColor) ? rawColor.toLowerCase() : cafe.primaryColor;
 
   const db = await createClient();
   const { data, error } = await db
     .from("businesses")
     .update({
+      name,
+      primary_color: primaryColor,
       design_settings: {
         ...cafe.designSettings,
         showEngagement: formData.get("showEngagement") === "on",
       },
-      name: String(formData.get("name") ?? cafe.name).trim().slice(0, 60) || cafe.name,
     })
     .eq("id", cafe.id)
     .select("id");
@@ -143,6 +118,68 @@ export async function saveReturnAction(
   revalidatePath("/owner/reglages");
   revalidatePath(`/${cafe.slug}`);
   return { saved: "Café" };
+}
+
+/**
+ * The shop logo, stored as a compact data-URI in businesses.logo_url.
+ *
+ * The client downscales the image to a small square on a canvas before it ever
+ * reaches here (a real logo lands at ~10-30 KB), so no object storage is needed
+ * and the same code path works identically in dev and prod. We still validate
+ * hard on the server — never trust the client did the shrinking:
+ *   • only raster image types (png/jpeg/webp) — no SVG, which can carry script
+ *   • a firm byte cap, so a crafted payload can't bloat the row or the card query
+ */
+const LOGO_PREFIX = /^data:image\/(png|jpe?g|webp);base64,/i;
+const LOGO_MAX_CHARS = 500_000; // ~360 KB decoded — generous for a 256px logo
+
+export async function saveLogoAction(dataUri: string): Promise<SettingsState> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { error: "Non autorisé." };
+
+  if (typeof dataUri !== "string" || !LOGO_PREFIX.test(dataUri)) {
+    return { error: "Image invalide (PNG, JPG ou WebP)." };
+  }
+  if (dataUri.length > LOGO_MAX_CHARS) {
+    return { error: "Logo trop lourd — essayez une image plus petite." };
+  }
+  const b64 = dataUri.slice(dataUri.indexOf(",") + 1);
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) {
+    return { error: "Image invalide." };
+  }
+
+  const db = await createClient();
+  const { data, error } = await db
+    .from("businesses")
+    .update({ logo_url: dataUri })
+    .eq("id", cafe.id)
+    .select("id");
+
+  const failed = assertWrote(data, error);
+  if (failed) return failed;
+
+  revalidatePath("/owner/reglages");
+  revalidatePath(`/${cafe.slug}`);
+  return { saved: "Logo" };
+}
+
+export async function removeLogoAction(): Promise<SettingsState> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { error: "Non autorisé." };
+
+  const db = await createClient();
+  const { data, error } = await db
+    .from("businesses")
+    .update({ logo_url: null })
+    .eq("id", cafe.id)
+    .select("id");
+
+  const failed = assertWrote(data, error);
+  if (failed) return failed;
+
+  revalidatePath("/owner/reglages");
+  revalidatePath(`/${cafe.slug}`);
+  return { saved: "Logo retiré" };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -217,118 +254,4 @@ export async function deleteRewardAction(id: string): Promise<void> {
   revalidatePath(`/${cafe.slug}/boutique`);
   // Ma carte's "almost there" nudge depends on the reward set too.
   revalidatePath(`/${cafe.slug}`);
-}
-
-/* -------------------------------------------------------------------------- */
-/* Wheel prizes — labels live on the `prizes` row, odds in games.config        */
-/* -------------------------------------------------------------------------- */
-
-type PrizeConfig = Record<string, { weight: number; isLose: boolean }>;
-
-/**
- * Add or update one wheel segment.
- *
- * A prize is split across two places: its label/position/active sit on the
- * `prizes` row, while its weight (odds) and "lose" flag live in
- * games.config.prizeConfig keyed by the prize id — which is exactly the shape
- * play_game() reads to pick a winner. We merge that config, never replace it, so
- * editing one segment can't wipe the others' odds.
- */
-export async function savePrizeAction(
-  _prev: SettingsState,
-  formData: FormData,
-): Promise<SettingsState> {
-  const cafe = await ownerCafe();
-  if (!cafe) return { error: "Non autorisé." };
-
-  const id = String(formData.get("id") ?? "");
-  const label = String(formData.get("label") ?? "").trim().slice(0, 40);
-  const weight = num(formData.get("weight"), 1, 1000);
-  const isLose = formData.get("isLose") === "on";
-
-  if (!label) return { error: "Le nom du lot est requis." };
-  if (weight === null) return { error: "Chance : un poids entre 1 et 1000." };
-
-  const db = await createClient();
-  const { data: game } = await db
-    .from("games")
-    .select("id, config")
-    .eq("business_id", cafe.id)
-    .maybeSingle();
-  if (!game) return { error: "Aucun jeu configuré." };
-
-  const config = { ...(game.config as Record<string, unknown>) };
-  const prizeConfig: PrizeConfig = { ...((config.prizeConfig as PrizeConfig) ?? {}) };
-
-  let prizeId = id;
-  if (id) {
-    const { data, error } = await db
-      .from("prizes")
-      .update({ label, active: true })
-      .eq("id", id)
-      .eq("game_id", game.id) // belt + braces; RLS enforces ownership too
-      .select("id");
-    const failed = assertWrote(data, error);
-    if (failed) return failed;
-  } else {
-    // append after the last segment
-    const { data: last } = await db
-      .from("prizes")
-      .select("position")
-      .eq("game_id", game.id)
-      .order("position", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const position = (last?.position ?? -1) + 1;
-    const { data, error } = await db
-      .from("prizes")
-      .insert({ game_id: game.id, label, active: true, position })
-      .select("id");
-    const failed = assertWrote(data, error);
-    if (failed) return failed;
-    prizeId = data![0].id;
-  }
-
-  prizeConfig[prizeId] = { weight: Math.round(weight), isLose };
-  config.prizeConfig = prizeConfig;
-
-  const { error: cfgErr } = await db.from("games").update({ config }).eq("id", game.id);
-  if (cfgErr) return { error: "Enregistrement impossible." };
-
-  revalidatePath("/owner/reglages");
-  revalidatePath(`/${cafe.slug}/jeux`);
-  return { saved: label };
-}
-
-export async function deletePrizeAction(id: string): Promise<void> {
-  const cafe = await ownerCafe();
-  if (!cafe) return;
-
-  const db = await createClient();
-  const { data: game } = await db
-    .from("games")
-    .select("id, config")
-    .eq("business_id", cafe.id)
-    .maybeSingle();
-  if (!game) return;
-
-  // A prize that's already been won can't be deleted (wins → prizes, on delete
-  // restrict), so deactivate it instead — getGame only shows active segments.
-  const { error } = await db
-    .from("prizes")
-    .delete()
-    .eq("id", id)
-    .eq("game_id", game.id);
-  if (error) {
-    await db.from("prizes").update({ active: false }).eq("id", id).eq("game_id", game.id);
-  }
-
-  const config = { ...(game.config as Record<string, unknown>) };
-  const prizeConfig: PrizeConfig = { ...((config.prizeConfig as PrizeConfig) ?? {}) };
-  delete prizeConfig[id];
-  config.prizeConfig = prizeConfig;
-  await db.from("games").update({ config }).eq("id", game.id);
-
-  revalidatePath("/owner/reglages");
-  revalidatePath(`/${cafe.slug}/jeux`);
 }

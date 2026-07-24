@@ -26,15 +26,44 @@ export default async function OwnerLayout({
 
   const left = cafe ? remaining(cafe.planExpiresAt) : null;
 
+  const planChip = cafe
+    ? cafe.plan === "pro"
+      ? { text: "Pro", cls: "bg-royal text-white" }
+      : left?.expired
+        ? { text: "Expiré", cls: "bg-seal-soft text-seal" }
+        : { text: `Essai · ${left?.label ?? ""}`.trim(), cls: "bg-gold-soft text-gold-deep" }
+    : null;
+
   return (
-    <div className="app-shell flex min-h-dvh flex-col">
-      <header className="flex items-center justify-between border-b border-hair bg-white px-5 py-3.5">
-        <span className="text-[16px] font-extrabold text-charcoal">
-          pointili<span className="text-royal2">.online</span>
-        </span>
-        <span className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-slate">
-          Espace café
-        </span>
+    <div className="app-shell o-shell flex min-h-dvh flex-col">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-hair bg-white/85 px-4 py-3 backdrop-blur">
+        {cafe ? (
+          <>
+            <span
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[15px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(40,18,59,.5)]"
+              style={{ background: cafe.primaryColor }}
+            >
+              {cafe.name.charAt(0).toUpperCase()}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[15px] font-extrabold leading-tight text-charcoal">
+                {cafe.name}
+              </span>
+              <span className="block text-[10.5px] font-semibold text-slate">
+                Espace café
+              </span>
+            </span>
+            {planChip && (
+              <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${planChip.cls}`}>
+                {planChip.text}
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="text-[16px] font-extrabold text-charcoal">
+            pointili<span className="text-royal2">.online</span>
+          </span>
+        )}
       </header>
 
       {owner.dev && (

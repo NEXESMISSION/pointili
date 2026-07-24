@@ -1,24 +1,16 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getCafe, getDiner, getGame, getRewards, nextRewardNudge } from "@/lib/data";
-import {
-  dinerWallet,
-  getActivity,
-  nextPlayAt,
-  type Activity,
-  type WalletCafe,
-} from "@/lib/db";
-import { logoutDinerAction } from "./actions";
+import { GiftIcon } from "@/components/icons";
+import { getCafe, getDiner, getRewards, nextRewardNudge } from "@/lib/data";
+import { dinerWallet } from "@/lib/db";
 
 /**
- * Ma carte — the diner's home. Deliberately SIMPLE.
- *
- * One card per café. The account is global (phone + PIN); points are per-café.
- * The card is painted in the café's own colour and names it, so you always know
- * which shop you're looking at. Your other cafés sit at the bottom as switchable
- * cards. The reward catalogue lives in the Boutique — not here.
+ * Accueil — the diner's home, in the mockup's shape:
+ * greeting → the points card (big number, progress toward the next reward) on
+ * the café-coloured gradient, then a white sheet with the counter codes and the
+ * available offers. History, other cards and logout live in Profil.
  */
-export default async function MaCarte({
+export default async function Accueil({
   params,
 }: {
   params: Promise<{ slug: string }>;
@@ -32,226 +24,154 @@ export default async function MaCarte({
 
   /*
     Signed in, but is this a café they've actually joined? A diner who scans a
-    NEW café's QR lands here directly (the QR points at /[slug], not /rejoindre),
-    so they'd otherwise see an empty 0-point card and never get the welcome. If
-    they're not in their wallet yet, send them through /rejoindre to enroll —
-    which grants this café's welcome and records the passport, so the round-trip
-    happens once and can't loop.
+    NEW café's QR lands here directly — send them through /rejoindre to enroll
+    (welcome bonus + passport) so the card never renders empty.
   */
   const wallet = await dinerWallet(diner.phone);
   if (!wallet.some((w) => w.slug === cafe.slug)) redirect(`/${slug}/rejoindre`);
 
-  const [rewards, game] = await Promise.all([
-    getRewards(cafe.id),
-    getGame(cafe.id),
-  ]);
-  const [activity, next] = await Promise.all([
-    getActivity(cafe.id, diner.phone),
-    game ? nextPlayAt(game.id, diner.phone, game.cooldownHours) : Promise.resolve(null),
-  ]);
+  const rewards = await getRewards(cafe.id);
 
   const nudge = nextRewardNudge(diner.balance, rewards);
-  const canRedeem = rewards.some((r) => r.pointsCost <= diner.balance);
-  const canSpin = Boolean(game) && !next;
   const pct = nudge ? Math.round(nudge.progress * 100) : 100;
-  const others = wallet.filter((w) => w.slug !== cafe.slug);
-
-  const color = cafe.primaryColor;
+  const offers = [...rewards].sort((a, b) => a.pointsCost - b.pointsCost).slice(0, 4);
 
   return (
-    <div className="space-y-4">
-      {/* ── the card — in THIS café's colour, naming THIS café ─── */}
-      <section
-        className="rounded-3xl px-6 pt-5 pb-7 text-white"
-        style={{
-          backgroundImage: `linear-gradient(135deg, ${color}, color-mix(in oklab, ${color}, #000 45%))`,
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-[16px] font-extrabold leading-tight">{cafe.name}</span>
-          <span className="text-[11px] font-semibold text-white/70">
-            {diner.name ?? "Membre"}
-          </span>
-        </div>
-        <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-white/60">
-          Carte fidélité
-        </span>
-
-        <p className="mt-4 flex items-baseline gap-2">
-          <span className="text-[52px] font-extrabold leading-none tabular-nums">
-            {diner.balance}
-          </span>
-          <span className="text-[13px] font-semibold text-white/70">points</span>
+    <div className="flex flex-1 flex-col">
+      {/* ── hero, on the café's colour ─────────────────────── */}
+      <section className="px-5 pb-6 pt-2 text-white">
+        <p className="text-[19px] font-extrabold leading-tight">
+          👋 Bonjour {diner.name ?? "toi"}
+        </p>
+        <p className="mt-0.5 text-[13px] font-medium text-white/75">
+          Voici ta carte de fidélité
         </p>
 
-        {nudge ? (
-          <div className="mt-5">
-            <div className="h-2 overflow-hidden rounded-full bg-black/20">
-              <div
-                className="h-full rounded-full bg-white transition-[width] duration-700"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <p className="mt-2.5 text-[13.5px] leading-snug text-white/90">
-              Encore <b className="text-white">{nudge.needed} points</b> pour{" "}
-              {nudge.target.label.toLowerCase()}.
+        {/* the points card — a frosted lavender inset over the brand colour */}
+        <div className="mt-4 rounded-3xl bg-white/10 px-5 pb-5 pt-4 shadow-[0_18px_40px_-18px_rgba(0,0,0,.45)] ring-1 ring-white/20 backdrop-blur-sm">
+          <p className="text-[12px] font-semibold text-white/75">Tes points</p>
+          <p className="mt-1 flex items-center gap-2.5">
+            <span className="text-[52px] font-extrabold leading-none tabular-nums">
+              {diner.balance}
+            </span>
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-b from-[#ffe08a] to-[#f0a819] text-[15px] shadow-[0_4px_10px_rgba(0,0,0,.3)]">
+              ⭐
+            </span>
+          </p>
+
+          {nudge ? (
+            <>
+              <p className="mt-3 text-[13px] font-medium text-white/90">
+                Encore <b>{nudge.needed} points</b> pour{" "}
+                {nudge.target.label.toLowerCase()} !
+              </p>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/30">
+                <div
+                  className="h-full rounded-full bg-white transition-[width] duration-700"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-[11.5px] font-semibold tabular-nums text-white/60">
+                {diner.balance} / {nudge.target.pointsCost}
+              </p>
+            </>
+          ) : rewards.length > 0 ? (
+            <p className="mt-3 text-[13.5px] font-semibold text-white/95">
+              ✦ Tu peux t&apos;offrir une récompense.
             </p>
-          </div>
-        ) : rewards.length > 0 ? (
-          <p className="mt-5 text-[13.5px] font-semibold text-white/95">
-            ✦ Tu peux t&apos;offrir une récompense.
-          </p>
-        ) : (
-          <p className="mt-5 text-[13.5px] font-medium text-white/80">
-            Cumule des points — des récompenses arrivent bientôt.
-          </p>
-        )}
+          ) : (
+            <p className="mt-3 text-[13px] font-medium text-white/75">
+              Cumule des points — des offres arrivent bientôt.
+            </p>
+          )}
+        </div>
       </section>
 
-      {/* ── your free spin is ready ───────────────────────── */}
-      {canSpin && (
-        <Link
-          href={`/${slug}/jeux`}
-          className="flex items-center justify-between gap-3 rounded-2xl border border-royal/30 bg-lilac px-4 py-4"
-        >
-          <span>
-            <span className="block text-[15.5px] font-bold text-charcoal">
-              Ton tour de roue t&apos;attend
-            </span>
-            <span className="block text-[12.5px] text-slate">
-              Offert — tout le monde gagne.
-            </span>
-          </span>
-          <span className="shrink-0 rounded-xl bg-royal px-4 py-2.5 text-[13px] font-bold text-white">
-            Jouer ✦
-          </span>
-        </Link>
-      )}
+      {/* ── the white sheet ────────────────────────────────── */}
+      <div className="flex-1 rounded-t-[28px] bg-white px-5 pb-6 pt-5">
+        {/* codes to show at the counter */}
+        {diner.codes.length > 0 && (
+          <section className="mb-4">
+            <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.06em] text-slate">
+              À montrer au comptoir
+            </p>
+            <ul className="space-y-2">
+              {diner.codes.map((c) => (
+                <li
+                  key={c.code}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-gold/40 bg-gold-soft/50 px-4 py-3"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-[14px] font-bold text-charcoal">
+                      {c.label}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] font-medium text-seal">
+                      {expiresIn(c.expiresAt)}
+                    </span>
+                  </span>
+                  <span className="shrink-0 rounded-lg bg-charcoal px-2.5 py-1.5 font-mono text-[14px] font-bold tracking-[0.14em] text-white">
+                    {c.code}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
-      {/* ── codes to show at the counter ──────────────────── */}
-      {diner.codes.length > 0 && (
-        <section>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
-            À montrer au comptoir
+        {/* offers preview — the reason to keep collecting */}
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-[15px] font-extrabold text-royal">
+            Offres disponibles
+          </h2>
+          <Link
+            href={`/${slug}/boutique`}
+            className="text-[12.5px] font-bold text-royal2"
+          >
+            Voir tout
+          </Link>
+        </div>
+
+        {offers.length === 0 ? (
+          <p className="mt-3 rounded-2xl border border-hair bg-lilac-2/60 px-4 py-5 text-center text-[13px] text-slate">
+            Pas encore d&apos;offres — reviens bientôt.
           </p>
-          <ul className="space-y-2">
-            {diner.codes.map((c) => (
-              <li
-                key={c.code}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-gold/40 bg-gold-soft/50 px-4 py-3"
-              >
-                <span className="min-w-0">
-                  <span className="block truncate text-[14.5px] font-bold text-charcoal">
-                    {c.label}
+        ) : (
+          <ul className="mt-2.5 space-y-2">
+            {offers.map((r) => (
+              <li key={r.id}>
+                <Link
+                  href={`/${slug}/boutique`}
+                  className="flex items-center gap-3.5 rounded-2xl border border-hair bg-white px-3.5 py-3 shadow-[0_8px_20px_-14px_rgba(40,18,59,.35)] active:scale-[0.99]"
+                >
+                  {r.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
+                    <img
+                      src={r.imageUrl}
+                      alt=""
+                      className="h-11 w-11 shrink-0 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-charcoal text-white">
+                      <GiftIcon className="h-5 w-5" />
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[14.5px] font-bold text-charcoal">
+                      {r.label}
+                    </span>
+                    <span className="block text-[12.5px] font-bold text-gold">
+                      {r.pointsCost} points 🪙
+                    </span>
                   </span>
-                  {/* The code silently vanishes when it lapses — say when, so the
-                      diner doesn't lose points they already spent. */}
-                  <span className="mt-0.5 block text-[11px] font-medium text-seal">
-                    {expiresIn(c.expiresAt)}
-                  </span>
-                </span>
-                <span className="shrink-0 rounded-lg bg-charcoal px-2.5 py-1.5 font-mono text-[14px] font-bold tracking-[0.14em] text-white">
-                  {c.code}
-                </span>
+                </Link>
               </li>
             ))}
           </ul>
-        </section>
-      )}
-
-      {/* ── one line to the store, only if something's in reach ── */}
-      {canRedeem && (
-        <Link
-          href={`/${slug}/boutique`}
-          className="flex items-center justify-center gap-2 rounded-2xl bg-royal py-3.5 text-[14px] font-bold text-white active:scale-[0.99]"
-        >
-          Échanger mes points ✦
-        </Link>
-      )}
-
-      {/* ── where the points came from ────────────────────── */}
-      {activity.length > 0 && (
-        <section>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
-            Mon activité
-          </p>
-          <ul className="divide-y divide-hair rounded-2xl border border-hair bg-white px-4">
-            {activity.map((a, i) => (
-              <ActivityRow key={i} a={a} />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* ── my other cafés — switch without re-scanning ───── */}
-      {others.length > 0 && (
-        <section>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
-            Mes autres cartes
-          </p>
-          <ul className="space-y-2">
-            {others.map((w) => (
-              <WalletChip key={w.businessId} cafe={w} />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <form action={logoutDinerAction.bind(null, slug)}>
-        <button
-          type="submit"
-          className="w-full py-1 text-center text-[12px] text-slate"
-        >
-          Changer de compte
-        </button>
-      </form>
+        )}
+      </div>
     </div>
   );
 }
-
-/** One switchable card for another café the diner belongs to. */
-function WalletChip({ cafe }: { cafe: WalletCafe }) {
-  return (
-    <li>
-      <Link
-        href={`/${cafe.slug}`}
-        className="flex items-center gap-3 rounded-2xl border border-hair bg-white px-3.5 py-3 active:scale-[0.99]"
-      >
-        {cafe.logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded, arbitrary host
-          <img src={cafe.logoUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
-        ) : (
-          <span
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[14px] font-bold text-white"
-            style={{ background: cafe.primaryColor }}
-          >
-            {cafe.name.charAt(0).toUpperCase()}
-          </span>
-        )}
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[14.5px] font-bold text-charcoal">
-            {cafe.name}
-          </span>
-          <span className="block text-[12px] text-slate">
-            {cafe.balance} points
-            {cafe.pendingWins + cafe.pendingRewards > 0 &&
-              ` · ${cafe.pendingWins + cafe.pendingRewards} code(s)`}
-          </span>
-        </span>
-        <span className="shrink-0 text-slate">›</span>
-      </Link>
-    </li>
-  );
-}
-
-const LABELS: Record<Activity["reason"], string> = {
-  earn: "Achat",
-  welcome: "Bienvenue",
-  redeem: "Échange",
-  adjust: "Ajustement",
-  expire: "Expiration",
-  collected: "Récupéré",
-};
 
 /** "expire dans 5 h" — the countdown a diner needs before a code lapses. */
 function expiresIn(iso: string): string {
@@ -263,53 +183,4 @@ function expiresIn(iso: string): string {
   if (h < 24) return `expire dans ${h} h`;
   const d = Math.floor(h / 24);
   return d === 1 ? "expire demain" : `expire dans ${d} j`;
-}
-
-/** "il y a 2 j" — elapsed time is the useful bit, not a raw date. */
-function ago(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(ms / 60_000);
-  if (mins < 1) return "à l'instant";
-  if (mins < 60) return `il y a ${mins} min`;
-  const h = Math.floor(mins / 60);
-  if (h < 24) return `il y a ${h} h`;
-  const d = Math.floor(h / 24);
-  return d === 1 ? "hier" : `il y a ${d} j`;
-}
-
-function ActivityRow({ a }: { a: Activity }) {
-  // Collected items carry no points delta — they're a "you picked this up" line.
-  if (a.reason === "collected") {
-    return (
-      <li className="flex items-center justify-between gap-3 py-3">
-        <span className="min-w-0">
-          <span className="block truncate text-[13.5px] font-semibold text-charcoal">
-            Récupéré{a.label ? ` · ${a.label}` : ""}
-          </span>
-          <span className="block text-[11px] text-slate">{ago(a.at)}</span>
-        </span>
-        <span className="shrink-0 text-[12px] font-bold text-royal">✓ pris</span>
-      </li>
-    );
-  }
-
-  const positive = a.delta > 0;
-  return (
-    <li className="flex items-center justify-between gap-3 py-3">
-      <span className="min-w-0">
-        <span className="block text-[13.5px] font-semibold text-charcoal">
-          {LABELS[a.reason]}
-        </span>
-        <span className="block text-[11px] text-slate">{ago(a.at)}</span>
-      </span>
-      <span
-        className={`shrink-0 text-[14px] font-bold tabular-nums ${
-          positive ? "text-ok" : "text-slate"
-        }`}
-      >
-        {positive ? "+" : ""}
-        {a.delta}
-      </span>
-    </li>
-  );
 }

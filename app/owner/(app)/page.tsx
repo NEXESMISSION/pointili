@@ -21,12 +21,7 @@ export default async function OwnerHome() {
   const program = await getLoyaltyProgram(cafe.id);
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-[26px] font-extrabold text-charcoal">Caisse</h1>
-        <p className="text-[13px] text-slate">{cafe.name}</p>
-      </div>
-
+    <div className="space-y-3.5">
       <CreditForm pointsPerTnd={program.pointsPerTnd} />
       <ValidateForm />
     </div>

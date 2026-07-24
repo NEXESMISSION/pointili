@@ -1,41 +1,60 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { AuthState } from "./actions";
-
-const field =
-  "w-full rounded-xl border border-line bg-white px-4 py-3.5 text-[15px] font-medium text-ink outline-none transition-colors placeholder:font-normal placeholder:text-slate/60 focus:border-royal focus:ring-2 focus:ring-royal/15";
 
 export function AuthForm({
   action,
   cta,
+  passwordAutoComplete = "current-password",
+  passwordHint,
 }: {
   action: (prev: AuthState, formData: FormData) => Promise<AuthState>;
   cta: string;
+  passwordAutoComplete?: "current-password" | "new-password";
+  passwordHint?: string;
 }) {
-  const [state, formAction, pending] = useActionState<AuthState, FormData>(
-    action,
-    {},
-  );
+  const [state, formAction, pending] = useActionState<AuthState, FormData>(action, {});
+  const [show, setShow] = useState(false);
 
   return (
-    <form action={formAction} className="space-y-2.5">
-      <input
-        name="email"
-        type="email"
-        autoComplete="email"
-        required
-        placeholder="vous@cafe.tn"
-        className={field}
-      />
-      <input
-        name="password"
-        type="password"
-        autoComplete="current-password"
-        required
-        placeholder="Mot de passe"
-        className={field}
-      />
+    <form action={formAction} className="space-y-3">
+      <label className="block">
+        <span className="mb-1.5 block text-[12.5px] font-bold text-charcoal">E-mail</span>
+        <input
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          placeholder="vous@boutique.tn"
+          className="o-field"
+        />
+      </label>
+
+      <label className="block">
+        <span className="mb-1.5 block text-[12.5px] font-bold text-charcoal">Mot de passe</span>
+        <span className="relative block">
+          <input
+            name="password"
+            type={show ? "text" : "password"}
+            autoComplete={passwordAutoComplete}
+            required
+            placeholder="••••••••"
+            className="o-field pr-16"
+          />
+          <button
+            type="button"
+            onClick={() => setShow((s) => !s)}
+            className="absolute inset-y-0 right-0 grid place-items-center px-4 text-[11.5px] font-bold uppercase tracking-[0.04em] text-royal"
+            aria-label={show ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+          >
+            {show ? "Cacher" : "Voir"}
+          </button>
+        </span>
+        {passwordHint && (
+          <span className="mt-1.5 block text-[11.5px] text-slate">{passwordHint}</span>
+        )}
+      </label>
 
       {state.error && (
         <p
@@ -54,11 +73,7 @@ export function AuthForm({
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="!mt-3.5 w-full rounded-xl bg-brand py-3.5 text-[12px] font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
-      >
+      <button type="submit" disabled={pending} className="o-btn !mt-4 text-[14px]">
         {pending ? "· · ·" : cta}
       </button>
     </form>

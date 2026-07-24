@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
 import { Logo } from "@/components/Logo";
-import { getCafe } from "@/lib/data";
+import { TopBar } from "@/components/TopBar";
+import { getCafe, getDiner } from "@/lib/data";
+import { dinerWallet } from "@/lib/db";
 
 export default async function CafeLayout({
   children,
@@ -24,37 +26,33 @@ export default async function CafeLayout({
   */
   if (!cafe.live) return <CafeDark name={cafe.name} />;
 
+  // For the top bar: is a reward code waiting, and does this diner hold more
+  // than one card (→ show the "switch" chevron). Null when not yet a member.
+  const diner = await getDiner(cafe.id);
+  const wallet = diner ? await dinerWallet(diner.phone) : [];
+
   return (
-    // app-shell = the mobile-only mandate: one phone-width column, centered.
+    /*
+      The mockup look: the café's brand colour IS the page — a violet gradient
+      behind the greeting and the points card — and each page pulls a white
+      rounded sheet up over it for its content. One phone-width column.
+    */
     <div
       className="app-shell flex min-h-dvh flex-col"
-      // The owner's brand colour drives accents inside their café.
-      style={{ ["--cafe" as string]: cafe.primaryColor }}
+      style={{
+        ["--cafe" as string]: cafe.primaryColor,
+        backgroundImage: `linear-gradient(170deg, color-mix(in oklab, ${cafe.primaryColor}, #fff 14%) 0%, ${cafe.primaryColor} 34%, color-mix(in oklab, ${cafe.primaryColor}, #000 32%) 100%)`,
+      }}
     >
-      {/*
-        The café's own identity leads — Pointili is the platform, not the star.
-        No logo → an inked monogram stamp rather than a SaaS avatar chip.
-      */}
-      <header className="flex items-center gap-2.5 px-5 pt-5 pb-3">
-        {cafe.logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded, arbitrary remote host
-          <img
-            src={cafe.logoUrl}
-            alt=""
-            className="h-9 w-9 rounded-full border border-ink object-cover"
-          />
-        ) : (
-          <span
-            className="grid h-9 w-9 -rotate-3 place-items-center rounded-full border-[1.5px] font-display text-[15px]"
-            style={{ borderColor: "var(--cafe)", color: "var(--cafe)" }}
-          >
-            {cafe.name.charAt(0).toUpperCase()}
-          </span>
-        )}
-        <span className="font-display text-[17px] text-ink">{cafe.name}</span>
-      </header>
+      <TopBar
+        slug={cafe.slug}
+        cafeName={cafe.name}
+        logoUrl={cafe.logoUrl}
+        hasCodes={(diner?.codes.length ?? 0) > 0}
+        multiCard={wallet.length > 1}
+      />
 
-      <main className="flex-1 px-5 pb-6">{children}</main>
+      <main className="flex flex-1 flex-col">{children}</main>
 
       <BottomNav slug={cafe.slug} />
     </div>

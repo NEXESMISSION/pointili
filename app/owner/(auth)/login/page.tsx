@@ -15,18 +15,18 @@ export default async function Login() {
   const configured = supabaseConfigured();
 
   return (
-    <div>
-      <h1 className="font-display text-[30px] font-black leading-tight text-ink">
-        Espace café
+    <div className="o-card px-6 py-7">
+      <h1 className="text-[26px] font-extrabold leading-tight text-charcoal">
+        Bon retour 👋
       </h1>
-      <p className="mt-1 mb-5 text-[14px] text-ink2">
-        Gérez votre programme, votre caisse et vos jeux.
+      <p className="mt-1.5 text-[13.5px] leading-relaxed text-slate">
+        Connectez-vous pour gérer vos points, votre caisse et vos récompenses.
       </p>
 
       {!configured && (
-        <p className="mb-4 rounded-xl bg-gold-soft px-3 py-2.5 text-[12px] leading-relaxed text-gold">
+        <p className="mt-4 rounded-xl bg-gold-soft px-3.5 py-2.5 text-[12px] leading-relaxed text-gold-deep">
           Supabase n&apos;est pas encore configuré. En développement, l&apos;espace
-          café est accessible sans connexion —{" "}
+          est accessible sans connexion —{" "}
           <Link href="/owner" className="font-bold underline">
             entrer directement
           </Link>
@@ -34,11 +34,13 @@ export default async function Login() {
         </p>
       )}
 
-      <AuthForm action={loginAction} cta="Se connecter" />
+      <div className="mt-5">
+        <AuthForm action={loginAction} cta="Se connecter" />
+      </div>
 
-      <p className="mt-4 text-center text-[13px] text-mut">
-        Pas encore de café ?{" "}
-        <Link href="/owner/signup" className="font-bold text-brand">
+      <p className="mt-5 text-center text-[13px] text-slate">
+        Pas encore de compte ?{" "}
+        <Link href="/owner/signup" className="font-bold text-royal">
           Créer un compte
         </Link>
       </p>

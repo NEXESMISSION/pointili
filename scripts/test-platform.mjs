@@ -52,7 +52,10 @@ await login(sa, SUPER.email, SUPER.password);
 await elevate(sa, SUPER.password);
 check("elevated super-admin reaches /admin", new URL(sa.url()).pathname === "/admin", new URL(sa.url()).pathname);
 const adminTxt = await sa.locator("main").innerText();
-check("admin lists every café", /Café Test/.test(adminTxt) && /saif coffe/.test(adminTxt));
+// Assert on the café this test provisions ("Café Test"). The admin query has no
+// owner filter, so the fixture appearing proves the console lists every café —
+// no hardcoded real café name, which drifts as the live data changes.
+check("admin lists every café", /Café Test/.test(adminTxt), adminTxt.slice(0, 40).replace(/\n/g, " "));
 
 // ── 2. a plain owner is bounced ─────────────────────────────────────
 const email = `plain${Date.now()}@example.com`;

@@ -2,19 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CardIcon, GiftIcon } from "./icons";
+import { GiftIcon, HomeIcon, ScanIcon, UserIcon } from "./icons";
 
 /**
- * The diner's bottom nav — two tabs only, on purpose.
- *
- * "Ma carte" (points, progress, history) and "Boutique" (rewards). The wheel is
- * NOT a tab — it's an action reached from the card's "Jouer" button when a spin
- * is ready. Two clear destinations keeps the app dead simple (§11: simplicity
- * IS "nice").
+ * The diner's bottom nav — four flat tabs, per the product mockup:
+ * Accueil (card + points), Scanner ("show me at the counter"), Offres
+ * (rewards), Profil (history, other cafés, switch account).
+ * MVP is the POINTS system only — no games tab.
  */
 const tabs = [
-  { key: "carte", label: "Ma carte", Icon: CardIcon, href: "" },
-  { key: "boutique", label: "Boutique", Icon: GiftIcon, href: "/boutique" },
+  { key: "accueil", label: "Accueil", Icon: HomeIcon, href: "" },
+  { key: "scanner", label: "Scanner", Icon: ScanIcon, href: "/scanner" },
+  { key: "offres", label: "Offres", Icon: GiftIcon, href: "/boutique" },
+  { key: "profil", label: "Profil", Icon: UserIcon, href: "/profil" },
 ];
 
 export function BottomNav({ slug }: { slug: string }) {
@@ -23,14 +23,13 @@ export function BottomNav({ slug }: { slug: string }) {
 
   /*
     The join screen is pre-account. A visitor who just scanned the QR hasn't got
-    a card yet, so "Ma carte" and "Boutique" only bounce them back here. Hiding
-    the nav keeps that first screen focused on the one thing that matters:
-    activating a card.
+    a card yet, so the tabs would only bounce them back here. Hiding the nav
+    keeps that first screen focused on activating a card.
   */
   if (pathname === `${base}/rejoindre`) return null;
 
   return (
-    <nav className="sticky bottom-0 z-20 border-t border-hair bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+    <nav className="sticky bottom-0 z-20 border-t border-hair bg-white pb-[env(safe-area-inset-bottom)]">
       <ul className="flex">
         {tabs.map(({ key, label, Icon, href }) => {
           const to = `${base}${href}`;
@@ -40,18 +39,16 @@ export function BottomNav({ slug }: { slug: string }) {
               <Link
                 href={to}
                 aria-current={active ? "page" : undefined}
-                className="flex min-h-[68px] flex-col items-center justify-center gap-1.5 py-2.5 active:bg-lilac-2"
+                className="flex min-h-[62px] flex-col items-center justify-center gap-1 py-2 active:bg-lilac-2"
               >
-                <span
-                  className={`grid h-[34px] w-[34px] place-items-center rounded-full transition-colors ${
-                    active ? "bg-royal text-white" : "text-slate"
+                <Icon
+                  className={`h-[22px] w-[22px] transition-colors ${
+                    active ? "text-royal" : "text-slate/70"
                   }`}
-                >
-                  <Icon className="h-[19px] w-[19px]" />
-                </span>
+                />
                 <span
-                  className={`text-[11.5px] font-semibold transition-colors ${
-                    active ? "text-charcoal" : "text-slate"
+                  className={`text-[10.5px] font-semibold transition-colors ${
+                    active ? "text-royal" : "text-slate/80"
                   }`}
                 >
                   {label}

@@ -141,6 +141,74 @@ h4 {
   background-size: 18px 18px;
 }
 
+/* ══ owner app · a refined, elevated surface ══════════════════════════
+   The owner tool stays LIGHT (legible mid-shift) but gains real depth:
+   soft layered shadows, generous radius, and a whisper of the brand's
+   "points" dot motif on the page itself. */
+.o-shell {
+  background:
+    radial-gradient(rgba(123, 97, 255, 0.06) 1.1px, transparent 1.4px) 0 0 / 22px 22px,
+    linear-gradient(180deg, #efeafb 0%, #eae5f6 40%, #eae5f6 100%);
+}
+/* the primary card */
+.o-card {
+  background: #fff;
+  border: 1px solid var(--color-hair);
+  border-radius: 22px;
+  box-shadow: 0 18px 40px -26px rgba(40, 18, 59, 0.5);
+}
+/* a tinted sub-panel / example / inset */
+.o-inset {
+  background: var(--color-lilac-2);
+  border: 1px solid var(--color-hair);
+  border-radius: 14px;
+}
+/* the shared input — bigger, POS-friendly, clear focus ring */
+.o-field {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--color-hair);
+  background: #fff;
+  padding: 13px 15px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-charcoal);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.o-field::placeholder {
+  color: color-mix(in oklab, var(--color-slate) 55%, transparent);
+  font-weight: 500;
+}
+.o-field:focus {
+  outline: none;
+  border-color: var(--color-royal);
+  box-shadow: 0 0 0 3px rgba(91, 63, 209, 0.14);
+}
+/* primary / secondary buttons */
+.o-btn {
+  width: 100%;
+  border-radius: 14px;
+  background: var(--color-royal);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 14px 0;
+  box-shadow: 0 12px 26px -12px rgba(91, 63, 209, 0.6);
+  transition: transform 0.1s;
+}
+.o-btn:active {
+  transform: scale(0.99);
+}
+.o-btn:disabled {
+  opacity: 0.55;
+}
+.o-btn--ghost {
+  background: #fff;
+  color: var(--color-charcoal);
+  border: 1px solid var(--color-hair);
+  box-shadow: none;
+}
+
 /*
   Print — the QR table tent has to come out clean.
 */

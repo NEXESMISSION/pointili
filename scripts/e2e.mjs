@@ -79,7 +79,7 @@ async function credit(amount, expectBalance) {
   await staff
     .waitForFunction(
       (want) => document.querySelector('[role="status"]')?.textContent?.includes(want),
-      `${expectBalance} pts`,
+      `${expectBalance} points`,
       { timeout: 20000 },
     )
     .catch(() => {});
@@ -88,42 +88,54 @@ async function credit(amount, expectBalance) {
 
 const creditTxt = await credit(12.5, 22);
 check("caisse credits floor(12.5 x 1) = 12", /\+12/.test(creditTxt), creditTxt.split("\n")[0]);
-check("balance = 10 welcome + 12 earned = 22", /22 pts/.test(creditTxt));
+check("balance = 10 welcome + 12 earned = 22", /22 points/.test(creditTxt));
 
 // ── 4. Welcome must not be granted twice ────────────────────────────
 const credit2 = await credit(5, 27);
 check(
   "welcome bonus granted once only",
-  !/bienvenue/i.test(credit2) && /27 pts/.test(credit2),
+  !/bienvenue/i.test(credit2) && /27 points/.test(credit2),
   credit2.replace(/\n/g, " · "),
 );
 
-// ── 5. The spin is server-decided, and lands where the server said ──
-const play1 = await diner.evaluate(async (slug) => {
-  const r = await fetch("/api/play", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ slug }),
-  });
-  return { status: r.status, body: await r.json() };
-}, SLUG);
-check("spin returns a prize", play1.status === 200 && !!play1.body.prizeLabel, play1.body.prizeLabel);
-check("winning spin issues a code", !!play1.body.code, play1.body.code);
+// Points are the ONLY way to earn in the MVP — there is no wheel. The /api/play
+// endpoint is removed; the auth section below proves it's gone, not just hidden.
 
-// ── 6. Cooldown blocks an immediate replay ──────────────────────────
-const play2 = await diner.evaluate(async (slug) => {
-  const r = await fetch("/api/play", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ slug }),
-  });
-  return { status: r.status, body: await r.json() };
-}, SLUG);
-check("cooldown blocks re-spin (429)", play2.status === 429, play2.body.error);
+// ── 5. Boutique: points buy a reward, which issues a counter code ────
+// Cheapest reward is 40 pts; balance is 27, so top up first (→ 67).
+await credit(40, 67);
 
-// ── 7. The code is claimable exactly once ───────────────────────────
-const code = play1.body.code;
-if (code) {
+await diner.goto(`${BASE}/${SLUG}/boutique`, { waitUntil: "networkidle" });
+diner.once("dialog", (d) => d.accept()); // confirm step
+const redeemBtn = diner.locator('button:has-text("Échanger")').first();
+let redeemCode = "";
+if (await redeemBtn.count()) {
+  await redeemBtn.click();
+  // Poll for the issued code rather than sleeping — same Zurich round-trip.
+  const gotCode = await diner
+    .waitForFunction(
+      () => /\b[A-Z2-9]{6}\b/.test(document.querySelector("main")?.innerText ?? ""),
+      undefined,
+      { timeout: 20000 },
+    )
+    .then(() => true)
+    .catch(() => false);
+  const boutiqueTxt = await diner.locator("main").innerText();
+  redeemCode = boutiqueTxt.match(/\b[A-Z2-9]{6}\b/)?.[0] ?? "";
+  check("redeem debits points and issues a code", gotCode && !!redeemCode, redeemCode || "no code");
+
+  await diner.goto(`${BASE}/${SLUG}`, { waitUntil: "networkidle" });
+  const cardTxt = await diner.locator("main").innerText();
+  check(
+    "redeemed reward appears on Accueil (À montrer au comptoir)",
+    /À MONTRER AU COMPTOIR/i.test(cardTxt),
+  );
+} else {
+  check("redeem button present when affordable", false, "no Échanger button");
+}
+
+// ── 6. That code is collectable exactly once, via the two-step counter ─
+if (redeemCode) {
   /*
     Two-step counter flow: enter the code → "Vérifier" (read-only look-up) →
     "Collecter" only if the operator confirms. A peek must NOT serve the code, so
@@ -132,7 +144,7 @@ if (code) {
   const SEC = 'section:has(h2:has-text("Valider un code"))';
   const claim = async () => {
     await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-    await staff.fill(`${SEC} input[name="code"]`, code);
+    await staff.fill(`${SEC} input[name="code"]`, redeemCode);
     await staff.locator(`${SEC} button:has-text("Vérifier")`).click();
     const collect = staff.locator(`${SEC} button:has-text("Collecter")`);
     await collect.waitFor({ timeout: 8000 }).catch(() => {});
@@ -145,7 +157,7 @@ if (code) {
 
   // A peek alone must not serve it: look up, then leave without collecting.
   await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await staff.fill(`${SEC} input[name="code"]`, code);
+  await staff.fill(`${SEC} input[name="code"]`, redeemCode);
   await staff.locator(`${SEC} button:has-text("Vérifier")`).click();
   await staff.locator(`${SEC} button:has-text("Collecter")`).waitFor({ timeout: 8000 }).catch(() => {});
   const peeked = await staff.locator(SEC).innerText().catch(() => "");
@@ -160,73 +172,11 @@ if (code) {
   const second = await claim();
   check("same code cannot be reused", /déjà.*utilisé/i.test(second), second.replace(/\n/g, " · "));
 
-  // and the collected win shows up in the diner's own history
-  await diner.goto(`${BASE}/${SLUG}`, { waitUntil: "networkidle" });
+  // and the collected reward shows up in the diner's own history (on Profil)
+  await diner.goto(`${BASE}/${SLUG}/profil`, { waitUntil: "networkidle" });
   const histTxt = await diner.locator("main").innerText();
   check("collected item appears in diner history", /Récupéré/i.test(histTxt),
     histTxt.split("\n").find((l) => /Récupéré/i.test(l)) ?? "");
-}
-
-// ── 8. During cooldown the UI must not offer a doomed button ───────
-await diner.goto(`${BASE}/${SLUG}/jeux`, { waitUntil: "networkidle" });
-// wait for the cooldown text to hydrate (useSyncExternalStore fills it after
-// mount) rather than guessing at a duration
-await diner
-  .waitForFunction(() => /Prochain tour/i.test(document.querySelector("main")?.innerText ?? ""), undefined, { timeout: 10000 })
-  .catch(() => {});
-const jeuxTxt = await diner.locator("main").innerText();
-const spinnable = await diner.locator('button:has-text("Jouer")').count();
-check(
-  "cooldown is shown, not a button that 429s",
-  /Prochain tour/i.test(jeuxTxt) && spinnable === 0,
-  jeuxTxt.split("\n").find((l) => /dans /.test(l)) ?? "",
-);
-
-// ── 9. No wheel segment may hand out points (§00's core rule) ───────
-const svgLabels = (await diner.locator("svg text").allInnerTexts())
-  .map((t) => (t ?? "").trim())
-  .filter(Boolean);
-const pointsPrize = svgLabels.find((t) => /\bpoints?\b/i.test(t));
-check(
-  "no wheel segment awards points (points come only from buying)",
-  !pointsPrize,
-  pointsPrize ? `found "${pointsPrize}"` : svgLabels.filter(Boolean).join(", "),
-);
-
-// ── 10. Boutique: redeem debits points and issues a code ─────────────
-// Top the account up so the cheapest reward (40) is affordable.
-await credit(40, 67);
-
-await diner.goto(`${BASE}/${SLUG}/boutique`, { waitUntil: "networkidle" });
-diner.once("dialog", (d) => d.accept()); // confirm step
-const redeemBtn = diner.locator('button:has-text("Échanger")').first();
-const hadButton = await redeemBtn.count();
-if (hadButton) {
-  await redeemBtn.click();
-  // Poll for the issued code rather than sleeping — same Zurich round-trip.
-  const gotCode = await diner
-    .waitForFunction(
-      () => /\b[A-Z2-9]{6}\b/.test(document.querySelector("main")?.innerText ?? ""),
-      undefined,
-      { timeout: 20000 },
-    )
-    .then(() => true)
-    .catch(() => false);
-  const boutiqueTxt = await diner.locator("main").innerText();
-  check(
-    "redeem issues a code",
-    gotCode,
-    boutiqueTxt.match(/\b[A-Z2-9]{6}\b/)?.[0] ?? "no code",
-  );
-
-  await diner.goto(`${BASE}/${SLUG}`, { waitUntil: "networkidle" });
-  const cardTxt = await diner.locator("main").innerText();
-  check(
-    "redeemed reward appears on Ma carte",
-    /À MONTRER AU COMPTOIR|Espresso/i.test(cardTxt),
-  );
-} else {
-  check("redeem button present when affordable", false, "no Échanger button");
 }
 
 // ── 11. Réglages actually save, and the caisse obeys them ───────────
@@ -267,7 +217,7 @@ if (hadButton) {
   const rateTxt = await staff.locator('[role="status"]').innerText();
   check(
     "caisse uses the owner's new rate (10 TND x 3 = 30)",
-    /\+30/.test(rateTxt) && /25 points de bienvenue/i.test(rateTxt),
+    /\+30/.test(rateTxt) && /25 de bienvenue/i.test(rateTxt),
     rateTxt.replace(/\n+/g, " · "),
   );
 
@@ -294,6 +244,78 @@ if (hadButton) {
     .update({ points_per_tnd: 1, welcome_points: 10 })
     .eq("business_id", biz.id);
   await admin.from("points_ledger").delete().eq("customer_phone", `+216${newPhone}`);
+}
+
+// ── 11b. The shop logo uploads, persists small, and shows on the card ─
+{
+  const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+  const { data: biz } = await admin.from("businesses").select("id").eq("slug", SLUG).single();
+
+  await staff.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
+  // the file input is hidden inside its label; setInputFiles targets it directly.
+  // The uploader downscales on a canvas and auto-saves, so wait for the verdict.
+  await staff.setInputFiles('input[type="file"][accept*="image"]', "public/logo-icon.png");
+  await staff.locator("text=Enregistré ✦").first().waitFor({ timeout: 20000 }).catch(() => {});
+
+  const { data: withLogo } = await admin.from("businesses").select("logo_url").eq("id", biz.id).single();
+  const uri = withLogo?.logo_url ?? "";
+  check(
+    "logo uploads and persists as a compact image",
+    /^data:image\/(png|jpe?g|webp);base64,/.test(uri) && uri.length < 500_000,
+    uri ? `${Math.round(uri.length / 1024)} KB` : "no logo_url",
+  );
+
+  // it must actually reach the (signed-in) diner's card header
+  await diner.goto(`${BASE}/${SLUG}`, { waitUntil: "networkidle" });
+  check("logo appears on the client card header", (await diner.locator("header img").count()) > 0);
+
+  // brand colour saves too — the color input is controlled, so set + dispatch
+  await staff.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
+  const cafeForm = 'form:has(input[name="name"])';
+  await staff.$eval(`${cafeForm} input[name="primaryColor"]`, (el) => {
+    el.value = "#0f9d58";
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await staff.locator(`${cafeForm} button[type="submit"]`).click();
+  await staff.locator(`${cafeForm} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
+  const { data: colored } = await admin.from("businesses").select("primary_color").eq("id", biz.id).single();
+  check("brand colour persists", colored?.primary_color === "#0f9d58", colored?.primary_color ?? "—");
+
+  await admin.from("businesses").update({ logo_url: null, primary_color: "#5b3fd1" }).eq("id", biz.id);
+}
+
+// ── 11c. A returning cardholder signs back in (new device / no cookie) ─
+{
+  // browser.newPage() gets a fresh context — no diner cookie, like a new phone.
+  const back = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await back.goto(`${BASE}/${SLUG}/rejoindre`, { waitUntil: "networkidle" });
+  await back.locator('button:has-text("déjà une carte")').click();
+  await back.fill('input[name="phone"]', PHONE);
+  await back.fill('input[name="pin"]', PIN);
+  await back.locator('form button[type="submit"]').click();
+  await back.waitForURL(`**/${SLUG}`, { timeout: 15000 }).catch(() => {});
+  const landed = await back
+    .waitForFunction(
+      () => /Tes points/i.test(document.querySelector("main")?.innerText ?? ""),
+      undefined,
+      { timeout: 10000 },
+    )
+    .then(() => true)
+    .catch(() => false);
+  check(
+    "returning diner signs in with phone + PIN",
+    back.url().endsWith(`/${SLUG}`) && landed,
+    back.url().replace(BASE, ""),
+  );
+
+  // and it's the SAME account — not a duplicate, no second welcome bonus
+  const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+  const { count } = await admin
+    .from("accounts")
+    .select("phone", { count: "exact", head: true })
+    .eq("phone", `+216${PHONE}`);
+  check("no duplicate account is created on sign-in", count === 1, `accounts=${count}`);
+  await back.close();
 }
 
 // ── 12. A brand-new owner can onboard (and must not get stuck) ──────
@@ -356,11 +378,11 @@ if (hadButton) {
   await admin.auth.admin.deleteUser(created.user.id);
 }
 
-// ── 13. Identity comes from the session, not the request body ────────
-// Passing someone else's phone in the body must NOT let you play as them.
+// ── 13. The wheel is gone, not just hidden — the endpoint must not exist ─
+// A points-only MVP has no /api/play; poking it should 404/405, never spin.
 const anon = await browser.newPage();
 await anon.goto(BASE, { waitUntil: "domcontentloaded" });
-const anonStatus = await anon.evaluate(async (slug) => {
+const playStatus = await anon.evaluate(async (slug) => {
   const r = await fetch("/api/play", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -368,7 +390,7 @@ const anonStatus = await anon.evaluate(async (slug) => {
   });
   return r.status;
 }, SLUG);
-check("signed-out play rejected (401)", anonStatus === 401, `status=${anonStatus}`);
+check("wheel endpoint /api/play is removed", playStatus === 404 || playStatus === 405, `status=${playStatus}`);
 
 await browser.close();
 

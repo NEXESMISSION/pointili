@@ -15,7 +15,7 @@ export default async function NouveauCafe() {
         Créez votre café
       </h1>
       <p className="mt-1.5 mb-5 text-[14px] leading-relaxed text-ink2">
-        On vous prépare tout : points, récompenses et la roue. Vous pourrez
+        On vous prépare tout : les points et les récompenses. Vous pourrez
         changer chaque réglage ensuite.
       </p>
 
