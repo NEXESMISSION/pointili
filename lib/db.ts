@@ -70,6 +70,33 @@ export async function getBalance(businessId: string, phone: string): Promise<num
   return (data as number | null) ?? 0;
 }
 
+export async function getStamps(businessId: string, phone: string): Promise<number> {
+  const db = createAdminClient();
+  const { data } = await db
+    .from("loyalty_stamps")
+    .select("count")
+    .eq("business_id", businessId)
+    .eq("phone", phone)
+    .maybeSingle();
+  return data?.count ?? 0;
+}
+
+export type StampResult =
+  | { ok: true; count: number; required: number; completed: boolean; code: string | null; label: string }
+  | { ok: false; reason: string };
+
+/** Manual "+1 tampon" at the counter. Completes + issues a code when full. */
+export async function addStamp(businessId: string, phone: string, delta = 1): Promise<StampResult> {
+  const db = createAdminClient();
+  const { data, error } = await db.rpc("add_stamp", {
+    p_business_id: businessId,
+    p_phone: phone,
+    p_delta: delta,
+  });
+  if (error) return { ok: false, reason: error.message };
+  return data as StampResult;
+}
+
 export type CreditResult =
   | { ok: true; earned: number; welcome: number; balance: number; multiplier: number }
   | { ok: false; reason: string };
@@ -161,7 +188,7 @@ export type PeekResult =
   | {
       found: true;
       label: string;
-      kind: "win" | "reward";
+      kind: "win" | "reward" | "stamp";
       status: "valid" | "expired" | "claimed";
     };
 
@@ -183,7 +210,7 @@ export async function peekCode(businessId: string, code: string): Promise<PeekRe
 }
 
 export type ClaimResult =
-  | { ok: true; label: string; kind: "win" | "reward" }
+  | { ok: true; label: string; kind: "win" | "reward" | "stamp" }
   | { ok: false; reason: string };
 
 /** Claim a counter code — exactly once, guarded inside the RPC. */
@@ -315,6 +342,77 @@ export async function createCafe(
   });
   if (error) return { ok: false, reason: "slug_invalid" };
   return data as CreateCafeResult;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Owner card management — list, search, and correct cardholders               */
+/* -------------------------------------------------------------------------- */
+
+export type OwnerCard = {
+  phone: string;
+  name: string | null;
+  balance: number;
+  stamps: number;
+  cycles: number;
+  pending: number;
+  lastAt: string | null;
+  joinedAt: string;
+};
+
+export type OwnerCards = { total: number; cards: OwnerCard[] };
+
+/**
+ * Every cardholder at a café, newest-active first, searchable by name/phone.
+ *
+ * The business_id is resolved from the owner's session before this is called
+ * (ownerCafe()), so — like every value RPC here — the service role trusts it.
+ */
+export async function ownerCards(
+  businessId: string,
+  search = "",
+  limit = 50,
+  offset = 0,
+): Promise<OwnerCards> {
+  const db = createAdminClient();
+  const { data } = await db.rpc("owner_cards", {
+    p_business_id: businessId,
+    p_search: search,
+    p_limit: limit,
+    p_offset: offset,
+  });
+  return (data as OwnerCards | null) ?? { total: 0, cards: [] };
+}
+
+/** Correct a cardholder's points (an 'adjust' ledger row). */
+export async function ownerAdjustPoints(
+  businessId: string,
+  phone: string,
+  delta: number,
+): Promise<{ ok: boolean; balance: number }> {
+  const db = createAdminClient();
+  const { data, error } = await db.rpc("owner_adjust_points", {
+    p_business_id: businessId,
+    p_phone: phone,
+    p_delta: delta,
+  });
+  if (error) return { ok: false, balance: 0 };
+  return data as { ok: boolean; balance: number };
+}
+
+/** Set a cardholder's stamp progress (0..required-1). */
+export async function ownerSetStamps(
+  businessId: string,
+  phone: string,
+  count: number,
+): Promise<{ ok: boolean; count: number; required: number }> {
+  const db = createAdminClient();
+  const { data, error } = await db.rpc("owner_set_stamps", {
+    p_business_id: businessId,
+    p_phone: phone,
+    p_count: count,
+  });
+  if (error) return { ok: false, count: 0, required: 10 };
+  return data as { ok: boolean; count: number; required: number };
 }
 
 /** When may this diner spin again? null = now. */

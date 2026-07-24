@@ -9,6 +9,7 @@ import {
   saveEarnAction,
   saveLogoAction,
   saveRewardAction,
+  saveStampsAction,
   type SettingsState,
 } from "./actions";
 
@@ -158,6 +159,64 @@ export function EarnForm({ cafe, program }: { cafe: Cafe; program: LoyaltyProgra
           defaultChecked={program.active && cafe.designSettings.loyaltyEnabled}
         />
       </Advanced>
+
+      <Feedback state={state} />
+      <button type="submit" disabled={pending} className={`${btn} mt-3`}>
+        {pending ? "· · ·" : "Enregistrer"}
+      </button>
+    </form>
+  );
+}
+
+/* La carte à tampons ------------------------------------------------------ */
+
+export function StampsForm({ program }: { program: LoyaltyProgram }) {
+  const [state, action, pending] = useActionState<SettingsState, FormData>(saveStampsAction, {});
+  const [on, setOn] = useState(program.stampsEnabled);
+  return (
+    <form action={action} className="px-4 py-3">
+      <label className="flex cursor-pointer items-start justify-between gap-3 py-1">
+        <span className="min-w-0">
+          <span className="block text-[13.5px] font-semibold text-charcoal">Carte à tampons activée</span>
+          <span className="mt-0.5 block text-[11.5px] leading-snug text-slate">
+            Un tampon par visite ; carte pleine = récompense. Fonctionne en plus des points.
+          </span>
+        </span>
+        <input
+          type="checkbox"
+          name="stampsEnabled"
+          checked={on}
+          onChange={(e) => setOn(e.target.checked)}
+          className="peer sr-only"
+        />
+        <span className="mt-0.5 h-[24px] w-[42px] shrink-0 rounded-full border border-hair bg-lilac-2 p-[3px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
+          <span className="block h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-[18px]" />
+        </span>
+      </label>
+
+      {/* fields stay mounted (so they submit) but dim + disable when off */}
+      <div className={on ? "" : "pointer-events-none opacity-45"}>
+        <Num
+          name="stampsRequired"
+          label="Tampons pour une carte pleine"
+          help="Le nombre de visites avant la récompense."
+          value={program.stampsRequired}
+          suffix="tampons"
+        />
+        <label className="block py-2.5">
+          <span className="block text-[13.5px] font-semibold text-charcoal">Récompense de la carte</span>
+          <span className="mt-0.5 mb-2 block text-[11.5px] text-slate">
+            Ce que le client gagne en remplissant sa carte.
+          </span>
+          <input
+            name="stampReward"
+            defaultValue={program.stampReward}
+            maxLength={80}
+            placeholder="-20% sur la prochaine commande"
+            className="o-field"
+          />
+        </label>
+      </div>
 
       <Feedback state={state} />
       <button type="submit" disabled={pending} className={`${btn} mt-3`}>

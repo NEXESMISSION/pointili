@@ -37,6 +37,10 @@ export type LoyaltyProgram = {
   pointsPerTnd: number;
   welcomePoints: number;
   redeemExpiryHours: number;
+  /* — stamp card ("tampons"), optional, runs alongside points — */
+  stampsEnabled: boolean;
+  stampsRequired: number;
+  stampReward: string;
 };
 
 export type Reward = {
@@ -69,7 +73,7 @@ export type Game = {
 export type ActiveCode = {
   code: string;
   label: string;
-  kind: "win" | "reward";
+  kind: "win" | "reward" | "stamp";
   expiresAt: string;
 };
 
@@ -78,6 +82,8 @@ export type Diner = {
   phone: string;
   name: string | null;
   balance: number;
+  /** Stamps toward the current card (0 when stamps are off / none yet). */
+  stamps: number;
   streak: number;
   xp: number;
   codes: ActiveCode[];

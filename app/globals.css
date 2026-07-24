@@ -209,6 +209,34 @@ h4 {
   box-shadow: none;
 }
 
+/* ── deep-purple diner theme (the card mockup) ────────────────────────────
+   A dark, premium loyalty card. The hue comes from each café's --cafe colour
+   (default deep purple), so a shop that recolours still gets a coherent dark
+   card. Panels are a faint translucent white so they read one step lighter
+   than the gradient behind them. */
+.d-card {
+  background: rgba(255, 255, 255, 0.065);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 26px;
+  box-shadow: 0 24px 48px -28px rgba(0, 0, 0, 0.7);
+}
+.d-soft {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+}
+/* a filled loyalty stamp — white disc, café-coloured mark */
+.d-stamp {
+  background: #fff;
+  color: var(--cafe, #5b3fd1);
+  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.5);
+}
+.d-stamp--empty {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1.5px dashed rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.45);
+}
+
 /*
   Print — the QR table tent has to come out clean.
 */

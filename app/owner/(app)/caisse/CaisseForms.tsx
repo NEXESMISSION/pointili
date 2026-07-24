@@ -1,14 +1,16 @@
 "use client";
 
 import { useActionState, useState, type ReactNode } from "react";
-import { CheckIcon, Sparkle } from "@/components/icons";
+import { CheckIcon, Sparkle, StampIcon } from "@/components/icons";
 import {
+  addStampAction,
   collectAction,
   creditAction,
   peekAction,
   type CollectState,
   type CreditState,
   type PeekState,
+  type StampState,
 } from "./actions";
 
 /* The daily action — big, focused, thumb-friendly. */
@@ -75,6 +77,74 @@ export function CreditForm({ pointsPerTnd }: { pointsPerTnd: number }) {
           <p className="mt-2 text-[12px] font-semibold text-slate">
             Nouveau solde : <b className="tabular-nums text-charcoal">{state.ok.balance}</b> points
           </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ── the manual stamp: +1 per visit, shown only when stamps are on ─────── */
+
+export function StampForm({ required }: { required: number }) {
+  const [state, formAction, pending] = useActionState<StampState, FormData>(addStampAction, {});
+  return (
+    <section className="o-card p-5">
+      <div className="flex items-center gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-charcoal text-white">
+          <StampIcon className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-[17px] font-extrabold leading-tight text-charcoal">Ajouter un tampon</h2>
+          <p className="text-[12px] text-slate">Un tampon par visite — {required} pour une carte pleine.</p>
+        </div>
+      </div>
+
+      <form action={formAction} className="mt-4 flex gap-2.5">
+        <input name="phone" type="tel" inputMode="tel" required placeholder="Numéro du client" className="o-field" />
+        <button type="submit" disabled={pending} className="o-btn !w-auto shrink-0 whitespace-nowrap px-5">
+          {pending ? "· ·" : "+1 tampon"}
+        </button>
+      </form>
+
+      {state.error && (
+        <p role="alert" className="mt-3 rounded-xl bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal">
+          {state.error}
+        </p>
+      )}
+
+      {state.ok && (
+        <div role="status" className="o-inset mt-4 px-4 py-4 text-center">
+          {/* the card, as dots */}
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {Array.from({ length: state.ok.required }).map((_, i) => (
+              <span
+                key={i}
+                className={`grid h-6 w-6 place-items-center rounded-full text-[11px] ${
+                  i < (state.ok!.completed ? state.ok!.required : state.ok!.count)
+                    ? "bg-royal text-white"
+                    : "border border-hair bg-white text-transparent"
+                }`}
+              >
+                ✦
+              </span>
+            ))}
+          </div>
+          {state.ok.completed ? (
+            <>
+              <p className="mt-3 text-[15px] font-extrabold text-royal">Carte pleine 🎉</p>
+              <p className="mt-0.5 text-[12.5px] font-semibold text-charcoal">
+                {state.ok.label} — code <span className="font-mono">{state.ok.code}</span>
+              </p>
+              <p className="mt-1 text-[11.5px] text-slate">
+                Le client le retrouve sur sa carte, à collecter au comptoir.
+              </p>
+            </>
+          ) : (
+            <p className="mt-3 text-[13px] font-semibold text-charcoal">
+              {state.ok.count} / {state.ok.required} tampons ·{" "}
+              <span className="text-slate">{state.ok.phone}</span>
+            </p>
+          )}
         </div>
       )}
     </section>
@@ -150,7 +220,7 @@ function ValidateInner({ onReset }: { onReset: () => void }) {
           }`}
         >
           <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate">
-            {peek.kind === "win" ? "Gain à la roue" : "Récompense"}
+            {peek.kind === "win" ? "Gain à la roue" : peek.kind === "stamp" ? "Carte pleine" : "Récompense"}
           </p>
           <p className={`mt-1 text-[18px] font-extrabold ${valid ? "text-royal" : "text-seal"}`}>
             {peek.label}

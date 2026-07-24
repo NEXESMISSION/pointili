@@ -23,13 +23,13 @@ export function JoinForm({ slug }: { slug: string }) {
 
   const tab = (active: boolean) =>
     `rounded-xl py-2.5 text-[13px] font-bold transition ${
-      active ? "bg-white text-royal shadow-sm" : "text-slate"
+      active ? "bg-white text-royal shadow-sm" : "text-white/60"
     }`;
 
   return (
     <div>
       {/* new vs returning — so signing in is a first-class, obvious path */}
-      <div className="mb-4 grid grid-cols-2 gap-1 rounded-2xl bg-lilac-2 p-1">
+      <div className="mb-4 grid grid-cols-2 gap-1 rounded-2xl bg-white/10 p-1">
         <button type="button" onClick={() => setReturning(false)} className={tab(!returning)}>
           Nouvelle carte
         </button>
@@ -91,7 +91,7 @@ export function JoinForm({ slug }: { slug: string }) {
           {pending ? "…" : returning ? "Retrouver ma carte" : "Activer ma carte ✦"}
         </button>
 
-        <p className="pt-0.5 text-center text-[12px] text-slate">
+        <p className="pt-0.5 text-center text-[12px] text-white/55">
           {returning
             ? "Entre le numéro et le code de ta carte."
             : "Ton code te servira à retrouver ta carte."}

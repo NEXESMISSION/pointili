@@ -2,18 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GiftIcon, HomeIcon, ScanIcon, UserIcon } from "./icons";
+import { CardIcon, HistoryIcon, UserIcon } from "./icons";
 
 /**
- * The diner's bottom nav — four flat tabs, per the product mockup:
- * Accueil (card + points), Scanner ("show me at the counter"), Offres
- * (rewards), Profil (history, other cafés, switch account).
- * MVP is the POINTS system only — no games tab.
+ * The diner's bottom nav — three flat tabs on the deep-purple card, per the
+ * product mockup: Carte (points / stamps), Historique (activity), Profil
+ * (account + card switcher). Active tab is bright; the rest are dimmed white.
  */
 const tabs = [
-  { key: "accueil", label: "Accueil", Icon: HomeIcon, href: "" },
-  { key: "scanner", label: "Scanner", Icon: ScanIcon, href: "/scanner" },
-  { key: "offres", label: "Offres", Icon: GiftIcon, href: "/boutique" },
+  { key: "carte", label: "Carte", Icon: CardIcon, href: "" },
+  { key: "historique", label: "Historique", Icon: HistoryIcon, href: "/historique" },
   { key: "profil", label: "Profil", Icon: UserIcon, href: "/profil" },
 ];
 
@@ -21,15 +19,11 @@ export function BottomNav({ slug }: { slug: string }) {
   const pathname = usePathname();
   const base = `/${slug}`;
 
-  /*
-    The join screen is pre-account. A visitor who just scanned the QR hasn't got
-    a card yet, so the tabs would only bounce them back here. Hiding the nav
-    keeps that first screen focused on activating a card.
-  */
+  // The join screen is pre-account — hide the nav so it stays focused on joining.
   if (pathname === `${base}/rejoindre`) return null;
 
   return (
-    <nav className="sticky bottom-0 z-20 border-t border-hair bg-white pb-[env(safe-area-inset-bottom)]">
+    <nav className="sticky bottom-0 z-20 border-t border-white/10 bg-[#120a24]/85 pb-[env(safe-area-inset-bottom)] backdrop-blur">
       <ul className="flex">
         {tabs.map(({ key, label, Icon, href }) => {
           const to = `${base}${href}`;
@@ -39,16 +33,16 @@ export function BottomNav({ slug }: { slug: string }) {
               <Link
                 href={to}
                 aria-current={active ? "page" : undefined}
-                className="flex min-h-[62px] flex-col items-center justify-center gap-1 py-2 active:bg-lilac-2"
+                className="flex min-h-[62px] flex-col items-center justify-center gap-1 py-2"
               >
                 <Icon
                   className={`h-[22px] w-[22px] transition-colors ${
-                    active ? "text-royal" : "text-slate/70"
+                    active ? "text-white" : "text-white/45"
                   }`}
                 />
                 <span
                   className={`text-[10.5px] font-semibold transition-colors ${
-                    active ? "text-royal" : "text-slate/80"
+                    active ? "text-white" : "text-white/45"
                   }`}
                 >
                   {label}

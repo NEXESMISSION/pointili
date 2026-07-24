@@ -81,6 +81,43 @@ export async function saveEarnAction(
   return { saved: "Gagner" };
 }
 
+/**
+ * The stamp card ("tampons") — an optional mode that runs alongside points.
+ * A café can turn it on, set how many stamps fill a card, and name the reward.
+ */
+export async function saveStampsAction(
+  _prev: SettingsState,
+  formData: FormData,
+): Promise<SettingsState> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { error: "Non autorisé." };
+
+  const required = num(formData.get("stampsRequired"), 1, 100);
+  const reward = String(formData.get("stampReward") ?? "").trim().slice(0, 80);
+
+  if (required === null) return { error: "Nombre de tampons : entre 1 et 100." };
+  if (!reward) return { error: "Décrivez la récompense de la carte." };
+
+  const db = await createClient();
+  const { data, error } = await db
+    .from("loyalty_programs")
+    .update({
+      stamps_enabled: formData.get("stampsEnabled") === "on",
+      stamps_required: Math.round(required),
+      stamp_reward: reward,
+    })
+    .eq("business_id", cafe.id)
+    .select("business_id");
+
+  const failed = assertWrote(data, error);
+  if (failed) return failed;
+
+  revalidatePath("/owner/reglages");
+  revalidatePath("/owner"); // the caisse shows the stamp control when enabled
+  revalidatePath(`/${cafe.slug}`);
+  return { saved: "Tampons" };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Café identity — name, brand colour, and the shop logo                       */
 /* -------------------------------------------------------------------------- */

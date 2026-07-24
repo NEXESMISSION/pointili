@@ -40,22 +40,16 @@ export default async function Rejoindre({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
-      {/* ── hero, on the café's colour ─────────────────────── */}
-      <section className="px-5 pb-7 pt-6 text-white">
-        <h1 className="text-[28px] font-extrabold leading-tight">
+    <div className="flex flex-1 flex-col px-5 pb-8 pt-8">
+      <section className="pb-7">
+        <h1 className="text-[30px] font-extrabold leading-tight text-white">
           Ta carte de fidélité
         </h1>
-        <p className="mt-2 text-[14.5px] leading-relaxed text-white/85">
+        <p className="mt-2 text-[14.5px] leading-relaxed text-white/75">
           {program.welcomePoints > 0 ? (
             <>
-              <b className="text-white">
-                {program.welcomePoints} points offerts{" "}
-                <span className="inline-grid h-5 w-5 place-items-center rounded-full bg-gradient-to-b from-[#ffe08a] to-[#f0a819] align-[-3px] text-[10px]">
-                  ⭐
-                </span>
-              </b>{" "}
-              à l&apos;inscription. En 10 secondes, sans app ni e-mail.
+              <b className="text-white">{program.welcomePoints} points offerts ⭐</b> à
+              l&apos;inscription. En 10 secondes, sans app ni e-mail.
             </>
           ) : (
             <>En 10 secondes. Pas d&apos;app, pas d&apos;e-mail.</>
@@ -63,8 +57,7 @@ export default async function Rejoindre({
         </p>
       </section>
 
-      {/* ── the white sheet ────────────────────────────────── */}
-      <div className="flex-1 rounded-t-[28px] bg-white px-5 pb-8 pt-6">
+      <div className="d-card px-5 pb-7 pt-6">
         <JoinForm slug={slug} />
       </div>
     </div>

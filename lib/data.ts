@@ -150,7 +150,9 @@ export const getLoyaltyProgram = cache(async (cafeId: string): Promise<LoyaltyPr
   const db = createAdminClient();
   const { data } = await db
     .from("loyalty_programs")
-    .select("active, points_per_tnd, welcome_points, redeem_expiry_hours")
+    .select(
+      "active, points_per_tnd, welcome_points, redeem_expiry_hours, stamps_enabled, stamps_required, stamp_reward",
+    )
     .eq("business_id", cafeId)
     .maybeSingle();
 
@@ -160,6 +162,9 @@ export const getLoyaltyProgram = cache(async (cafeId: string): Promise<LoyaltyPr
     pointsPerTnd: Number(data?.points_per_tnd ?? 1),
     welcomePoints: data?.welcome_points ?? 10,
     redeemExpiryHours: data?.redeem_expiry_hours ?? 48,
+    stampsEnabled: data?.stamps_enabled ?? false,
+    stampsRequired: data?.stamps_required ?? 10,
+    stampReward: data?.stamp_reward ?? "Une récompense offerte",
   };
 })
 
@@ -245,19 +250,21 @@ export async function getDiner(cafeId: string): Promise<Diner | null> {
   const phone = await currentDiner();
   if (!phone) return null;
 
-  const { getAccount, getBalance, getCodes } = await import("./db");
+  const { getAccount, getBalance, getCodes, getStamps } = await import("./db");
   const account = await getAccount(phone);
   if (!account) return null;
 
-  const [balance, codes] = await Promise.all([
+  const [balance, codes, stamps] = await Promise.all([
     getBalance(cafeId, phone),
     getCodes(cafeId, phone),
+    getStamps(cafeId, phone),
   ]);
 
   return {
     phone,
     name: account.name,
     balance,
+    stamps,
     streak: 0,
     xp: 0,
     codes,

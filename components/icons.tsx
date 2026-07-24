@@ -187,6 +187,25 @@ export function UserIcon({ className = "h-5 w-5" }: P) {
   );
 }
 
+/** A stamp / loyalty-punch mark — a rounded ticket with a check. */
+export function StampIcon({ className = "h-5 w-5" }: P) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M4 6.5A1.5 1.5 0 0 1 5.5 5h13A1.5 1.5 0 0 1 20 6.5V10a2 2 0 0 0 0 4v3.5A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5V14a2 2 0 0 0 0-4Z" />
+      <path d="m9.5 12 1.8 1.8L15 10" />
+    </svg>
+  );
+}
+
 export function BellIcon({ className = "h-5 w-5" }: P) {
   return (
     <svg
@@ -237,6 +256,45 @@ export function ChevronDownIcon({ className = "h-5 w-5" }: P) {
       aria-hidden
     >
       <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+/** A clock with a rewind arrow — history / timeline. */
+export function HistoryIcon({ className = "h-5 w-5" }: P) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M3.5 9A9 9 0 1 1 3 12.5" />
+      <path d="M3 4.5V9h4.5" />
+      <path d="M12 7.5V12l3 2" />
+    </svg>
+  );
+}
+
+export function UsersIcon({ className = "h-5 w-5" }: P) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="9" cy="8" r="3.4" />
+      <path d="M3.5 20c1.1-2.8 3.1-4.2 5.5-4.2s4.4 1.4 5.5 4.2" />
+      <path d="M16 5.2a3.2 3.2 0 0 1 0 6.1M17.5 15.8c1.9.3 3.3 1.6 4.2 3.7" opacity=".65" />
     </svg>
   );
 }

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { ownerCafe } from "@/lib/auth/owner";
 import { getLoyaltyProgram } from "@/lib/data";
-import { CreditForm, ValidateForm } from "./caisse/CaisseForms";
+import { CreditForm, StampForm, ValidateForm } from "./caisse/CaisseForms";
 
 export const metadata = { title: "Caisse" };
 
@@ -23,6 +23,7 @@ export default async function OwnerHome() {
   return (
     <div className="space-y-3.5">
       <CreditForm pointsPerTnd={program.pointsPerTnd} />
+      {program.stampsEnabled && <StampForm required={program.stampsRequired} />}
       <ValidateForm />
     </div>
   );

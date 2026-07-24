@@ -172,8 +172,8 @@ if (redeemCode) {
   const second = await claim();
   check("same code cannot be reused", /déjà.*utilisé/i.test(second), second.replace(/\n/g, " · "));
 
-  // and the collected reward shows up in the diner's own history (on Profil)
-  await diner.goto(`${BASE}/${SLUG}/profil`, { waitUntil: "networkidle" });
+  // and the collected reward shows up in the diner's own history (Historique)
+  await diner.goto(`${BASE}/${SLUG}/historique`, { waitUntil: "networkidle" });
   const histTxt = await diner.locator("main").innerText();
   check("collected item appears in diner history", /Récupéré/i.test(histTxt),
     histTxt.split("\n").find((l) => /Récupéré/i.test(l)) ?? "");
@@ -318,6 +318,65 @@ if (redeemCode) {
   await back.close();
 }
 
+// ── 11d. Stamp cards: +1 at the caisse fills a card and issues a code ──
+{
+  const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+  const { data: biz } = await admin.from("businesses").select("id").eq("slug", SLUG).single();
+  // small card so the test fills it fast
+  await admin
+    .from("loyalty_programs")
+    .update({ stamps_enabled: true, stamps_required: 2, stamp_reward: "Café offert (tampons)" })
+    .eq("business_id", biz.id);
+
+  const stampSec = 'section:has(h2:has-text("Ajouter un tampon"))';
+  const stamp = async () => {
+    await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+    await staff.fill(`${stampSec} input[name="phone"]`, PHONE);
+    await staff.locator(`${stampSec} button:has-text("tampon")`).click();
+    await staff.locator(`${stampSec} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
+    return staff.locator(stampSec).innerText().catch(() => "");
+  };
+
+  await stamp(); // 1/2
+  const full = await stamp(); // 2/2 → completes, issues a code
+  const stampCode = full.match(/\b[A-Z2-9]{6}\b/)?.[0] ?? "";
+  check("a full stamp card completes and issues a code", /Carte pleine/i.test(full) && !!stampCode, stampCode || full.replace(/\n/g, " · ").slice(0, 60));
+
+  // the diner can collect that code at the counter, exactly like any reward
+  if (stampCode) {
+    const SEC = 'section:has(h2:has-text("Valider un code"))';
+    await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+    await staff.fill(`${SEC} input[name="code"]`, stampCode);
+    await staff.locator(`${SEC} button:has-text("Vérifier")`).click();
+    const collect = staff.locator(`${SEC} button:has-text("Collecter")`);
+    await collect.waitFor({ timeout: 8000 }).catch(() => {});
+    if (await collect.count()) await collect.click();
+    await staff.locator(`${SEC} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
+    const collected = await staff.locator(SEC).innerText().catch(() => "");
+    check("stamp reward collects at the counter", /collecté/i.test(collected), collected.replace(/\n/g, " · ").slice(0, 60));
+  }
+
+  // it shows on the diner's Historique
+  await diner.goto(`${BASE}/${SLUG}/historique`, { waitUntil: "networkidle" });
+  const hist = await diner.locator("main").innerText();
+  check("collected stamp reward appears in diner history", /Café offert \(tampons\)/i.test(hist));
+
+  // and the owner can find this cardholder on the Clients page
+  await staff.goto(`${BASE}/owner/clients`, { waitUntil: "networkidle" });
+  await staff.locator('input[inputmode="search"]').fill(PHONE);
+  const found = await staff
+    .waitForFunction(
+      (p) => (document.querySelector("main")?.innerText ?? "").includes(p),
+      `+216${PHONE}`,
+      { timeout: 10000 },
+    )
+    .then(() => true)
+    .catch(() => false);
+  check("owner Clients lists and finds a cardholder by number", found);
+
+  await admin.from("loyalty_programs").update({ stamps_enabled: false }).eq("business_id", biz.id);
+}
+
 // ── 12. A brand-new owner can onboard (and must not get stuck) ──────
 //
 // Regression guard. This used to be an infinite loop: /owner had no café so it
@@ -407,6 +466,8 @@ await browser.close();
   const phone = `+216${PHONE}`;
   // order matters: children before the account they reference
   await admin.from("loyalty_redemptions").delete().eq("phone", phone);
+  await admin.from("stamp_rewards").delete().eq("phone", phone);
+  await admin.from("loyalty_stamps").delete().eq("phone", phone);
   await admin.from("wins").delete().eq("phone", phone);
   await admin.from("plays").delete().eq("phone", phone);
   await admin.from("points_ledger").delete().eq("customer_phone", phone);

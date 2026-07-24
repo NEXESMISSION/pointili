@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartIcon, QrIcon, SlidersIcon, TillIcon } from "./icons";
+import { ChartIcon, QrIcon, SlidersIcon, TillIcon, UsersIcon } from "./icons";
 
 /**
  * Owner bottom nav — modern brand.
@@ -12,6 +12,7 @@ import { ChartIcon, QrIcon, SlidersIcon, TillIcon } from "./icons";
  */
 const tabs = [
   { label: "Caisse", Icon: TillIcon, href: "/owner" },
+  { label: "Clients", Icon: UsersIcon, href: "/owner/clients" },
   { label: "Analyses", Icon: ChartIcon, href: "/owner/analyses" },
   { label: "QR", Icon: QrIcon, href: "/owner/qr" },
   { label: "Réglages", Icon: SlidersIcon, href: "/owner/reglages" },

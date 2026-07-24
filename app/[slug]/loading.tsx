@@ -8,11 +8,11 @@
  */
 export default function Loading() {
   return (
-    <div className="animate-pulse space-y-4">
-      <div className="h-40 rounded-2xl bg-white" />
-      <div className="h-20 rounded-2xl bg-white" />
-      <div className="h-16 rounded-2xl bg-white/70" />
-      <div className="h-16 rounded-2xl bg-white/70" />
+    <div className="animate-pulse space-y-4 px-5 pt-6">
+      <div className="h-14 rounded-2xl bg-white/10" />
+      <div className="h-52 rounded-3xl bg-white/10" />
+      <div className="h-16 rounded-2xl bg-white/[0.07]" />
+      <div className="h-16 rounded-2xl bg-white/[0.07]" />
     </div>
   );
 }

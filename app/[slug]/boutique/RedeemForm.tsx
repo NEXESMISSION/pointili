@@ -27,9 +27,9 @@ export function RedeemForm({
 
   if (state.ok) {
     return (
-      <div className="rounded-xl border border-gold/50 bg-gold-soft/60 px-3 py-2 text-center">
-        <p className="ticket-label">Code</p>
-        <p className="font-mono text-[16px] font-bold tracking-[0.18em] text-ink">
+      <div className="shrink-0 rounded-xl bg-white px-3 py-2 text-center">
+        <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate">Code</p>
+        <p className="font-mono text-[15px] font-bold tracking-[0.16em] text-charcoal">
           {state.ok.code}
         </p>
       </div>
@@ -38,7 +38,7 @@ export function RedeemForm({
 
   if (!affordable) {
     return (
-      <span className="shrink-0 whitespace-nowrap font-mono text-[11px] text-mut">
+      <span className="shrink-0 whitespace-nowrap font-mono text-[11px] text-white/55">
         encore {missing}
       </span>
     );
@@ -59,7 +59,7 @@ export function RedeemForm({
             e.preventDefault();
           }
         }}
-        className="rounded-xl bg-brand px-3.5 py-2 text-[10.5px] font-bold text-white active:scale-95 disabled:opacity-60"
+        className="rounded-xl bg-white px-3.5 py-2 text-[10.5px] font-bold text-charcoal active:scale-95 disabled:opacity-60"
       >
         {pending ? "· · ·" : "Échanger"}
       </button>

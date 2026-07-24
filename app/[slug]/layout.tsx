@@ -22,33 +22,34 @@ export default async function CafeLayout({
 
     getCafe() deliberately resolves suspended and expired cafés so this page can
     explain itself — a diner standing at the counter deserves better than a 404.
-    But nothing past this point may render: no points, no spins, no redeeming.
+    But nothing past this point may render: no points, no stamps, no redeeming.
   */
   if (!cafe.live) return <CafeDark name={cafe.name} />;
 
-  // For the top bar: is a reward code waiting, and does this diner hold more
-  // than one card (→ show the "switch" chevron). Null when not yet a member.
+  // For the top bar: does this diner hold more than one card (→ show the switch
+  // chevron)? Null when not yet a member.
   const diner = await getDiner(cafe.id);
   const wallet = diner ? await dinerWallet(diner.phone) : [];
 
   return (
     /*
-      The mockup look: the café's brand colour IS the page — a violet gradient
-      behind the greeting and the points card — and each page pulls a white
-      rounded sheet up over it for its content. One phone-width column.
+      The mockup look: a deep-purple loyalty CARD. The café's brand colour drives
+      a dark gradient (default = deep purple), each page floats frosted panels on
+      it, and everything is one phone-width column.
     */
     <div
-      className="app-shell flex min-h-dvh flex-col"
+      className="app-shell flex min-h-dvh flex-col text-white"
       style={{
         ["--cafe" as string]: cafe.primaryColor,
-        backgroundImage: `linear-gradient(170deg, color-mix(in oklab, ${cafe.primaryColor}, #fff 14%) 0%, ${cafe.primaryColor} 34%, color-mix(in oklab, ${cafe.primaryColor}, #000 32%) 100%)`,
+        backgroundColor: "#0f0a1c",
+        backgroundImage: `radial-gradient(115% 55% at 50% -6%, color-mix(in oklab, ${cafe.primaryColor}, #fff 8%) 0%, transparent 62%), linear-gradient(180deg, color-mix(in oklab, ${cafe.primaryColor}, #000 30%) 0%, color-mix(in oklab, ${cafe.primaryColor}, #000 56%) 46%, color-mix(in oklab, ${cafe.primaryColor}, #08040f 82%) 100%)`,
+        backgroundAttachment: "fixed",
       }}
     >
       <TopBar
         slug={cafe.slug}
         cafeName={cafe.name}
         logoUrl={cafe.logoUrl}
-        hasCodes={(diner?.codes.length ?? 0) > 0}
         multiCard={wallet.length > 1}
       />
 

@@ -3,7 +3,7 @@ import { currentOwner, ownerCafe } from "@/lib/auth/owner";
 import { getLoyaltyProgram, getRewards } from "@/lib/data";
 import { remaining } from "@/lib/platform";
 import { logoutAction } from "../../(auth)/login/actions";
-import { CafeForm, EarnForm, RewardsEditor } from "./SettingsForms";
+import { CafeForm, EarnForm, RewardsEditor, StampsForm } from "./SettingsForms";
 
 export const metadata = { title: "Réglages" };
 
@@ -58,6 +58,13 @@ export default async function Reglages() {
           en 2–3 visites — c&apos;est lui qui fait revenir.
         </p>
         <RewardsEditor rewards={rewards} />
+      </Section>
+
+      <Section
+        title="Carte à tampons"
+        subtitle="Une carte de fidélité par visite — en plus des points, si vous voulez."
+      >
+        <StampsForm program={program} />
       </Section>
 
       <Section

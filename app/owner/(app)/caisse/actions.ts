@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { isValidPhone, normalisePhone } from "@/lib/auth/crypto";
 import { ownerCafe } from "@/lib/auth/owner";
 import { getLoyaltyProgram } from "@/lib/data";
-import { claimCode, creditPoints, peekCode } from "@/lib/db";
+import { addStamp, claimCode, creditPoints, peekCode } from "@/lib/db";
 
 export type CreditState = {
   error?: string;
@@ -17,12 +17,17 @@ export type CreditState = {
   };
 };
 
+export type StampState = {
+  error?: string;
+  ok?: { phone: string; count: number; required: number; completed: boolean; code: string | null; label: string };
+};
+
 export type PeekState = {
   error?: string;
   peek?: {
     code: string;
     label: string;
-    kind: "win" | "reward";
+    kind: "win" | "reward" | "stamp";
     status: "valid" | "expired" | "claimed";
   };
 };
@@ -71,6 +76,40 @@ export async function creditAction(
       welcome: res.welcome,
       balance: res.balance,
       multiplier: res.multiplier,
+    },
+  };
+}
+
+/**
+ * Manual "+1 tampon". Staff taps this once per visit; when the card fills the
+ * RPC issues a counter code the diner then collects like any other reward.
+ */
+export async function addStampAction(
+  _prev: StampState,
+  formData: FormData,
+): Promise<StampState> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { error: "Non autorisé." };
+
+  const phone = normalisePhone(String(formData.get("phone") ?? ""));
+  if (!isValidPhone(phone)) return { error: "Numéro invalide." };
+
+  const program = await getLoyaltyProgram(cafe.id);
+  if (!program.stampsEnabled) return { error: "Carte à tampons désactivée." };
+
+  const res = await addStamp(cafe.id, phone, 1);
+  if (!res.ok) return { error: res.reason };
+
+  revalidatePath("/owner");
+  revalidatePath(`/${cafe.slug}`);
+  return {
+    ok: {
+      phone,
+      count: res.count,
+      required: res.required,
+      completed: res.completed,
+      code: res.code,
+      label: res.label,
     },
   };
 }
