@@ -120,19 +120,19 @@ export function normalisePhone(raw: string, defaultCountry = "216"): string {
     digits = digits.slice(2);
   } else {
     /*
-      Bare number → add the country code, UNLESS it's already there.
+      Bare number → add the country code ONLY when it's really a local number.
 
-      Phones are often stored as "21620123456" (country code, no plus). Blindly
-      prefixing turned that into +21621620123456 — a second, valid-looking
-      identity for the same person, so a returning diner silently got a new empty
-      account and lost their points. A local Tunisian number is 8 digits, so
-      anything longer that already starts with the code is the no-plus form.
+      Two ways this produced duplicate identities for one person:
+       · "21620123456" (country code, no plus) blindly prefixed became
+         +21621620123456;
+       · a foreign number typed without the plus ("33612345678") became
+         +21633612345678, while the same number typed "+33…" or "0033…" became
+         +33612345678.
+      A local Tunisian number is 8 digits, so: exactly-8 gets the code, anything
+      longer is already international (with or without its own country code).
     */
     const local = digits.replace(/^0+/, "");
-    digits =
-      local.length > 8 && local.startsWith(defaultCountry)
-        ? local
-        : defaultCountry + local;
+    digits = local.length <= 8 ? defaultCountry + local : local;
   }
   return `+${digits}`;
 }

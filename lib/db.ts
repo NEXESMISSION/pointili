@@ -53,10 +53,22 @@ export async function getCardCode(businessId: string, phone: string): Promise<st
   return data?.code ?? "";
 }
 
-export async function createAccount(phone: string, pinHash: string, name: string | null) {
+/**
+ * Create the global diner identity.
+ *
+ * Returns ok:false instead of throwing when the row already exists: signup is a
+ * check-then-act race (two submits of the same new phone both see "no account"),
+ * and the loser is the SAME person — the caller re-reads and logs them in rather
+ * than dropping them on an error screen.
+ */
+export async function createAccount(
+  phone: string,
+  pinHash: string,
+  name: string | null,
+): Promise<{ ok: boolean }> {
   const db = createAdminClient();
   const { error } = await db.from("accounts").insert({ phone, pin_hash: pinHash, name });
-  if (error) throw new Error(error.message);
+  return { ok: !error };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -262,6 +274,8 @@ export type WalletCafe = {
   logoUrl: string | null;
   lastOpenedAt: string | null;
   balance: number;
+  /** Is the shop still running a stamp card? Progress is meaningless if not. */
+  stampsEnabled: boolean;
   stamps: number;
   pendingWins: number;
   pendingRewards: number;
@@ -285,10 +299,17 @@ export async function touchCardOpened(businessId: string, phone: string): Promis
  * creates a visible card, and the "am I enrolled here?" check can't loop when a
  * café's welcome bonus happens to be zero.
  */
-export async function enrollDiner(cafeId: string, phone: string): Promise<void> {
+export async function enrollDiner(cafeId: string, phone: string): Promise<string | null> {
   const db = createAdminClient();
   // The RPC is idempotent and also assigns the short per-shop code on first join.
-  await db.rpc("enroll_diner", { p_business_id: cafeId, p_phone: phone });
+  // Returning it lets the caller PROVE enrollment worked — /[slug] bounces
+  // non-members back to /rejoindre, so a silent failure loops forever.
+  const { data, error } = await db.rpc("enroll_diner", {
+    p_business_id: cafeId,
+    p_phone: phone,
+  });
+  if (error) return null;
+  return (data as string | null) ?? null;
 }
 
 /**

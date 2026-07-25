@@ -95,6 +95,43 @@ for (const [path, needle] of [["/codes", "Mes codes"], ["/historique", "Historiq
   await back.close();
 }
 
+/* ── 3b. A TYPO on the login tab must refuse — never silently sign up ──
+   The diner said "I already have a card". A phone we don't know is a mistyped
+   digit, and creating a fresh empty account there orphans the card they were
+   trying to reach (and squats a stranger's number with a PIN they don't know). */
+{
+  const typo = `${LOCAL.slice(0, -1)}${(Number(LOCAL.slice(-1)) + 1) % 10}`;
+  const t = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await t.goto(`${BASE}/${TEST_SLUG}/rejoindre`, { waitUntil: "networkidle" });
+  await t.locator('button:has-text("déjà une carte")').click();
+  await t.fill('input[name="phone"]', typo);
+  await t.fill('input[name="pin"]', PIN);
+  await t.locator('form button[type="submit"]').click();
+  // read the FORM's own alert (the dev overlay also carries role="alert")
+  const refused = await t
+    .waitForFunction(
+      () => /incorrect|Trop d'essais/i.test(document.querySelector("form")?.innerText ?? ""),
+      undefined,
+      { timeout: 15000 },
+    )
+    .then(() => t.locator("form").innerText())
+    .catch(() => "");
+  check(
+    "a mistyped number on the login tab is refused",
+    /incorrect|Trop d'essais/i.test(refused),
+    refused.split("\n").find((l) => /incorrect|Trop/i.test(l)) ?? "no error shown",
+  );
+
+  const { count: ghosts } = await admin
+    .from("accounts").select("phone", { count: "exact", head: true })
+    .eq("phone", `+216${typo}`);
+  check("the typo created no ghost account", (ghosts ?? 0) === 0, `accounts=${ghosts}`);
+
+  // the phone field must survive a failed attempt (React 19 auto-resets forms)
+  check("a failed attempt keeps the number typed", (await t.inputValue('input[name="phone"]')) === typo);
+  await t.close();
+}
+
 /* ── 4. A second shop: scanning its QR adds a card, with its own code ── */
 await d.goto(`${BASE}/${OTHER}`, { waitUntil: "networkidle" });
 check("opening a new shop enrolls and renders its card", d.url().endsWith(`/${OTHER}`), d.url().replace(BASE, ""));
@@ -109,8 +146,15 @@ check("wallet lists both shops", /Deuxième Boutique/.test(walletTxt) && /Café 
 /* ── 5. Buying: points debit, a code is issued, the reward STAYS ───── */
 await admin.from("points_ledger").insert({ business_id: cafeA, customer_phone: NORM, delta: 200, reason: "adjust" });
 await d.goto(`${BASE}/${TEST_SLUG}/boutique`, { waitUntil: "networkidle" });
-d.once("dialog", (x) => x.accept());
-await d.locator('button:has-text("Échanger")').first().click();
+
+/*
+  Buying is ONE explicit click with the cost in the label — no window.confirm():
+  browsers suppress repeated native dialogs and a suppressed confirm() returns
+  false, which silently killed the repeat-buy flow.
+*/
+const buyOnce = () => d.locator('button:has-text("Échanger")').first().click();
+
+await buyOnce();
 await d.waitForFunction(() => /\b[A-Z2-9]{6}\b/.test(document.querySelector("main")?.innerText ?? ""), undefined, { timeout: 20000 }).catch(() => {});
 const buy1 = await d.locator("main").innerText();
 const code1 = buy1.match(/\b[A-Z2-9]{6}\b/)?.[0] ?? "";
@@ -118,8 +162,7 @@ check("buying issues a counter code", !!code1, code1 || "none");
 check("the reward stays buyable after a purchase", /Échanger/.test(buy1));
 
 // buy a second time — a diner with points may stack codes
-d.once("dialog", (x) => x.accept());
-await d.locator('button:has-text("Échanger")').first().click();
+await buyOnce();
 await d.waitForTimeout(3000);
 const { count: redemptions } = await admin
   .from("loyalty_redemptions").select("id", { count: "exact", head: true })

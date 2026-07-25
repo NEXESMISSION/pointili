@@ -18,6 +18,10 @@ const field =
  */
 export function JoinForm({ slug }: { slug: string }) {
   const [returning, setReturning] = useState(false);
+  // React 19 auto-resets an uncontrolled <form action={…}>, which wiped the
+  // phone number too on a failed attempt. Keeping it controlled means a wrong
+  // PIN only costs them the PIN.
+  const [phone, setPhone] = useState("");
   const action = joinAction.bind(null, slug);
   const [state, formAction, pending] = useActionState(action, initial);
 
@@ -39,12 +43,19 @@ export function JoinForm({ slug }: { slug: string }) {
       </div>
 
       <form action={formAction} className="space-y-2.5">
+        {/* The declared mode must reach the server: on "J'ai déjà une carte" an
+            unknown phone is a TYPO, and signing them into a brand-new empty
+            account would orphan the card they were trying to reach. */}
+        <input type="hidden" name="mode" value={returning ? "login" : "new"} />
+
         <input
           name="phone"
           type="tel"
           inputMode="tel"
           autoComplete="tel"
           required
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
           placeholder="Ton numéro"
           aria-label="Ton numéro de téléphone"
           className={field}

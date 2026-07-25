@@ -70,9 +70,20 @@ const trust = [
   { Icon: Shield, label: "Support\nréactif" },
 ];
 
-export default async function Landing() {
-  // Customers never see the owner marketing page — straight to their wallet.
-  if (await currentDiner()) redirect("/cartes");
+export default async function Landing({
+  searchParams,
+}: {
+  searchParams: Promise<{ pro?: string }>;
+}) {
+  /*
+    Customers never see the owner marketing page — straight to their wallet.
+
+    ?pro=1 is the escape hatch: without it a device that once held a diner
+    cookie could NEVER reach this page again, so an owner who is also a customer
+    (or anyone on a shared phone) was locked out of signup entirely.
+  */
+  const { pro } = await searchParams;
+  if (!pro && (await currentDiner())) redirect("/cartes");
 
   return (
     <div className="modern min-h-dvh bg-white">

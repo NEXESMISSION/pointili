@@ -19,8 +19,14 @@ import type { Cafe, Diner, Game, LoyaltyProgram, Prize, Reward } from "./types";
  * Slugs that would collide with real routes. Next resolves static routes first,
  * so a café slugged "owner" would be silently unreachable.
  */
+/**
+ * Slugs Next.js would shadow. A café created on one of these is permanently
+ * unreachable — the static route always wins over /[slug] — so this list MUST
+ * cover every real root route (see app/). Kept in step with the same list inside
+ * the create_cafe RPC.
+ */
 export const RESERVED_SLUGS = new Set([
-  "owner", "admin", "api", "login", "signup", "logout", "app", "static",
+  "owner", "admin", "api", "auth", "cartes", "login", "signup", "logout", "app", "static",
   "_next", "favicon.ico", "icon.png", "apple-icon.png", "robots.txt", "sitemap.xml",
 ]);
 

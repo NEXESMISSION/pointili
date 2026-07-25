@@ -12,6 +12,13 @@ import type { WalletCafe } from "@/lib/db";
  * they last opened, see which one they're currently on, and open any with a
  * clear button. Everything a "which card do I want?" screen needs.
  */
+/**
+ * `?from` arrives from the URL bar, so it is untrusted: interpolated raw into
+ * router.push(`/${…}`) a value like "/evil.com" becomes a protocol-relative URL
+ * and navigates the diner off-site. Only ever accept a real slug shape.
+ */
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
+
 export function WalletView({
   cards,
   currentSlug,
@@ -23,6 +30,13 @@ export function WalletView({
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<"recent" | "name">("recent");
 
+  // …and it must be a shop this diner actually holds a card at, so the arrow
+  // can never point at an arbitrary route either.
+  const backSlug =
+    currentSlug && SLUG_RE.test(currentSlug) && cards.some((c) => c.slug === currentSlug)
+      ? currentSlug
+      : null;
+
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const list = cards.filter(
@@ -32,12 +46,12 @@ export function WalletView({
     );
     return list.sort((a, b) => {
       // the card they're currently on always leads
-      if (a.slug === currentSlug) return -1;
-      if (b.slug === currentSlug) return 1;
+      if (a.slug === backSlug) return -1;
+      if (b.slug === backSlug) return 1;
       if (sort === "name") return a.name.localeCompare(b.name);
       return new Date(b.lastOpenedAt ?? 0).getTime() - new Date(a.lastOpenedAt ?? 0).getTime();
     });
-  }, [cards, q, sort, currentSlug]);
+  }, [cards, q, sort, backSlug]);
 
   return (
     <div>
@@ -45,7 +59,14 @@ export function WalletView({
       <header className="flex items-center gap-3 pb-4">
         <button
           type="button"
-          onClick={() => (currentSlug ? router.push(`/${currentSlug}`) : router.back())}
+          /* No validated card to go back to (e.g. "/" → /cartes, which leaves no
+             in-app history): fall back to the first card rather than a dead
+             router.back() on a page with no other exit. */
+          onClick={() => {
+            const target = backSlug ?? shown[0]?.slug ?? cards[0]?.slug;
+            if (target) router.push(`/${target}`);
+            else router.back();
+          }}
           aria-label="Retour"
           className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-white ring-1 ring-white/15 active:scale-[0.95]"
         >
@@ -104,10 +125,19 @@ export function WalletView({
       ) : (
         <ul className="mt-4 space-y-3">
           {shown.map((c) => (
-            <CardRow key={c.businessId} card={c} current={c.slug === currentSlug} />
+            <CardRow key={c.businessId} card={c} current={c.slug === backSlug} />
           ))}
         </ul>
       )}
+
+      {/* The wallet is where a signed-in diner always lands, so it has to be the
+          one place that also leads OUT — to the shop-owner side. */}
+      <p className="mt-8 text-center text-[11.5px] text-white/40">
+        Vous êtes commerçant ?{" "}
+        <Link href="/?pro=1" className="font-semibold text-white/70 underline underline-offset-2">
+          Espace boutique
+        </Link>
+      </p>
     </div>
   );
 }
@@ -146,7 +176,11 @@ function CardRow({ card, current }: { card: WalletCafe; current: boolean }) {
           </p>
           <p className="mt-0.5 text-[13px] font-bold text-white/90">
             {card.balance} pts
-            {card.stamps > 0 && <span className="font-semibold text-white/60"> · {card.stamps} tampons</span>}
+            {/* only while the shop still runs a stamp card — otherwise this
+                points at progress that exists on no screen and can't advance */}
+            {card.stampsEnabled && card.stamps > 0 && (
+              <span className="font-semibold text-white/60"> · {card.stamps} tampons</span>
+            )}
             {pending > 0 && <span className="font-semibold text-[#ffd27a]"> · {pending} code(s)</span>}
           </p>
         </div>

@@ -52,23 +52,42 @@ export async function joinAction(
     return { error: `Trop d'essais. Réessaie dans ${lockedFor} min.` };
   }
 
-  const existing = await getAccount(phone);
+  // Which tab did they submit? "login" means they told us they already have a
+  // card, so an unknown phone is a TYPO — never a silent new signup.
+  const mode = String(formData.get("mode") ?? "");
+
+  let existing = await getAccount(phone);
+
+  /** Wrong PIN / unknown-on-the-login-tab — deliberately the same vague wording
+   *  so this never becomes a "is this number registered?" oracle. */
+  async function wrongCredentials(): Promise<JoinState> {
+    await pinFail(phone);
+    // If THIS attempt is the one that tripped the lock, say so now — otherwise
+    // the diner only learns they're locked on the next submit and keeps trying.
+    const lockedNow = await pinLockedFor(phone);
+    if (lockedNow > 0) return { error: `Trop d'essais. Réessaie dans ${lockedNow} min.` };
+    return { error: "Numéro ou code incorrect." };
+  }
+
+  if (!existing) {
+    if (mode === "login") return wrongCredentials();
+
+    /*
+      Check-then-act race: two submits of the same new phone both see "no
+      account". The unique primary key makes the loser fail, and dropping them on
+      an error screen would be wrong — they ARE this person. Re-read and fall
+      through to the normal PIN check instead.
+    */
+    const created = await createAccount(phone, await hashPin(pin), name);
+    if (!created.ok) {
+      existing = await getAccount(phone);
+      if (!existing) return { error: "Réessaie dans un instant." };
+    }
+  }
 
   if (existing) {
-    if (!(await verifyPin(pin, existing.pin_hash))) {
-      await pinFail(phone);
-      // If THIS attempt is the one that tripped the lock, say so now — otherwise
-      // the diner only learns they're locked on the next submit and keeps trying.
-      const lockedNow = await pinLockedFor(phone);
-      if (lockedNow > 0) {
-        return { error: `Trop d'essais. Réessaie dans ${lockedNow} min.` };
-      }
-      // Deliberately vague: never reveal whether the phone is registered.
-      return { error: "Numéro ou code incorrect." };
-    }
+    if (!(await verifyPin(pin, existing.pin_hash))) return wrongCredentials();
     await pinClear(phone);
-  } else {
-    await createAccount(phone, await hashPin(pin), name);
   }
 
   /*
@@ -82,7 +101,12 @@ export async function joinAction(
     café you already belong to does nothing. This is also what puts the café in
     the diner's wallet — without it, joining a second café left no trace.
   */
-  await enrollDiner(cafe.id, phone);
+  // Enrollment MUST succeed before we send them to the card: /[slug] bounces
+  // non-members back here, so a silent failure would be an endless
+  // /[slug] ↔ /rejoindre loop with no way out.
+  const code = await enrollDiner(cafe.id, phone);
+  if (!code) return { error: "Impossible d'activer ta carte. Réessaie." };
+
   const program = await getLoyaltyProgram(cafe.id);
   if (program.active && program.welcomePoints > 0) {
     await creditPoints(cafe.id, phone, 0); // no purchase — welcome only

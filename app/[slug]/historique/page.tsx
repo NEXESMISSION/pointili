@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { CafeClosed } from "@/components/CafeClosed";
 import { getCafe, getMember } from "@/lib/data";
 import { getActivity, type Activity } from "@/lib/db";
 
@@ -32,6 +33,10 @@ export default async function Historique({
   const { slug } = await params;
   const cafe = await getCafe(slug);
   if (!cafe) notFound();
+  // Re-checked per PAGE, not just in the layout: Next does not re-run a layout
+  // on client-side transitions, so a shop that went dark mid-session kept
+  // serving every screen.
+  if (!cafe.live) return <CafeClosed name={cafe.name} />;
 
   const diner = await getMember(cafe.id);
   if (!diner) redirect(`/${slug}/rejoindre`);

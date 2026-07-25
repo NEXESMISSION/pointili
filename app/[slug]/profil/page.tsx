@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CafeClosed } from "@/components/CafeClosed";
 import { notFound, redirect } from "next/navigation";
 import { GiftIcon, HistoryIcon, ScanIcon, StampIcon } from "@/components/icons";
 import { BRAND_COLOR } from "@/lib/brand";
@@ -21,6 +22,10 @@ export default async function Profil({
   const { slug } = await params;
   const cafe = await getCafe(slug);
   if (!cafe) notFound();
+  // Re-checked per PAGE, not just in the layout: Next does not re-run a layout
+  // on client-side transitions, so a shop that went dark mid-session kept
+  // serving every screen.
+  if (!cafe.live) return <CafeClosed name={cafe.name} />;
 
   const diner = await getMember(cafe.id);
   if (!diner) redirect(`/${slug}/rejoindre`);

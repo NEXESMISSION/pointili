@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
-import { Logo } from "@/components/Logo";
+import { CafeClosed } from "@/components/CafeClosed";
 import { TopBar } from "@/components/TopBar";
 import { BRAND_COLOR } from "@/lib/brand";
 import { getCafe } from "@/lib/data";
@@ -24,7 +24,7 @@ export default async function CafeLayout({
     explain itself — a diner standing at the counter deserves better than a 404.
     But nothing past this point may render: no points, no stamps, no redeeming.
   */
-  if (!cafe.live) return <CafeDark name={cafe.name} />;
+  if (!cafe.live) return <CafeClosed name={cafe.name} />;
 
   return (
     /*
@@ -55,29 +55,3 @@ export default async function CafeLayout({
   );
 }
 
-/**
- * Suspended, or the subscription lapsed.
- *
- * Deliberately vague: the diner is a customer of the CAFÉ, not of Pointili, and
- * "this café hasn't paid us" is not their business. Their points are safe and
- * come back the moment the café does.
- */
-function CafeDark({ name }: { name: string }) {
-  return (
-    <div className="app-shell paper-grain flex min-h-dvh flex-col items-center justify-center px-6 text-center">
-      <Logo size={22} />
-      <div className="mt-8 w-full rounded-xl border border-line bg-paper2 px-5 py-8">
-        <p className="ticket-label">Momentanément fermé</p>
-        <h1 className="mt-2 font-display text-[24px] leading-tight">{name}</h1>
-        <p className="mx-auto mt-2 max-w-[30ch] text-[13.5px] leading-relaxed text-ink2">
-          La carte de fidélité de ce café est en pause. Tes points sont
-          conservés — repasse bientôt.
-        </p>
-        <div className="tear mt-5" />
-        <p className="mt-2 text-[9.5px] font-semibold uppercase tracking-[0.06em] text-faint">
-          Rien n&apos;est perdu
-        </p>
-      </div>
-    </div>
-  );
-}

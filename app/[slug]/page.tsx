@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CafeClosed } from "@/components/CafeClosed";
 import { notFound, redirect } from "next/navigation";
 import { GiftIcon, ScanIcon, Sparkle } from "@/components/icons";
 import { getCafe, getLoyaltyProgram, getMember, getRewards, nextRewardNudge } from "@/lib/data";
@@ -19,6 +20,10 @@ export default async function Carte({
   const { slug } = await params;
   const cafe = await getCafe(slug);
   if (!cafe) notFound();
+  // Re-checked per PAGE, not just in the layout: Next does not re-run a layout
+  // on client-side transitions, so a shop that went dark mid-session kept
+  // serving every screen.
+  if (!cafe.live) return <CafeClosed name={cafe.name} />;
 
   /*
     Signed in AND a member here. A diner who scans a NEW café's QR is signed in
@@ -245,7 +250,13 @@ function StampCard({
 /** Points mode: progress toward the next reward. */
 function PointsCard({ balance, rewards }: { balance: number; rewards: Parameters<typeof nextRewardNudge>[1] }) {
   const nudge = nextRewardNudge(balance, rewards);
-  const pct = nudge ? Math.round(nudge.progress * 100) : 100;
+  /*
+    Fill the bar from the SAME numbers as its caption (balance / target).
+    nudge.progress measures from the previous reward tier, so the bar and the
+    "450 / 500" underneath it disagreed — and it contradicted the bar shown for
+    the very same reward in /boutique.
+  */
+  const pct = nudge ? Math.min(100, Math.round((balance / nudge.target.pointsCost) * 100)) : 100;
 
   return (
     <div className="d-card px-5 pb-5 pt-5">
@@ -306,7 +317,15 @@ function stampCardView(
     shown,
     expiry:
       expiresAt !== null && shown > 0 && !lapsed
-        ? new Date(expiresAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long" })
+        ? new Date(expiresAt).toLocaleDateString("fr-FR", {
+            day: "2-digit",
+            month: "long",
+            // A card valid a year or more out read as a date already past
+            // without the year ("12 mars" when it's May).
+            ...(new Date(expiresAt).getFullYear() !== new Date().getFullYear()
+              ? { year: "numeric" }
+              : {}),
+          })
         : null,
   };
 }

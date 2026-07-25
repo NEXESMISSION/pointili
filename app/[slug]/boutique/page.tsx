@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { CafeClosed } from "@/components/CafeClosed";
 import { GiftIcon } from "@/components/icons";
 import { getCafe, getMember, getRewards, nextRewardNudge } from "@/lib/data";
 import { RedeemForm } from "./RedeemForm";
@@ -13,6 +14,10 @@ export default async function Offres({
   const { slug } = await params;
   const cafe = await getCafe(slug);
   if (!cafe) notFound();
+  // Re-checked per PAGE, not just in the layout: Next does not re-run a layout
+  // on client-side transitions, so a shop that went dark mid-session kept
+  // serving every screen.
+  if (!cafe.live) return <CafeClosed name={cafe.name} />;
 
   const [diner, rewards] = await Promise.all([getMember(cafe.id), getRewards(cafe.id)]);
   if (!diner) redirect(`/${slug}/rejoindre`);

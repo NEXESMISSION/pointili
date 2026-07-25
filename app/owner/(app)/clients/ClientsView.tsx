@@ -154,6 +154,10 @@ function CardRow({
 }) {
   const [history, setHistory] = useState<Activity[] | null>(null);
   const [pending, start] = useTransition();
+  // Separate from `pending` on purpose: the history is a read, and sharing one
+  // flag left the correction buttons disabled while it loaded — staff couldn't
+  // fix a balance until an unrelated fetch finished.
+  const [loadingHistory, startHistory] = useTransition();
   const [msg, setMsg] = useState("");
   const [pointsDelta, setPointsDelta] = useState("");
   const [stampCount, setStampCount] = useState(String(card.stamps));
@@ -161,7 +165,7 @@ function CardRow({
   // Lazy-load the history the first time the card is opened.
   useEffect(() => {
     if (open && history === null) {
-      start(async () => setHistory(await cardHistoryAction(card.phone)));
+      startHistory(async () => setHistory(await cardHistoryAction(card.phone)));
     }
   }, [open, history, card.phone]);
 
@@ -274,7 +278,7 @@ function CardRow({
 
           {/* history */}
           <p className="mt-3.5 text-[11px] font-bold uppercase tracking-[0.05em] text-slate">Activité</p>
-          {history === null ? (
+          {history === null || loadingHistory ? (
             <p className="mt-1 text-[12.5px] text-slate">Chargement…</p>
           ) : history.length === 0 ? (
             <p className="mt-1 text-[12.5px] text-slate">Aucune activité.</p>
