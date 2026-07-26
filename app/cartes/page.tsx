@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { WalletView } from "@/components/WalletView";
 import { currentDiner } from "@/lib/auth/diner";
+import { BRAND_COLOR, DINER_BG } from "@/lib/brand";
 import { dinerWallet } from "@/lib/db";
 
 export const metadata = { title: "Mes cartes" };
@@ -25,12 +26,7 @@ export default async function Cartes({
   return (
     <div
       className="app-shell min-h-dvh px-5 pb-10 pt-6 text-white"
-      style={{
-        backgroundColor: "#0f0a1c",
-        backgroundImage:
-          "radial-gradient(120% 55% at 50% -8%, #3a2a6b 0%, transparent 62%), linear-gradient(180deg, #241546 0%, #150c2b 55%, #0a0614 100%)",
-        backgroundAttachment: "fixed",
-      }}
+      style={{ ["--cafe" as string]: BRAND_COLOR, ...DINER_BG }}
     >
       <WalletView cards={cards} currentSlug={from ?? null} />
     </div>

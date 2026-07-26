@@ -214,15 +214,17 @@ h4 {
    (default deep purple), so a shop that recolours still gets a coherent dark
    card. Panels are a faint translucent white so they read one step lighter
    than the gradient behind them. */
+/* Panels lift a little harder now that the page behind them is near-black —
+   same frosted look, enough separation to still read as a raised surface. */
 .d-card {
-  background: rgba(255, 255, 255, 0.065);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.085);
+  border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 26px;
-  box-shadow: 0 24px 48px -28px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.85);
 }
 .d-soft {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 18px;
 }
 /* a filled loyalty stamp — white disc, café-coloured mark */

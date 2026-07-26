@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
 import { CafeClosed } from "@/components/CafeClosed";
 import { TopBar } from "@/components/TopBar";
-import { BRAND_COLOR } from "@/lib/brand";
+import { BRAND_COLOR, DINER_BG } from "@/lib/brand";
 import { getCafe } from "@/lib/data";
 
 export default async function CafeLayout({
@@ -34,12 +34,7 @@ export default async function CafeLayout({
     */
     <div
       className="app-shell flex min-h-dvh flex-col text-white"
-      style={{
-        ["--cafe" as string]: BRAND_COLOR,
-        backgroundColor: "#0f0a1c",
-        backgroundImage: `radial-gradient(115% 55% at 50% -6%, color-mix(in oklab, ${BRAND_COLOR}, #fff 8%) 0%, transparent 62%), linear-gradient(180deg, color-mix(in oklab, ${BRAND_COLOR}, #000 30%) 0%, color-mix(in oklab, ${BRAND_COLOR}, #000 56%) 46%, color-mix(in oklab, ${BRAND_COLOR}, #08040f 82%) 100%)`,
-        backgroundAttachment: "fixed",
-      }}
+      style={{ ["--cafe" as string]: BRAND_COLOR, ...DINER_BG }}
     >
       <TopBar
         slug={cafe.slug}

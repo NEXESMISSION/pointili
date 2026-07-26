@@ -27,7 +27,7 @@ export function BottomNav({ slug }: { slug: string }) {
       className="sticky bottom-0 z-20 border-t border-white/10 pb-[env(safe-area-inset-bottom)]"
       /* derive the bar from the café's own colour so a recoloured shop stays
          consistent — no more fixed purple against a teal (or any) card */
-      style={{ background: "color-mix(in oklab, var(--cafe), #05010a 78%)" }}
+      style={{ background: "color-mix(in oklab, var(--cafe), #05010a 88%)" }}
     >
       <ul className="flex">
         {tabs.map(({ key, label, Icon, href }) => {
