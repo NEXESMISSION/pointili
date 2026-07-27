@@ -45,15 +45,15 @@ export default async function QrPage() {
   return (
     <div className="space-y-3.5">
       <div className="px-1 print:hidden">
-        <h1 className="text-[24px] font-extrabold text-charcoal">Mon QR</h1>
-        <p className="mt-0.5 text-[13px] text-slate">
+        <h1 className="text-[24px] font-extrabold text-white">Mon QR</h1>
+        <p className="mt-0.5 text-[13px] text-white/55">
           Posez-le sur vos tables. C&apos;est par là que tout commence.
         </p>
       </div>
 
       {/* ── the table tent, exactly as it prints ───────────────────── */}
-      <section className="o-card overflow-hidden print:border-0 print:shadow-none">
-        <div className="bg-charcoal px-5 py-7 text-center text-white print:bg-white print:text-charcoal">
+      <section className="a-card overflow-hidden print:border-0 print:shadow-none">
+        <div className="bg-[#140d24] px-5 py-7 text-center text-white print:bg-white print:text-charcoal">
           <div className="flex items-center justify-center gap-2.5">
             {cafe.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
@@ -92,8 +92,8 @@ export default async function QrPage() {
       <QrActions url={url} svg={svg} name={cafe.name} />
 
       {/* ── where to put it ────────────────────────────────────────── */}
-      <section className="o-card p-5 print:hidden">
-        <h2 className="text-[13.5px] font-extrabold text-charcoal">Où le mettre</h2>
+      <section className="a-card p-5 print:hidden">
+        <h2 className="text-[13.5px] font-extrabold text-white">Où le mettre</h2>
         <ul className="mt-2.5 space-y-2.5">
           {[
             ["Sur chaque table", "C'est là qu'ils ont le temps de scanner."],
@@ -104,13 +104,13 @@ export default async function QrPage() {
             <li key={t} className="flex items-start gap-2.5">
               <span className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full bg-royal" />
               <span>
-                <span className="block text-[13.5px] font-bold text-charcoal">{t}</span>
-                <span className="block text-[12px] leading-snug text-slate">{d}</span>
+                <span className="block text-[13.5px] font-bold text-white">{t}</span>
+                <span className="block text-[12px] leading-snug text-white/55">{d}</span>
               </span>
             </li>
           ))}
         </ul>
-        <p className="mt-4 rounded-xl bg-gold-soft px-3.5 py-2.5 text-[12px] leading-relaxed text-gold-deep">
+        <p className="mt-4 rounded-xl bg-[#ffd27a]/12 px-3.5 py-2.5 text-[12px] leading-relaxed text-[#ffd27a]">
           Plus il est visible, plus vos clients s&apos;inscrivent. Imprimez-en
           plusieurs — un par table.
         </p>

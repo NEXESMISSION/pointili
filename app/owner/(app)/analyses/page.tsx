@@ -21,8 +21,8 @@ export default async function Analytics() {
   return (
     <div className="space-y-3.5">
       <div className="px-1">
-        <h1 className="text-[24px] font-extrabold text-charcoal">Analyses</h1>
-        <p className="mt-0.5 text-[13px] text-slate">Est-ce que vos clients reviennent ?</p>
+        <h1 className="text-[24px] font-extrabold text-white">Analyses</h1>
+        <p className="mt-0.5 text-[13px] text-white/55">Est-ce que vos clients reviennent ?</p>
       </div>
 
       {s.customers === 0 ? <Empty /> : <Verdict s={s} />}
@@ -80,30 +80,30 @@ function verdict(s: Stats): { tone: Tone; headline: string; advice: string } {
 
 function Verdict({ s }: { s: Stats }) {
   const { tone, headline, advice } = verdict(s);
-  const num = { good: "text-ok", ok: "text-gold-deep", bad: "text-seal", early: "text-slate" }[tone];
+  const num = { good: "text-[#7ff0b0]", ok: "text-[#ffd27a]", bad: "text-[#ff9a9a]", early: "text-white/55" }[tone];
   const chip = {
-    good: "bg-ok/10 text-ok",
-    ok: "bg-gold-soft text-gold-deep",
-    bad: "bg-seal-soft text-seal",
-    early: "bg-lilac-2 text-slate",
+    good: "bg-ok/10 text-[#7ff0b0]",
+    ok: "bg-[#ffd27a]/12 text-[#ffd27a]",
+    bad: "bg-[#ff6b6b]/12 text-[#ff9a9a]",
+    early: "bg-white/[0.08] text-white/55",
   }[tone];
 
   return (
-    <section className="o-card p-5">
+    <section className="a-card p-5">
       {s.confident ? (
         <>
           <p className={`font-display text-[62px] font-extrabold leading-[0.9] tabular-nums ${num}`}>
             {s.repeatRate}%
           </p>
-          <p className="mt-1.5 text-[14px] font-bold text-charcoal">
+          <p className="mt-1.5 text-[14px] font-bold text-white">
             de vos clients sont revenus au moins une fois
           </p>
-          <p className="mt-0.5 text-[12px] text-slate">
+          <p className="mt-0.5 text-[12px] text-white/55">
             {s.repeatCustomers} sur {s.customers} clients
           </p>
         </>
       ) : (
-        <p className="font-display text-[26px] font-extrabold text-charcoal">{headline}</p>
+        <p className="font-display text-[26px] font-extrabold text-white">{headline}</p>
       )}
 
       <div className={`mt-4 rounded-2xl px-4 py-3 ${chip}`}>
@@ -135,11 +135,11 @@ function ThreeNumbers({ s }: { s: Stats }) {
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="o-card px-2 py-3.5 text-center">
-      <p className="font-display text-[24px] font-extrabold leading-none tabular-nums text-charcoal">
+    <div className="a-card px-2 py-3.5 text-center">
+      <p className="font-display text-[24px] font-extrabold leading-none tabular-nums text-white">
         {value}
       </p>
-      <p className="mt-1 text-[10.5px] font-semibold leading-tight text-slate">{label}</p>
+      <p className="mt-1 text-[10.5px] font-semibold leading-tight text-white/55">{label}</p>
     </div>
   );
 }
@@ -151,10 +151,10 @@ function Month({ s }: { s: Stats }) {
   const visits = s.daily.reduce((n, d) => n + d.visits, 0);
 
   return (
-    <section className="o-card p-4">
+    <section className="a-card p-4">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-[13.5px] font-extrabold text-charcoal">30 derniers jours</h2>
-        <span className="text-[11.5px] font-semibold text-slate">{visits} visites</span>
+        <h2 className="text-[13.5px] font-extrabold text-white">30 derniers jours</h2>
+        <span className="text-[11.5px] font-semibold text-white/55">{visits} visites</span>
       </div>
 
       <div className="mt-3 flex h-[70px] items-end gap-[3px]">
@@ -165,15 +165,15 @@ function Month({ s }: { s: Stats }) {
             className={`flex-1 rounded-t-[3px] ${
               d.revenue
                 ? i === s.daily.length - 1
-                  ? "bg-royal"
-                  : "bg-royal/45"
-                : "bg-hair"
+                  ? "bg-[#8b6bff]"
+                  : "bg-[#8b6bff]/45"
+                : "bg-white/10"
             }`}
             style={{ height: `${Math.max(4, (d.revenue / max) * 100)}%` }}
           />
         ))}
       </div>
-      <div className="mt-2 flex justify-between text-[10px] font-medium text-slate/70">
+      <div className="mt-2 flex justify-between text-[10px] font-medium text-white/40">
         <span>il y a 30 j</span>
         <span>aujourd&apos;hui</span>
       </div>
@@ -185,28 +185,28 @@ function Month({ s }: { s: Stats }) {
 
 function Money({ s }: { s: Stats }) {
   return (
-    <section className="o-card p-5">
-      <h2 className="text-[13.5px] font-extrabold text-charcoal">L&apos;argent</h2>
-      <p className="mt-0.5 text-[11.5px] leading-snug text-slate">
+    <section className="a-card p-5">
+      <h2 className="text-[13.5px] font-extrabold text-white">L&apos;argent</h2>
+      <p className="mt-0.5 text-[11.5px] leading-snug text-white/55">
         Uniquement ce qui est passé par la caisse Pointili.
       </p>
 
       <div className="mt-3.5 flex items-end justify-between gap-3">
         <span>
-          <span className="block font-display text-[30px] font-extrabold leading-none tabular-nums text-royal">
+          <span className="block font-display text-[30px] font-extrabold leading-none tabular-nums text-[#b9a3ff]">
             {Math.round(s.revenueTnd)}
           </span>
-          <span className="text-[11px] font-semibold text-slate">TND encaissés</span>
+          <span className="text-[11px] font-semibold text-white/55">TND encaissés</span>
         </span>
         <span className="text-right">
-          <span className="block font-display text-[22px] font-extrabold leading-none tabular-nums text-ok">
+          <span className="block font-display text-[22px] font-extrabold leading-none tabular-nums text-[#7ff0b0]">
             {Math.round(s.netTnd)}
           </span>
-          <span className="text-[11px] font-semibold text-slate">net</span>
+          <span className="text-[11px] font-semibold text-white/55">net</span>
         </span>
       </div>
 
-      <div className="mt-3.5 space-y-1.5 border-t border-hair pt-3">
+      <div className="mt-3.5 space-y-1.5 border-t border-white/12 pt-3">
         <Line label="Ticket moyen" value={`${s.avgTicketTnd.toFixed(2)} TND`} />
         <Line label="Ces 30 jours" value={`${s.revenue30d.toFixed(0)} TND`} />
         <Line label="Coût des récompenses" value={`− ${s.rewardCostTnd.toFixed(0)} TND`} />
@@ -218,8 +218,8 @@ function Money({ s }: { s: Stats }) {
 function Line({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-[12.5px] text-slate">{label}</span>
-      <span className="shrink-0 text-[12.5px] font-bold tabular-nums text-charcoal">{value}</span>
+      <span className="text-[12.5px] text-white/55">{label}</span>
+      <span className="shrink-0 text-[12.5px] font-bold tabular-nums text-white">{value}</span>
     </div>
   );
 }
@@ -229,10 +229,10 @@ function Line({ label, value }: { label: string; value: string }) {
 function Favourites({ s }: { s: Stats }) {
   const top = s.topRewards[0];
   return (
-    <section className="o-card p-5">
-      <h2 className="text-[13.5px] font-extrabold text-charcoal">Ce qu&apos;ils préfèrent</h2>
-      <p className="mt-2 text-[15px] font-extrabold text-royal">{top.label}</p>
-      <p className="text-[11.5px] text-slate">
+    <section className="a-card p-5">
+      <h2 className="text-[13.5px] font-extrabold text-white">Ce qu&apos;ils préfèrent</h2>
+      <p className="mt-2 text-[15px] font-extrabold text-[#b9a3ff]">{top.label}</p>
+      <p className="text-[11.5px] text-white/55">
         servi {top.claimed} fois
         {s.topRewards.length > 1 && ` · puis ${s.topRewards[1].label}`}
       </p>
@@ -242,8 +242,8 @@ function Favourites({ s }: { s: Stats }) {
 
 function Owed({ s }: { s: Stats }) {
   return (
-    <section className="o-card p-5">
-      <h2 className="text-[13.5px] font-extrabold text-charcoal">Ce que vous devez encore</h2>
+    <section className="a-card p-5">
+      <h2 className="text-[13.5px] font-extrabold text-white">Ce que vous devez encore</h2>
       <div className="mt-2.5 space-y-1.5">
         <Line
           label="Points en circulation"
@@ -259,11 +259,11 @@ function Owed({ s }: { s: Stats }) {
 
 function Empty() {
   return (
-    <section className="o-card px-5 py-12 text-center">
-      <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-lilac text-[26px]">📊</span>
-      <p className="mt-4 text-[16px] font-extrabold text-charcoal">Pas encore de données</p>
-      <p className="mx-auto mt-1.5 max-w-[32ch] text-[13px] leading-relaxed text-slate">
-        Créditez votre premier client depuis la <b className="text-charcoal">Caisse</b>. Dès
+    <section className="a-card px-5 py-12 text-center">
+      <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-white/[0.1] text-[26px]">📊</span>
+      <p className="mt-4 text-[16px] font-extrabold text-white">Pas encore de données</p>
+      <p className="mx-auto mt-1.5 max-w-[32ch] text-[13px] leading-relaxed text-white/55">
+        Créditez votre premier client depuis la <b className="text-white">Caisse</b>. Dès
         qu&apos;un client revient, vous saurez ici si la fidélité fonctionne.
       </p>
     </section>

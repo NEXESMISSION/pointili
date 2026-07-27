@@ -11,16 +11,16 @@ export default async function Signup() {
   if (owner) redirect((await ownerCafe()) ? "/owner" : "/owner/nouveau");
 
   return (
-    <div className="o-card px-6 py-7">
-      <h1 className="text-[26px] font-extrabold leading-tight text-charcoal">
+    <div className="a-card px-6 py-7">
+      <h1 className="text-[26px] font-extrabold leading-tight text-white">
         Créez votre compte
       </h1>
-      <p className="mt-1.5 text-[13.5px] leading-relaxed text-slate">
+      <p className="mt-1.5 text-[13.5px] leading-relaxed text-white/55">
         Quelques secondes, et vos clients peuvent scanner.
       </p>
 
       {/* the offer, up front — matches the landing + marketing */}
-      <p className="mt-4 rounded-xl bg-lilac-2 px-3.5 py-2.5 text-[12.5px] font-semibold leading-relaxed text-royal">
+      <p className="mt-4 rounded-xl bg-white/[0.08] px-3.5 py-2.5 text-[12.5px] font-semibold leading-relaxed text-[#b9a3ff]">
         ✦ 14 jours gratuits — sans carte bancaire.
       </p>
 
@@ -33,9 +33,9 @@ export default async function Signup() {
         />
       </div>
 
-      <p className="mt-5 text-center text-[13px] text-slate">
+      <p className="mt-5 text-center text-[13px] text-white/55">
         Déjà un compte ?{" "}
-        <Link href="/owner/login" className="font-bold text-royal">
+        <Link href="/owner/login" className="font-bold text-[#b9a3ff]">
           Se connecter
         </Link>
       </p>

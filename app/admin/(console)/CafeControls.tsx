@@ -12,7 +12,7 @@ import {
 const btn =
   "rounded-xl px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.06em] active:scale-95 disabled:opacity-50";
 const field =
-  "rounded-xl border border-hair bg-white px-3 py-2.5 text-[13px] font-semibold text-charcoal outline-none focus:border-royal focus:ring-2 focus:ring-royal/20";
+  "k-field";
 
 function Result({ state }: { state: AdminState }) {
   if (state.error) {
@@ -39,7 +39,7 @@ export function CafeControls({ cafe, left }: { cafe: AdminCafe; left: Remaining 
   const [noticeState, noticeFn, noticePending] = useActionState<AdminState, FormData>(noticeAction, {});
 
   return (
-    <li className="overflow-hidden rounded-2xl border border-hair bg-white shadow-[0_10px_30px_-26px_rgba(40,18,59,.6)]">
+    <li className="k-card overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -47,27 +47,28 @@ export function CafeControls({ cafe, left }: { cafe: AdminCafe; left: Remaining 
       >
         <span className="min-w-0">
           <span className="flex items-center gap-2">
-            <span className="truncate text-[16px] font-bold text-charcoal">{cafe.name}</span>
+            <span className="truncate text-[16px] font-bold text-[#e6e8ee]">{cafe.name}</span>
             <StatusDot cafe={cafe} />
           </span>
-          <span className="mt-0.5 block truncate text-[11px] text-slate">
+          <span className="mt-0.5 block truncate text-[11px] text-[#8b93a7]">
             /{cafe.slug} · {cafe.ownerEmail ?? "—"}
           </span>
-          <span className="mt-1 block text-[11px] font-medium text-slate">
+          {/* No "tours joués" any more — the wheel is not part of the product. */}
+          <span className="mt-1 block text-[11px] font-medium text-[#8b93a7]">
             {cafe.customers} client{cafe.customers === 1 ? "" : "s"} ·{" "}
-            {cafe.pointsIssued} pts · {cafe.plays} tour{cafe.plays === 1 ? "" : "s"}
+            {cafe.pointsIssued} pts
           </span>
         </span>
         <span className="shrink-0 text-right">
           <PlanBadge cafe={cafe} left={left} />
-          <span className="mt-1 block text-[10px] text-slate">{open ? "▲" : "▼"}</span>
+          <span className="mt-1 block text-[10px] text-[#8b93a7]">{open ? "▲" : "▼"}</span>
         </span>
       </button>
 
       {open && (
-        <div className="border-t border-hair px-4 py-3">
+        <div className="border-t border-[#232838] px-4 py-3">
           {/* subscription */}
-          <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
+          <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8b93a7]">
             Abonnement
           </p>
           <form action={planFn} className="flex flex-wrap items-center gap-2">
@@ -91,18 +92,18 @@ export function CafeControls({ cafe, left }: { cafe: AdminCafe; left: Remaining 
               <option value="days">jours</option>
               <option value="months">mois</option>
             </select>
-            <button type="submit" disabled={planPending} className={`${btn} bg-royal text-white`}>
+            <button type="submit" disabled={planPending} className={`${btn} bg-[#6d4ae6] text-white`}>
               {planPending ? "· ·" : "Appliquer"}
             </button>
           </form>
-          <p className="mt-1.5 text-[10.5px] leading-snug text-slate">
+          <p className="mt-1.5 text-[10.5px] leading-snug text-[#8b93a7]">
             Prolonge à partir de l&apos;expiration actuelle (renouveler tôt ne perd
             rien). « Gratuit » = sans limite. Durée <b>0</b> = couper maintenant.
           </p>
           <Result state={planState} />
 
           {/* suspend / ban */}
-          <p className="mb-1.5 mt-4 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
+          <p className="mb-1.5 mt-4 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8b93a7]">
             Modération
           </p>
           {cafe.suspendedAt ? (
@@ -140,13 +141,13 @@ export function CafeControls({ cafe, left }: { cafe: AdminCafe; left: Remaining 
               </button>
             </form>
           )}
-          <p className="mt-1.5 text-[10.5px] leading-snug text-slate">
+          <p className="mt-1.5 text-[10.5px] leading-snug text-[#8b93a7]">
             Coupe l&apos;accès des clients à /{cafe.slug} immédiatement.
           </p>
           <Result state={susState} />
 
           {/* notice */}
-          <p className="mb-1.5 mt-4 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
+          <p className="mb-1.5 mt-4 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8b93a7]">
             Message au propriétaire
           </p>
           <form action={noticeFn} className="space-y-2">
@@ -166,7 +167,7 @@ export function CafeControls({ cafe, left }: { cafe: AdminCafe; left: Remaining 
                 className={`${field} w-[60px] text-center`}
                 aria-label="jours"
               />
-              <span className="self-center text-[11px] text-slate">jours</span>
+              <span className="self-center text-[11px] text-[#8b93a7]">jours</span>
             </div>
             <textarea
               name="message"
@@ -175,7 +176,7 @@ export function CafeControls({ cafe, left }: { cafe: AdminCafe; left: Remaining 
               placeholder="Votre essai se termine dans 3 jours…"
               className={`${field} w-full resize-none`}
             />
-            <button type="submit" disabled={noticePending} className={`${btn} bg-charcoal text-white`}>
+            <button type="submit" disabled={noticePending} className={`${btn} bg-[#1a1f2b] border border-[#2b3145] text-[#e6e8ee]`}>
               {noticePending ? "· ·" : "Envoyer"}
             </button>
           </form>
@@ -201,7 +202,7 @@ function PlanBadge({ cafe, left }: { cafe: AdminCafe; left: Remaining }) {
     <span className="block">
       <span
         className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold tracking-[0.06em] ${
-          cafe.plan === "pro" ? "bg-royal text-white" : "bg-lilac text-royal"
+          cafe.plan === "pro" ? "bg-[#6d4ae6] text-white" : "bg-[#1b2030] text-[#9d86ff]"
         }`}
       >
         {label}
@@ -209,7 +210,7 @@ function PlanBadge({ cafe, left }: { cafe: AdminCafe; left: Remaining }) {
       {!left.unlimited && (
         <span
           className={`mt-1 block text-[9px] font-semibold ${
-            left.expired ? "text-[#e5484d]" : left.soon ? "text-[#b07d00]" : "text-slate"
+            left.expired ? "text-[#e5484d]" : left.soon ? "text-[#b07d00]" : "text-[#8b93a7]"
           }`}
         >
           {left.expired ? "expiré" : `${left.label} restants`}
@@ -240,7 +241,7 @@ export function BroadcastForm() {
           className={`${field} w-[60px] text-center`}
           aria-label="jours"
         />
-        <span className="self-center text-[11px] text-slate">jours</span>
+        <span className="self-center text-[11px] text-[#8b93a7]">jours</span>
       </div>
       <textarea
         name="message"
@@ -249,7 +250,7 @@ export function BroadcastForm() {
         placeholder="Maintenance prévue dimanche…"
         className={`${field} w-full resize-none`}
       />
-      <button type="submit" disabled={pending} className={`${btn} w-full bg-charcoal py-2.5 text-white`}>
+      <button type="submit" disabled={pending} className={`${btn} w-full bg-[#1a1f2b] border border-[#2b3145] py-2.5 text-[#e6e8ee]`}>
         {pending ? "· ·" : "Envoyer à tous les cafés"}
       </button>
       <Result state={state} />

@@ -18,7 +18,7 @@ export function ElevateForm() {
         required
         autoFocus
         placeholder="Votre mot de passe"
-        className="w-full rounded-xl border border-hair bg-white px-4 py-3.5 text-[15px] font-medium text-charcoal outline-none focus:border-royal focus:ring-2 focus:ring-royal/20"
+        className="w-full rounded-xl border border-[#232838] bg-[#12151d] px-4 py-3.5 text-[15px] font-medium text-[#e6e8ee] outline-none focus:border-[#6d4ae6]"
       />
 
       {state.error && (
@@ -30,7 +30,7 @@ export function ElevateForm() {
       <button
         type="submit"
         disabled={pending}
-        className="!mt-3.5 w-full rounded-xl bg-royal py-3.5 text-[15px] font-bold text-white shadow-[0_12px_28px_-10px_rgba(91,63,209,.6)] transition active:scale-[0.98] disabled:opacity-60"
+        className="!mt-3.5 w-full rounded-xl bg-[#6d4ae6] py-3.5 text-[15px] font-bold text-white shadow-[0_12px_28px_-10px_rgba(91,63,209,.6)] transition active:scale-[0.98] disabled:opacity-60"
       >
         {pending ? "· · ·" : "Déverrouiller la console"}
       </button>

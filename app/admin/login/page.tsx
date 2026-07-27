@@ -21,11 +21,11 @@ export default async function AdminLogin() {
   if (await isElevated(owner.id)) redirect("/admin");
 
   return (
-    <div className="modern mx-auto flex min-h-dvh max-w-md flex-col bg-cloud px-6 py-8">
+    <div className="modern mx-auto flex min-h-dvh max-w-md flex-col bg-[#0b0d12] px-6 py-8">
       <span className="inline-flex items-center gap-2 self-start">
         <Image src="/logo-icon.png" alt="" width={26} height={26} className="h-[22px] w-auto" />
-        <span className="text-[16px] font-extrabold text-charcoal">
-          pointili<span className="text-royal2">.online</span>
+        <span className="text-[16px] font-extrabold text-[#e6e8ee]">
+          pointili<span className="text-[#9d86ff]">.online</span>
         </span>
       </span>
 
@@ -34,22 +34,22 @@ export default async function AdminLogin() {
           Zone sensible
         </span>
 
-        <h1 className="mt-4 text-[28px] font-extrabold leading-tight text-charcoal">
+        <h1 className="mt-4 text-[28px] font-extrabold leading-tight text-[#e6e8ee]">
           Console plateforme
         </h1>
-        <p className="mt-1.5 mb-5 text-[13.5px] leading-relaxed text-slate">
+        <p className="mt-1.5 mb-5 text-[13.5px] leading-relaxed text-[#8b93a7]">
           Confirmez votre mot de passe pour continuer. L&apos;accès reste ouvert
           30 minutes, puis se reverrouille.
         </p>
 
-        <p className="mb-3 rounded-xl border border-hair bg-white px-3.5 py-2.5 text-[12px] font-medium text-slate">
+        <p className="mb-3 rounded-xl border border-[#232838] bg-[#12151d] px-3.5 py-2.5 text-[12px] font-medium text-[#8b93a7]">
           {owner.email}
         </p>
 
         <ElevateForm />
 
-        <p className="mt-5 text-center text-[12px] text-slate">
-          <Link href="/owner" className="font-semibold text-royal underline underline-offset-2">
+        <p className="mt-5 text-center text-[12px] text-[#8b93a7]">
+          <Link href="/owner" className="font-semibold text-[#9d86ff] underline underline-offset-2">
             Retour à mon café
           </Link>
         </p>

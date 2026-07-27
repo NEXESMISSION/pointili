@@ -28,15 +28,15 @@ export default async function OwnerLayout({
 
   const planChip = cafe
     ? cafe.plan === "pro"
-      ? { text: "Pro", cls: "bg-royal text-white" }
+      ? { text: "Pro", cls: "bg-[#6d4ae6] text-white" }
       : left?.expired
-        ? { text: "Expiré", cls: "bg-seal-soft text-seal" }
-        : { text: `Essai · ${left?.label ?? ""}`.trim(), cls: "bg-gold-soft text-gold-deep" }
+        ? { text: "Expiré", cls: "bg-[#ff6b6b]/12 text-[#ff9a9a]" }
+        : { text: `Essai · ${left?.label ?? ""}`.trim(), cls: "bg-[#ffd27a]/12 text-[#ffd27a]" }
     : null;
 
   return (
-    <div className="app-shell o-shell flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-hair bg-white/85 px-4 py-3 backdrop-blur">
+    <div className="app-shell a-shell flex min-h-dvh flex-col">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/12 bg-[#0d0819]/80 px-4 py-3 backdrop-blur">
         {cafe ? (
           <>
             <span
@@ -46,10 +46,10 @@ export default async function OwnerLayout({
               {cafe.name.charAt(0).toUpperCase()}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[15px] font-extrabold leading-tight text-charcoal">
+              <span className="block truncate text-[15px] font-extrabold leading-tight text-white">
                 {cafe.name}
               </span>
-              <span className="block text-[10.5px] font-semibold text-slate">
+              <span className="block text-[10.5px] font-semibold text-white/55">
                 Espace café
               </span>
             </span>
@@ -60,14 +60,14 @@ export default async function OwnerLayout({
             )}
           </>
         ) : (
-          <span className="text-[16px] font-extrabold text-charcoal">
-            pointili<span className="text-royal2">.online</span>
+          <span className="text-[16px] font-extrabold text-white">
+            pointili<span className="text-[#b9a3ff]">.online</span>
           </span>
         )}
       </header>
 
       {owner.dev && (
-        <p className="border-b border-line bg-gold-soft px-5 py-2 font-mono text-[9.5px] uppercase leading-relaxed tracking-[0.08em] text-gold-deep">
+        <p className="border-b border-white/12 bg-[#ffd27a]/12 px-5 py-2 font-mono text-[9.5px] uppercase leading-relaxed tracking-[0.08em] text-[#ffd27a]">
           ⚠ Mode développement — aucune authentification
         </p>
       )}
@@ -78,11 +78,11 @@ export default async function OwnerLayout({
         why the QR stopped working.
       */}
       {cafe && !cafe.live && (
-        <div className="border-b border-seal/40 bg-seal-soft px-5 py-2.5">
-          <p className="text-[9.5px] font-semibold uppercase tracking-[0.06em] text-seal">
+        <div className="border-b border-[#ff6b6b]/35 bg-[#ff6b6b]/12 px-5 py-2.5">
+          <p className="text-[9.5px] font-semibold uppercase tracking-[0.06em] text-[#ff9a9a]">
             ◆ Café hors ligne
           </p>
-          <p className="mt-0.5 text-[12px] leading-snug text-seal">
+          <p className="mt-0.5 text-[12px] leading-snug text-[#ff9a9a]">
             {cafe.suspendedAt
               ? `Suspendu : ${cafe.suspendedReason ?? "contactez-nous"}`
               : "Votre abonnement a expiré — vos clients ne peuvent plus scanner."}
@@ -91,7 +91,7 @@ export default async function OwnerLayout({
       )}
 
       {cafe?.live && left?.soon && !left.unlimited && (
-        <p className="border-b border-gold/40 bg-gold-soft px-5 py-2 text-[11.5px] leading-snug text-gold-deep">
+        <p className="border-b border-[#ffd27a]/30 bg-[#ffd27a]/12 px-5 py-2 text-[11.5px] leading-snug text-[#ffd27a]">
           Votre {cafe.plan === "trial" ? "essai" : "abonnement"} se termine dans{" "}
           <b>{left.label}</b>.
         </p>
@@ -102,10 +102,10 @@ export default async function OwnerLayout({
           key={n.id}
           className={`border-b-[1.5px] px-5 py-2.5 ${
             n.kind === "urgent"
-              ? "border-seal/40 bg-seal-soft text-seal"
+              ? "border-[#ff6b6b]/35 bg-[#ff6b6b]/12 text-[#ff9a9a]"
               : n.kind === "warning"
-                ? "border-gold/40 bg-gold-soft text-gold-deep"
-                : "border-line bg-brand-soft/60 text-ink2"
+                ? "border-[#ffd27a]/30 bg-[#ffd27a]/12 text-[#ffd27a]"
+                : "border-white/12 bg-white/[0.06] text-white/70"
           }`}
         >
           <p className="text-[9px] font-semibold uppercase tracking-[0.06em] opacity-70">

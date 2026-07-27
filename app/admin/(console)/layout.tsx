@@ -30,7 +30,7 @@ export default async function ConsoleLayout({
   const minsLeft = Math.ceil((await elevationRemaining()) / 60);
 
   return (
-    <div className="modern mx-auto flex min-h-dvh max-w-md flex-col bg-cloud">
+    <div className="modern mx-auto flex min-h-dvh max-w-md flex-col bg-[#0b0d12]">
       <header className="bg-gradient-to-br from-[#5b3fd1] to-[#3a2494] px-5 py-4">
         <div className="flex items-center justify-between">
           <span className="text-[16px] font-extrabold text-white">
@@ -43,17 +43,17 @@ export default async function ConsoleLayout({
       </header>
 
       {minsLeft <= 5 && (
-        <p className="bg-[#fff3d6] px-5 py-2 text-[11.5px] font-semibold text-[#8a6d00]">
+        <p className="bg-[#fff3d6] px-5 py-2 text-[11.5px] font-semibold text-[#ffc861]">
           Verrouillage dans {minsLeft} min — vous devrez retaper votre mot de passe.
         </p>
       )}
 
       <main className="flex-1 px-5 py-5">{children}</main>
 
-      <nav className="sticky bottom-0 z-20 flex items-center justify-between gap-2 border-t border-hair bg-white px-3 py-2.5">
+      <nav className="sticky bottom-0 z-20 flex items-center justify-between gap-2 border-t border-[#232838] bg-[#0e1118] px-3 py-2.5">
         <Link
           href="/owner"
-          className="rounded-xl px-3 py-3 text-[12px] font-bold text-slate"
+          className="rounded-xl px-3 py-3 text-[12px] font-bold text-[#8b93a7]"
         >
           ← Mon café
         </Link>
@@ -61,7 +61,7 @@ export default async function ConsoleLayout({
           <form action={dropElevationAction}>
             <button
               type="submit"
-              className="rounded-xl px-3 py-3 text-[12px] font-bold text-slate"
+              className="rounded-xl px-3 py-3 text-[12px] font-bold text-[#8b93a7]"
             >
               Verrouiller
             </button>

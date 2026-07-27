@@ -70,23 +70,23 @@ export function QrActions({ url, svg, name }: { url: string; svg: string; name: 
   return (
     <div className="space-y-2.5 print:hidden">
       <div className="grid grid-cols-2 gap-2.5">
-        <button type="button" onClick={() => window.print()} className="o-btn !text-[13.5px]">
+        <button type="button" onClick={() => window.print()} className="a-btn !text-[13.5px]">
           Imprimer
         </button>
         <button
           type="button"
           onClick={download}
           disabled={saving}
-          className="o-btn o-btn--ghost !text-[13.5px]"
+          className="a-btn a-btn--ghost !text-[13.5px]"
         >
           {saving ? "· · ·" : "Télécharger"}
         </button>
       </div>
       <div className="grid grid-cols-2 gap-2.5">
-        <button type="button" onClick={share} className="o-btn o-btn--ghost !text-[13px]">
+        <button type="button" onClick={share} className="a-btn a-btn--ghost !text-[13px]">
           Partager
         </button>
-        <button type="button" onClick={copy} className="o-btn o-btn--ghost !text-[13px]">
+        <button type="button" onClick={copy} className="a-btn a-btn--ghost !text-[13px]">
           {copied ? "Copié ✓" : "Copier le lien"}
         </button>
       </div>
@@ -94,7 +94,7 @@ export function QrActions({ url, svg, name }: { url: string; svg: string; name: 
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="block py-1 text-center text-[12.5px] font-bold text-royal underline underline-offset-2"
+        className="block py-1 text-center text-[12.5px] font-bold text-[#b9a3ff] underline underline-offset-2"
       >
         Voir ce que voit un client →
       </a>

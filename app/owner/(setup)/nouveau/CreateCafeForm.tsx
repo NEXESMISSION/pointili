@@ -4,8 +4,7 @@ import { useActionState, useState } from "react";
 import { BusinessTypePicker } from "@/components/BusinessTypePicker";
 import { createCafeAction, type CreateState } from "./actions";
 
-const field =
-  "w-full rounded-xl border border-line bg-white px-4 py-3.5 text-[16px] font-medium text-ink outline-none transition-colors placeholder:font-normal placeholder:text-slate/60 focus:border-royal focus:ring-2 focus:ring-royal/15";
+const field = "a-field";
 
 /**
  * Mirrors slugify() in lib/db.ts — preview only; the server always re-derives it.
@@ -37,7 +36,7 @@ export function CreateCafeForm() {
   return (
     <form action={formAction} className="space-y-3">
       <label className="block">
-        <span className="ticket-label mb-1 block">Nom du café</span>
+        <span className="block text-[10px] font-bold uppercase tracking-[0.1em] text-white/45 mb-1.5">Nom du café</span>
         <input
           name="name"
           required
@@ -51,28 +50,28 @@ export function CreateCafeForm() {
       </label>
 
       <div>
-        <span className="ticket-label mb-1.5 block">Type de commerce</span>
+        <span className="block text-[10px] font-bold uppercase tracking-[0.1em] text-white/45 mb-1.5">Type de commerce</span>
         <BusinessTypePicker defaultValue="cafe" />
-        <span className="mt-1.5 block text-[11.5px] leading-snug text-mut">
+        <span className="mt-1.5 block text-[11.5px] leading-snug text-white/50">
           Vos clients le verront sur leur carte pour la reconnaître.
         </span>
       </div>
 
       <label className="block">
-        <span className="ticket-label mb-1 block">Adresse de votre carte</span>
+        <span className="block text-[10px] font-bold uppercase tracking-[0.1em] text-white/45 mb-1.5">Adresse de votre carte</span>
         <input
           name="slug"
           value={slug}
           onChange={(e) => setSlug(e.target.value)}
           placeholder={preview(name) || "chez-karim"}
           maxLength={40}
-          className={`${field} font-mono text-[14px]`}
+          className={`${field} font-mono !text-[14px]`}
         />
-        <span className="mt-1.5 block break-all font-mono text-[11px] text-mut">
+        <span className="mt-1.5 block break-all font-mono text-[11px] text-white/50">
           pointili.online/
-          <b className="text-brand">{effective || "…"}</b>
+          <b className="text-[#b9a3ff]">{effective || "…"}</b>
         </span>
-        <span className="mt-1 block text-[11.5px] leading-snug text-mut">
+        <span className="mt-1 block text-[11.5px] leading-snug text-white/50">
           C&apos;est ce que vos clients ouvrent en scannant. Laissez vide pour
           reprendre le nom.
         </span>
@@ -81,7 +80,7 @@ export function CreateCafeForm() {
       {state.error && (
         <p
           role="alert"
-          className="rounded-xl border border-seal/40 bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal"
+          className="rounded-xl border border-[#ff6b6b]/35 bg-[#ff6b6b]/12 px-3.5 py-2.5 text-[13px] font-semibold text-[#ff9a9a]"
         >
           {state.error}
         </p>
@@ -90,7 +89,7 @@ export function CreateCafeForm() {
       <button
         type="submit"
         disabled={pending || !name.trim()}
-        className="!mt-4 w-full rounded-xl bg-brand py-4 text-[12px] font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
+        className="!mt-4 w-full rounded-xl bg-[#6d4ae6] py-4 text-[12px] font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
       >
         {pending ? "· · ·" : "Créer mon café ✦"}
       </button>

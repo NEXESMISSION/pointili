@@ -97,7 +97,7 @@ export function CaisseDesk({
 
   return (
     <div className="space-y-3.5">
-      <section className="o-card p-5">
+      <section className="a-card p-5">
         <Header
           icon={<UsersIcon className="h-5 w-5" />}
           title="Le client"
@@ -125,7 +125,7 @@ export function CaisseDesk({
             onKeyDown={(e) => e.key === "Enter" && find(input)}
             name="customer"
             placeholder="Code / numéro"
-            className="o-field"
+            className="a-field"
             inputMode="text"
           />
           <button
@@ -141,7 +141,7 @@ export function CaisseDesk({
         {scanning && <QrScanner onScan={find} onClose={() => setScanning(false)} />}
 
         {error && (
-          <p role="alert" className="mt-3 rounded-xl bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal">
+          <p role="alert" className="mt-3 rounded-xl bg-[#ff6b6b]/12 px-3.5 py-2.5 text-[13px] font-semibold text-[#ff9a9a]">
             {error}
           </p>
         )}
@@ -175,8 +175,8 @@ function Header({ icon, title, sub }: { icon: React.ReactNode; title: string; su
         {icon}
       </span>
       <div className="min-w-0">
-        <h2 className="text-[17px] font-extrabold leading-tight text-charcoal">{title}</h2>
-        {sub && <p className="text-[12px] text-slate">{sub}</p>}
+        <h2 className="text-[17px] font-extrabold leading-tight text-white">{title}</h2>
+        {sub && <p className="text-[12px] text-white/55">{sub}</p>}
       </div>
     </div>
   );
@@ -257,17 +257,17 @@ function CustomerPanel({
   }
 
   return (
-    <div className="o-inset mt-4 p-4">
+    <div className="a-inset mt-4 p-4">
       {/* who */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[16px] font-extrabold text-charcoal">{customer.name ?? "Client"}</p>
+          <p className="text-[16px] font-extrabold text-white">{customer.name ?? "Client"}</p>
           {customer.enrolled ? (
-            <p className="mt-0.5 font-mono text-[12px] font-bold tracking-[0.1em] text-slate">
+            <p className="mt-0.5 font-mono text-[12px] font-bold tracking-[0.1em] text-white/55">
               {customer.code}
             </p>
           ) : (
-            <p className="mt-0.5 text-[11.5px] font-semibold text-gold-deep">
+            <p className="mt-0.5 text-[11.5px] font-semibold text-[#ffd27a]">
               Pas encore inscrit — ses points l’attendent
             </p>
           )}
@@ -275,7 +275,7 @@ function CustomerPanel({
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 rounded-lg px-2 py-1 text-[18px] leading-none text-slate"
+          className="shrink-0 rounded-lg px-2 py-1 text-[18px] leading-none text-white/55"
           aria-label="Fermer"
         >
           ×
@@ -284,18 +284,18 @@ function CustomerPanel({
 
       {/* the two numbers that matter */}
       <div className="mt-3 flex gap-2">
-        <span className="flex-1 rounded-xl bg-white px-3 py-2 text-center">
-          <span className="block text-[20px] font-extrabold leading-none tabular-nums text-royal">
+        <span className="flex-1 rounded-xl bg-white/[0.1] px-3 py-2 text-center">
+          <span className="block text-[20px] font-extrabold leading-none tabular-nums text-[#b9a3ff]">
             {balance}
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-slate">points</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-white/55">points</span>
         </span>
         {stampsEnabled && (
-          <span className="flex-1 rounded-xl bg-white px-3 py-2 text-center">
-            <span className="block text-[20px] font-extrabold leading-none tabular-nums text-charcoal">
+          <span className="flex-1 rounded-xl bg-white/[0.1] px-3 py-2 text-center">
+            <span className="block text-[20px] font-extrabold leading-none tabular-nums text-white">
               {stamps}/{stampsRequired}
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-slate">tampons</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-white/55">tampons</span>
           </span>
         )}
       </div>
@@ -309,7 +309,7 @@ function CustomerPanel({
           name="amount"
           inputMode="decimal"
           placeholder={`Montant · ${pointsPerTnd} pt/DT`}
-          className="o-field !bg-white"
+          className="a-field"
         />
         <button
           type="button"
@@ -326,19 +326,19 @@ function CustomerPanel({
           type="button"
           onClick={stamp}
           disabled={busy}
-          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-hair bg-white py-2.5 text-[13px] font-bold text-charcoal active:scale-[0.99] disabled:opacity-55"
+          className="a-btn a-btn--dark mt-2 flex items-center justify-center gap-2 disabled:opacity-45"
         >
           <StampIcon className="h-4 w-4" /> +1 tampon
         </button>
       )}
 
       {flash && (
-        <p role="status" className="mt-2.5 rounded-xl bg-ok/10 px-3.5 py-2.5 text-[13px] font-bold text-ok">
+        <p role="status" className="mt-2.5 rounded-xl bg-ok/10 px-3.5 py-2.5 text-[13px] font-bold text-[#7ff0b0]">
           {flash}
         </p>
       )}
       {err && (
-        <p role="alert" className="mt-2.5 rounded-xl bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal">
+        <p role="alert" className="mt-2.5 rounded-xl bg-[#ff6b6b]/12 px-3.5 py-2.5 text-[13px] font-semibold text-[#ff9a9a]">
           {err}
         </p>
       )}
@@ -347,22 +347,22 @@ function CustomerPanel({
       <button
         type="button"
         onClick={openMore}
-        className="mt-3 flex w-full items-center justify-center gap-1.5 text-[12px] font-bold text-slate"
+        className="mt-3 flex w-full items-center justify-center gap-1.5 text-[12px] font-bold text-white/55"
       >
         {showMore ? "Masquer" : "Corriger / Historique"}
         <span className={`text-[13px] transition-transform ${showMore ? "rotate-180" : ""}`}>⌄</span>
       </button>
 
       {showMore && (
-        <div className="mt-3 border-t border-hair pt-3">
-          <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-slate">Corriger les points</p>
+        <div className="mt-3 border-t border-white/12 pt-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-white/55">Corriger les points</p>
           <div className="mt-1.5 flex gap-2">
             <input
               value={delta}
               onChange={(e) => setDelta(e.target.value)}
               inputMode="numeric"
               placeholder="+10 ou -5"
-              className="o-field !bg-white font-mono"
+              className="a-field font-mono"
             />
             <button
               type="button"
@@ -387,14 +387,14 @@ function CustomerPanel({
 
           {stampsEnabled && (
             <>
-              <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.05em] text-slate">
+              <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.05em] text-white/55">
                 Tampons (0 à {Math.max(0, stampsRequired - 1)})
               </p>
               <div className="mt-1.5 flex gap-2">
                 <input
                   defaultValue={String(stamps)}
                   inputMode="numeric"
-                  className="o-field !bg-white font-mono"
+                  className="a-field font-mono"
                   id={`st-${customer.ref}`}
                 />
                 <button
@@ -420,23 +420,23 @@ function CustomerPanel({
             </>
           )}
 
-          <p className="mt-3.5 text-[11px] font-bold uppercase tracking-[0.05em] text-slate">Activité</p>
+          <p className="mt-3.5 text-[11px] font-bold uppercase tracking-[0.05em] text-white/55">Activité</p>
           {history === null ? (
-            <p className="mt-1 text-[12.5px] text-slate">Chargement…</p>
+            <p className="mt-1 text-[12.5px] text-white/55">Chargement…</p>
           ) : history.length === 0 ? (
-            <p className="mt-1 text-[12.5px] text-slate">Aucune activité.</p>
+            <p className="mt-1 text-[12.5px] text-white/55">Aucune activité.</p>
           ) : (
-            <ul className="mt-1 divide-y divide-hair/70">
+            <ul className="mt-1 divide-y divide-white/10">
               {history.slice(0, 8).map((a, i) => (
                 <li key={i} className="flex items-center justify-between gap-2 py-1.5">
-                  <span className="min-w-0 truncate text-[12.5px] text-charcoal">
+                  <span className="min-w-0 truncate text-[12.5px] text-white">
                     {a.reason === "collected" ? `Récupéré · ${a.label ?? ""}` : ACT[a.reason]}
                   </span>
-                  <span className="shrink-0 text-[11px] text-slate">{ago(a.at)}</span>
+                  <span className="shrink-0 text-[11px] text-white/55">{ago(a.at)}</span>
                   {a.reason !== "collected" && (
                     <span
                       className={`w-10 shrink-0 text-right text-[12px] font-bold tabular-nums ${
-                        a.delta > 0 ? "text-ok" : "text-slate"
+                        a.delta > 0 ? "text-[#7ff0b0]" : "text-white/55"
                       }`}
                     >
                       {a.delta > 0 ? "+" : ""}
@@ -499,7 +499,7 @@ function ValidateInner({ onReset }: { onReset: () => void }) {
   }
 
   return (
-    <section className="o-card p-5">
+    <section className="a-card p-5">
       <Header
         icon={<CheckIcon className="h-5 w-5" />}
         title="Valider un code"
@@ -508,14 +508,14 @@ function ValidateInner({ onReset }: { onReset: () => void }) {
 
       {done ? (
         <>
-          <div role="status" className="mt-4 rounded-2xl border border-ok/30 bg-ok/10 px-4 py-4 text-center">
+          <div role="status" className="mt-4 rounded-2xl border border-[#7ff0b0]/30 bg-ok/10 px-4 py-4 text-center">
             <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-ok text-white">
               <CheckIcon className="h-6 w-6" />
             </span>
-            <p className="mt-2 text-[15px] font-extrabold text-charcoal">{done.label}</p>
-            <p className="mt-0.5 font-mono text-[12px] font-semibold text-ok">{done.code} · collecté</p>
+            <p className="mt-2 text-[15px] font-extrabold text-white">{done.label}</p>
+            <p className="mt-0.5 font-mono text-[12px] font-semibold text-[#7ff0b0]">{done.code} · collecté</p>
           </div>
-          <button type="button" onClick={onReset} className="o-btn o-btn--ghost mt-3">
+          <button type="button" onClick={onReset} className="a-btn a-btn--ghost mt-3">
             Nouveau code
           </button>
         </>
@@ -523,33 +523,33 @@ function ValidateInner({ onReset }: { onReset: () => void }) {
         <>
           <div
             className={`mt-4 rounded-2xl px-4 py-4 text-center ${
-              peek.status === "valid" ? "o-inset" : "border border-seal/30 bg-seal-soft"
+              peek.status === "valid" ? "a-inset" : "border border-[#ff6b6b]/30 bg-[#ff6b6b]/12"
             }`}
           >
-            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate">
+            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-white/55">
               {peek.kind === "stamp" ? "Carte pleine" : peek.kind === "win" ? "Gain" : "Récompense"}
             </p>
-            <p className={`mt-1 text-[18px] font-extrabold ${peek.status === "valid" ? "text-royal" : "text-seal"}`}>
+            <p className={`mt-1 text-[18px] font-extrabold ${peek.status === "valid" ? "text-[#b9a3ff]" : "text-[#ff9a9a]"}`}>
               {peek.label}
             </p>
-            <p className="mt-0.5 font-mono text-[12px] font-semibold text-slate">{peek.code}</p>
+            <p className="mt-0.5 font-mono text-[12px] font-semibold text-white/55">{peek.code}</p>
             {peek.status !== "valid" && (
-              <p className="mt-1.5 text-[12.5px] font-semibold text-seal">
+              <p className="mt-1.5 text-[12.5px] font-semibold text-[#ff9a9a]">
                 {STATUS_MSG[peek.status as "expired" | "claimed"]}
               </p>
             )}
           </div>
           {peek.status === "valid" ? (
             <div className="mt-3 space-y-2">
-              <button type="button" onClick={collect} disabled={busy} className="o-btn">
+              <button type="button" onClick={collect} disabled={busy} className="a-btn">
                 {busy ? "· · ·" : "Collecter ✦"}
               </button>
-              <button type="button" onClick={onReset} className="o-btn o-btn--ghost">
+              <button type="button" onClick={onReset} className="a-btn a-btn--ghost">
                 Annuler
               </button>
             </div>
           ) : (
-            <button type="button" onClick={onReset} className="o-btn o-btn--ghost mt-3">
+            <button type="button" onClick={onReset} className="a-btn a-btn--ghost mt-3">
               Nouveau code
             </button>
           )}
@@ -564,7 +564,7 @@ function ValidateInner({ onReset }: { onReset: () => void }) {
             maxLength={6}
             autoCapitalize="characters"
             placeholder="A1B2C3"
-            className="o-field text-center !text-[20px] font-bold tracking-[0.14em]"
+            className="a-field text-center !text-[20px] font-bold tracking-[0.14em]"
           />
           <button
             type="button"
@@ -578,7 +578,7 @@ function ValidateInner({ onReset }: { onReset: () => void }) {
       )}
 
       {err && (
-        <p role="alert" className="mt-2.5 rounded-xl bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal">
+        <p role="alert" className="mt-2.5 rounded-xl bg-[#ff6b6b]/12 px-3.5 py-2.5 text-[13px] font-semibold text-[#ff9a9a]">
           {err}
         </p>
       )}
@@ -620,7 +620,7 @@ function CardList({
   }, [q]);
 
   return (
-    <section className="o-card p-5">
+    <section className="a-card p-5">
       <Header
         icon={<GiftIcon className="h-5 w-5" />}
         title="Mes clients"
@@ -633,15 +633,15 @@ function CardList({
         placeholder="Rechercher un nom, un code…"
         name="search"
         inputMode="search"
-        className="o-field mt-4"
+        className="a-field mt-4"
       />
 
       {cards.length === 0 ? (
-        <p className="mt-3 py-6 text-center text-[13px] text-slate">
+        <p className="mt-3 py-6 text-center text-[13px] text-white/55">
           {busy ? "Recherche…" : q ? "Aucune carte." : "Aucun client pour l'instant."}
         </p>
       ) : (
-        <ul className="mt-3 divide-y divide-hair">
+        <ul className="mt-3 divide-y divide-white/10">
           {cards.map((c) => (
             <li key={c.phone}>
               <button
@@ -649,27 +649,27 @@ function CardList({
                 onClick={() => onPick(c.code || c.phone)}
                 className="flex w-full items-center gap-3 py-2.5 text-left active:opacity-70"
               >
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-lilac-2 text-[14px] font-extrabold text-royal">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/[0.08] text-[14px] font-extrabold text-[#b9a3ff]">
                   {(c.name ?? "?").charAt(0).toUpperCase()}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[14px] font-bold text-charcoal">
+                  <span className="block truncate text-[14px] font-bold text-white">
                     {c.name ?? "Sans nom"}
                   </span>
-                  <span className="block truncate text-[11px] text-slate">
+                  <span className="block truncate text-[11px] text-white/55">
                     <span className="font-mono font-bold">{c.code ?? "—"}</span> · {ago(c.lastAt)}
                   </span>
                 </span>
                 <span className="shrink-0 text-right">
-                  <span className="block text-[14px] font-extrabold tabular-nums text-royal">{c.balance}</span>
+                  <span className="block text-[14px] font-extrabold tabular-nums text-[#b9a3ff]">{c.balance}</span>
                   {stampsEnabled && (
-                    <span className="block text-[10px] font-semibold text-slate">
+                    <span className="block text-[10px] font-semibold text-white/55">
                       {c.stamps}/{stampsRequired}
                     </span>
                   )}
                 </span>
                 {c.pending > 0 && (
-                  <span className="shrink-0 rounded-full bg-gold-soft px-2 py-0.5 text-[10px] font-bold text-gold-deep">
+                  <span className="shrink-0 rounded-full bg-[#ffd27a]/12 px-2 py-0.5 text-[10px] font-bold text-[#ffd27a]">
                     {c.pending}
                   </span>
                 )}
@@ -680,7 +680,7 @@ function CardList({
       )}
 
       {cards.length > 0 && cards.length < total && (
-        <p className="mt-3 text-center text-[11.5px] text-slate">
+        <p className="mt-3 text-center text-[11.5px] text-white/55">
           {cards.length} sur {total} — affinez la recherche
         </p>
       )}

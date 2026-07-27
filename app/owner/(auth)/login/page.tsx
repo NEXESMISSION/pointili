@@ -15,16 +15,16 @@ export default async function Login() {
   const configured = supabaseConfigured();
 
   return (
-    <div className="o-card px-6 py-7">
-      <h1 className="text-[26px] font-extrabold leading-tight text-charcoal">
+    <div className="a-card px-6 py-7">
+      <h1 className="text-[26px] font-extrabold leading-tight text-white">
         Bon retour 👋
       </h1>
-      <p className="mt-1.5 text-[13.5px] leading-relaxed text-slate">
+      <p className="mt-1.5 text-[13.5px] leading-relaxed text-white/55">
         Connectez-vous pour gérer vos points, votre caisse et vos récompenses.
       </p>
 
       {!configured && (
-        <p className="mt-4 rounded-xl bg-gold-soft px-3.5 py-2.5 text-[12px] leading-relaxed text-gold-deep">
+        <p className="mt-4 rounded-xl bg-[#ffd27a]/12 px-3.5 py-2.5 text-[12px] leading-relaxed text-[#ffd27a]">
           Supabase n&apos;est pas encore configuré. En développement, l&apos;espace
           est accessible sans connexion —{" "}
           <Link href="/owner" className="font-bold underline">
@@ -38,9 +38,9 @@ export default async function Login() {
         <AuthForm action={loginAction} cta="Se connecter" />
       </div>
 
-      <p className="mt-5 text-center text-[13px] text-slate">
+      <p className="mt-5 text-center text-[13px] text-white/55">
         Pas encore de compte ?{" "}
-        <Link href="/owner/signup" className="font-bold text-royal">
+        <Link href="/owner/signup" className="font-bold text-[#b9a3ff]">
           Créer un compte
         </Link>
       </p>

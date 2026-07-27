@@ -26,14 +26,14 @@ const btn =
 function Feedback({ state }: { state: SettingsState }) {
   if (state.error) {
     return (
-      <p role="alert" className="mt-2 rounded-xl bg-seal-soft px-3.5 py-2.5 text-[12.5px] font-semibold text-seal">
+      <p role="alert" className="mt-2 rounded-xl bg-[#ff6b6b]/12 px-3.5 py-2.5 text-[12.5px] font-semibold text-[#ff9a9a]">
         {state.error}
       </p>
     );
   }
   if (state.saved) {
     return (
-      <p role="status" className="mt-2 rounded-xl bg-ok/10 px-3.5 py-2.5 text-[12.5px] font-semibold text-ok">
+      <p role="status" className="mt-2 rounded-xl bg-ok/10 px-3.5 py-2.5 text-[12.5px] font-semibold text-[#7ff0b0]">
         Enregistré ✦
       </p>
     );
@@ -56,11 +56,11 @@ function Toggle({
   return (
     <label className="flex cursor-pointer items-start justify-between gap-3 py-1">
       <span className="min-w-0">
-        <span className="block text-[13.5px] font-semibold text-charcoal">{label}</span>
-        <span className="mt-0.5 block text-[11.5px] leading-snug text-slate">{help}</span>
+        <span className="block text-[13.5px] font-semibold text-white">{label}</span>
+        <span className="mt-0.5 block text-[11.5px] leading-snug text-white/55">{help}</span>
       </span>
       <input type="checkbox" name={name} defaultChecked={defaultChecked} className="peer sr-only" />
-      <span className="mt-0.5 h-[24px] w-[42px] shrink-0 rounded-full border border-hair bg-lilac-2 p-[3px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
+      <span className="mt-0.5 h-[24px] w-[42px] shrink-0 rounded-full border border-white/12 bg-white/[0.08] p-[3px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
         <span className="block h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-[18px]" />
       </span>
     </label>
@@ -70,8 +70,8 @@ function Toggle({
 /** A concrete example under a setting — the fastest way to make it click. */
 function Example({ children }: { children: ReactNode }) {
   return (
-    <p className="o-inset mt-1.5 px-3.5 py-2.5 text-[12px] leading-snug text-slate">
-      <span className="font-bold text-charcoal">Exemple :</span> {children}
+    <p className="a-inset mt-1.5 px-3.5 py-2.5 text-[12px] leading-snug text-white/55">
+      <span className="font-bold text-white">Exemple :</span> {children}
     </p>
   );
 }
@@ -79,8 +79,8 @@ function Example({ children }: { children: ReactNode }) {
 /** Advanced settings, hidden by default — a first-timer should see 2-3 knobs. */
 function Advanced({ children }: { children: ReactNode }) {
   return (
-    <details className="group mt-2 border-t border-hair/70 pt-1">
-      <summary className="flex cursor-pointer list-none items-center gap-1.5 py-2.5 text-[12.5px] font-bold text-slate [&::-webkit-details-marker]:hidden">
+    <details className="group mt-2 border-t border-white/10 pt-1">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 py-2.5 text-[12.5px] font-bold text-white/55 [&::-webkit-details-marker]:hidden">
         <span className="text-[14px] transition-transform group-open:rotate-90">›</span>
         Réglages avancés
       </summary>
@@ -106,8 +106,8 @@ function Num({
 }) {
   return (
     <label className="block py-2.5">
-      <span className="block text-[13.5px] font-semibold text-charcoal">{label}</span>
-      <span className="mt-0.5 mb-2 block text-[11.5px] leading-snug text-slate">{help}</span>
+      <span className="block text-[13.5px] font-semibold text-white">{label}</span>
+      <span className="mt-0.5 mb-2 block text-[11.5px] leading-snug text-white/55">{help}</span>
       <span className="flex items-center gap-2.5">
         <input
           type="number"
@@ -115,9 +115,9 @@ function Num({
           defaultValue={value}
           step={step}
           inputMode="decimal"
-          className="o-field font-mono"
+          className="a-field font-mono"
         />
-        {suffix && <span className="shrink-0 text-[12px] font-semibold text-slate">{suffix}</span>}
+        {suffix && <span className="shrink-0 text-[12px] font-semibold text-white/55">{suffix}</span>}
       </span>
     </label>
   );
@@ -139,7 +139,7 @@ export function EarnForm({ cafe, program }: { cafe: Cafe; program: LoyaltyProgra
         suffix="points / dinar"
       />
       <Example>
-        un café à 4 dinars rapporte <b className="text-charcoal">{Math.round(4 * rate)} points</b> au client.
+        un café à 4 dinars rapporte <b className="text-white">{Math.round(4 * rate)} points</b> au client.
       </Example>
       <Num
         name="welcomePoints"
@@ -182,8 +182,8 @@ export function StampsForm({ program }: { program: LoyaltyProgram }) {
     <form action={action} className="px-4 py-3">
       <label className="flex cursor-pointer items-start justify-between gap-3 py-1">
         <span className="min-w-0">
-          <span className="block text-[13.5px] font-semibold text-charcoal">Carte à tampons activée</span>
-          <span className="mt-0.5 block text-[11.5px] leading-snug text-slate">
+          <span className="block text-[13.5px] font-semibold text-white">Carte à tampons activée</span>
+          <span className="mt-0.5 block text-[11.5px] leading-snug text-white/55">
             Un tampon par visite ; carte pleine = récompense. Fonctionne en plus des points.
           </span>
         </span>
@@ -194,7 +194,7 @@ export function StampsForm({ program }: { program: LoyaltyProgram }) {
           onChange={(e) => setOn(e.target.checked)}
           className="peer sr-only"
         />
-        <span className="mt-0.5 h-[24px] w-[42px] shrink-0 rounded-full border border-hair bg-lilac-2 p-[3px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
+        <span className="mt-0.5 h-[24px] w-[42px] shrink-0 rounded-full border border-white/12 bg-white/[0.08] p-[3px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
           <span className="block h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-[18px]" />
         </span>
       </label>
@@ -209,8 +209,8 @@ export function StampsForm({ program }: { program: LoyaltyProgram }) {
           suffix="tampons"
         />
         <label className="block py-2.5">
-          <span className="block text-[13.5px] font-semibold text-charcoal">Récompense de la carte</span>
-          <span className="mt-0.5 mb-2 block text-[11.5px] text-slate">
+          <span className="block text-[13.5px] font-semibold text-white">Récompense de la carte</span>
+          <span className="mt-0.5 mb-2 block text-[11.5px] text-white/55">
             Ce que le client gagne en remplissant sa carte.
           </span>
           <input
@@ -218,7 +218,7 @@ export function StampsForm({ program }: { program: LoyaltyProgram }) {
             defaultValue={program.stampReward}
             maxLength={80}
             placeholder="-20% sur la prochaine commande"
-            className="o-field"
+            className="a-field"
           />
         </label>
         <Num
@@ -310,15 +310,15 @@ function LogoUploader({ cafe }: { cafe: Cafe }) {
 
   return (
     <div className="py-2.5">
-      <span className="block text-[13.5px] font-semibold text-charcoal">Logo de la boutique</span>
-      <span className="mt-0.5 mb-2.5 block text-[11.5px] leading-snug text-slate">
+      <span className="block text-[13.5px] font-semibold text-white">Logo de la boutique</span>
+      <span className="mt-0.5 mb-2.5 block text-[11.5px] leading-snug text-white/55">
         Il s&apos;affiche en haut de la carte de vos clients.
       </span>
 
       <div className="flex items-center gap-3.5">
         {/* preview */}
         <span
-          className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-hair"
+          className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-white/12"
           style={{ background: logo ? "#fff" : BRAND_COLOR }}
         >
           {logo ? (
@@ -333,7 +333,7 @@ function LogoUploader({ cafe }: { cafe: Cafe }) {
 
         <div className="min-w-0 flex-1">
           <label
-            className={`flex cursor-pointer items-center justify-center rounded-xl border border-hair bg-white py-2.5 text-[12.5px] font-bold text-charcoal transition active:scale-[0.99] ${
+            className={`flex cursor-pointer items-center justify-center rounded-xl border border-white/14 bg-white/[0.08] py-2.5 text-[12.5px] font-bold text-white transition active:scale-[0.99] ${
               pending ? "opacity-55" : ""
             }`}
           >
@@ -351,7 +351,7 @@ function LogoUploader({ cafe }: { cafe: Cafe }) {
               type="button"
               onClick={onRemove}
               disabled={pending}
-              className="mt-1.5 w-full text-[11px] font-bold uppercase tracking-[0.05em] text-seal underline underline-offset-2 disabled:opacity-55"
+              className="mt-1.5 w-full text-[11px] font-bold uppercase tracking-[0.05em] text-[#ff9a9a] underline underline-offset-2 disabled:opacity-55"
             >
               Retirer
             </button>
@@ -370,18 +370,18 @@ export function CafeForm({ cafe }: { cafe: Cafe }) {
       {/* logo saves on its own (instant), so it lives outside the name/colour form */}
       <LogoUploader cafe={cafe} />
 
-      <form action={action} className="border-t border-hair/70 pt-1">
+      <form action={action} className="border-t border-white/10 pt-1">
         <label className="block py-2.5">
-          <span className="block text-[13.5px] font-semibold text-charcoal">Nom de la boutique</span>
-          <span className="mt-0.5 mb-2 block text-[11.5px] text-slate">
+          <span className="block text-[13.5px] font-semibold text-white">Nom de la boutique</span>
+          <span className="mt-0.5 mb-2 block text-[11.5px] text-white/55">
             Ce que vos clients voient en haut de leur carte.
           </span>
-          <input name="name" defaultValue={cafe.name} maxLength={60} className="o-field" />
+          <input name="name" defaultValue={cafe.name} maxLength={60} className="a-field" />
         </label>
 
         <div className="py-2.5">
-          <span className="block text-[13.5px] font-semibold text-charcoal">Type de commerce</span>
-          <span className="mt-0.5 mb-2.5 block text-[11.5px] text-slate">
+          <span className="block text-[13.5px] font-semibold text-white">Type de commerce</span>
+          <span className="mt-0.5 mb-2.5 block text-[11.5px] text-white/55">
             Vos clients le voient pour reconnaître votre carte.
           </span>
           <BusinessTypePicker defaultValue={cafe.businessType} collapsible />
@@ -452,16 +452,16 @@ function RewardImageUploader({ reward }: { reward: Reward }) {
   return (
     <div className="mb-2.5">
       <div className="flex items-center gap-3">
-        <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl border border-hair bg-lilac-2">
+        <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl border border-white/12 bg-white/[0.08]">
           {img ? (
             // eslint-disable-next-line @next/next/no-img-element -- data-URI preview
             <img src={img} alt="" className="h-full w-full object-cover" />
           ) : (
-            <GiftIcon className="h-5 w-5 text-slate" />
+            <GiftIcon className="h-5 w-5 text-white/55" />
           )}
         </span>
         <label
-          className={`flex cursor-pointer items-center rounded-xl border border-hair bg-white px-3 py-2 text-[12px] font-bold text-charcoal active:scale-[0.99] ${
+          className={`flex cursor-pointer items-center rounded-xl border border-white/14 bg-white/[0.08] px-3 py-2 text-[12px] font-bold text-white active:scale-[0.99] ${
             pending ? "opacity-55" : ""
           }`}
         >
@@ -473,7 +473,7 @@ function RewardImageUploader({ reward }: { reward: Reward }) {
             type="button"
             onClick={onRemove}
             disabled={pending}
-            className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-seal underline underline-offset-2 disabled:opacity-55"
+            className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#ff9a9a] underline underline-offset-2 disabled:opacity-55"
           >
             Retirer
           </button>
@@ -488,7 +488,7 @@ function RewardImageUploader({ reward }: { reward: Reward }) {
 function RewardRow({ reward }: { reward: Reward | null }) {
   const [state, action, pending] = useActionState<SettingsState, FormData>(saveRewardAction, {});
   return (
-    <div className="border-b border-hair/60 px-4 py-3.5 last:border-b-0">
+    <div className="border-b border-white/10 px-4 py-3.5 last:border-b-0">
       {reward && <RewardImageUploader reward={reward} />}
       <form action={action}>
       {reward && <input type="hidden" name="id" value={reward.id} />}
@@ -498,7 +498,7 @@ function RewardRow({ reward }: { reward: Reward | null }) {
           defaultValue={reward?.label ?? ""}
           placeholder="Espresso offert"
           maxLength={60}
-          className="o-field min-w-0 flex-1"
+          className="a-field min-w-0 flex-1"
         />
         <input
           name="pointsCost"
@@ -508,19 +508,19 @@ function RewardRow({ reward }: { reward: Reward | null }) {
           defaultValue={reward?.pointsCost ?? ""}
           placeholder="40"
           aria-label="Coût en points"
-          /* !w-[84px]: .o-field is non-layered CSS (width:100%) and would beat a
+          /* !w-[84px]: .a-field is non-layered CSS (width:100%) and would beat a
              plain w-[84px] utility, stretching the cost box and collapsing the
              label. The important flag wins it back. */
-          className="o-field !w-[84px] shrink-0 text-center font-mono"
+          className="a-field !w-[84px] shrink-0 text-center font-mono"
         />
       </div>
       <div className="mt-2.5 flex items-center justify-between gap-3">
         <label className="flex cursor-pointer items-center gap-2">
           <input type="checkbox" name="active" defaultChecked={reward?.active ?? true} className="peer sr-only" />
-          <span className="h-[20px] w-[34px] rounded-full border border-hair bg-lilac-2 p-[2px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
+          <span className="h-[20px] w-[34px] rounded-full border border-white/12 bg-white/[0.08] p-[2px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
             <span className="block h-[14px] w-[14px] rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-[14px]" />
           </span>
-          <span className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-slate">Visible</span>
+          <span className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-white/55">Visible</span>
         </label>
 
         <span className="flex items-center gap-3">
@@ -528,7 +528,7 @@ function RewardRow({ reward }: { reward: Reward | null }) {
             <button
               type="submit"
               formAction={deleteRewardAction.bind(null, reward.id)}
-              className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-seal underline underline-offset-2"
+              className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#ff9a9a] underline underline-offset-2"
             >
               Supprimer
             </button>
@@ -554,8 +554,8 @@ export function RewardsEditor({ rewards }: { rewards: Reward[] }) {
       {rewards.map((r) => (
         <RewardRow key={r.id} reward={r} />
       ))}
-      <div className="border-t border-hair bg-lilac-2/50">
-        <p className="px-4 pt-3 text-[10.5px] font-bold uppercase tracking-[0.05em] text-slate">
+      <div className="border-t border-white/12 bg-white/[0.06]">
+        <p className="px-4 pt-3 text-[10.5px] font-bold uppercase tracking-[0.05em] text-white/55">
           Ajouter une récompense
         </p>
         <RewardRow reward={null} />

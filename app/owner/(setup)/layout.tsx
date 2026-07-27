@@ -22,7 +22,7 @@ export default async function SetupLayout({
   if (!owner) redirect("/owner/login");
 
   return (
-    <div className="app-shell paper-grain flex min-h-dvh flex-col px-6 py-8">
+    <div className="app-shell a-shell flex min-h-dvh flex-col px-6 py-8">
       <div className="flex items-center justify-between">
         <Logo size={22} />
         {/* Always leave a way out — being stuck signed-in with nowhere to go is
@@ -30,7 +30,7 @@ export default async function SetupLayout({
         <form action={logoutAction}>
           <button
             type="submit"
-            className="text-[10px] font-semibold uppercase tracking-[0.06em] text-faint underline underline-offset-2"
+            className="text-[10px] font-semibold uppercase tracking-[0.06em] text-white/35 underline underline-offset-2"
           >
             Se déconnecter
           </button>

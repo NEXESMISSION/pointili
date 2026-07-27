@@ -21,7 +21,7 @@ export function OwnerNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky bottom-0 z-20 border-t border-hair bg-white pb-[env(safe-area-inset-bottom)]">
+    <nav className="sticky bottom-0 z-20 border-t border-white/10 bg-[#0b0616]/90 pb-[env(safe-area-inset-bottom)] backdrop-blur print:hidden">
       <ul className="flex">
         {tabs.map(({ label, Icon, href }) => {
           const active =
@@ -35,14 +35,14 @@ export function OwnerNav() {
               >
                 <span
                   className={`grid h-[30px] w-[30px] place-items-center rounded-full transition-colors ${
-                    active ? "bg-royal text-white" : "text-slate"
+                    active ? "bg-[#6d4ae6] text-white" : "text-white/45"
                   }`}
                 >
                   <Icon className="h-[17px] w-[17px]" />
                 </span>
                 <span
                   className={`text-[10.5px] font-semibold transition-colors ${
-                    active ? "text-charcoal" : "text-slate"
+                    active ? "text-white" : "text-white/45"
                   }`}
                 >
                   {label}
