@@ -1,20 +1,32 @@
 "use client";
 
-import { useActionState, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { QrScanner } from "@/components/QrScanner";
-import { CheckIcon, QrIcon, Sparkle, StampIcon } from "@/components/icons";
+import { CheckIcon, GiftIcon, QrIcon, StampIcon, UsersIcon } from "@/components/icons";
+import type { Activity, OwnerCard } from "@/lib/db";
 import {
-  addStampAction,
+  adjustByCodeAction,
   collectAction,
   creditAction,
+  historyByCodeAction,
   peekAction,
   resolveCustomerAction,
-  type CollectState,
-  type CreditState,
-  type PeekState,
+  searchCardsAction,
+  setStampsByCodeAction,
   type ResolveState,
-  type StampState,
 } from "./actions";
+
+/*
+  The till, on one screen.
+
+  It used to be four stacked forms (scan · credit · stamp · validate) plus a
+  separate "Clients" page — and every one of them asked "who is the customer?"
+  again. Now there is ONE customer panel: find them (scan, type, or pick from
+  the list) and every action lives in the same place. Nothing is hidden behind
+  an accordion; the page is short enough not to need one.
+*/
+
+type Customer = NonNullable<ResolveState["customer"]>;
 
 /** Accept a raw code or a URL that carries it (?c= or last path segment). */
 function extractCode(text: string): string {
@@ -27,398 +39,645 @@ function extractCode(text: string): string {
   }
 }
 
-/* ── scan a customer's QR → credit or stamp, never touching the phone ──── */
+function ago(iso: string | null): string {
+  if (!iso) return "jamais";
+  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (m < 1) return "à l'instant";
+  if (m < 60) return `il y a ${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `il y a ${h} h`;
+  const d = Math.floor(h / 24);
+  return d === 1 ? "hier" : `il y a ${d} j`;
+}
 
-export function ScanPanel({ stampsEnabled }: { stampsEnabled: boolean }) {
+const ACT: Record<Activity["reason"], string> = {
+  earn: "Achat",
+  welcome: "Bienvenue",
+  redeem: "Échange",
+  adjust: "Correction",
+  expire: "Expiration",
+  collected: "Récupéré",
+};
+
+/* ══════════════════════════════════════════════════════════════════════ */
+/*  1 · LE CLIENT — trouver, puis tout faire au même endroit              */
+/* ══════════════════════════════════════════════════════════════════════ */
+
+export function CaisseDesk({
+  pointsPerTnd,
+  stampsEnabled,
+  stampsRequired,
+}: {
+  pointsPerTnd: number;
+  stampsEnabled: boolean;
+  stampsRequired: number;
+}) {
   const [scanning, setScanning] = useState(false);
-  const [customer, setCustomer] = useState<NonNullable<ResolveState["customer"]> | null>(null);
+  const [input, setInput] = useState("");
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const [error, setError] = useState("");
-  const [resolving, startResolve] = useTransition();
+  const [busy, start] = useTransition();
 
-  function handleScan(text: string) {
-    setScanning(false);
+  function find(raw: string) {
+    const code = extractCode(raw);
+    if (!code) return;
     setError("");
-    startResolve(async () => {
-      const res = await resolveCustomerAction(extractCode(text));
+    start(async () => {
+      const res = await resolveCustomerAction(code);
       if (res.error) {
         setCustomer(null);
         setError(res.error);
       } else {
         setCustomer(res.customer ?? null);
+        setInput("");
+        setScanning(false);
       }
     });
   }
 
   return (
-    <section className="o-card p-5">
-      <div className="flex items-center gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-royal text-white shadow-[0_8px_18px_-8px_rgba(91,63,209,.7)]">
-          <QrIcon className="h-5 w-5" />
-        </span>
-        <div className="min-w-0">
-          <h2 className="text-[17px] font-extrabold leading-tight text-charcoal">Scanner un client</h2>
-          <p className="text-[12px] text-slate">Scannez son QR pour créditer ou tamponner.</p>
+    <div className="space-y-3.5">
+      <section className="o-card p-5">
+        <Header
+          icon={<UsersIcon className="h-5 w-5" />}
+          title="Le client"
+          sub="Scannez son QR, ou saisissez son code / numéro."
+        />
+
+        {/* find */}
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setError("");
+              setScanning((s) => !s);
+            }}
+            className={`grid h-[46px] w-[46px] shrink-0 place-items-center rounded-xl transition active:scale-95 ${
+              scanning ? "bg-charcoal text-white" : "bg-royal text-white"
+            }`}
+            aria-label="Scanner"
+          >
+            <QrIcon className="h-5 w-5" />
+          </button>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && find(input)}
+            name="customer"
+            placeholder="Code / numéro"
+            className="o-field"
+            inputMode="text"
+          />
+          <button
+            type="button"
+            onClick={() => find(input)}
+            disabled={busy || !input.trim()}
+            className="shrink-0 rounded-xl bg-charcoal px-4 text-[13px] font-bold text-white active:scale-95 disabled:opacity-40"
+          >
+            {busy ? "· ·" : "Chercher"}
+          </button>
         </div>
-      </div>
 
-      {scanning ? (
-        <QrScanner onScan={handleScan} onClose={() => setScanning(false)} />
-      ) : (
-        <button
-          type="button"
-          onClick={() => {
-            setError("");
-            setScanning(true);
-          }}
-          className="o-btn mt-4"
-        >
-          Ouvrir la caméra
-        </button>
-      )}
+        {scanning && <QrScanner onScan={find} onClose={() => setScanning(false)} />}
 
-      {resolving && <p className="mt-3 text-center text-[13px] font-semibold text-slate">Recherche…</p>}
-      {error && (
-        <p role="alert" className="mt-3 rounded-xl bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal">
-          {error}
-        </p>
-      )}
-      {customer && !resolving && <ResolvedCustomer customer={customer} stampsEnabled={stampsEnabled} />}
-    </section>
+        {error && (
+          <p role="alert" className="mt-3 rounded-xl bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal">
+            {error}
+          </p>
+        )}
+
+        {customer && (
+          <CustomerPanel
+            key={customer.code}
+            customer={customer}
+            pointsPerTnd={pointsPerTnd}
+            stampsEnabled={stampsEnabled}
+            stampsRequired={stampsRequired}
+            onClose={() => setCustomer(null)}
+          />
+        )}
+      </section>
+
+      <ValidateForm />
+      <CardList
+        stampsEnabled={stampsEnabled}
+        stampsRequired={stampsRequired}
+        onPick={(code) => find(code)}
+      />
+    </div>
   );
 }
 
-function ResolvedCustomer({
+function Header({ icon, title, sub }: { icon: React.ReactNode; title: string; sub?: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-royal text-white shadow-[0_8px_18px_-8px_rgba(91,63,209,.7)]">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <h2 className="text-[17px] font-extrabold leading-tight text-charcoal">{title}</h2>
+        {sub && <p className="text-[12px] text-slate">{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+/** Everything you can do to one card — credit, stamp, correct, history. */
+function CustomerPanel({
   customer,
+  pointsPerTnd,
   stampsEnabled,
+  stampsRequired,
+  onClose,
 }: {
-  customer: NonNullable<ResolveState["customer"]>;
+  customer: Customer;
+  pointsPerTnd: number;
   stampsEnabled: boolean;
+  stampsRequired: number;
+  onClose: () => void;
 }) {
-  const [credit, creditForm, crediting] = useActionState<CreditState, FormData>(creditAction, {});
-  const [stamp, stampForm, stamping] = useActionState<StampState, FormData>(addStampAction, {});
+  const [balance, setBalance] = useState(customer.balance);
+  const [stamps, setStamps] = useState(customer.stamps);
+  const [amount, setAmount] = useState("");
+  const [flash, setFlash] = useState<string | null>(null);
+  const [err, setErr] = useState("");
+  const [busy, start] = useTransition();
+
+  const [showMore, setShowMore] = useState(false);
+  const [history, setHistory] = useState<Activity[] | null>(null);
+  const [delta, setDelta] = useState("");
+
+  function credit() {
+    const n = Number(amount.replace(",", "."));
+    if (!Number.isFinite(n) || n <= 0) return setErr("Montant invalide.");
+    setErr("");
+    start(async () => {
+      const fd = new FormData();
+      fd.set("customer", customer.code);
+      fd.set("amount", String(n));
+      const res = await creditAction({}, fd);
+      if (res.error) return setErr(res.error);
+      if (res.ok) {
+        setBalance(res.ok.balance);
+        setAmount("");
+        // The cashier wants both: what was just added AND the new total.
+        setFlash(
+          `+${res.ok.earned} points` +
+            (res.ok.welcome > 0 ? ` · +${res.ok.welcome} de bienvenue` : "") +
+            ` · nouveau solde ${res.ok.balance} points`,
+        );
+      }
+    });
+  }
+
+  function stamp() {
+    setErr("");
+    start(async () => {
+      const fd = new FormData();
+      fd.set("customer", customer.code);
+      const { addStampAction } = await import("./actions");
+      const res = await addStampAction({}, fd);
+      if (res.error) return setErr(res.error);
+      if (res.ok) {
+        setStamps(res.ok.completed ? 0 : res.ok.count);
+        setFlash(
+          res.ok.completed
+            ? `Carte pleine 🎉 ${res.ok.label} — code ${res.ok.code}`
+            : `${res.ok.count} / ${res.ok.required} tampons`,
+        );
+      }
+    });
+  }
+
+  function openMore() {
+    setShowMore((v) => !v);
+    if (history === null) {
+      start(async () => setHistory(await historyByCodeAction(customer.code)));
+    }
+  }
 
   return (
     <div className="o-inset mt-4 p-4">
-      <p className="text-[15px] font-extrabold text-charcoal">{customer.name ?? "Client"}</p>
-      <p className="mt-0.5 text-[12.5px] font-semibold text-slate">
-        {customer.balance} points{stampsEnabled ? ` · ${customer.stamps} tampons` : ""}
-      </p>
-      <p className="mt-0.5 font-mono text-[11px] text-slate/70">Code {customer.code}</p>
-
-      <form action={creditForm} className="mt-3 flex gap-2">
-        <input type="hidden" name="customer" value={customer.code} />
-        <input name="amount" inputMode="decimal" required placeholder="Montant en dinars" className="o-field !bg-white" />
-        <button type="submit" disabled={crediting} className="o-btn !w-auto shrink-0 whitespace-nowrap px-4">
-          {crediting ? "· ·" : "Créditer"}
+      {/* who */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[16px] font-extrabold text-charcoal">{customer.name ?? "Client"}</p>
+          <p className="mt-0.5 font-mono text-[12px] font-bold tracking-[0.1em] text-slate">
+            {customer.code}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 rounded-lg px-2 py-1 text-[18px] leading-none text-slate"
+          aria-label="Fermer"
+        >
+          ×
         </button>
-      </form>
-      {credit.ok && (
-        <p role="status" className="mt-2 text-[12.5px] font-semibold text-ok">
-          +{credit.ok.earned} points{credit.ok.welcome > 0 ? ` (+${credit.ok.welcome} bienvenue)` : ""} · solde {credit.ok.balance}
-        </p>
-      )}
-      {credit.error && <p role="alert" className="mt-2 text-[12.5px] font-semibold text-seal">{credit.error}</p>}
+      </div>
+
+      {/* the two numbers that matter */}
+      <div className="mt-3 flex gap-2">
+        <span className="flex-1 rounded-xl bg-white px-3 py-2 text-center">
+          <span className="block text-[20px] font-extrabold leading-none tabular-nums text-royal">
+            {balance}
+          </span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-slate">points</span>
+        </span>
+        {stampsEnabled && (
+          <span className="flex-1 rounded-xl bg-white px-3 py-2 text-center">
+            <span className="block text-[20px] font-extrabold leading-none tabular-nums text-charcoal">
+              {stamps}/{stampsRequired}
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-slate">tampons</span>
+          </span>
+        )}
+      </div>
+
+      {/* credit */}
+      <div className="mt-3 flex gap-2">
+        <input
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && credit()}
+          name="amount"
+          inputMode="decimal"
+          placeholder={`Montant · ${pointsPerTnd} pt/DT`}
+          className="o-field !bg-white"
+        />
+        <button
+          type="button"
+          onClick={credit}
+          disabled={busy}
+          className="shrink-0 rounded-xl bg-royal px-5 text-[13px] font-bold text-white active:scale-95 disabled:opacity-55"
+        >
+          Créditer
+        </button>
+      </div>
 
       {stampsEnabled && (
-        <>
-          <form action={stampForm} className="mt-2">
-            <input type="hidden" name="customer" value={customer.code} />
+        <button
+          type="button"
+          onClick={stamp}
+          disabled={busy}
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-hair bg-white py-2.5 text-[13px] font-bold text-charcoal active:scale-[0.99] disabled:opacity-55"
+        >
+          <StampIcon className="h-4 w-4" /> +1 tampon
+        </button>
+      )}
+
+      {flash && (
+        <p role="status" className="mt-2.5 rounded-xl bg-ok/10 px-3.5 py-2.5 text-[13px] font-bold text-ok">
+          {flash}
+        </p>
+      )}
+      {err && (
+        <p role="alert" className="mt-2.5 rounded-xl bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal">
+          {err}
+        </p>
+      )}
+
+      {/* corrections + history, one tap away — not a separate page */}
+      <button
+        type="button"
+        onClick={openMore}
+        className="mt-3 flex w-full items-center justify-center gap-1.5 text-[12px] font-bold text-slate"
+      >
+        {showMore ? "Masquer" : "Corriger / Historique"}
+        <span className={`text-[13px] transition-transform ${showMore ? "rotate-180" : ""}`}>⌄</span>
+      </button>
+
+      {showMore && (
+        <div className="mt-3 border-t border-hair pt-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-slate">Corriger les points</p>
+          <div className="mt-1.5 flex gap-2">
+            <input
+              value={delta}
+              onChange={(e) => setDelta(e.target.value)}
+              inputMode="numeric"
+              placeholder="+10 ou -5"
+              className="o-field !bg-white font-mono"
+            />
             <button
-              type="submit"
-              disabled={stamping}
-              className="w-full rounded-xl border border-hair bg-white py-2.5 text-[13px] font-bold text-charcoal active:scale-[0.99] disabled:opacity-55"
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                const n = Number(delta.replace(",", "."));
+                if (!Number.isFinite(n) || n === 0) return;
+                start(async () => {
+                  const r = await adjustByCodeAction(customer.code, n);
+                  if (r.ok && typeof r.balance === "number") {
+                    setBalance(r.balance);
+                    setDelta("");
+                    setFlash(`Solde corrigé : ${r.balance}`);
+                  } else setErr(r.error ?? "Échec.");
+                });
+              }}
+              className="shrink-0 rounded-xl bg-charcoal px-4 text-[12.5px] font-bold text-white active:scale-95 disabled:opacity-55"
             >
-              {stamping ? "· ·" : "+1 tampon"}
+              Appliquer
             </button>
-          </form>
-          {stamp.ok && (
-            <p role="status" className="mt-2 text-[12.5px] font-semibold text-ok">
-              {stamp.ok.completed
-                ? `Carte pleine ! ${stamp.ok.label} — code ${stamp.ok.code}`
-                : `${stamp.ok.count} / ${stamp.ok.required} tampons`}
-            </p>
+          </div>
+
+          {stampsEnabled && (
+            <>
+              <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.05em] text-slate">
+                Tampons (0 à {Math.max(0, stampsRequired - 1)})
+              </p>
+              <div className="mt-1.5 flex gap-2">
+                <input
+                  defaultValue={String(stamps)}
+                  inputMode="numeric"
+                  className="o-field !bg-white font-mono"
+                  id={`st-${customer.code}`}
+                />
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    const el = document.getElementById(`st-${customer.code}`) as HTMLInputElement | null;
+                    const n = Number(el?.value ?? "");
+                    if (!Number.isFinite(n) || n < 0) return;
+                    start(async () => {
+                      const r = await setStampsByCodeAction(customer.code, n);
+                      if (r.ok && typeof r.stamps === "number") {
+                        setStamps(r.stamps);
+                        setFlash(`${r.stamps} / ${stampsRequired} tampons`);
+                      } else setErr(r.error ?? "Échec.");
+                    });
+                  }}
+                  className="shrink-0 rounded-xl bg-charcoal px-4 text-[12.5px] font-bold text-white active:scale-95 disabled:opacity-55"
+                >
+                  Définir
+                </button>
+              </div>
+            </>
           )}
-          {stamp.error && <p role="alert" className="mt-2 text-[12.5px] font-semibold text-seal">{stamp.error}</p>}
-        </>
+
+          <p className="mt-3.5 text-[11px] font-bold uppercase tracking-[0.05em] text-slate">Activité</p>
+          {history === null ? (
+            <p className="mt-1 text-[12.5px] text-slate">Chargement…</p>
+          ) : history.length === 0 ? (
+            <p className="mt-1 text-[12.5px] text-slate">Aucune activité.</p>
+          ) : (
+            <ul className="mt-1 divide-y divide-hair/70">
+              {history.slice(0, 8).map((a, i) => (
+                <li key={i} className="flex items-center justify-between gap-2 py-1.5">
+                  <span className="min-w-0 truncate text-[12.5px] text-charcoal">
+                    {a.reason === "collected" ? `Récupéré · ${a.label ?? ""}` : ACT[a.reason]}
+                  </span>
+                  <span className="shrink-0 text-[11px] text-slate">{ago(a.at)}</span>
+                  {a.reason !== "collected" && (
+                    <span
+                      className={`w-10 shrink-0 text-right text-[12px] font-bold tabular-nums ${
+                        a.delta > 0 ? "text-ok" : "text-slate"
+                      }`}
+                    >
+                      {a.delta > 0 ? "+" : ""}
+                      {a.delta}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );
 }
 
-/* The daily action — big, focused, thumb-friendly. */
-export function CreditForm({ pointsPerTnd }: { pointsPerTnd: number }) {
-  const [state, formAction, pending] = useActionState<CreditState, FormData>(creditAction, {});
-
-  return (
-    <section className="o-card p-5">
-      <div className="flex items-center gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-royal text-white shadow-[0_8px_18px_-8px_rgba(91,63,209,.7)]">
-          <Sparkle className="h-5 w-5" />
-        </span>
-        <div className="min-w-0">
-          <h2 className="text-[17px] font-extrabold leading-tight text-charcoal">
-            Créditer des points
-          </h2>
-          <p className="text-[12px] text-slate">
-            {pointsPerTnd} point{pointsPerTnd > 1 ? "s" : ""} par dinar dépensé.
-          </p>
-        </div>
-      </div>
-
-      <form action={formAction} className="mt-4 space-y-2.5">
-        <input
-          name="customer"
-          type="text"
-          inputMode="text"
-          required
-          placeholder="Numéro ou code du client"
-          className="o-field"
-        />
-        <input
-          name="amount"
-          type="text"
-          inputMode="decimal"
-          required
-          placeholder="Montant en dinars"
-          className="o-field"
-        />
-        <button type="submit" disabled={pending} className="o-btn">
-          {pending ? "· · ·" : "Créditer ✦"}
-        </button>
-      </form>
-
-      {state.error && (
-        <p role="alert" className="mt-3 rounded-xl bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal">
-          {state.error}
-        </p>
-      )}
-
-      {state.ok && (
-        <div role="status" className="o-inset mt-4 px-4 py-4 text-center">
-          <p className="font-display text-[42px] font-extrabold leading-none tabular-nums text-royal">
-            +{state.ok.earned}
-          </p>
-          <p className="mt-1.5 text-[13px] font-semibold text-charcoal">
-            points crédités à {state.ok.label}
-          </p>
-          {state.ok.welcome > 0 && (
-            <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-gold-soft px-2.5 py-1 text-[11.5px] font-bold text-gold-deep">
-              <Sparkle className="h-3.5 w-3.5" /> + {state.ok.welcome} de bienvenue
-            </p>
-          )}
-          <p className="mt-2 text-[12px] font-semibold text-slate">
-            Nouveau solde : <b className="tabular-nums text-charcoal">{state.ok.balance}</b> points
-          </p>
-        </div>
-      )}
-    </section>
-  );
-}
-
-/* ── the manual stamp: +1 per visit, shown only when stamps are on ─────── */
-
-export function StampForm({ required }: { required: number }) {
-  const [state, formAction, pending] = useActionState<StampState, FormData>(addStampAction, {});
-  return (
-    <section className="o-card p-5">
-      <div className="flex items-center gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-charcoal text-white">
-          <StampIcon className="h-5 w-5" />
-        </span>
-        <div className="min-w-0">
-          <h2 className="text-[17px] font-extrabold leading-tight text-charcoal">Ajouter un tampon</h2>
-          <p className="text-[12px] text-slate">Un tampon par visite — {required} pour une carte pleine.</p>
-        </div>
-      </div>
-
-      <form action={formAction} className="mt-4 flex gap-2.5">
-        <input name="customer" type="text" inputMode="text" required placeholder="Numéro ou code du client" className="o-field" />
-        <button type="submit" disabled={pending} className="o-btn !w-auto shrink-0 whitespace-nowrap px-5">
-          {pending ? "· ·" : "+1 tampon"}
-        </button>
-      </form>
-
-      {state.error && (
-        <p role="alert" className="mt-3 rounded-xl bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal">
-          {state.error}
-        </p>
-      )}
-
-      {state.ok && (
-        <div role="status" className="o-inset mt-4 px-4 py-4 text-center">
-          {/* the card, as dots */}
-          <div className="flex flex-wrap justify-center gap-1.5">
-            {Array.from({ length: state.ok.required }).map((_, i) => (
-              <span
-                key={i}
-                className={`grid h-6 w-6 place-items-center rounded-full text-[11px] ${
-                  i < (state.ok!.completed ? state.ok!.required : state.ok!.count)
-                    ? "bg-royal text-white"
-                    : "border border-hair bg-white text-transparent"
-                }`}
-              >
-                ✦
-              </span>
-            ))}
-          </div>
-          {state.ok.completed ? (
-            <>
-              <p className="mt-3 text-[15px] font-extrabold text-royal">Carte pleine 🎉</p>
-              <p className="mt-0.5 text-[12.5px] font-semibold text-charcoal">
-                {state.ok.label} — code <span className="font-mono">{state.ok.code}</span>
-              </p>
-              <p className="mt-1 text-[11.5px] text-slate">
-                Le client le retrouve sur sa carte, à collecter au comptoir.
-              </p>
-            </>
-          ) : (
-            <p className="mt-3 text-[13px] font-semibold text-charcoal">
-              {state.ok.count} / {state.ok.required} tampons ·{" "}
-              <span className="text-slate">{state.ok.who}</span>
-            </p>
-          )}
-        </div>
-      )}
-    </section>
-  );
-}
-
-/* ── the counter code flow: look up (read-only) → collect ─────────────── */
-
-function CodeShell({ children }: { children: ReactNode }) {
-  return (
-    <section className="o-card p-5">
-      <div className="flex items-center gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-charcoal text-white">
-          <CheckIcon className="h-5 w-5" />
-        </span>
-        <h2 className="text-[17px] font-extrabold leading-tight text-charcoal">
-          Valider un code
-        </h2>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-export function ValidateForm() {
-  const [resetKey, setResetKey] = useState(0);
-  return <ValidateInner key={resetKey} onReset={() => setResetKey((k) => k + 1)} />;
-}
+/* ══════════════════════════════════════════════════════════════════════ */
+/*  2 · VALIDER UN CODE                                                   */
+/* ══════════════════════════════════════════════════════════════════════ */
 
 const STATUS_MSG: Record<"expired" | "claimed", string> = {
   expired: "Ce code a expiré.",
   claimed: "Ce code a déjà été utilisé.",
 };
 
-const codeField =
-  "w-full rounded-xl border border-hair bg-white px-4 py-3.5 text-center text-[22px] font-bold tracking-[0.15em] text-charcoal outline-none transition-colors focus:border-royal focus:ring-2 focus:ring-royal/15 placeholder:tracking-[0.15em] placeholder:text-slate/50";
-const ghostBtn =
-  "w-full rounded-xl border border-hair bg-white py-3 text-[13px] font-bold text-charcoal active:scale-[0.99]";
+export function ValidateForm() {
+  const [key, setKey] = useState(0);
+  return <ValidateInner key={key} onReset={() => setKey((k) => k + 1)} />;
+}
 
 function ValidateInner({ onReset }: { onReset: () => void }) {
-  const [peekState, peekForm, peeking] = useActionState<PeekState, FormData>(peekAction, {});
-  const [collectState, collectForm, collecting] = useActionState<CollectState, FormData>(collectAction, {});
+  const [code, setCode] = useState("");
+  const [peek, setPeek] = useState<NonNullable<Awaited<ReturnType<typeof peekAction>>>["peek"] | null>(null);
+  const [done, setDone] = useState<{ label: string; code: string } | null>(null);
+  const [err, setErr] = useState("");
+  const [busy, start] = useTransition();
 
-  // ── collected ───────────────────────────────────────────────
-  if (collectState.ok) {
-    return (
-      <CodeShell>
-        <div role="status" className="mt-4 rounded-2xl border border-ok/30 bg-ok/10 px-4 py-4 text-center">
-          <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-ok text-white">
-            <CheckIcon className="h-6 w-6" />
-          </span>
-          <p className="mt-2 text-[15px] font-extrabold text-charcoal">{collectState.ok.label}</p>
-          <p className="mt-0.5 font-mono text-[12px] font-semibold text-ok">
-            {collectState.ok.code} · collecté
-          </p>
-        </div>
-        <button type="button" onClick={onReset} className={`${ghostBtn} mt-3`}>
-          Nouveau code
-        </button>
-      </CodeShell>
-    );
+  function check() {
+    const c = code.trim().toUpperCase();
+    if (!/^[A-Z0-9]{6}$/.test(c)) return setErr("Code à 6 caractères.");
+    setErr("");
+    start(async () => {
+      const fd = new FormData();
+      fd.set("code", c);
+      const res = await peekAction({}, fd);
+      if (res.error) return setErr(res.error);
+      setPeek(res.peek ?? null);
+    });
   }
 
-  // ── looked up: show it, then collect or not ─────────────────
-  const peek = peekState.peek;
-  if (peek) {
-    const valid = peek.status === "valid";
-    return (
-      <CodeShell>
-        <div
-          className={`mt-4 rounded-2xl px-4 py-4 text-center ${
-            valid ? "o-inset" : "border border-seal/30 bg-seal-soft"
-          }`}
-        >
-          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate">
-            {peek.kind === "win" ? "Gain à la roue" : peek.kind === "stamp" ? "Carte pleine" : "Récompense"}
-          </p>
-          <p className={`mt-1 text-[18px] font-extrabold ${valid ? "text-royal" : "text-seal"}`}>
-            {peek.label}
-          </p>
-          <p className="mt-0.5 font-mono text-[12px] font-semibold text-slate">{peek.code}</p>
-          {!valid && (
-            <p className="mt-1.5 text-[12.5px] font-semibold text-seal">
-              {STATUS_MSG[peek.status as "expired" | "claimed"]}
-            </p>
-          )}
-        </div>
+  function collect() {
+    if (!peek) return;
+    start(async () => {
+      const fd = new FormData();
+      fd.set("code", peek.code);
+      const res = await collectAction({}, fd);
+      if (res.error) return setErr(res.error);
+      if (res.ok) setDone(res.ok);
+    });
+  }
 
-        {valid ? (
-          <div className="mt-3 space-y-2">
-            <form action={collectForm}>
-              <input type="hidden" name="code" value={peek.code} />
-              <button type="submit" disabled={collecting} className="o-btn">
-                {collecting ? "· · ·" : "Collecter ✦"}
-              </button>
-            </form>
-            <button type="button" onClick={onReset} className={ghostBtn}>
-              Annuler
-            </button>
+  return (
+    <section className="o-card p-5">
+      <Header
+        icon={<CheckIcon className="h-5 w-5" />}
+        title="Valider un code"
+        sub="Le client montre son code — vérifiez, puis collectez."
+      />
+
+      {done ? (
+        <>
+          <div role="status" className="mt-4 rounded-2xl border border-ok/30 bg-ok/10 px-4 py-4 text-center">
+            <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-ok text-white">
+              <CheckIcon className="h-6 w-6" />
+            </span>
+            <p className="mt-2 text-[15px] font-extrabold text-charcoal">{done.label}</p>
+            <p className="mt-0.5 font-mono text-[12px] font-semibold text-ok">{done.code} · collecté</p>
           </div>
-        ) : (
-          <button type="button" onClick={onReset} className={`${ghostBtn} mt-3`}>
+          <button type="button" onClick={onReset} className="o-btn o-btn--ghost mt-3">
             Nouveau code
           </button>
-        )}
+        </>
+      ) : peek ? (
+        <>
+          <div
+            className={`mt-4 rounded-2xl px-4 py-4 text-center ${
+              peek.status === "valid" ? "o-inset" : "border border-seal/30 bg-seal-soft"
+            }`}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate">
+              {peek.kind === "stamp" ? "Carte pleine" : peek.kind === "win" ? "Gain" : "Récompense"}
+            </p>
+            <p className={`mt-1 text-[18px] font-extrabold ${peek.status === "valid" ? "text-royal" : "text-seal"}`}>
+              {peek.label}
+            </p>
+            <p className="mt-0.5 font-mono text-[12px] font-semibold text-slate">{peek.code}</p>
+            {peek.status !== "valid" && (
+              <p className="mt-1.5 text-[12.5px] font-semibold text-seal">
+                {STATUS_MSG[peek.status as "expired" | "claimed"]}
+              </p>
+            )}
+          </div>
+          {peek.status === "valid" ? (
+            <div className="mt-3 space-y-2">
+              <button type="button" onClick={collect} disabled={busy} className="o-btn">
+                {busy ? "· · ·" : "Collecter ✦"}
+              </button>
+              <button type="button" onClick={onReset} className="o-btn o-btn--ghost">
+                Annuler
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={onReset} className="o-btn o-btn--ghost mt-3">
+              Nouveau code
+            </button>
+          )}
+        </>
+      ) : (
+        <div className="mt-4 flex gap-2">
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === "Enter" && check()}
+            name="code"
+            maxLength={6}
+            autoCapitalize="characters"
+            placeholder="A1B2C3"
+            className="o-field text-center !text-[20px] font-bold tracking-[0.14em]"
+          />
+          <button
+            type="button"
+            onClick={check}
+            disabled={busy}
+            className="shrink-0 rounded-xl bg-charcoal px-5 text-[13px] font-bold text-white active:scale-95 disabled:opacity-55"
+          >
+            {busy ? "· ·" : "Vérifier"}
+          </button>
+        </div>
+      )}
 
-        {collectState.error && (
-          <p role="alert" className="mt-2 rounded-xl bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal">
-            {collectState.error}
-          </p>
-        )}
-      </CodeShell>
-    );
-  }
-
-  // ── initial: enter a code and look it up ────────────────────
-  return (
-    <CodeShell>
-      <p className="mt-1 text-[12px] text-slate">
-        Le client montre son code — vérifiez-le, puis collectez-le.
-      </p>
-      <form action={peekForm} className="mt-3 space-y-2.5">
-        <input
-          name="code"
-          type="text"
-          inputMode="text"
-          autoCapitalize="characters"
-          maxLength={6}
-          required
-          placeholder="A1B2C3"
-          className={codeField}
-        />
-        <button type="submit" disabled={peeking} className={`${ghostBtn} border-royal/40 text-royal`}>
-          {peeking ? "· · ·" : "Vérifier"}
-        </button>
-      </form>
-
-      {peekState.error && (
-        <p role="alert" className="mt-2 rounded-xl bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal">
-          {peekState.error}
+      {err && (
+        <p role="alert" className="mt-2.5 rounded-xl bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal">
+          {err}
         </p>
       )}
-    </CodeShell>
+    </section>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════ */
+/*  3 · LES CARTES — la page "Clients" repliée sous la caisse             */
+/* ══════════════════════════════════════════════════════════════════════ */
+
+function CardList({
+  stampsEnabled,
+  stampsRequired,
+  onPick,
+}: {
+  stampsEnabled: boolean;
+  stampsRequired: number;
+  onPick: (code: string) => void;
+}) {
+  const [q, setQ] = useState("");
+  const [cards, setCards] = useState<OwnerCard[]>([]);
+  const [total, setTotal] = useState(0);
+  const [busy, start] = useTransition();
+  const first = useRef(true);
+
+  useEffect(() => {
+    const t = setTimeout(
+      () =>
+        start(async () => {
+          const res = await searchCardsAction(q, 0);
+          setCards(res.cards);
+          setTotal(res.total);
+        }),
+      first.current ? 0 : 250,
+    );
+    first.current = false;
+    return () => clearTimeout(t);
+  }, [q]);
+
+  return (
+    <section className="o-card p-5">
+      <Header
+        icon={<GiftIcon className="h-5 w-5" />}
+        title="Mes clients"
+        sub={`${total} carte${total === 1 ? "" : "s"} · touchez pour ouvrir`}
+      />
+
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Rechercher un nom, un code…"
+        name="search"
+        inputMode="search"
+        className="o-field mt-4"
+      />
+
+      {cards.length === 0 ? (
+        <p className="mt-3 py-6 text-center text-[13px] text-slate">
+          {busy ? "Recherche…" : q ? "Aucune carte." : "Aucun client pour l'instant."}
+        </p>
+      ) : (
+        <ul className="mt-3 divide-y divide-hair">
+          {cards.map((c) => (
+            <li key={c.phone}>
+              <button
+                type="button"
+                onClick={() => c.code && onPick(c.code)}
+                className="flex w-full items-center gap-3 py-2.5 text-left active:opacity-70"
+              >
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-lilac-2 text-[14px] font-extrabold text-royal">
+                  {(c.name ?? "?").charAt(0).toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[14px] font-bold text-charcoal">
+                    {c.name ?? "Sans nom"}
+                  </span>
+                  <span className="block truncate text-[11px] text-slate">
+                    <span className="font-mono font-bold">{c.code ?? "—"}</span> · {ago(c.lastAt)}
+                  </span>
+                </span>
+                <span className="shrink-0 text-right">
+                  <span className="block text-[14px] font-extrabold tabular-nums text-royal">{c.balance}</span>
+                  {stampsEnabled && (
+                    <span className="block text-[10px] font-semibold text-slate">
+                      {c.stamps}/{stampsRequired}
+                    </span>
+                  )}
+                </span>
+                {c.pending > 0 && (
+                  <span className="shrink-0 rounded-full bg-gold-soft px-2 py-0.5 text-[10px] font-bold text-gold-deep">
+                    {c.pending}
+                  </span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {cards.length > 0 && cards.length < total && (
+        <p className="mt-3 text-center text-[11.5px] text-slate">
+          {cards.length} sur {total} — affinez la recherche
+        </p>
+      )}
+    </section>
   );
 }

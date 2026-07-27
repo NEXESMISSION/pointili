@@ -71,12 +71,19 @@ check("owner signs in with Supabase Auth", !staff.url().includes("/login"), staf
  * expected balance also stops a stale result from the previous credit being
  * misread as this one's.
  */
+
+/** The caisse is one screen now: find the customer, then act in the panel. */
+async function openCustomer(page, who) {
+  await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await page.fill('input[name="customer"]', who);
+  await page.locator('button:has-text("Chercher")').click();
+  await page.locator('input[name="amount"]').waitFor({ timeout: 20000 });
+}
+
 async function credit(amount, expectBalance) {
-  await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await staff.locator('summary:has-text("Saisie manuelle")').click();
-  await staff.fill('input[name="customer"]', PHONE);
+  await openCustomer(staff, PHONE);
   await staff.fill('input[name="amount"]', String(amount));
-  await staff.locator('form:has(input[name="amount"]) button[type="submit"]').click();
+  await staff.locator('button:has-text("Créditer")').click();
   await staff
     .waitForFunction(
       (want) => document.querySelector('[role="status"]')?.textContent?.includes(want),
@@ -208,13 +215,26 @@ if (redeemCode) {
     `${prog.points_per_tnd} pt/TND · ${prog.welcome_points} welcome`,
   );
 
-  // and the change must actually reach the caisse
+  /*
+    …and the change must actually reach the caisse.
+
+    The till now works on CARDHOLDERS, not bare phone numbers: a customer has to
+    have joined (which is what gives them a per-shop code) before they can be
+    credited. That is deliberate — crediting an arbitrary typed number used to
+    mint points on a phone with no card, which the Clients list could never show
+    and nobody could ever correct. So enrol a fresh diner first, exactly as
+    scanning the QR would.
+  */
   const newPhone = `2${String(Date.now()).slice(-7)}`;
-  await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await staff.locator('summary:has-text("Saisie manuelle")').click();
-  await staff.fill('input[name="customer"]', newPhone);
+  const newNorm = `+216${newPhone}`;
+  await admin.from("accounts").upsert(
+    { phone: newNorm, pin_hash: "x", name: "Rate" },
+    { onConflict: "phone" },
+  );
+  await admin.rpc("enroll_diner", { p_business_id: biz.id, p_phone: newNorm });
+  await openCustomer(staff, newPhone);
   await staff.fill('input[name="amount"]', "10");
-  await staff.locator('form:has(input[name="amount"]) button[type="submit"]').click();
+  await staff.locator('button:has-text("Créditer")').click();
   await staff.waitForSelector('[role="status"]', { timeout: 20000 }).catch(() => {});
   const rateTxt = await staff.locator('[role="status"]').innerText();
   check(
@@ -245,7 +265,9 @@ if (redeemCode) {
   await admin.from("loyalty_programs")
     .update({ points_per_tnd: 1, welcome_points: 10 })
     .eq("business_id", biz.id);
-  await admin.from("points_ledger").delete().eq("customer_phone", `+216${newPhone}`);
+  await admin.from("points_ledger").delete().eq("customer_phone", newNorm);
+  await admin.from("diner_cafes").delete().eq("phone", newNorm);
+  await admin.from("accounts").delete().eq("phone", newNorm);
 }
 
 // ── 11b. The shop logo uploads, persists small, and shows on the card ─
@@ -254,7 +276,6 @@ if (redeemCode) {
   const { data: biz } = await admin.from("businesses").select("id").eq("slug", SLUG).single();
 
   await staff.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
-  await staff.locator('summary:has-text("Ma boutique")').click(); // collapsible section
   // Scope to the LOGO input (reward rows now add their own image inputs too).
   // The uploader downscales on a canvas and auto-saves, so wait for the verdict.
   await staff.setInputFiles('label:has-text("logo") input[type="file"]', "public/logo-icon.png");
@@ -319,19 +340,16 @@ if (redeemCode) {
     .update({ stamps_enabled: true, stamps_required: 2, stamp_reward: "Café offert (tampons)" })
     .eq("business_id", biz.id);
 
-  const stampSec = 'section:has(h2:has-text("Ajouter un tampon"))';
   const stamp = async () => {
-    await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-    await staff.locator('summary:has-text("Saisie manuelle")').click();
-    await staff.fill(`${stampSec} input[name="customer"]`, PHONE);
-    await staff.locator(`${stampSec} button:has-text("tampon")`).click();
-    await staff.locator(`${stampSec} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
-    return staff.locator(stampSec).innerText().catch(() => "");
+    await openCustomer(staff, PHONE);
+    await staff.locator('button:has-text("+1 tampon")').click();
+    await staff.locator('[role="status"]').waitFor({ timeout: 20000 }).catch(() => {});
+    return staff.locator('section:has(h2:text-is("Le client"))').innerText().catch(() => "");
   };
 
   await stamp(); // 1/2
   const full = await stamp(); // 2/2 → completes, issues a code
-  const stampCode = full.match(/\b[A-Z2-9]{6}\b/)?.[0] ?? "";
+  const stampCode = full.match(/code\s+([A-Z2-9]{6})/)?.[1] ?? "";
   check("a full stamp card completes and issues a code", /Carte pleine/i.test(full) && !!stampCode, stampCode || full.replace(/\n/g, " · ").slice(0, 60));
 
   // the diner can collect that code at the counter, exactly like any reward
@@ -355,8 +373,8 @@ if (redeemCode) {
 
   // the owner can find this cardholder on the Clients page (searchable by number,
   // but the row shows the name + opaque id — never the raw phone)
-  await staff.goto(`${BASE}/owner/clients`, { waitUntil: "networkidle" });
-  await staff.locator('input[inputmode="search"]').fill(PHONE);
+  await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await staff.locator('input[name="search"]').fill(PHONE);
   const found = await staff
     .waitForFunction(() => /E2E/.test(document.querySelector("main")?.innerText ?? ""), undefined, { timeout: 10000 })
     .then(() => true)
@@ -373,14 +391,11 @@ if (redeemCode) {
     .eq("phone", `+216${PHONE}`)
     .single();
   check("customer has a short 4-char shop code", typeof card?.code === "string" && card.code.length === 4, card?.code ?? "none");
-  const CRED = 'section:has(h2:has-text("Créditer"))';
-  await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await staff.locator('summary:has-text("Saisie manuelle")').click();
-  await staff.fill(`${CRED} input[name="customer"]`, card.code);
-  await staff.fill(`${CRED} input[name="amount"]`, "5");
-  await staff.locator(`${CRED} button[type="submit"]`).click();
-  await staff.locator(`${CRED} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
-  const credTxt = await staff.locator(CRED).innerText();
+  await openCustomer(staff, card.code);
+  await staff.fill('input[name="amount"]', "5");
+  await staff.locator('button:has-text("Créditer")').click();
+  await staff.locator('[role="status"]').waitFor({ timeout: 20000 }).catch(() => {});
+  const credTxt = await staff.locator('section:has(h2:text-is("Le client"))').innerText();
   check("crediting by the short code works", /\+5/.test(credTxt), credTxt.split("\n").find((l) => /\+5/.test(l)) ?? "");
   check("credit result shows a name, not the phone", !credTxt.includes(`+216${PHONE}`));
 

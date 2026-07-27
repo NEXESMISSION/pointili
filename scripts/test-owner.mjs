@@ -56,40 +56,41 @@ if (staff.url().includes("/login")) {
 }
 check("owner signs in", !staff.url().includes("/login"), staff.url().replace(BASE, ""));
 
-const openManual = async () => {
+/** One screen now: find the customer, then act inside the panel. */
+const openCustomer = async (who) => {
   await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await staff.locator('summary:has-text("Saisie manuelle")').click();
+  await staff.fill('input[name="customer"]', who);
+  await staff.locator('button:has-text("Chercher")').click();
+  await staff.locator('input[name="amount"]').waitFor({ timeout: 20000 }).catch(() => {});
 };
+const DESK = 'section:has(h2:text-is("Le client"))';
 
 /* ── 2. Credit by the 4-char CODE (privacy path) ───────────────────── */
-const CRED = 'section:has(h2:has-text("Créditer"))';
-await openManual();
-await staff.fill(`${CRED} input[name="customer"]`, card.code);
-await staff.fill(`${CRED} input[name="amount"]`, "10");
-await staff.locator(`${CRED} button[type="submit"]`).click();
-await staff.locator(`${CRED} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
-const credTxt = await staff.locator(CRED).innerText();
+await openCustomer(card.code);
+await staff.fill('input[name="amount"]', "10");
+await staff.locator('button:has-text("Créditer")').click();
+await staff.locator('[role="status"]').waitFor({ timeout: 20000 }).catch(() => {});
+const credTxt = await staff.locator(DESK).innerText();
 check("credit by code works", /\+10/.test(credTxt), credTxt.split("\n").find((l) => /\+10/.test(l)) ?? "");
 check("credit result hides the phone", !credTxt.includes(LOCAL) && !credTxt.includes(NORM));
 
 /* ── 3. A bad amount is refused, not silently accepted ─────────────── */
-await openManual();
-await staff.fill(`${CRED} input[name="customer"]`, card.code);
-await staff.fill(`${CRED} input[name="amount"]`, "-5");
-await staff.locator(`${CRED} button[type="submit"]`).click();
+await openCustomer(card.code);
+await staff.fill('input[name="amount"]', "-5");
+await staff.locator('button:has-text("Créditer")').click();
 const badAmount = await staff
-  .waitForSelector(`${CRED} [role="alert"]`, { timeout: 15000 })
+  .waitForSelector(`${DESK} [role="alert"]`, { timeout: 15000 })
   .then((el) => el.innerText())
   .catch(() => "");
 check("a negative amount is refused", /invalide/i.test(badAmount), badAmount);
 
 /* ── 4. An unknown code is refused ─────────────────────────────────── */
-await openManual();
-await staff.fill(`${CRED} input[name="customer"]`, "ZZZZ");
-await staff.fill(`${CRED} input[name="amount"]`, "5");
-await staff.locator(`${CRED} button[type="submit"]`).click();
+await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+await staff.locator('input[name="customer"]').fill("ZZZZ");
+await staff.locator('input[name="customer"]').press("Enter");
+// scope to the desk: other parts of the page can carry a role="alert" too
 const badCode = await staff
-  .waitForSelector(`${CRED} [role="alert"]`, { timeout: 15000 })
+  .waitForSelector(`${DESK} [role="alert"]`, { timeout: 20000 })
   .then((el) => el.innerText())
   .catch(() => "");
 check("an unknown customer code is refused", /introuvable|invalide/i.test(badCode), badCode);
@@ -100,17 +101,15 @@ await admin
   .update({ stamps_enabled: true, stamps_required: 2, stamp_reward: "Café offert (test)" })
   .eq("business_id", cafeId);
 
-const STAMP = 'section:has(h2:has-text("Ajouter un tampon"))';
 const stampOnce = async () => {
-  await openManual();
-  await staff.fill(`${STAMP} input[name="customer"]`, card.code);
-  await staff.locator(`${STAMP} button:has-text("tampon")`).click();
-  await staff.locator(`${STAMP} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
-  return staff.locator(STAMP).innerText();
+  await openCustomer(card.code);
+  await staff.locator('button:has-text("+1 tampon")').click();
+  await staff.locator('[role="status"]').waitFor({ timeout: 20000 }).catch(() => {});
+  return staff.locator(DESK).innerText();
 };
 await stampOnce();
 const full = await stampOnce();
-const stampCode = full.match(/\b[A-Z2-9]{6}\b/)?.[0] ?? "";
+const stampCode = full.match(/code\s+([A-Z2-9]{6})/)?.[1] ?? "";
 check("a full stamp card issues a code", /Carte pleine/i.test(full) && !!stampCode, stampCode || "none");
 
 /* ── 6. The counter validates that code exactly once ───────────────── */
@@ -135,8 +134,8 @@ if (stampCode) {
 }
 
 /* ── 7. Clients: find the cardholder, correct points + stamps ──────── */
-await staff.goto(`${BASE}/owner/clients`, { waitUntil: "networkidle" });
-await staff.locator('input[inputmode="search"]').fill(card.code);
+await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+await staff.locator('input[name="search"]').fill(card.code);
 const listed = await staff
   .waitForFunction((c) => (document.querySelector("main")?.innerText ?? "").includes(c), card.code, { timeout: 10000 })
   .then(() => true)
@@ -145,8 +144,10 @@ check("Clients finds a cardholder by code", listed, card.code);
 const listTxt = await staff.locator("main").innerText();
 check("Clients never shows the raw phone", !listTxt.includes(NORM));
 
-// open the row and correct the points
+// open the card from the list, then correct the points in the panel
 await staff.locator(`button:has-text("${card.code}")`).first().click();
+await staff.locator('input[name="amount"]').waitFor({ timeout: 20000 });
+await staff.locator('button:has-text("Corriger / Historique")').click();
 await staff.locator('input[placeholder="+10 ou -5"]').fill("25");
 const apply = staff.locator('button:has-text("Appliquer")');
 await apply.waitFor({ state: "visible", timeout: 10000 });

@@ -57,9 +57,19 @@ export async function ensureTestCafe({ ownerEmail = OWNER_EMAIL, slug = TEST_SLU
 
     await dropOnConn(c, slug);
 
+    /*
+      created_at is backdated ON PURPOSE.
+
+      ownerCafe() resolves "the owner's café" as the OLDEST one they own (v1 is
+      one café per owner). The moment the test account also owned a real café,
+      the owner app started serving that one while the tests drove the fixture —
+      every caisse check failed with "client introuvable" against a café the
+      test had never touched. Backdating guarantees the fixture is the café the
+      owner app resolves to, and keeps the suite off the real shop's data.
+    */
     const biz = await c.query(
-      `insert into businesses (owner_id, name, slug, status, primary_color)
-       values ($1, $2, $3, 'active', '#5b3fd1') returning id`,
+      `insert into businesses (owner_id, name, slug, status, primary_color, created_at)
+       values ($1, $2, $3, 'active', '#5b3fd1', timestamptz '2000-01-01') returning id`,
       [ownerId, TEST_NAME, slug],
     );
     const businessId = biz.rows[0].id;

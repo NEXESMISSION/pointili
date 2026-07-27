@@ -11,11 +11,39 @@ import { BUSINESS_TYPES } from "@/lib/businessTypes";
 export function BusinessTypePicker({
   name = "businessType",
   defaultValue = "cafe",
+  /** Start collapsed once a type is already chosen — 26 tiles is a lot of page
+   *  for a field an owner sets once. */
+  collapsible = false,
 }: {
   name?: string;
   defaultValue?: string;
+  collapsible?: boolean;
 }) {
   const [sel, setSel] = useState(defaultValue || "cafe");
+  const [open, setOpen] = useState(!collapsible);
+  const current = BUSINESS_TYPES.find((t) => t.key === sel);
+
+  if (collapsible && !open) {
+    return (
+      <div className="flex items-center gap-2.5">
+        <input type="hidden" name={name} value={sel} />
+        <span className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-hair bg-white px-3.5 py-2.5">
+          <span className="text-[18px]">{current?.emoji ?? "✨"}</span>
+          <span className="truncate text-[14px] font-bold text-charcoal">
+            {current?.label ?? "Autre"}
+          </span>
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="shrink-0 rounded-xl border border-hair bg-white px-3.5 py-2.5 text-[12.5px] font-bold text-royal"
+        >
+          Changer
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div>
       <input type="hidden" name={name} value={sel} />

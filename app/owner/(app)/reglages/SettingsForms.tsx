@@ -384,7 +384,7 @@ export function CafeForm({ cafe }: { cafe: Cafe }) {
           <span className="mt-0.5 mb-2.5 block text-[11.5px] text-slate">
             Vos clients le voient pour reconnaître votre carte.
           </span>
-          <BusinessTypePicker defaultValue={cafe.businessType} />
+          <BusinessTypePicker defaultValue={cafe.businessType} collapsible />
         </div>
 
         <Advanced>

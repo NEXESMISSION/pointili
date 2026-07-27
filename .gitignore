@@ -46,3 +46,6 @@ yarn-error.log*
 next-env.d.ts
 scratch/
 backups/
+
+# marketing assets — they live in Desktop/"pointili postes", not in the app repo
+postes/

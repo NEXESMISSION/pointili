@@ -10,10 +10,16 @@ import {
   claimCode,
   creditPoints,
   getAccount,
+  getActivity,
   getBalance,
   getCardCode,
   getStamps,
+  ownerAdjustPoints,
+  ownerCards,
+  ownerSetStamps,
   peekCode,
+  type Activity,
+  type OwnerCards,
 } from "@/lib/db";
 
 /**
@@ -52,6 +58,61 @@ function maskPhone(phone: string): string {
 /** What the cashier sees after an action — a name if we have one, else masked. */
 function customerLabel(r: Resolved): string {
   return r.name ?? maskPhone(r.phone);
+}
+
+/* ── Managing one card, addressed by its CODE ───────────────────────────
+   The till never holds a phone number: every correction and the history are
+   looked up from the short per-shop code, resolved server-side. This is what
+   let the separate "Clients" page fold into the caisse.                    */
+
+export type ManageResult = { ok: boolean; error?: string; balance?: number; stamps?: number };
+
+export async function adjustByCodeAction(code: string, delta: number): Promise<ManageResult> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { ok: false, error: "Non autorisé." };
+  if (!Number.isFinite(delta) || delta === 0) return { ok: false, error: "Entrez un nombre." };
+  if (Math.abs(delta) > 1_000_000) return { ok: false, error: "Trop grand." };
+
+  const who = await resolveCustomer(cafe.id, code);
+  if ("error" in who) return { ok: false, error: who.error };
+
+  const res = await ownerAdjustPoints(cafe.id, who.phone, Math.round(delta));
+  if (!res.ok) return { ok: false, error: "Échec." };
+
+  revalidatePath("/owner");
+  revalidatePath(`/${cafe.slug}`);
+  return { ok: true, balance: res.balance };
+}
+
+export async function setStampsByCodeAction(code: string, count: number): Promise<ManageResult> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { ok: false, error: "Non autorisé." };
+  if (!Number.isFinite(count) || count < 0) return { ok: false, error: "Nombre invalide." };
+
+  const who = await resolveCustomer(cafe.id, code);
+  if ("error" in who) return { ok: false, error: who.error };
+
+  const res = await ownerSetStamps(cafe.id, who.phone, Math.round(count));
+  if (!res.ok) return { ok: false, error: "Échec." };
+
+  revalidatePath("/owner");
+  revalidatePath(`/${cafe.slug}`);
+  return { ok: true, stamps: res.count };
+}
+
+export async function historyByCodeAction(code: string): Promise<Activity[]> {
+  const cafe = await ownerCafe();
+  if (!cafe) return [];
+  const who = await resolveCustomer(cafe.id, code);
+  if ("error" in who) return [];
+  return getActivity(cafe.id, who.phone, 12);
+}
+
+/** The cardholder list shown under the till — searchable, paginated. */
+export async function searchCardsAction(search: string, offset: number): Promise<OwnerCards> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { total: 0, cards: [] };
+  return ownerCards(cafe.id, search.trim().slice(0, 60), 20, Math.max(0, offset));
 }
 
 export type CreditState = {
