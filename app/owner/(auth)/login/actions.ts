@@ -38,7 +38,7 @@ export async function loginAction(
     — and saves every returning owner a redirect on every sign-in.
   */
   const { ownerCafe } = await import("@/lib/auth/owner");
-  redirect((await ownerCafe()) ? "/" : "/nouveau");
+  redirect((await ownerCafe()) ? "/owner" : "/owner/nouveau");
 }
 
 export async function signupAction(

@@ -19,7 +19,7 @@ export default async function SetupLayout({
   children: React.ReactNode;
 }) {
   const owner = await ownerAccess();
-  if (!owner) redirect("/login");
+  if (!owner) redirect("/owner/login");
 
   return (
     // A single centred form, so it wants a narrow column — but its own, not the

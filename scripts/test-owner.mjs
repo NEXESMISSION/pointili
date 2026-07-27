@@ -21,7 +21,7 @@ const BASE = process.env.BASE_URL ?? "http://localhost:3000";
   Two hosts now. The customer side keeps the apex (every printed QR points at it)
   and the business side lives on app.* — Chrome resolves app.localhost without a
   hosts-file entry, so this exercises the real split rather than a special case.
-  Owner paths are SHORT there: the till is "/", not "/owner".
+  Paths are real on both hosts: the till is /owner.
 */
 const APP = process.env.APP_URL ?? BASE.replace("//", "//app.");
 const OWNER_EMAIL = process.env.OWNER_EMAIL ?? env.SUPER_ADMIN_EMAIL;
@@ -55,7 +55,7 @@ const { data: card } = await admin
 
 /* ── 1. Owner signs in ─────────────────────────────────────────────── */
 const staff = await browser.newPage({ viewport: { width: 390, height: 844 } });
-await staff.goto(`${APP}/login`, { waitUntil: "networkidle" });
+await staff.goto(`${APP}/owner/login`, { waitUntil: "networkidle" });
 if (staff.url().includes("/login")) {
   await staff.fill('input[name="email"]', OWNER_EMAIL);
   await staff.fill('input[name="password"]', OWNER_PASSWORD);
@@ -71,7 +71,7 @@ check("owner signs in", !staff.url().includes("/login"), staff.url().replace(BAS
 const DESK = '[role="dialog"]';
 const keypad = () => staff.locator('input[name="customer"]').waitFor({ timeout: 15000 });
 const openCustomer = async (who) => {
-  await staff.goto(`${APP}`, { waitUntil: "networkidle" });
+  await staff.goto(`${APP}/owner`, { waitUntil: "networkidle" });
   await keypad();
   await staff.fill('input[name="customer"]', who);
   await staff.locator('button:has-text("Chercher")').click();
@@ -112,7 +112,7 @@ for (let i = 0; i < 50 && !freeCode; i++) {
   const { data } = await admin.from("accounts").select("phone").eq("code", c).maybeSingle();
   if (!data) freeCode = c;
 }
-await staff.goto(`${APP}`, { waitUntil: "networkidle" });
+await staff.goto(`${APP}/owner`, { waitUntil: "networkidle" });
 await keypad();
 await staff.locator('input[name="customer"]').fill(freeCode);
 await staff.locator('input[name="customer"]').press("Enter");
@@ -144,7 +144,7 @@ check("a full stamp card issues a code", /Carte pleine/i.test(full) && !!stampCo
 /* ── 6. The counter validates that code exactly once ───────────────── */
 const SEC = 'section:has(h2:has-text("Valider un code"))';
 const collect = async (code) => {
-  await staff.goto(`${APP}`, { waitUntil: "networkidle" });
+  await staff.goto(`${APP}/owner`, { waitUntil: "networkidle" });
   await staff.locator('button:has-text("Un code")').click(); // the terminal's second mode
   await staff.locator(`${SEC} input[name="code"]`).waitFor({ timeout: 15000 });
   await staff.fill(`${SEC} input[name="code"]`, code);
@@ -165,7 +165,7 @@ if (stampCode) {
 }
 
 /* ── 7. Clients: find the cardholder, correct points + stamps ──────── */
-await staff.goto(`${APP}`, { waitUntil: "networkidle" });
+await staff.goto(`${APP}/owner`, { waitUntil: "networkidle" });
 await staff.locator('input[name="search"]').fill(card.code);
 const listed = await staff
   .waitForFunction((c) => (document.querySelector("main")?.innerText ?? "").includes(c), card.code, { timeout: 10000 })
@@ -227,7 +227,7 @@ check("owner can correct a balance", afterAdjust >= 25, `balance=${afterAdjust}`
 // Réglages is a settings list now — every knob is one tap deep, in its own editor.
 const earn = 'form:has(input[name="pointsPerTnd"])';
 const openPoints = async () => {
-  await staff.goto(`${APP}/reglages`, { waitUntil: "networkidle" });
+  await staff.goto(`${APP}/owner/reglages`, { waitUntil: "networkidle" });
   await staff.locator('button:has-text("Les points")').click();
   await staff.locator(`${earn} input[name="pointsPerTnd"]`).waitFor({ timeout: 15000 });
 };
@@ -257,12 +257,12 @@ const rejected = await staff
 check("an invalid rate is refused", /entre 0,1 et 100/.test(rejected), rejected);
 
 /* ── 9. Analyses renders with real data ────────────────────────────── */
-await staff.goto(`${APP}/analyses`, { waitUntil: "networkidle" });
+await staff.goto(`${APP}/owner/analyses`, { waitUntil: "networkidle" });
 const stats = await staff.locator("main").innerText();
 check("Analyses renders (no crash, no NaN)", /Analyses/.test(stats) && !/NaN|Infinity|undefined/.test(stats));
 
 /* ── 10. QR page shows the shop's own link ─────────────────────────── */
-await staff.goto(`${APP}/qr`, { waitUntil: "networkidle" });
+await staff.goto(`${APP}/owner/qr`, { waitUntil: "networkidle" });
 const qrTxt = await staff.locator("main").innerText();
 check("QR page shows this shop's URL", qrTxt.includes(TEST_SLUG), TEST_SLUG);
 

@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { appHost, isAppHost, isPassthrough, toInternal, toPublic } from "@/lib/hosts";
+import { apexHost, appHost, isAppHost, isPassthrough } from "@/lib/hosts";
 
 /**
  * Two jobs, in this order: put the request on the right HOST, then refresh the
@@ -26,27 +26,47 @@ import { appHost, isAppHost, isPassthrough, toInternal, toPublic } from "@/lib/h
  * on the Node runtime — edge is not supported here.
  */
 export async function proxy(request: NextRequest) {
-  const url = request.nextUrl;
   const host = request.headers.get("host");
-  const path = url.pathname;
+  const path = request.nextUrl.pathname;
 
   /* ── 1. host routing ──────────────────────────────────────────────── */
 
-  if (!isPassthrough(path)) {
-    if (isAppHost(host)) {
-      // The business side. Public paths here are short (/analyses), so map them
-      // onto the internal tree (/owner/analyses) without changing the URL bar.
-      const rewritten = new URL(url);
-      rewritten.pathname = toInternal(path);
-      return withSession(request, (req) => NextResponse.rewrite(rewritten, { request: req }));
-    }
+  /*
+    NO path rewriting — only enforcement of which host serves what.
 
-    // The customer side. The business routes do not live here.
-    if (path === "/owner" || path.startsWith("/owner/") || path === "/admin" || path.startsWith("/admin/")) {
-      const target = new URL(url);
-      target.host = appHost(host ?? target.host);
-      target.pathname = toPublic(path);
-      return NextResponse.redirect(target, 308);
+    Serving the till at app.pointili.online/ (rewriting "/" onto "/owner") read
+    nicer and broke three things: revalidatePath could not reach across the
+    boundary (the router keys on the public path, the cache on the internal
+    one), redirect() resolved against Next's own origin and threw a new owner
+    onto the DINER's 404, and pinning the forwarded-host headers to fix that
+    broke Supabase auth. Three bugs for a shorter URL is the wrong trade.
+
+    So the paths are real on both hosts. What the split still buys — and the
+    reason it exists — is cookie isolation: nothing here sets a cookie Domain,
+    so a diner session and an owner session can no longer see each other.
+  */
+  if (!isPassthrough(path)) {
+    const business = path === "/owner" || path.startsWith("/owner/")
+      || path === "/admin" || path.startsWith("/admin/");
+
+    if (isAppHost(host)) {
+      // Bare app host → the till.
+      if (path === "/") {
+        const to = new URL(request.url);
+        to.pathname = "/owner";
+        return NextResponse.redirect(to, 307);
+      }
+      // Anything customer-facing belongs on the apex, where the printed QRs point.
+      if (!business) {
+        const to = new URL(request.url);
+        to.host = apexHost(host ?? to.host);
+        return NextResponse.redirect(to, 308);
+      }
+    } else if (business) {
+      // The customer side does not serve the business routes.
+      const to = new URL(request.url);
+      to.host = appHost(host ?? to.host);
+      return NextResponse.redirect(to, 308);
     }
   }
 

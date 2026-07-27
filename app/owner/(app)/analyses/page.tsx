@@ -33,7 +33,7 @@ export default async function Analytics({
   searchParams: Promise<{ p?: string }>;
 }) {
   const cafe = await ownerCafe();
-  if (!cafe) redirect("/nouveau");
+  if (!cafe) redirect("/owner/nouveau");
 
   const { p } = await searchParams;
   const picked = RANGES.find((r) => r.slug === p) ?? RANGES[1];
@@ -51,7 +51,7 @@ export default async function Analytics({
         {RANGES.map((r) => (
           <Link
             key={r.slug}
-            href={`/analyses?p=${r.slug}`}
+            href={`/owner/analyses?p=${r.slug}`}
             scroll={false}
             className={`rounded-xl py-2.5 text-center text-[13px] font-bold transition ${
               r.slug === picked.slug ? "bg-[#6d4ae6] text-white shadow-lg" : "text-white/55"

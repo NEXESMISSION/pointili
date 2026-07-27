@@ -22,7 +22,7 @@ export async function createCafeAction(
   formData: FormData,
 ): Promise<CreateState> {
   const owner = await currentOwner();
-  if (!owner) redirect("/login");
+  if (!owner) redirect("/owner/login");
 
   const name = String(formData.get("name") ?? "").trim().slice(0, 60);
   const rawSlug = String(formData.get("slug") ?? "").trim().toLowerCase();
@@ -47,5 +47,8 @@ export async function createCafeAction(
   const type = String(formData.get("businessType") ?? "");
   if (TYPE_KEYS.has(type) && type !== "other") await setBusinessType(res.id, type);
 
-  redirect("/");
+  // Straight to the till. "/" would only 307 here anyway, and a server-action
+  // redirect is a client navigation — one that has to follow a redirect of its
+  // own does not always commit.
+  redirect("/owner");
 }

@@ -13,7 +13,7 @@ const BASE = "http://localhost:3000";
   Two hosts now. The customer side keeps the apex (every printed QR points at it)
   and the business side lives on app.* — Chrome resolves app.localhost without a
   hosts-file entry, so this exercises the real split rather than a special case.
-  Owner paths are SHORT there: the till is "/", not "/owner".
+  Paths are real on both hosts: the till is /owner.
 */
 const APP = process.env.APP_URL ?? BASE.replace("//", "//app.");
 const OUT = "scratch/shots";
@@ -27,7 +27,7 @@ await mkdir(OUT, { recursive: true });
 const browser = await chromium.launch({ executablePath: CHROME });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
 
-await page.goto(`${APP}/login`, { waitUntil: "networkidle" });
+await page.goto(`${APP}/owner/login`, { waitUntil: "networkidle" });
 if (page.url().includes("/login")) {
   await page.fill('input[name="email"]', EMAIL);
   await page.fill('input[name="password"]', PASSWORD);

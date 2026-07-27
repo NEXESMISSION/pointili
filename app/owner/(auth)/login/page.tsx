@@ -11,7 +11,7 @@ export default async function Login() {
   // café-gated, so an owner without one must go to setup — otherwise the two
   // pages bounce off each other forever.
   const owner = await currentOwner();
-  if (owner) redirect((await ownerCafe()) ? "/" : "/nouveau");
+  if (owner) redirect((await ownerCafe()) ? "/owner" : "/owner/nouveau");
   const configured = supabaseConfigured();
 
   return (
@@ -40,7 +40,7 @@ export default async function Login() {
 
       <p className="mt-5 text-center text-[13px] text-white/55">
         Pas encore de compte ?{" "}
-        <Link href="/signup" className="font-bold text-[#b9a3ff]">
+        <Link href="/owner/signup" className="font-bold text-[#b9a3ff]">
           Créer un compte
         </Link>
       </p>

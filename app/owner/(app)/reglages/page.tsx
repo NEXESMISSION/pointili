@@ -20,7 +20,7 @@ export default async function Reglages() {
   const cafe = await ownerCafe();
   // No café yet → set one up. NOT /owner/login: that would see a valid session
   // and bounce straight back here, forever.
-  if (!cafe) redirect("/nouveau");
+  if (!cafe) redirect("/owner/nouveau");
 
   const left = remaining(cafe.planExpiresAt);
   const [owner, program, rewards] = await Promise.all([

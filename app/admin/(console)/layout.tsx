@@ -23,9 +23,9 @@ export default async function ConsoleLayout({
   children: React.ReactNode;
 }) {
   const owner = await currentOwner();
-  if (!owner) redirect("/login");
+  if (!owner) redirect("/owner/login");
   if (owner.role !== "super_admin") notFound();
-  if (!(await isElevated(owner.id))) redirect("/console/login");
+  if (!(await isElevated(owner.id))) redirect("/admin/login");
 
   const minsLeft = Math.ceil((await elevationRemaining()) / 60);
 

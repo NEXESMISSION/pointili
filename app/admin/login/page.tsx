@@ -16,9 +16,9 @@ export const dynamic = "force-dynamic";
  */
 export default async function AdminLogin() {
   const owner = await currentOwner();
-  if (!owner) redirect("/login");
+  if (!owner) redirect("/owner/login");
   if (owner.role !== "super_admin") notFound();
-  if (await isElevated(owner.id)) redirect("/console");
+  if (await isElevated(owner.id)) redirect("/admin");
 
   return (
     <div className="modern mx-auto flex min-h-dvh max-w-md flex-col bg-[#0b0d12] px-6 py-8">

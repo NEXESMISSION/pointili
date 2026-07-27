@@ -14,7 +14,7 @@ export default function OwnerError({
       title="Impossible de charger"
       message="Un souci de connexion à la base. Réessaie — c'est souvent momentané."
       reset={reset}
-      homeHref="/"
+      homeHref="/owner"
       homeLabel="Retour à la caisse"
     />
   );

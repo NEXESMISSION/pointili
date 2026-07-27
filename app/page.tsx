@@ -132,10 +132,10 @@ export default async function Landing({
             <p className="mt-1.5 border-t border-hair px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.08em] text-slate/70">
               Je suis commerçant
             </p>
-            <Link href={appUrl("/login")} className="block rounded-xl px-3 py-2.5 text-[14px] font-semibold text-charcoal hover:bg-lilac-2">
+            <Link href={appUrl("/owner/login")} className="block rounded-xl px-3 py-2.5 text-[14px] font-semibold text-charcoal hover:bg-lilac-2">
               Espace café
             </Link>
-            <Link href={appUrl("/signup")} className="mt-1 block rounded-xl bg-royal px-3 py-2.5 text-center text-[14px] font-bold text-white">
+            <Link href={appUrl("/owner/signup")} className="mt-1 block rounded-xl bg-royal px-3 py-2.5 text-center text-[14px] font-bold text-white">
               Créer mon compte
             </Link>
           </nav>
@@ -180,7 +180,7 @@ export default async function Landing({
             </span>
           </Link>
           <Link
-            href={appUrl("/login")}
+            href={appUrl("/owner/login")}
             className="rounded-2xl bg-royal px-4 py-3.5 text-center shadow-[0_14px_32px_-16px_rgba(91,63,209,.7)] active:scale-[0.98]"
           >
             <span className="block text-[10px] font-bold uppercase tracking-[0.07em] text-white/70">
@@ -207,7 +207,7 @@ export default async function Landing({
         {/* CTAs */}
         <div className="mt-7 space-y-3">
           <Link
-            href={appUrl("/signup")}
+            href={appUrl("/owner/signup")}
             className="flex flex-col items-center justify-center rounded-2xl bg-royal py-3.5 shadow-[0_12px_28px_-10px_rgba(91,63,209,.6)] active:scale-[0.99]"
           >
             <span className="flex items-center gap-2 text-[15.5px] font-bold text-white">
@@ -218,7 +218,7 @@ export default async function Landing({
             </span>
           </Link>
           <Link
-            href={appUrl("/login")}
+            href={appUrl("/owner/login")}
             className="flex items-center justify-center rounded-2xl border-2 border-hair bg-white py-4 text-[15.5px] font-bold text-charcoal active:scale-[0.99]"
           >
             Se connecter
@@ -363,7 +363,7 @@ export default async function Landing({
         </ul>
 
         <Link
-          href={appUrl("/signup")}
+          href={appUrl("/owner/signup")}
           className="mt-6 flex items-center justify-center gap-2 rounded-2xl bg-royal py-4 text-[15.5px] font-bold text-white shadow-[0_12px_28px_-10px_rgba(91,63,209,.6)] active:scale-[0.99]"
         >
           Commencer l&apos;essai gratuit <Arrow />
@@ -384,7 +384,7 @@ export default async function Landing({
             fidélité.
           </p>
           <Link
-            href={appUrl("/signup")}
+            href={appUrl("/owner/signup")}
             className="relative mt-6 flex items-center justify-center gap-2 rounded-2xl bg-white py-4 text-[15px] font-bold text-royal active:scale-[0.99]"
           >
             Créer mon compte gratuit <Arrow className="h-4 w-4" />

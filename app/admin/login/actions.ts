@@ -22,7 +22,7 @@ export async function elevateAction(
   formData: FormData,
 ): Promise<ElevateState> {
   const owner = await currentOwner();
-  if (!owner) redirect("/login");
+  if (!owner) redirect("/owner/login");
 
   // Never reveal that /admin exists to a non-super-admin — same message either
   // way, and they'd fail the role check regardless.

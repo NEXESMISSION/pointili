@@ -20,7 +20,7 @@ export default async function OwnerLayout({
   children: React.ReactNode;
 }) {
   const owner = await ownerAccess();
-  if (!owner) redirect("/login");
+  if (!owner) redirect("/owner/login");
 
   const cafe = await ownerCafe();
   const notices = cafe ? await ownerNotices(cafe.id) : [];
@@ -104,7 +104,7 @@ export default async function OwnerLayout({
           {/* A dead end otherwise: the product told an owner their shop was dark
               and gave them nothing to press. */}
           {!cafe.suspendedAt && (
-            <Link href="/reglages" className="mt-1.5 inline-block text-[12px] font-bold text-white underline underline-offset-2">
+            <Link href="/owner/reglages" className="mt-1.5 inline-block text-[12px] font-bold text-white underline underline-offset-2">
               Renouveler mon abonnement →
             </Link>
           )}
@@ -115,7 +115,7 @@ export default async function OwnerLayout({
         <p className="border-b border-[#ffd27a]/30 bg-[#ffd27a]/12 px-5 py-2 text-[11.5px] leading-snug text-[#ffd27a]">
           Votre {cafe.plan === "trial" ? "essai" : "abonnement"} se termine dans{" "}
           <b>{left.label}</b>.{" "}
-          <Link href="/reglages" className="font-bold underline underline-offset-2">
+          <Link href="/owner/reglages" className="font-bold underline underline-offset-2">
             Voir les formules
           </Link>
         </p>

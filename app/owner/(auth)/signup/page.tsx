@@ -8,7 +8,7 @@ export const metadata = { title: "Créer mon compte" };
 
 export default async function Signup() {
   const owner = await currentOwner();
-  if (owner) redirect((await ownerCafe()) ? "/" : "/nouveau");
+  if (owner) redirect((await ownerCafe()) ? "/owner" : "/owner/nouveau");
 
   return (
     <div className="a-card px-6 py-7">
@@ -35,7 +35,7 @@ export default async function Signup() {
 
       <p className="mt-5 text-center text-[13px] text-white/55">
         Déjà un compte ?{" "}
-        <Link href="/login" className="font-bold text-[#b9a3ff]">
+        <Link href="/owner/login" className="font-bold text-[#b9a3ff]">
           Se connecter
         </Link>
       </p>

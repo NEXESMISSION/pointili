@@ -15,12 +15,9 @@
  * longer see each other. (That was a real bug, not a theoretical one: an owner
  * mid-sign-in could be thrown to /cartes by a family member's diner cookie.)
  *
- * PUBLIC paths on the app host are short — `/analyses`, not `/owner/analyses` —
- * and the proxy rewrites them onto the internal tree. So there are two
- * vocabularies and they must not be mixed up:
- *
- *   PUBLIC   what the browser shows, what redirect() and <Link href> must use
- *   INTERNAL the file tree under app/, what revalidatePath() must use
+ * Paths are REAL on both hosts — nothing is rewritten. app.pointili.online
+ * serves /owner and /admin exactly as the file tree spells them, and the apex
+ * refuses them. See proxy.ts for why the shorter-URL version was abandoned.
  */
 
 /** Paths the app host serves as-is — no rewrite, no redirect. */
@@ -49,30 +46,6 @@ export function apexHost(host: string): string {
 /** The app-host equivalent of the apex, for sending an owner to their side. */
 export function appHost(host: string): string {
   return host.startsWith("app.") ? host : `app.${host}`;
-}
-
-/**
- * PUBLIC → INTERNAL. `/analyses` is really `/owner/analyses`; `/console` is
- * really `/admin`. Everything else on the app host belongs to the owner app.
- */
-export function toInternal(pathname: string): string {
-  if (pathname === "/console" || pathname.startsWith("/console/")) {
-    return `/admin${pathname.slice("/console".length)}`;
-  }
-  return pathname === "/" ? "/owner" : `/owner${pathname}`;
-}
-
-/**
- * INTERNAL → PUBLIC. Used to send someone who hit an internal path on the apex
- * to the right URL on the app host, so there is exactly one address per screen.
- */
-export function toPublic(pathname: string): string {
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
-    return `/console${pathname.slice("/admin".length)}`;
-  }
-  if (pathname === "/owner") return "/";
-  if (pathname.startsWith("/owner/")) return pathname.slice("/owner".length);
-  return pathname;
 }
 
 /**
