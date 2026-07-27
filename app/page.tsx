@@ -58,10 +58,26 @@ function BrandMark({ dark = false }: { dark?: boolean }) {
 }
 
 const steps = [
-  { n: "01", Icon: Cup, title: "Le client consomme", text: "Comme d'habitude." },
-  { n: "02", Icon: Qr, title: "Vous créditez ses points", text: "À la caisse, en 5 secondes." },
-  { n: "03", Icon: Gift, title: "Il cumule des points", text: "Chaque dinar dépensé le rapproche d'une récompense." },
-  { n: "04", Icon: Chart, title: "Vous suivez les résultats", text: "Il échange ses points contre du réel. Et il revient." },
+  {
+    n: "01", who: "Vous", Icon: Qr,
+    title: "Vous posez le QR sur vos tables",
+    text: "Imprimé depuis votre espace en une minute — chevalet, affiche ou autocollant.",
+  },
+  {
+    n: "02", who: "Le client", Icon: Cup,
+    title: "Il scanne. Aucune application.",
+    text: "Sa carte s'ouvre dans son navigateur : un numéro, un code à 4 chiffres, c'est fini.",
+  },
+  {
+    n: "03", who: "Vous", Icon: Gift,
+    title: "Vous créditez à la caisse",
+    text: "Il montre son code à 4 caractères, vous tapez le montant. Cinq secondes.",
+  },
+  {
+    n: "04", who: "Le client", Icon: Chart,
+    title: "Il revient chercher sa récompense",
+    text: "Et vous voyez dans vos analyses combien reviennent vraiment.",
+  },
 ];
 
 const trust = [
@@ -97,6 +113,15 @@ export default async function Landing({
           <nav className="absolute right-0 top-12 z-30 w-48 rounded-2xl border border-hair bg-white p-2 shadow-[0_20px_50px_-20px_rgba(40,18,59,.35)]">
             <Link href="/owner/login" className="block rounded-xl px-3 py-2.5 text-[14px] font-semibold text-charcoal hover:bg-lilac-2">Espace café</Link>
             <Link href="/owner/signup" className="mt-1 block rounded-xl bg-royal px-3 py-2.5 text-center text-[14px] font-bold text-white">Créer mon compte</Link>
+            {/*
+              The customer's way in. Deliberately last, small and unstyled: this
+              page sells to shop owners, and a second loud CTA would make the
+              paying audience choose a side before reading anything. A customer
+              who needs it is looking for it.
+            */}
+            <Link href="/moi" className="mt-1.5 block border-t border-hair px-3 pb-1 pt-3 text-[13px] font-semibold text-slate hover:text-royal">
+              Je suis client · mes cartes
+            </Link>
           </nav>
         </details>
       </header>
@@ -168,15 +193,18 @@ export default async function Landing({
 
       {/* ── the loop, 4 steps ───────────────────────────────── */}
       <section className="mx-auto max-w-md px-5 pt-12 pb-6">
-        <h2 className="text-[27px] font-extrabold leading-tight text-charcoal">
-          4 étapes simples.
+        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-royal2">
+          Comment ça marche
+        </p>
+        <h2 className="mt-1.5 text-[27px] font-extrabold leading-tight text-charcoal">
+          Une boucle à deux mains.
         </h2>
         <h2 className="text-[27px] font-extrabold leading-tight text-charcoal">
-          Un système qui <span className="text-royal">tourne tout seul.</span>
+          Et elle <span className="text-royal">tourne toute seule.</span>
         </h2>
 
         <ol className="mt-7 space-y-3">
-          {steps.map(({ n, Icon, title, text }, i) => (
+          {steps.map(({ n, who, Icon, title, text }, i) => (
             <li key={n}>
               <div className="rounded-3xl border border-hair bg-white p-5 shadow-[0_10px_30px_-24px_rgba(40,18,59,.5)]">
                 <div className="flex items-center gap-3">
@@ -185,6 +213,14 @@ export default async function Landing({
                   </span>
                   <span className="grid h-11 w-11 place-items-center rounded-2xl bg-lilac text-royal">
                     <Icon />
+                  </span>
+                  {/* whose hands: the whole point is that it takes two */}
+                  <span
+                    className={`ml-auto rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.06em] ${
+                      who === "Vous" ? "bg-royal text-white" : "bg-lilac text-royal"
+                    }`}
+                  >
+                    {who}
                   </span>
                 </div>
                 <p className="mt-3 text-[16px] font-bold text-charcoal">{title}</p>

@@ -187,6 +187,50 @@ await d.waitForTimeout(2500);
 await d.goto(`${BASE}/${TEST_SLUG}`, { waitUntil: "networkidle" });
 check("after logout the card asks to join again", d.url().includes("/rejoindre"), d.url().replace(BASE, ""));
 
+/* ── 8. The global door: sign back in with no shop in hand ─────────── */
+/*
+  This is the hole /moi exists to close. After signing out, a diner used to have
+  no way back to their own points without physically returning to a shop and
+  rescanning its QR: /cartes bounced signed-out visitors to the B2B landing, and
+  the only sign-in form lived under a shop slug.
+*/
+await d.goto(`${BASE}/cartes`, { waitUntil: "networkidle" });
+check("signed out, /cartes sends you to the diner door (not the sales page)",
+  d.url().endsWith("/moi"), d.url().replace(BASE, ""));
+
+// wrong PIN must not reveal whether the number is known
+await d.fill('input[name="phone"]', LOCAL);
+await d.fill('input[name="pin"]', "9999");
+await d.click('button[type="submit"]');
+await d.locator('form [role="alert"]').waitFor({ timeout: 20000 }).catch(() => {});
+const wrongTxt = await d.locator('form [role="alert"]').innerText().catch(() => "");
+check("a wrong code is refused without naming the reason",
+  /incorrect|essais/i.test(wrongTxt), wrongTxt);
+
+// an unknown number gets the SAME answer — never an "is this person a customer?" oracle
+await d.goto(`${BASE}/moi`, { waitUntil: "networkidle" });
+await d.fill('input[name="phone"]', `2${String(Date.now()).slice(-7)}`);
+await d.fill('input[name="pin"]', "9999");
+await d.click('button[type="submit"]');
+await d.locator('form [role="alert"]').waitFor({ timeout: 20000 }).catch(() => {});
+const unknownTxt = await d.locator('form [role="alert"]').innerText().catch(() => "");
+// Both must be non-empty AND identical — "" === "" would pass vacuously.
+check("an unknown number gets the identical wording",
+  Boolean(wrongTxt) && unknownTxt === wrongTxt,
+  `"${unknownTxt}" vs "${wrongTxt}"`);
+
+// and the real credentials land in the wallet, with every card
+await d.goto(`${BASE}/moi`, { waitUntil: "networkidle" });
+await d.fill('input[name="phone"]', LOCAL);
+await d.fill('input[name="pin"]', PIN);
+await d.click('button[type="submit"]');
+await d.waitForURL((u) => u.pathname === "/cartes", { timeout: 20000 }).catch(() => {});
+check("signing in at /moi lands in the wallet", d.url().endsWith("/cartes"), d.url().replace(BASE, ""));
+const backTxt = await d.locator("body").innerText();
+check("the wallet still holds both shops", /Deuxième Boutique/.test(backTxt) && /Café/.test(backTxt));
+check("/moi never signs up — no account was invented for the unknown number",
+  !/inscription|créer/i.test(await d.locator("body").innerText()));
+
 await browser.close();
 
 /* ── clean up: this runs against the REAL database ─────────────────── */

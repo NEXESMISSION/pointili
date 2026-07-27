@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import {
   hashPin,
   isValidPhone,
+  NO_SUCH_ACCOUNT_HASH,
   isValidPin,
   normalisePhone,
   signSession,
@@ -58,6 +59,14 @@ export async function joinAction(
 
   let existing = await getAccount(phone);
 
+  /*
+    Burn the scrypt whichever branch we take. Below, an unknown phone on the
+    login tab returns without ever deriving a key, so "no such number" comes back
+    one whole scrypt sooner than "wrong PIN" — identical wording, different
+    timing, still an oracle for "is this person a Pointili customer?".
+  */
+  const pinOk = await verifyPin(pin, existing?.pin_hash ?? NO_SUCH_ACCOUNT_HASH);
+
   /** Wrong PIN / unknown-on-the-login-tab — deliberately the same vague wording
    *  so this never becomes a "is this number registered?" oracle. */
   async function wrongCredentials(): Promise<JoinState> {
@@ -86,7 +95,10 @@ export async function joinAction(
   }
 
   if (existing) {
-    if (!(await verifyPin(pin, existing.pin_hash))) return wrongCredentials();
+    // Re-derive only if the account was just CREATED above (pinOk was computed
+    // against the dummy in that case, so it is meaningless).
+    const good = pinOk || (await verifyPin(pin, existing.pin_hash));
+    if (!good) return wrongCredentials();
     await pinClear(phone);
   }
 

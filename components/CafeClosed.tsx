@@ -32,6 +32,12 @@ export function CafeClosed({ name }: { name: string }) {
         conservés — repasse bientôt.
       </p>
 
+      {/*
+        /cartes, NOT /[slug]/anything: this screen replaces the entire shop
+        subtree, so anything under the slug is unreachable from here. And /cartes
+        itself now falls through to /moi when signed out, which is the only
+        reason this is no longer a total lockout for a signed-out diner.
+      */}
       <Link
         href="/cartes"
         className="mt-7 rounded-2xl bg-white px-5 py-3 text-[13.5px] font-bold text-charcoal active:scale-[0.98]"

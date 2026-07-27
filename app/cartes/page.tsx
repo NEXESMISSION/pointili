@@ -18,8 +18,10 @@ export default async function Cartes({
   searchParams: Promise<{ from?: string }>;
 }) {
   const phone = await currentDiner();
-  // Signing in is per-shop (scan a QR), so there's nothing to show signed-out.
-  if (!phone) redirect("/");
+  // Signed out → the diner front door. This used to send them to "/", the B2B
+  // marketing landing: the customer whose bookmark this is got a pitch for a
+  // shop subscription instead of a way back to their own points.
+  if (!phone) redirect("/moi");
 
   const { getAccount } = await import("@/lib/db");
   const [{ from }, cards, account] = await Promise.all([

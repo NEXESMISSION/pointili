@@ -29,6 +29,20 @@ export async function hashPin(pin: string): Promise<string> {
   return `scrypt$${salt}$${key.toString("hex")}`;
 }
 
+/**
+ * A syntactically valid hash of a PIN nobody can type.
+ *
+ * Sign-in must burn the same scrypt whether or not the phone exists. Skipping
+ * the derivation for an unknown number makes the "no such account" answer come
+ * back measurably sooner than "wrong PIN", which turns any login form into an
+ * unauthenticated "is this person a Pointili customer?" oracle — worse now that
+ * one lives at a fixed global URL where a whole range of numbers can be swept.
+ *
+ * It must be WELL FORMED: verifyPin early-returns on a malformed string without
+ * hashing, which would preserve the exact leak this is here to close.
+ */
+export const NO_SUCH_ACCOUNT_HASH = `scrypt$${"0".repeat(32)}$${"0".repeat(128)}`;
+
 export async function verifyPin(pin: string, stored: string): Promise<boolean> {
   const [scheme, salt, hash] = stored.split("$");
   if (scheme !== "scrypt" || !salt || !hash) return false;
