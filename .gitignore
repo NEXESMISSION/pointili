@@ -49,3 +49,6 @@ backups/
 
 # marketing assets — they live in Desktop/"pointili postes", not in the app repo
 postes/
+
+# throwaway screenshot/debug scripts
+scripts/_*.mjs
