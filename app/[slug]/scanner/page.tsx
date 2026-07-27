@@ -6,9 +6,13 @@ import { getCafe, getMember } from "@/lib/data";
 export const metadata = { title: "Ma carte" };
 
 /**
- * The diner's "I'm here" screen. Staff scans this QR (or types the short 4-char
- * CODE) to credit points / add a stamp — so it encodes the per-shop code, never
- * the phone number. The phone is never shown here or to the cashier.
+ * The diner's "I'm here" screen. Staff scans this QR (or types the 4-char CODE)
+ * to credit points / add a stamp — so it encodes the ACCOUNT code, never the
+ * phone number. The phone is never shown here or to the cashier.
+ *
+ * The code is the same at every shop, which is why it works even at a counter
+ * the diner has never visited. This page still lives under /[slug] because it
+ * also shows this shop's balance.
  */
 export default async function Scanner({
   params,

@@ -1,6 +1,7 @@
 import { activeNotices, adminOverview, platformStats, recentActions, remaining } from "@/lib/platform";
 import { dismissNoticeAction } from "./actions";
-import { BroadcastForm, CafeControls } from "./CafeControls";
+import { BroadcastForm } from "./CafeControls";
+import { CafeTable } from "./CafeTable";
 
 const KIND_LABEL: Record<string, string> = { info: "Info", warning: "Attention", urgent: "Urgent" };
 
@@ -55,22 +56,14 @@ export default async function AdminPage() {
         <Stat label="Points émis" value={stats.pointsIssued} tone="royal" />
       </section>
 
-      <section>
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#8b93a7]">
-          Cafés ({cafes.length})
+      {cafes.length === 0 ? (
+        <p className="rounded-lg border border-[#232838] bg-[#12151d] px-4 py-8 text-center text-[13px] text-[#8b93a7]">
+          Aucun café pour l&apos;instant.
         </p>
-        {cafes.length === 0 ? (
-          <p className="rounded-2xl border border-[#232838] bg-[#12151d] px-4 py-8 text-center text-[13px] text-[#8b93a7]">
-            Aucun café pour l&apos;instant.
-          </p>
-        ) : (
-          <ul className="space-y-2.5">
-            {cafes.map((c) => (
-              <CafeControls key={c.id} cafe={c} left={remaining(c.planExpiresAt)} />
-            ))}
-          </ul>
-        )}
-      </section>
+      ) : (
+        /* remaining() is server-only, so each row carries its own verdict */
+        <CafeTable rows={cafes.map((c) => ({ ...c, left: remaining(c.planExpiresAt) }))} />
+      )}
 
       <section className="rounded-2xl border border-[#232838] bg-[#12151d] p-4 shadow-[0_10px_30px_-24px_rgba(40,18,59,.5)]">
         <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#8b93a7]">

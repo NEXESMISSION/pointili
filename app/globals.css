@@ -69,6 +69,26 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/*
+  Never zoom the page when a field is focused.
+
+  iOS Safari scales the whole viewport in whenever you tap a field whose text is
+  under 16px — and since iOS 10 it ignores `maximum-scale` and `user-scalable`,
+  so the viewport meta cannot prevent it. Keeping every field at 16px is the
+  only thing that actually works.
+
+  This sits in @layer base on purpose: a deliberate display field (the 26px code
+  pad, the 34px amount) is a plain utility and therefore still wins. The rule is
+  a floor for everything that did not ask for a size, not a cap.
+*/
+@layer base {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 body {
   background: var(--color-cloud);
   color: var(--color-charcoal);
@@ -310,8 +330,8 @@ h4 {
   border-radius: 8px;
   border: 1px solid #2b3145;
   background: #0e1118;
-  padding: 10px 12px;
-  font-size: 13.5px;
+  padding: 9px 12px;
+  font-size: 16px; /* 16px so iOS never zooms on focus */
   color: #e6e8ee;
   font-family: var(--font-mono, ui-monospace), monospace;
 }

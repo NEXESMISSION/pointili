@@ -110,8 +110,13 @@ export default async function Carte({
       {/* codes to show at the counter */}
       {diner.codes.length > 0 && (
         <section className="px-5 pt-4">
+          {/*
+            Deliberately NOT "À montrer au comptoir": the CTA higher up the page
+            already says "Montrer mon code au comptoir" about the account code,
+            and these are a different thing — expiring reward vouchers.
+          */}
           <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-white/55">
-            À montrer au comptoir
+            Cadeaux à récupérer
           </p>
           <ul className="space-y-2">
             {diner.codes.map((c) => (

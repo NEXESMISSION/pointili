@@ -3,22 +3,43 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * A camera QR reader. Streams the rear camera into a hidden canvas and decodes
- * frames with jsQR (dynamically imported, so its ~40 KB only loads when a cashier
- * actually scans). Calls onScan once with the decoded text, then stops.
+ * A camera QR reader — a bare viewfinder. The caller owns the surrounding
+ * chrome, so this renders nothing but the picture and its own flip button.
  *
- * Fails soft: if the camera is blocked or unavailable, it says so — the caisse
- * always keeps a manual ID/number field as the fallback.
+ * Starts on the REAR camera: a cashier points the phone at the customer's
+ * screen, not at their own face. `facingMode: {ideal:"environment"}` is a hint,
+ * not a guarantee — a laptop has only a front camera, and some Androids expose
+ * their lenses in an order the hint can't express — so there is a flip button
+ * that switches sides and restarts the stream.
+ *
+ * Only mounted once the operator asks for it: getUserMedia lights the lens and
+ * (on first use) raises a permission prompt, and neither should happen just
+ * because someone opened the till.
+ *
+ * Fails soft: if the camera is blocked or missing it says so and calls
+ * onUnavailable, so the caller can fall back to typing.
+ *
+ * The callbacks are held in refs on purpose. The parent re-renders often
+ * (recents polling, transitions); putting onScan in the effect deps would tear
+ * the camera down and restart it on every one of those renders.
  */
 export function QrScanner({
   onScan,
-  onClose,
+  onUnavailable,
 }: {
   onScan: (text: string) => void;
-  onClose: () => void;
+  onUnavailable?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const scanRef = useRef(onScan);
+  const failRef = useRef(onUnavailable);
+  const [facing, setFacing] = useState<"environment" | "user">("environment");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    scanRef.current = onScan;
+    failRef.current = onUnavailable;
+  }, [onScan, onUnavailable]);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,17 +53,21 @@ export function QrScanner({
       try {
         jsQR = (await import("jsqr")).default;
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
+          video: { facingMode: { ideal: facing } },
           audio: false,
         });
       } catch {
-        if (!cancelled) setError("Caméra indisponible — saisissez l'ID à la place.");
+        if (!cancelled) {
+          setError("Caméra indisponible");
+          failRef.current?.();
+        }
         return;
       }
       if (cancelled) {
         stream.getTracks().forEach((t) => t.stop());
         return;
       }
+      setError("");
       const v = videoRef.current;
       if (!v) return;
       v.srcObject = stream;
@@ -64,7 +89,7 @@ export function QrScanner({
           if (code?.data) {
             cancelled = true;
             stream?.getTracks().forEach((t) => t.stop());
-            onScan(code.data.trim());
+            scanRef.current(code.data.trim());
             return;
           }
         }
@@ -79,25 +104,36 @@ export function QrScanner({
       cancelAnimationFrame(raf);
       stream?.getTracks().forEach((t) => t.stop());
     };
-  }, [onScan]);
+  }, [facing]);
 
   return (
-    <div className="mt-4 overflow-hidden rounded-2xl border border-hair bg-charcoal">
-      <div className="relative aspect-square w-full">
-        <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
-        {/* viewfinder */}
-        <div className="pointer-events-none absolute inset-0 grid place-items-center">
-          <div className="h-2/3 w-2/3 rounded-2xl border-2 border-white/80 shadow-[0_0_0_2000px_rgba(0,0,0,.35)]" />
-        </div>
+    <div className="relative aspect-[4/5] w-full bg-black">
+      <video
+        ref={videoRef}
+        playsInline
+        muted
+        /* the selfie camera is mirrored, or aiming it is disorienting */
+        className={`h-full w-full object-cover ${facing === "user" ? "-scale-x-100" : ""}`}
+      />
+      {/* viewfinder: a bright frame, the rest dimmed by a huge spread shadow */}
+      <div className="pointer-events-none absolute inset-0 grid place-items-center">
+        <div className="h-[62%] w-[62%] rounded-3xl border-2 border-white/85 shadow-[0_0_0_2000px_rgba(0,0,0,.45)]" />
       </div>
-      {error && <p className="px-4 py-2.5 text-center text-[12.5px] font-semibold text-white">{error}</p>}
+
       <button
         type="button"
-        onClick={onClose}
-        className="w-full border-t border-white/15 py-3 text-[13px] font-bold text-white active:bg-white/10"
+        onClick={() => setFacing((f) => (f === "environment" ? "user" : "environment"))}
+        aria-label="Changer de caméra"
+        className="absolute right-3 top-3 grid h-11 w-11 place-items-center rounded-full bg-black/55 text-[18px] text-white backdrop-blur active:scale-95"
       >
-        Fermer
+        ⟳
       </button>
+
+      {error && (
+        <p className="absolute inset-x-0 bottom-0 bg-black/70 px-4 py-3 text-center text-[13px] font-bold text-white">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

@@ -1,22 +1,43 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ownerCafe } from "@/lib/auth/owner";
-import { getStats, MIN_SAMPLE, type Stats } from "@/lib/stats";
+import { getStats, MIN_SAMPLE, type Range, type Stats } from "@/lib/stats";
 
 export const metadata = { title: "Analyses" };
 
 /**
- * Analyses — one question, answered in plain French: are they coming back?
+ * Analyses — a dashboard, not a report.
  *
- * Rebuilt from a wall of figures into a short story: the verdict first (with
- * what to DO about it), then the three numbers that matter, then the month.
- * Everything else is secondary and sits at the bottom, deliberately quiet —
- * an owner glancing at this between two coffees should get the answer in two
- * seconds without reading a single table.
+ * The old page was a fixed pile of all-time totals: no way to ask "how was this
+ * week?", and no number had anything to compare itself against. A total with no
+ * period and no baseline can't be acted on — 248 TND is good or bad only next to
+ * the 210 before it.
+ *
+ * So the page has ONE control, a period, and every figure inside the top card
+ * obeys it and carries its change against the previous, equally long stretch.
+ * Retention sits below and is explicitly all-time, because judging whether
+ * people come back needs more history than a week.
+ *
+ * The period lives in the URL, so it survives a refresh and the back button.
  */
-export default async function Analytics() {
+
+const RANGES: { key: Range; label: string; slug: string }[] = [
+  { key: 7, label: "7 jours", slug: "7" },
+  { key: 30, label: "30 jours", slug: "30" },
+  { key: 0, label: "Tout", slug: "tout" },
+];
+
+export default async function Analytics({
+  searchParams,
+}: {
+  searchParams: Promise<{ p?: string }>;
+}) {
   const cafe = await ownerCafe();
   if (!cafe) redirect("/owner/nouveau");
-  const s = await getStats(cafe.id);
+
+  const { p } = await searchParams;
+  const picked = RANGES.find((r) => r.slug === p) ?? RANGES[1];
+  const s = await getStats(cafe.id, picked.key);
 
   return (
     <div className="space-y-3.5">
@@ -25,12 +46,28 @@ export default async function Analytics() {
         <p className="mt-0.5 text-[13px] text-white/55">Est-ce que vos clients reviennent ?</p>
       </div>
 
-      {s.customers === 0 ? <Empty /> : <Verdict s={s} />}
+      {/* the one control on the page */}
+      <nav className="grid grid-cols-3 gap-1 rounded-2xl bg-white/[0.07] p-1">
+        {RANGES.map((r) => (
+          <Link
+            key={r.slug}
+            href={`/owner/analyses?p=${r.slug}`}
+            scroll={false}
+            className={`rounded-xl py-2.5 text-center text-[13px] font-bold transition ${
+              r.slug === picked.slug ? "bg-[#6d4ae6] text-white shadow-lg" : "text-white/55"
+            }`}
+          >
+            {r.label}
+          </Link>
+        ))}
+      </nav>
 
-      {s.customers > 0 && (
+      {s.customers === 0 ? (
+        <Empty />
+      ) : (
         <>
-          <ThreeNumbers s={s} />
-          <Month s={s} />
+          <Period s={s} label={picked.label} />
+          <Retention s={s} />
           <Money s={s} />
           {s.topRewards.length > 0 && <Favourites s={s} />}
           <Owed s={s} />
@@ -40,7 +77,126 @@ export default async function Analytics() {
   );
 }
 
-/* ── the verdict ─────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════ */
+/*  THE PERIOD — everything here obeys the picker                          */
+/* ══════════════════════════════════════════════════════════════════════ */
+
+function Period({ s, label }: { s: Stats; label: string }) {
+  const max = Math.max(1, ...s.series.map((b) => b.revenue));
+  const w = s.window;
+
+  return (
+    <section className="a-card p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-white/45">
+            {s.range === 0 ? "Depuis le début" : label}
+          </p>
+          <p className="mt-1 font-display text-[46px] font-extrabold leading-[0.9] tabular-nums text-[#b9a3ff]">
+            {Math.round(w.revenue)}
+            <span className="ml-1.5 align-middle text-[15px] font-bold text-white/45">TND</span>
+          </p>
+        </div>
+        <Delta now={w.revenue} before={s.previous?.revenue} />
+      </div>
+
+      {/* the shape of the period */}
+      <div className="mt-4 flex h-[74px] items-end gap-[3px]">
+        {s.series.map((b, i) => (
+          <span
+            key={b.at}
+            title={`${new Date(b.at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })} · ${b.visits} visite(s) · ${b.revenue} TND`}
+            className={`flex-1 rounded-t-[3px] ${
+              b.revenue
+                ? i === s.series.length - 1
+                  ? "bg-[#8b6bff]"
+                  : "bg-[#8b6bff]/45"
+                : "bg-white/[0.09]"
+            }`}
+            style={{ height: `${Math.max(4, (b.revenue / max) * 100)}%` }}
+          />
+        ))}
+      </div>
+      <div className="mt-1.5 flex justify-between text-[10px] font-medium text-white/40">
+        <span>
+          {s.series.length > 0 &&
+            new Date(s.series[0].at).toLocaleDateString("fr-FR", {
+              day: "2-digit",
+              month: "short",
+            })}
+        </span>
+        {s.bucketDays > 1 && <span>{s.bucketDays} j par barre</span>}
+        <span>aujourd&apos;hui</span>
+      </div>
+
+      {/* the same period, three other ways */}
+      <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/12 pt-3.5">
+        <Cell label="visites" now={w.visits} before={s.previous?.visits} />
+        <Cell label="clients servis" now={w.activeCustomers} before={s.previous?.activeCustomers} />
+        <Cell label="nouveaux" now={w.newCustomers} before={s.previous?.newCustomers} />
+      </div>
+    </section>
+  );
+}
+
+function Cell({ label, now, before }: { label: string; now: number; before?: number }) {
+  return (
+    <div>
+      <p className="font-display text-[24px] font-extrabold leading-none tabular-nums text-white">
+        {now}
+      </p>
+      <p className="mt-0.5 text-[10.5px] font-semibold leading-tight text-white/50">{label}</p>
+      <Delta now={now} before={before} small />
+    </div>
+  );
+}
+
+/**
+ * The change against the previous stretch. Deliberately says nothing when there
+ * is nothing to compare against — a made-up "+100%" against a period the shop
+ * did not live through is worse than silence.
+ */
+function Delta({
+  now,
+  before,
+  small = false,
+}: {
+  now: number;
+  before?: number;
+  small?: boolean;
+}) {
+  if (before === undefined) return null;
+  if (before === 0) {
+    if (now === 0) return null;
+    return (
+      <span className={`mt-1 block font-bold text-[#7ff0b0] ${small ? "text-[10.5px]" : "text-[12px]"}`}>
+        nouveau
+      </span>
+    );
+  }
+  const pct = Math.round(((now - before) / before) * 100);
+  if (pct === 0)
+    return (
+      <span className={`mt-1 block font-bold text-white/40 ${small ? "text-[10.5px]" : "text-[12px]"}`}>
+        = stable
+      </span>
+    );
+  const up = pct > 0;
+  return (
+    <span
+      className={`mt-1 block font-bold ${up ? "text-[#7ff0b0]" : "text-[#ff9a9a]"} ${
+        small ? "text-[10.5px]" : "whitespace-nowrap rounded-full bg-white/[0.08] px-2.5 py-1 text-[12px]"
+      }`}
+    >
+      {up ? "▲" : "▼"} {up ? "+" : "−"}
+      {Math.abs(pct)}%
+    </span>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════ */
+/*  RETENTION — all-time on purpose                                       */
+/* ══════════════════════════════════════════════════════════════════════ */
 
 type Tone = "good" | "ok" | "bad" | "early";
 
@@ -78,7 +234,7 @@ function verdict(s: Stats): { tone: Tone; headline: string; advice: string } {
   };
 }
 
-function Verdict({ s }: { s: Stats }) {
+function Retention({ s }: { s: Stats }) {
   const { tone, headline, advice } = verdict(s);
   const num = { good: "text-[#7ff0b0]", ok: "text-[#ffd27a]", bad: "text-[#ff9a9a]", early: "text-white/55" }[tone];
   const chip = {
@@ -88,35 +244,6 @@ function Verdict({ s }: { s: Stats }) {
     early: "bg-white/[0.08] text-white/55",
   }[tone];
 
-  return (
-    <section className="a-card p-5">
-      {s.confident ? (
-        <>
-          <p className={`font-display text-[62px] font-extrabold leading-[0.9] tabular-nums ${num}`}>
-            {s.repeatRate}%
-          </p>
-          <p className="mt-1.5 text-[14px] font-bold text-white">
-            de vos clients sont revenus au moins une fois
-          </p>
-          <p className="mt-0.5 text-[12px] text-white/55">
-            {s.repeatCustomers} sur {s.customers} clients
-          </p>
-        </>
-      ) : (
-        <p className="font-display text-[26px] font-extrabold text-white">{headline}</p>
-      )}
-
-      <div className={`mt-4 rounded-2xl px-4 py-3 ${chip}`}>
-        {s.confident && <p className="text-[13.5px] font-extrabold">{headline}</p>}
-        <p className="text-[13px] font-medium leading-relaxed">{advice}</p>
-      </div>
-    </section>
-  );
-}
-
-/* ── the three numbers that actually matter ──────────────────────────── */
-
-function ThreeNumbers({ s }: { s: Stats }) {
   const gap =
     s.medianDaysBetween === null
       ? "—"
@@ -125,92 +252,73 @@ function ThreeNumbers({ s }: { s: Stats }) {
         : `${Math.round(s.medianDaysBetween)} j`;
 
   return (
-    <div className="grid grid-cols-3 gap-2.5">
-      <Stat value={String(s.customers)} label="clients" />
-      <Stat value={String(s.visitsPerCustomer)} label="visites / client" />
-      <Stat value={gap} label="entre 2 visites" />
-    </div>
-  );
-}
-
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="a-card px-2 py-3.5 text-center">
-      <p className="font-display text-[24px] font-extrabold leading-none tabular-nums text-white">
-        {value}
+    <section className="a-card p-5">
+      {/* labelled all-time so it is never read as "this week" */}
+      <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-white/45">
+        Fidélité · depuis le début
       </p>
-      <p className="mt-1 text-[10.5px] font-semibold leading-tight text-white/55">{label}</p>
-    </div>
-  );
-}
 
-/* ── the month ───────────────────────────────────────────────────────── */
+      {s.confident ? (
+        <div className="mt-1 flex items-end gap-3">
+          <p className={`font-display text-[52px] font-extrabold leading-[0.9] tabular-nums ${num}`}>
+            {s.repeatRate}%
+          </p>
+          <p className="pb-1.5 text-[12.5px] font-semibold leading-snug text-white/60">
+            reviennent
+            <br />
+            <span className="text-white/45">
+              {s.repeatCustomers} sur {s.customers}
+            </span>
+          </p>
+        </div>
+      ) : (
+        <p className="mt-1 font-display text-[24px] font-extrabold text-white">{headline}</p>
+      )}
 
-function Month({ s }: { s: Stats }) {
-  const max = Math.max(1, ...s.daily.map((d) => d.revenue));
-  const visits = s.daily.reduce((n, d) => n + d.visits, 0);
-
-  return (
-    <section className="a-card p-4">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-[13.5px] font-extrabold text-white">30 derniers jours</h2>
-        <span className="text-[11.5px] font-semibold text-white/55">{visits} visites</span>
+      <div className={`mt-3.5 rounded-2xl px-4 py-3 ${chip}`}>
+        {s.confident && <p className="text-[13.5px] font-extrabold">{headline}</p>}
+        <p className="text-[13px] font-medium leading-relaxed">{advice}</p>
       </div>
 
-      <div className="mt-3 flex h-[70px] items-end gap-[3px]">
-        {s.daily.map((d, i) => (
-          <span
-            key={d.day}
-            title={`${d.day} · ${d.visits} visite(s)`}
-            className={`flex-1 rounded-t-[3px] ${
-              d.revenue
-                ? i === s.daily.length - 1
-                  ? "bg-[#8b6bff]"
-                  : "bg-[#8b6bff]/45"
-                : "bg-white/10"
-            }`}
-            style={{ height: `${Math.max(4, (d.revenue / max) * 100)}%` }}
-          />
-        ))}
-      </div>
-      <div className="mt-2 flex justify-between text-[10px] font-medium text-white/40">
-        <span>il y a 30 j</span>
-        <span>aujourd&apos;hui</span>
+      <div className="mt-3.5 space-y-1.5 border-t border-white/12 pt-3">
+        <Line label="Clients au total" value={String(s.customers)} />
+        <Line label="Visites par client" value={String(s.visitsPerCustomer)} />
+        <Line label="Entre deux visites" value={gap} />
       </div>
     </section>
   );
 }
 
-/* ── money ───────────────────────────────────────────────────────────── */
+/* ── money, all-time ─────────────────────────────────────────────────── */
 
 function Money({ s }: { s: Stats }) {
   return (
     <section className="a-card p-5">
-      <h2 className="text-[13.5px] font-extrabold text-white">L&apos;argent</h2>
-      <p className="mt-0.5 text-[11.5px] leading-snug text-white/55">
-        Uniquement ce qui est passé par la caisse Pointili.
+      <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-white/45">
+        L&apos;argent · depuis le début
       </p>
-
-      <div className="mt-3.5 flex items-end justify-between gap-3">
+      <div className="mt-2 flex items-end justify-between gap-3">
         <span>
-          <span className="block font-display text-[30px] font-extrabold leading-none tabular-nums text-[#b9a3ff]">
+          <span className="block font-display text-[28px] font-extrabold leading-none tabular-nums text-white">
             {Math.round(s.revenueTnd)}
           </span>
-          <span className="text-[11px] font-semibold text-white/55">TND encaissés</span>
+          <span className="text-[11px] font-semibold text-white/50">TND encaissés</span>
         </span>
         <span className="text-right">
           <span className="block font-display text-[22px] font-extrabold leading-none tabular-nums text-[#7ff0b0]">
             {Math.round(s.netTnd)}
           </span>
-          <span className="text-[11px] font-semibold text-white/55">net</span>
+          <span className="text-[11px] font-semibold text-white/50">net</span>
         </span>
       </div>
 
       <div className="mt-3.5 space-y-1.5 border-t border-white/12 pt-3">
         <Line label="Ticket moyen" value={`${s.avgTicketTnd.toFixed(2)} TND`} />
-        <Line label="Ces 30 jours" value={`${s.revenue30d.toFixed(0)} TND`} />
         <Line label="Coût des récompenses" value={`− ${s.rewardCostTnd.toFixed(0)} TND`} />
       </div>
+      <p className="mt-2.5 text-[11px] leading-snug text-white/40">
+        Uniquement ce qui est passé par la caisse Pointili.
+      </p>
     </section>
   );
 }
@@ -230,7 +338,9 @@ function Favourites({ s }: { s: Stats }) {
   const top = s.topRewards[0];
   return (
     <section className="a-card p-5">
-      <h2 className="text-[13.5px] font-extrabold text-white">Ce qu&apos;ils préfèrent</h2>
+      <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-white/45">
+        Ce qu&apos;ils préfèrent
+      </p>
       <p className="mt-2 text-[15px] font-extrabold text-[#b9a3ff]">{top.label}</p>
       <p className="text-[11.5px] text-white/55">
         servi {top.claimed} fois
@@ -243,7 +353,9 @@ function Favourites({ s }: { s: Stats }) {
 function Owed({ s }: { s: Stats }) {
   return (
     <section className="a-card p-5">
-      <h2 className="text-[13.5px] font-extrabold text-white">Ce que vous devez encore</h2>
+      <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-white/45">
+        Ce que vous devez encore
+      </p>
       <div className="mt-2.5 space-y-1.5">
         <Line
           label="Points en circulation"
@@ -259,12 +371,12 @@ function Owed({ s }: { s: Stats }) {
 
 function Empty() {
   return (
-    <section className="a-card px-5 py-12 text-center">
-      <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-white/[0.1] text-[26px]">📊</span>
-      <p className="mt-4 text-[16px] font-extrabold text-white">Pas encore de données</p>
-      <p className="mx-auto mt-1.5 max-w-[32ch] text-[13px] leading-relaxed text-white/55">
-        Créditez votre premier client depuis la <b className="text-white">Caisse</b>. Dès
-        qu&apos;un client revient, vous saurez ici si la fidélité fonctionne.
+    <section className="a-card p-6 text-center">
+      <p className="text-[36px]">✦</p>
+      <p className="mt-2 text-[16px] font-extrabold text-white">Pas encore de client</p>
+      <p className="mx-auto mt-1.5 max-w-[30ch] text-[13px] leading-relaxed text-white/55">
+        Posez votre QR sur le comptoir. Dès la première carte, vous verrez ici
+        s&apos;ils reviennent.
       </p>
     </section>
   );

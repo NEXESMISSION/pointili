@@ -12,7 +12,7 @@ import {
   getAccount,
   getActivity,
   getBalance,
-  getCardCode,
+  isCardholder,
   getStamps,
   ownerAdjustPoints,
   ownerCards,
@@ -23,13 +23,22 @@ import {
 } from "@/lib/db";
 
 /**
- * A customer is identified at the counter by their short per-shop CODE
+ * A customer is identified at the counter by their 4-char ACCOUNT code
  * (preferred — scanned or typed, so the phone never shows) OR, as a fallback,
  * their phone number. Letters ⇒ it's a code; all-digits ⇒ a phone (with a code
  * fallback). The phone we resolve stays server-side — the result shows a NAME
  * (or a masked number), never the raw phone.
+ *
+ * The code is the same at every shop, so this resolves someone who has never
+ * been here before. That is the point: the cashier credits them, the points
+ * wait, and nobody is turned away for holding "the wrong shop's" code.
+ *
+ * A purely numeric code still lands here rather than being read as a phone:
+ * normalisePhone("2345") gives "+2162345", too short to be valid, so it falls
+ * through to the code lookup. That only holds while the code is exactly four
+ * characters.
  */
-type Resolved = { phone: string; name: string | null };
+type Resolved = { phone: string; name: string | null; code: string | null };
 
 async function resolveCustomer(cafeId: string, raw: string): Promise<Resolved | { error: string }> {
   const cleaned = String(raw ?? "").trim().replace(/[\s-]/g, "");
@@ -37,15 +46,21 @@ async function resolveCustomer(cafeId: string, raw: string): Promise<Resolved | 
 
   if (/[A-Za-z]/.test(cleaned)) {
     const card = await cardByCode(cafeId, cleaned);
-    return card ? { phone: card.phone, name: card.name } : { error: "Client introuvable — vérifiez le code." };
+    return card
+      ? { phone: card.phone, name: card.name, code: card.code }
+      : { error: "Client introuvable — vérifiez le code." };
   }
   const phone = normalisePhone(cleaned);
   if (isValidPhone(phone)) {
+    // The walk-in path: no account is not an error, it is someone who has not
+    // signed up yet. Never touches a code table.
     const acc = await getAccount(phone);
-    return { phone, name: acc?.name ?? null };
+    return { phone, name: acc?.name ?? null, code: acc?.code ?? null };
   }
   const card = await cardByCode(cafeId, cleaned);
-  return card ? { phone: card.phone, name: card.name } : { error: "Numéro ou code invalide." };
+  return card
+    ? { phone: card.phone, name: card.name, code: card.code }
+    : { error: "Numéro ou code invalide." };
 }
 
 /** "+216 24 ••• 123" — enough to confirm the right person, never the full number. */
@@ -134,11 +149,13 @@ export type StampState = {
 export type ResolveState = {
   error?: string;
   customer?: {
-    /** What every later action is addressed by: the short code once they have a
-     *  card, otherwise the phone the cashier typed. resolveCustomer takes both. */
+    /** What every later action is addressed by: the account code once they have
+     *  one, otherwise the phone the cashier typed. resolveCustomer takes both. */
     ref: string;
-    /** null until they sign up — the till still works. */
+    /** null until they create an account — the till still works. */
     code: string | null;
+    /** Holds a card at THIS shop. No longer the same as "has an account": those
+     *  diverged the moment the code went account-wide. */
     enrolled: boolean;
     name: string | null;
     balance: number;
@@ -157,8 +174,8 @@ export async function resolveCustomerAction(idOrPhone: string): Promise<ResolveS
   const who = await resolveCustomer(cafe.id, idOrPhone);
   if ("error" in who) return { error: who.error };
 
-  const [code, balance, stamps] = await Promise.all([
-    getCardCode(cafe.id, who.phone),
+  const [enrolled, balance, stamps] = await Promise.all([
+    isCardholder(cafe.id, who.phone),
     getBalance(cafe.id, who.phone),
     getStamps(cafe.id, who.phone),
   ]);
@@ -173,9 +190,9 @@ export async function resolveCustomerAction(idOrPhone: string): Promise<ResolveS
   */
   return {
     customer: {
-      ref: code || who.phone,
-      code: code || null,
-      enrolled: Boolean(code),
+      ref: who.code || who.phone,
+      code: who.code,
+      enrolled,
       name: who.name,
       balance,
       stamps: stamps.count,

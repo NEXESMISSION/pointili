@@ -57,6 +57,20 @@ export default async function Profil({
             {diner.name ?? "Membre"}
           </span>
           <span className="block text-[13px] font-medium text-white/55">{diner.phone}</span>
+          {/*
+            The code sits with the NAME and the NUMBER because it is an account
+            fact, the same four characters at every shop. It used to live under
+            "Cette carte", which now reads as a bug: the identical code would
+            appear beneath every shop's panel.
+          */}
+          <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-white/12 px-2.5 py-1">
+            <span className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-white/55">
+              Mon code
+            </span>
+            <span className="font-mono text-[13px] font-extrabold tracking-[0.14em] text-white">
+              {diner.code}
+            </span>
+          </span>
         </span>
       </section>
 
@@ -99,9 +113,6 @@ export default async function Profil({
           <span className="block text-[11.5px] font-medium text-white/60">
             {type.label} · {diner.balance} pts
           </span>
-        </span>
-        <span className="shrink-0 font-mono text-[13px] font-bold tracking-[0.1em] text-white/90">
-          {diner.code}
         </span>
       </div>
 

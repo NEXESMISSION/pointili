@@ -83,10 +83,20 @@ check("admin RPC refuses a non-super-admin", !!direct.error, direct.error?.code 
   pointili_is_super_admin(), which reads auth.uid() — null on a direct psql
   connection, so SQL calls are (correctly) refused. The UI is the real path.
 */
+/*
+  The console is a sortable TABLE now: click the café's row, and act inside the
+  drawer that opens. Returns the drawer so every form is scoped to it.
+*/
+const openCafe = async (name = "Café Test") => {
+  await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+  await sa.locator(`tr:has-text("${name}")`).first().click();
+  const drawer = sa.locator('[role="dialog"]');
+  await drawer.waitFor({ timeout: 15000 });
+  return drawer;
+};
+
 const before = (await sql.query(`select plan, plan_expires_at from businesses where slug='${SLUG}'`)).rows[0];
-await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
-const demoRow = sa.locator('li:has-text("Café Test")');
-await demoRow.locator("button").first().click(); // expand
+const demoRow = await openCafe();
 const planForm = demoRow.locator('form:has(select[name="plan"])');
 await planForm.locator('select[name="plan"]').selectOption("pro");
 await planForm.locator('input[name="amount"]').fill("3");
@@ -128,9 +138,7 @@ check("expired café cannot mint points", credit.ok === false, credit.reason);
 // ── 5b. hours and days, not just months ─────────────────────────────
 {
   await sql.query(`update businesses set plan_expires_at = now() where slug='${SLUG}'`);
-  await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
-  const r = sa.locator("li").filter({ hasText: "Café Test" }).first();
-  await r.locator("button").first().click();
+  const r = await openCafe();
   const f = r.locator('form:has(select[name="unit"])');
   await f.locator('select[name="plan"]').selectOption("pro");
   await f.locator('input[name="amount"]').fill("12");
@@ -146,9 +154,7 @@ check("expired café cannot mint points", credit.ok === false, credit.reason);
 
   // and days
   await sql.query(`update businesses set plan_expires_at = now() where slug='${SLUG}'`);
-  await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
-  const r2 = sa.locator("li").filter({ hasText: "Café Test" }).first();
-  await r2.locator("button").first().click();
+  const r2 = await openCafe();
   const f2 = r2.locator('form:has(select[name="unit"])');
   await f2.locator('input[name="amount"]').fill("5");
   await f2.locator('select[name="unit"]').selectOption("days");
@@ -167,9 +173,7 @@ await diner.goto(`${BASE}/${SLUG}`, { waitUntil: "networkidle" });
 check("renewing brings the café back", !/Momentanément fermé/i.test(await diner.locator("body").innerText()));
 
 // ── 7. suspension through the UI cuts access immediately ────────────
-await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
-const row2 = sa.locator('li:has-text("Café Test")');
-await row2.locator("button").first().click();
+const row2 = await openCafe();
 sa.once("dialog", (d) => d.accept()); // "les clients perdront l'accès"
 const susForm = row2.locator('form:has(input[name="reason"])');
 await susForm.locator('input[name="reason"]').fill("test suspension");
@@ -183,18 +187,14 @@ await diner.goto(`${BASE}/${SLUG}`, { waitUntil: "networkidle" });
 check("suspended café blocks diners", /Momentanément fermé/i.test(await diner.locator("body").innerText()));
 
 // unsuspend via the panel too
-await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
-const row3 = sa.locator('li:has-text("Café Test")');
-await row3.locator("button").first().click();
+const row3 = await openCafe();
 await row3.locator('form:has(input[name="suspend"][value="0"]) button[type="submit"]').click();
 await row3.locator('[role="status"], [role="alert"]').first().waitFor({ timeout: 20000 }).catch(() => {});
 const back = (await sql.query(`select suspended_at from businesses where slug='${SLUG}'`)).rows[0];
 check("super-admin lifts the suspension", back.suspended_at === null);
 
 // ── 8. notices reach the owner ──────────────────────────────────────
-await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
-const row4 = sa.locator('li:has-text("Café Test")');
-await row4.locator("button").first().click();
+const row4 = await openCafe();
 const noticeForm = row4.locator('form:has(textarea[name="message"])');
 await noticeForm.locator('textarea[name="message"]').fill("Test notice for the owner");
 await noticeForm.locator('button[type="submit"]').click();

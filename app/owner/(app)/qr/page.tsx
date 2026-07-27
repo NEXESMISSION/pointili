@@ -3,16 +3,15 @@ import QRCode from "qrcode";
 import { ownerCafe } from "@/lib/auth/owner";
 import { businessType } from "@/lib/businessTypes";
 import { getLoyaltyProgram } from "@/lib/data";
-import { QrActions } from "./QrActions";
+import { PrintKit } from "./PrintKit";
 
 export const metadata = { title: "Mon QR" };
 
 /**
  * The QR — the front door of the whole product.
  *
- * Rebuilt as the THING YOU PUT ON THE TABLE, not a bare code with a caption:
- * a real branded table tent (logo, name, the promise, the QR, the link) that
- * prints clean and downloads as a big PNG for a poster or a story. The promise
+ * This page only computes the ingredients; PrintKit turns them into the four
+ * objects a shop actually needs (table tent, A5, sticker, story). The promise
  * line is generated from the shop's own settings, so what a customer reads on
  * the table always matches what they'll actually get.
  */
@@ -51,45 +50,14 @@ export default async function QrPage() {
         </p>
       </div>
 
-      {/* ── the table tent, exactly as it prints ───────────────────── */}
-      <section className="a-card overflow-hidden print:border-0 print:shadow-none">
-        <div className="bg-[#140d24] px-5 py-7 text-center text-white print:bg-white print:text-charcoal">
-          <div className="flex items-center justify-center gap-2.5">
-            {cafe.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-              <img src={cafe.logoUrl} alt="" className="h-9 w-9 rounded-xl object-cover" />
-            ) : (
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/12 text-[18px] print:bg-lilac-2">
-                {type.emoji}
-              </span>
-            )}
-            <span className="text-[19px] font-extrabold">{cafe.name}</span>
-          </div>
-
-          <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.14em] text-white/55 print:text-slate">
-            Carte de fidélité
-          </p>
-          <p className="mx-auto mt-1 max-w-[22ch] text-[21px] font-extrabold leading-tight">
-            {promise}
-          </p>
-
-          {/* the code always sits on white so it always scans */}
-          <div className="mx-auto mt-5 w-[210px] rounded-2xl bg-white p-4">
-            <div className="[&>svg]:h-auto [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
-          </div>
-
-          <p className="mt-4 text-[14px] font-bold">Scannez pour commencer</p>
-          <p className="mt-0.5 text-[12px] text-white/60 print:text-slate">
-            Sans application · en 10 secondes
-          </p>
-
-          <p className="mt-5 break-all font-mono text-[10px] tracking-[0.04em] text-white/40 print:text-slate">
-            {url}
-          </p>
-        </div>
-      </section>
-
-      <QrActions url={url} svg={svg} name={cafe.name} />
+      <PrintKit
+        url={url}
+        svg={svg}
+        name={cafe.name}
+        logoUrl={cafe.logoUrl}
+        emoji={type.emoji}
+        promise={promise}
+      />
 
       {/* ── where to put it ────────────────────────────────────────── */}
       <section className="a-card p-5 print:hidden">

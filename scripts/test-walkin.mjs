@@ -12,7 +12,7 @@ const NORM = `+216${LOCAL}`;
 const ok = [];
 const t = (n, p, d = "") => { ok.push(p); console.log(`${p ? "PASS" : "FAIL"}  ${n}${d ? ` — ${d}` : ""}`); };
 
-const { id } = await ensureTestCafe({ ownerEmail: env.SUPER_ADMIN_EMAIL });
+await ensureTestCafe({ ownerEmail: env.SUPER_ADMIN_EMAIL });
 const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
 const b = await chromium.launch({ executablePath: CHROME });
@@ -24,30 +24,38 @@ await s.click('button[type="submit"]');
 await s.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 20000 }).catch(() => {});
 
 /* 1 · credit a phone that has NEVER signed up */
+// The terminal rests on the keypad, which is where a phone number gets typed.
+const DESK = '[role="dialog"]';
 await s.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+await s.locator('input[name="customer"]').waitFor({ timeout: 15000 });
 await s.fill('input[name="customer"]', LOCAL);
 await s.locator('button:has-text("Chercher")').click();
-const panel = await s.locator('input[name="amount"]').waitFor({ timeout: 20000 }).then(() => true).catch(() => false);
+const panel = await s.locator(DESK).waitFor({ timeout: 20000 }).then(() => true).catch(() => false);
 t("the till opens a customer with no account", panel);
 
-const deskTxt = await s.locator('section:has(h2:text-is("Le client"))').innerText();
-t("it says they are not signed up yet", /pas encore inscrit/i.test(deskTxt),
-  deskTxt.split("\n").find((l) => /inscrit/i.test(l)) ?? "");
+const deskTxt = await s.locator(DESK).innerText();
+// "enrolled" now means "holds a card HERE", so the wording is about this shop,
+// not about the platform — they may already be a Pointili member elsewhere.
+t("it says this is their first visit here", /première visite ici/i.test(deskTxt),
+  deskTxt.split("\n").find((l) => /visite/i.test(l)) ?? "");
 
 await s.fill('input[name="amount"]', "30");
 await s.locator('button:has-text("Créditer")').click();
 await s.locator('[role="status"]').waitFor({ timeout: 20000 }).catch(() => {});
-const credTxt = await s.locator('section:has(h2:text-is("Le client"))').innerText();
+const credTxt = await s.locator(DESK).innerText();
 t("credit works before signup", /\+30/.test(credTxt), credTxt.split("\n").find((l) => /\+30/.test(l)) ?? "");
 
-const { data: acc } = await admin.from("accounts").select("phone").eq("phone", NORM).maybeSingle();
+const { data: acc } = await admin.from("accounts").select("phone, code").eq("phone", NORM).maybeSingle();
 t("no ghost account was invented", !acc);
+// No account ⇒ no code. That is now the load-bearing invariant: a mistyped digit
+// must never mint a platform identity.
+t("a walk-in is reachable by no code at all", !acc?.code);
 
 /* 2 · the walk-in is visible in the client list */
 await s.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
 await s.locator('input[name="search"]').fill(LOCAL);
 // The row is searchable BY phone but never displays it — it shows the balance
-// and a "—" where the code will be once they sign up.
+// and a "—" where the code will be once they create an account.
 // (:text-is() is a Playwright selector — it is NOT valid inside querySelector,
 //  so poll through a locator instead of page.waitForFunction.)
 const LIST = 'section:has(h2:text-is("Mes clients"))';
@@ -75,8 +83,8 @@ t("the points are waiting on their new card", /\b40\b/.test(cardTxt),
   cardTxt.split("\n").slice(0, 8).join(" · "));
 
 const { data: card } = await admin
-  .from("diner_cafes").select("code").eq("business_id", id).eq("phone", NORM).maybeSingle();
-t("signing up gives them a card code", !!card?.code, card?.code ?? "none");
+  .from("accounts").select("code").eq("phone", NORM).maybeSingle();
+t("signing up mints their account code", card?.code?.length === 4, card?.code ?? "none");
 
 await b.close();
 for (const x of ["loyalty_redemptions", "stamp_rewards", "loyalty_stamps"]) await admin.from(x).delete().eq("phone", NORM);

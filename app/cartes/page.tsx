@@ -21,14 +21,21 @@ export default async function Cartes({
   // Signing in is per-shop (scan a QR), so there's nothing to show signed-out.
   if (!phone) redirect("/");
 
-  const [{ from }, cards] = await Promise.all([searchParams, dinerWallet(phone)]);
+  const { getAccount } = await import("@/lib/db");
+  const [{ from }, cards, account] = await Promise.all([
+    searchParams,
+    dinerWallet(phone),
+    getAccount(phone),
+  ]);
 
   return (
     <div
       className="app-shell min-h-dvh px-5 pb-10 pt-6 text-white"
       style={{ ["--cafe" as string]: BRAND_COLOR, ...DINER_BG }}
     >
-      <WalletView cards={cards} currentSlug={from ?? null} />
+      {/* The wallet is the only shop-neutral diner screen, which makes it the
+          right home for a code that is the same at every shop. */}
+      <WalletView cards={cards} currentSlug={from ?? null} code={account?.code ?? null} />
     </div>
   );
 }

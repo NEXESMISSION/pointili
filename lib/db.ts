@@ -19,38 +19,59 @@ import type { ActiveCode } from "./types";
 /* Accounts (diners — phone + PIN, not Supabase Auth)                          */
 /* -------------------------------------------------------------------------- */
 
-export type AccountRow = { phone: string; pin_hash: string; name: string | null; public_id: string };
+export type AccountRow = {
+  phone: string;
+  pin_hash: string;
+  name: string | null;
+  public_id: string;
+  /** The 4-char code the diner shows at ANY counter. One per person. */
+  code: string;
+};
 
 export async function getAccount(phone: string): Promise<AccountRow | null> {
   const db = createAdminClient();
   const { data } = await db
     .from("accounts")
-    .select("phone, pin_hash, name, public_id")
+    .select("phone, pin_hash, name, public_id, code")
     .eq("phone", phone)
     .maybeSingle();
   return data ?? null;
 }
 
-/** Resolve a scanned/typed short code (within one shop) → the customer. */
+/**
+ * Resolve a scanned/typed short code → the customer.
+ *
+ * The code is the ACCOUNT's, so this resolves platform-wide — including someone
+ * who has never set foot in this shop. businessId is still passed because the
+ * RPC also falls back to the legacy per-shop code, so anything already printed
+ * keeps working at the shop it came from.
+ */
 export async function cardByCode(
   businessId: string,
   code: string,
-): Promise<{ phone: string; name: string | null } | null> {
+): Promise<{ phone: string; name: string | null; code: string | null } | null> {
   const db = createAdminClient();
   const { data } = await db.rpc("card_by_code", { p_business_id: businessId, p_code: code });
-  return (data as { phone: string; name: string | null } | null) ?? null;
+  return (data as { phone: string; name: string | null; code: string | null } | null) ?? null;
 }
 
-/** This diner's short per-shop code (for the "show at counter" card). */
-export async function getCardCode(businessId: string, phone: string): Promise<string> {
+/**
+ * Does this phone hold a card at THIS shop?
+ *
+ * Since the code went account-wide it can no longer stand in for membership —
+ * everyone has one. This is the per-shop relationship row, and it is what
+ * "enrolled" means. A ledger row alone is NOT membership: a cashier crediting a
+ * phone must not silently enrol them.
+ */
+export async function isCardholder(businessId: string, phone: string): Promise<boolean> {
   const db = createAdminClient();
   const { data } = await db
     .from("diner_cafes")
-    .select("code")
+    .select("phone")
     .eq("business_id", businessId)
     .eq("phone", phone)
     .maybeSingle();
-  return data?.code ?? "";
+  return Boolean(data);
 }
 
 /**
@@ -67,8 +88,14 @@ export async function createAccount(
   name: string | null,
 ): Promise<{ ok: boolean }> {
   const db = createAdminClient();
-  const { error } = await db.from("accounts").insert({ phone, pin_hash: pinHash, name });
-  return { ok: !error };
+  // Through the RPC, never a raw insert: minting the 4-char code needs a retry
+  // loop on collision, and a column DEFAULT cannot retry.
+  const { data } = await db.rpc("create_account", {
+    p_phone: phone,
+    p_pin_hash: pinHash,
+    p_name: name,
+  });
+  return { ok: data === true };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -301,7 +328,8 @@ export async function touchCardOpened(businessId: string, phone: string): Promis
  */
 export async function enrollDiner(cafeId: string, phone: string): Promise<string | null> {
   const db = createAdminClient();
-  // The RPC is idempotent and also assigns the short per-shop code on first join.
+  // The RPC is idempotent. It still returns the legacy per-shop code; the code
+  // shown to the diner now comes from their account.
   // Returning it lets the caller PROVE enrollment worked — /[slug] bounces
   // non-members back to /rejoindre, so a silent failure loops forever.
   const { data, error } = await db.rpc("enroll_diner", {
@@ -414,7 +442,7 @@ export async function createCafe(
 
 export type OwnerCard = {
   phone: string;
-  /** Short per-shop code — null for a walk-in who has not signed up yet. */
+  /** The diner's 4-char account code — null for a walk-in with no account. */
   code: string | null;
   /** false = credited at the till but never joined; their points are waiting. */
   enrolled: boolean;

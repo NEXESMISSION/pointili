@@ -28,9 +28,12 @@ const SEARCH_FROM = 6;
 export function WalletView({
   cards,
   currentSlug,
+  code,
 }: {
   cards: WalletCafe[];
   currentSlug: string | null;
+  /** The diner's 4-char account code — the same one at every shop. */
+  code?: string | null;
 }) {
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -83,12 +86,22 @@ export function WalletView({
             <path d="m15 18-6-6 6-6" />
           </svg>
         </button>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="text-[22px] font-extrabold leading-tight">Mes cartes</h1>
           <p className="text-[12.5px] text-white/50">
             {cards.length} boutique{cards.length === 1 ? "" : "s"}
           </p>
         </div>
+        {code && (
+          <span className="shrink-0 rounded-2xl bg-white/12 px-3 py-1.5 text-center">
+            <span className="block text-[9px] font-bold uppercase tracking-[0.08em] text-white/55">
+              Mon code
+            </span>
+            <span className="block font-mono text-[15px] font-extrabold tracking-[0.14em]">
+              {code}
+            </span>
+          </span>
+        )}
       </header>
 
       {cards.length >= SEARCH_FROM && (

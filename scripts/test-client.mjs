@@ -59,9 +59,10 @@ await d.click('button[type="submit"]');
 await d.waitForURL(`**/${TEST_SLUG}`, { timeout: 15000 }).catch(() => {});
 check("join → lands on the card", d.url().endsWith(`/${TEST_SLUG}`), d.url().replace(BASE, ""));
 
+// The code belongs to the ACCOUNT now, not to the card.
 const { data: cardA } = await admin
-  .from("diner_cafes").select("code").eq("business_id", cafeA).eq("phone", NORM).maybeSingle();
-check("enrollment issues a 4-char shop code", cardA?.code?.length === 4, cardA?.code ?? "none");
+  .from("accounts").select("code").eq("phone", NORM).maybeSingle();
+check("signup issues a 4-char account code", cardA?.code?.length === 4, cardA?.code ?? "none");
 
 /* ── 2. Every per-shop page renders with that real code ───────────── */
 await d.goto(`${BASE}/${TEST_SLUG}/scanner`, { waitUntil: "networkidle" });
@@ -135,9 +136,14 @@ for (const [path, needle] of [["/codes", "Mes codes"], ["/historique", "Historiq
 /* ── 4. A second shop: scanning its QR adds a card, with its own code ── */
 await d.goto(`${BASE}/${OTHER}`, { waitUntil: "networkidle" });
 check("opening a new shop enrolls and renders its card", d.url().endsWith(`/${OTHER}`), d.url().replace(BASE, ""));
-const { data: cardB } = await admin
-  .from("diner_cafes").select("code").eq("business_id", cafeB.id).eq("phone", NORM).maybeSingle();
-check("the second shop issues its OWN code", !!cardB?.code && cardB.code !== cardA.code, `${cardA.code} vs ${cardB?.code}`);
+/*
+  The whole point of moving the code to the account: ONE code, everywhere. Assert
+  it through the UI of the second shop rather than by re-reading the row, so this
+  catches a page that still renders a per-shop code.
+*/
+await d.goto(`${BASE}/${OTHER}/scanner`, { waitUntil: "networkidle" });
+const scanB = await d.locator("main").innerText();
+check("the SAME code works at every shop", scanB.includes(cardA.code), cardA.code);
 
 await d.goto(`${BASE}/cartes`, { waitUntil: "networkidle" });
 const walletTxt = await d.locator("body").innerText();

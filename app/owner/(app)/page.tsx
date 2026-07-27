@@ -8,10 +8,10 @@ export const metadata = { title: "Caisse" };
 /**
  * The owner's HOME is the Caisse — the one thing they do every shift.
  *
- * Everything the till needs is on this single screen, nothing behind an
- * accordion: find the customer (scan / type / pick from the list), then credit,
- * stamp, correct or read their history in the same panel. Validating a reward
- * code sits just below. The old separate "Clients" page folded in here.
+ * It behaves like a terminal, not a page: two modes (a client, or a code), the
+ * camera live by default, a keypad when it isn't, and the identified customer
+ * taking over the whole screen so it stays readable at arm's length. The old
+ * separate "Clients" page folded in here as the recents strip.
  */
 export default async function OwnerHome() {
   const cafe = await ownerCafe();

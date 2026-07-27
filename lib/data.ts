@@ -259,20 +259,20 @@ export async function getDiner(cafeId: string): Promise<Diner | null> {
   const phone = await currentDiner();
   if (!phone) return null;
 
-  const { getAccount, getBalance, getCodes, getStamps, getCardCode } = await import("./db");
+  const { getAccount, getBalance, getCodes, getStamps } = await import("./db");
   const account = await getAccount(phone);
   if (!account) return null;
 
-  const [balance, codes, stamps, code] = await Promise.all([
+  const [balance, codes, stamps] = await Promise.all([
     getBalance(cafeId, phone),
     getCodes(cafeId, phone),
     getStamps(cafeId, phone),
-    getCardCode(cafeId, phone),
   ]);
 
   return {
     phone,
-    code,
+    // One code, the same at every shop — it belongs to the person, not the card.
+    code: account.code,
     name: account.name,
     balance,
     stamps: stamps.count,
@@ -290,24 +290,29 @@ export async function getDiner(cafeId: string): Promise<Diner | null> {
  * Being signed in is not the same as being a member HERE: the account is global
  * (one phone, many cafés) but a card is per café. Every diner page must use this
  * — checking only `getDiner()` let someone with a card at café A open café B's
- * pages, where their per-shop code is empty (a blank QR on "Ma carte") and the
- * balance is a meaningless zero. Callers redirect to /[slug]/rejoindre, which
- * enrolls them properly.
+ * pages, where the balance is a meaningless zero. Callers redirect to
+ * /[slug]/rejoindre, which enrolls them properly.
  */
 export async function getMember(cafeId: string): Promise<Diner | null> {
-  const diner = await getDiner(cafeId);
-  if (!diner) return null;
+  const { currentDiner } = await import("./auth/diner");
+  const phone = await currentDiner();
+  if (!phone) return null;
 
   /*
-    Gate on the per-shop CODE, not on wallet membership.
+    Gate on the relationship ROW, not on the code.
 
-    The code is created by enroll_diner, so its presence is the real proof of a
-    card here — and it's the thing the pages need. Someone can be "in the wallet"
-    on ledger rows alone (a cashier credited their phone before they ever signed
-    up), and with an empty code "Ma carte" fed "" to the QR encoder, which throws.
-    No code → /rejoindre, which enrolls them properly.
+    This used to test `diner.code`, which only worked because the code was
+    per-shop and therefore empty at a café you had never joined. The code now
+    belongs to the ACCOUNT, so every signed-in diner has one everywhere — that
+    test would pass for every café on the platform and quietly stop gating
+    anything.
+
+    Ledger rows alone are still NOT membership: a cashier crediting a phone must
+    not silently enrol them.
   */
-  return diner.code ? diner : null;
+  const { isCardholder } = await import("./db");
+  const [diner, member] = await Promise.all([getDiner(cafeId), isCardholder(cafeId, phone)]);
+  return diner && member ? diner : null;
 }
 
 /**

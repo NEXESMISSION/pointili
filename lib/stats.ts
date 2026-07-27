@@ -17,7 +17,33 @@ import { createAdminClient } from "./supabase/admin";
  */
 export const MIN_SAMPLE = 5;
 
+/** Days in the selected window. 0 = everything since the shop opened. */
+export type Range = 7 | 30 | 0;
+
+/**
+ * The same handful of figures for one stretch of time, so the selected window
+ * can be put side by side with the one before it. A number with nothing to
+ * compare it to is not an insight — "42 visites" only means something next to
+ * last week's 30.
+ */
+export type Window = {
+  revenue: number;
+  visits: number;
+  newCustomers: number;
+  activeCustomers: number;
+};
+
 export type Stats = {
+  range: Range;
+  /** The selected window. */
+  window: Window;
+  /** The equally long stretch immediately before it — null when out of history. */
+  previous: Window | null;
+  /** Bars for the window: at most 30, widened when the window is longer. */
+  series: { at: number; revenue: number; visits: number }[];
+  /** Days per bar in `series` — 1 for 7j/30j, wider for "Tout". */
+  bucketDays: number;
+
   // the headline
   repeatRate: number; // % of customers who came back at least once
   repeatCustomers: number;
@@ -60,7 +86,7 @@ type LedgerRow = {
 
 const DAY = 86_400_000;
 
-export async function getStats(businessId: string): Promise<Stats> {
+export async function getStats(businessId: string, range: Range = 30): Promise<Stats> {
   const db = createAdminClient();
 
   const [{ data: ledger }, { data: stampRewards }, { data: wins }, { data: redemptions }, { data: program }] =
@@ -164,6 +190,48 @@ export async function getStats(businessId: string): Promise<Stats> {
     });
   }
 
+  /* ── the selected window, and the one before it ────────────────────
+     Both are measured the same way, so the two are actually comparable. */
+  const at = (r: LedgerRow) => new Date(r.created_at).getTime();
+  const measure = (from: number, to: number): Window => {
+    const inside = purchases.filter((r) => at(r) >= from && at(r) < to);
+    return {
+      revenue: Math.round((inside.reduce((s, r) => s + r.delta, 0) / pointsPerTnd) * 100) / 100,
+      visits: inside.length,
+      newCustomers: [...firstSeen.values()].filter((t) => t >= from && t < to).length,
+      activeCustomers: new Set(inside.map((r) => r.customer_phone)).size,
+    };
+  };
+
+  // "Tout" starts at the first purchase (or today, on an empty shop).
+  const firstAt = purchases.length ? Math.min(...purchases.map(at)) : now;
+  const spanDays = range || Math.max(1, Math.ceil((now - firstAt) / DAY));
+  // Windows end at midnight tomorrow so today's sales are inside the window.
+  const windowEnd = new Date(now).setHours(24, 0, 0, 0);
+  const windowStart = windowEnd - spanDays * DAY;
+
+  const window = measure(windowStart, windowEnd);
+  // Only compare against a stretch the shop actually lived through.
+  const previous =
+    windowStart - spanDays * DAY >= firstAt - DAY
+      ? measure(windowStart - spanDays * DAY, windowStart)
+      : null;
+
+  // At most 30 bars: one day each for 7j/30j, wider for a long history.
+  const bucketDays = Math.max(1, Math.ceil(spanDays / 30));
+  const buckets = Math.ceil(spanDays / bucketDays);
+  const series: Stats["series"] = [];
+  for (let i = buckets - 1; i >= 0; i--) {
+    const end = windowEnd - i * bucketDays * DAY;
+    const start = end - bucketDays * DAY;
+    const inside = purchases.filter((r) => at(r) >= start && at(r) < end);
+    series.push({
+      at: start,
+      revenue: Math.round((inside.reduce((s, r) => s + r.delta, 0) / pointsPerTnd) * 100) / 100,
+      visits: inside.length,
+    });
+  }
+
   // ── which rewards people actually want ────────────────────────────
   // PostgREST types an embedded to-one join as an array; at runtime it can be
   // either an object or a 1-element array depending on the relation. Normalise.
@@ -200,6 +268,12 @@ export async function getStats(businessId: string): Promise<Stats> {
   const round = (n: number) => Math.round(n * 100) / 100;
 
   return {
+    range,
+    window,
+    previous,
+    series,
+    bucketDays,
+
     repeatRate: customers ? Math.round((repeatCustomers / customers) * 100) : 0,
     repeatCustomers,
     customers,

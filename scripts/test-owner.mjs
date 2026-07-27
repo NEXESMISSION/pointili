@@ -43,7 +43,7 @@ await diner.fill('input[name="name"]', "Habitué");
 await diner.click('button[type="submit"]');
 await diner.waitForURL(`**/${TEST_SLUG}`, { timeout: 15000 }).catch(() => {});
 const { data: card } = await admin
-  .from("diner_cafes").select("code").eq("business_id", cafeId).eq("phone", NORM).maybeSingle();
+  .from("accounts").select("code").eq("phone", NORM).maybeSingle();
 
 /* ── 1. Owner signs in ─────────────────────────────────────────────── */
 const staff = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -56,16 +56,21 @@ if (staff.url().includes("/login")) {
 }
 check("owner signs in", !staff.url().includes("/login"), staff.url().replace(BASE, ""));
 
-/** One screen now: find the customer, then act inside the panel. */
+/*
+  The till is a terminal: the keypad is the resting state (the camera only opens
+  when asked), and the identified customer takes over the whole screen.
+*/
+const DESK = '[role="dialog"]';
+const keypad = () => staff.locator('input[name="customer"]').waitFor({ timeout: 15000 });
 const openCustomer = async (who) => {
   await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await keypad();
   await staff.fill('input[name="customer"]', who);
   await staff.locator('button:has-text("Chercher")').click();
-  await staff.locator('input[name="amount"]').waitFor({ timeout: 20000 }).catch(() => {});
+  await staff.locator(DESK).waitFor({ timeout: 20000 }).catch(() => {});
 };
-const DESK = 'section:has(h2:text-is("Le client"))';
 
-/* ── 2. Credit by the 4-char CODE (privacy path) ───────────────────── */
+/* ── 2. Credit by the 4-char ACCOUNT code (privacy path) ───────────── */
 await openCustomer(card.code);
 await staff.fill('input[name="amount"]', "10");
 await staff.locator('button:has-text("Créditer")').click();
@@ -85,15 +90,31 @@ const badAmount = await staff
 check("a negative amount is refused", /invalide/i.test(badAmount), badAmount);
 
 /* ── 4. An unknown code is refused ─────────────────────────────────── */
+/*
+  Codes are platform-wide now, so a hard-coded "ZZZZ" is no longer safely
+  unowned — it is well-formed and could legitimately belong to a real account,
+  which would flip this from a false pass into a false failure (and a
+  cross-tenant read: this suite runs against the real database). Find one that
+  provably belongs to nobody.
+*/
+const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+let freeCode = "";
+for (let i = 0; i < 50 && !freeCode; i++) {
+  const c = Array.from({ length: 4 }, () => ALPHABET[Math.floor(Math.random() * 32)]).join("");
+  const { data } = await admin.from("accounts").select("phone").eq("code", c).maybeSingle();
+  if (!data) freeCode = c;
+}
 await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-await staff.locator('input[name="customer"]').fill("ZZZZ");
+await keypad();
+await staff.locator('input[name="customer"]').fill(freeCode);
 await staff.locator('input[name="customer"]').press("Enter");
-// scope to the desk: other parts of the page can carry a role="alert" too
+// no customer sheet opens, so the refusal shows on the terminal itself
 const badCode = await staff
-  .waitForSelector(`${DESK} [role="alert"]`, { timeout: 20000 })
+  .waitForSelector('main [role="alert"]', { timeout: 20000 })
   .then((el) => el.innerText())
   .catch(() => "");
-check("an unknown customer code is refused", /introuvable|invalide/i.test(badCode), badCode);
+// "introuvable" only: a VALIDATION rejection must never pass as a lookup miss.
+check("an unknown customer code is refused", /introuvable/i.test(badCode), `${freeCode} → ${badCode}`);
 
 /* ── 5. Stamps: enable in Réglages, then stamp at the till ─────────── */
 await admin
@@ -116,6 +137,8 @@ check("a full stamp card issues a code", /Carte pleine/i.test(full) && !!stampCo
 const SEC = 'section:has(h2:has-text("Valider un code"))';
 const collect = async (code) => {
   await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await staff.locator('button:has-text("Un code")').click(); // the terminal's second mode
+  await staff.locator(`${SEC} input[name="code"]`).waitFor({ timeout: 15000 });
   await staff.fill(`${SEC} input[name="code"]`, code);
   await staff.locator(`${SEC} button:has-text("Vérifier")`).click();
   const btn = staff.locator(`${SEC} button:has-text("Collecter")`);
@@ -144,9 +167,38 @@ check("Clients finds a cardholder by code", listed, card.code);
 const listTxt = await staff.locator("main").innerText();
 check("Clients never shows the raw phone", !listTxt.includes(NORM));
 
+/*
+  Cross-shop isolation. A code resolves platform-wide, but "Mes clients" must
+  still list only people THIS shop has actually served — otherwise one owner
+  could enumerate another's customers by typing codes into the search box.
+*/
+const { data: others } = await admin
+  .from("accounts").select("phone, code").neq("phone", NORM).limit(40);
+let outsider = null;
+for (const a of others ?? []) {
+  const [{ data: joined }, { data: credited }] = await Promise.all([
+    admin.from("diner_cafes").select("phone").eq("business_id", cafeId).eq("phone", a.phone).maybeSingle(),
+    admin.from("points_ledger").select("customer_phone").eq("business_id", cafeId).eq("customer_phone", a.phone).limit(1).maybeSingle(),
+  ]);
+  if (!joined && !credited) { outsider = a; break; }
+}
+if (outsider) {
+  await staff.locator('input[name="search"]').fill(outsider.code);
+  await staff.waitForTimeout(1200);
+  const isolated = await staff.locator('section:has(h2:text-is("Mes clients"))').innerText();
+  check(
+    "a code from another shop's customer is NOT listed here",
+    !isolated.includes(outsider.code),
+    outsider.code,
+  );
+}
+
 // open the card from the list, then correct the points in the panel
+// (the isolation probe above left a stranger's code in the search box)
+await staff.locator('input[name="search"]').fill(card.code);
+await staff.locator(`button:has-text("${card.code}")`).first().waitFor({ timeout: 15000 });
 await staff.locator(`button:has-text("${card.code}")`).first().click();
-await staff.locator('input[name="amount"]').waitFor({ timeout: 20000 });
+await staff.locator(DESK).waitFor({ timeout: 20000 });
 await staff.locator('button:has-text("Corriger / Historique")').click();
 await staff.locator('input[placeholder="+10 ou -5"]').fill("25");
 const apply = staff.locator('button:has-text("Appliquer")');
@@ -163,9 +215,15 @@ for (let i = 0; i < 20; i++) {
 }
 check("owner can correct a balance", afterAdjust >= 25, `balance=${afterAdjust}`);
 
-/* ── 8. Réglages: each section saves only its own fields ───────────── */
-await staff.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
+/* ── 8. Réglages: each editor saves only its own fields ────────────── */
+// Réglages is a settings list now — every knob is one tap deep, in its own editor.
 const earn = 'form:has(input[name="pointsPerTnd"])';
+const openPoints = async () => {
+  await staff.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
+  await staff.locator('button:has-text("Les points")').click();
+  await staff.locator(`${earn} input[name="pointsPerTnd"]`).waitFor({ timeout: 15000 });
+};
+await openPoints();
 await staff.locator(`${earn} input[name="pointsPerTnd"]`).fill("3");
 await staff.locator(`${earn} input[name="welcomePoints"]`).fill("25");
 await staff.locator(`${earn} button[type="submit"]`).click();
@@ -181,7 +239,7 @@ check("saving points did NOT clobber the stamp settings",
   `stamps=${prog.stamps_enabled}/${prog.stamps_required}`);
 
 // an out-of-range rate must be refused
-await staff.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
+await openPoints();
 await staff.locator(`${earn} input[name="pointsPerTnd"]`).fill("-5");
 await staff.locator(`${earn} button[type="submit"]`).click();
 const rejected = await staff

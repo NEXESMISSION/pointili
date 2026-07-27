@@ -65,7 +65,8 @@ export function CreateCafeForm() {
           onChange={(e) => setSlug(e.target.value)}
           placeholder={preview(name) || "chez-karim"}
           maxLength={40}
-          className={`${field} font-mono !text-[14px]`}
+          /* no shrinking below 16px: iOS zooms the page on any smaller field */
+          className={`${field} font-mono`}
         />
         <span className="mt-1.5 block break-all font-mono text-[11px] text-white/50">
           pointili.online/

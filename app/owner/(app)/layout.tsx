@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { OwnerNav } from "@/components/OwnerNav";
+import { OwnerSidebar, OwnerTabs } from "@/components/OwnerNav";
 import { ownerAccess, ownerCafe } from "@/lib/auth/owner";
 import { ownerNotices, remaining } from "@/lib/platform";
 
@@ -35,8 +35,18 @@ export default async function OwnerLayout({
     : null;
 
   return (
-    <div className="app-shell a-shell flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/12 bg-[#0d0819]/80 px-4 py-3 backdrop-blur">
+    /* Phone: one column, header on top, tabs at the bottom.
+       Laptop: a sidebar owns navigation, so the header collapses to nothing. */
+    <div className="app-shell a-shell flex min-h-dvh md:items-start">
+      <OwnerSidebar
+        name={cafe?.name ?? null}
+        initial={(cafe?.name ?? "P").charAt(0).toUpperCase()}
+        colour={cafe?.primaryColor ?? "#5b3fd1"}
+        plan={planChip}
+      />
+
+      <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/12 bg-[#0d0819]/80 px-4 py-3 backdrop-blur md:hidden">
         {cafe ? (
           <>
             <span
@@ -115,9 +125,12 @@ export default async function OwnerLayout({
         </div>
       ))}
 
-      <main className="flex-1 px-5 py-5">{children}</main>
+      <main className="flex-1 px-5 py-5 md:px-8 md:py-8">
+        <div className="mx-auto w-full max-w-[680px]">{children}</div>
+      </main>
 
-      <OwnerNav />
+      <OwnerTabs />
+      </div>
     </div>
   );
 }

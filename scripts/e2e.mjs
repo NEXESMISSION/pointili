@@ -72,12 +72,36 @@ check("owner signs in with Supabase Auth", !staff.url().includes("/login"), staf
  * misread as this one's.
  */
 
-/** The caisse is one screen now: find the customer, then act in the panel. */
+/*
+ * The caisse is a terminal: the keypad is the resting state (the camera only
+ * opens when asked), and the identified customer takes over the whole screen as
+ * a dialog.
+ */
+const DESK = '[role="dialog"]';
+
 async function openCustomer(page, who) {
   await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await page.locator('input[name="customer"]').waitFor({ timeout: 15000 });
   await page.fill('input[name="customer"]', who);
   await page.locator('button:has-text("Chercher")').click();
-  await page.locator('input[name="amount"]').waitFor({ timeout: 20000 });
+  await page.locator(DESK).waitFor({ timeout: 20000 });
+}
+
+/** Switch the terminal to its "a code" mode. */
+async function openCodeMode(page) {
+  await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await page.locator('button:has-text("Un code")').click();
+  await page.locator('input[name="code"]').waitFor({ timeout: 15000 });
+}
+
+/** Réglages is a settings list — each knob lives one tap deep in its own editor. */
+async function openSetting(page, row) {
+  await page.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
+  await page.locator(`button:has-text("${row}")`).click();
+}
+async function openPointsEditor(page) {
+  await openSetting(page, "Les points");
+  await page.locator('form:has(input[name="pointsPerTnd"]) input[name="pointsPerTnd"]').waitFor({ timeout: 15000 });
 }
 
 async function credit(amount, expectBalance) {
@@ -134,9 +158,12 @@ if (await redeemBtn.count()) {
 
   await diner.goto(`${BASE}/${SLUG}`, { waitUntil: "networkidle" });
   const cardTxt = await diner.locator("main").innerText();
+  // "Cadeaux à récupérer", not "À montrer au comptoir": that older wording now
+  // collides with the account-code CTA higher up the same page.
   check(
-    "redeemed reward appears on Accueil (À montrer au comptoir)",
-    /À MONTRER AU COMPTOIR/i.test(cardTxt),
+    "redeemed reward appears on Accueil (Cadeaux à récupérer)",
+    /CADEAUX À RÉCUPÉRER/i.test(cardTxt) && cardTxt.includes(redeemCode),
+    redeemCode,
   );
 } else {
   check("redeem button present when affordable", false, "no Échanger button");
@@ -151,7 +178,7 @@ if (redeemCode) {
   */
   const SEC = 'section:has(h2:has-text("Valider un code"))';
   const claim = async () => {
-    await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+    await openCodeMode(staff);
     await staff.fill(`${SEC} input[name="code"]`, redeemCode);
     await staff.locator(`${SEC} button:has-text("Vérifier")`).click();
     const collect = staff.locator(`${SEC} button:has-text("Collecter")`);
@@ -164,7 +191,7 @@ if (redeemCode) {
   };
 
   // A peek alone must not serve it: look up, then leave without collecting.
-  await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await openCodeMode(staff);
   await staff.fill(`${SEC} input[name="code"]`, redeemCode);
   await staff.locator(`${SEC} button:has-text("Vérifier")`).click();
   await staff.locator(`${SEC} button:has-text("Collecter")`).waitFor({ timeout: 8000 }).catch(() => {});
@@ -197,7 +224,8 @@ if (redeemCode) {
   const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
   const { data: biz } = await admin.from("businesses").select("id").eq("slug", SLUG).single();
 
-  await staff.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
+  // Réglages is a settings list — the points knob lives one tap deep.
+  await openPointsEditor(staff);
   const earn = staff.locator('form:has(input[name="pointsPerTnd"])');
   await earn.locator('input[name="pointsPerTnd"]').fill("3");
   await earn.locator('input[name="welcomePoints"]').fill("25");
@@ -227,10 +255,9 @@ if (redeemCode) {
   */
   const newPhone = `2${String(Date.now()).slice(-7)}`;
   const newNorm = `+216${newPhone}`;
-  await admin.from("accounts").upsert(
-    { phone: newNorm, pin_hash: "x", name: "Rate" },
-    { onConflict: "phone" },
-  );
+  // Through the RPC: it mints the account code with a retry, which a raw insert
+  // (falling back to the column DEFAULT) cannot do.
+  await admin.rpc("create_account", { p_phone: newNorm, p_pin_hash: "x", p_name: "Rate" });
   await admin.rpc("enroll_diner", { p_business_id: biz.id, p_phone: newNorm });
   await openCustomer(staff, newPhone);
   await staff.fill('input[name="amount"]', "10");
@@ -244,7 +271,7 @@ if (redeemCode) {
   );
 
   // nonsense must be refused, not stored
-  await staff.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
+  await openPointsEditor(staff);
   const earnForm = 'form:has(input[name="pointsPerTnd"])';
   await staff.locator(`${earnForm} input[name="pointsPerTnd"]`).fill("-5");
   await staff.locator(`${earnForm} button[type="submit"]`).click();
@@ -275,10 +302,12 @@ if (redeemCode) {
   const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
   const { data: biz } = await admin.from("businesses").select("id").eq("slug", SLUG).single();
 
-  await staff.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
-  // Scope to the LOGO input (reward rows now add their own image inputs too).
+  await openSetting(staff, "Nom, logo & type");
+  // Scope to the LOGO input (reward rows have their own image inputs too).
   // The uploader downscales on a canvas and auto-saves, so wait for the verdict.
-  await staff.setInputFiles('label:has-text("logo") input[type="file"]', "public/logo-icon.png");
+  const logoInput = 'label:has-text("logo") input[type="file"]';
+  await staff.locator(logoInput).waitFor({ state: "attached", timeout: 15000 });
+  await staff.setInputFiles(logoInput, "public/logo-icon.png");
   await staff.locator("text=Enregistré ✦").first().waitFor({ timeout: 20000 }).catch(() => {});
 
   const { data: withLogo } = await admin.from("businesses").select("logo_url").eq("id", biz.id).single();
@@ -344,7 +373,7 @@ if (redeemCode) {
     await openCustomer(staff, PHONE);
     await staff.locator('button:has-text("+1 tampon")').click();
     await staff.locator('[role="status"]').waitFor({ timeout: 20000 }).catch(() => {});
-    return staff.locator('section:has(h2:text-is("Le client"))').innerText().catch(() => "");
+    return staff.locator(DESK).innerText().catch(() => "");
   };
 
   await stamp(); // 1/2
@@ -355,7 +384,7 @@ if (redeemCode) {
   // the diner can collect that code at the counter, exactly like any reward
   if (stampCode) {
     const SEC = 'section:has(h2:has-text("Valider un code"))';
-    await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+    await openCodeMode(staff);
     await staff.fill(`${SEC} input[name="code"]`, stampCode);
     await staff.locator(`${SEC} button:has-text("Vérifier")`).click();
     const collect = staff.locator(`${SEC} button:has-text("Collecter")`);
@@ -383,19 +412,18 @@ if (redeemCode) {
   const clientsTxt = await staff.locator("main").innerText();
   check("Clients list never exposes the raw phone number", !clientsTxt.includes(`+216${PHONE}`), "phone hidden");
 
-  // ── 11e. Privacy: credit by the short per-shop code, no phone typed ──
+  // ── 11e. Privacy: credit by the 4-char account code, no phone typed ──
   const { data: card } = await admin
-    .from("diner_cafes")
+    .from("accounts")
     .select("code")
-    .eq("business_id", biz.id)
     .eq("phone", `+216${PHONE}`)
     .single();
-  check("customer has a short 4-char shop code", typeof card?.code === "string" && card.code.length === 4, card?.code ?? "none");
+  check("customer has a 4-char account code", typeof card?.code === "string" && card.code.length === 4, card?.code ?? "none");
   await openCustomer(staff, card.code);
   await staff.fill('input[name="amount"]', "5");
   await staff.locator('button:has-text("Créditer")').click();
   await staff.locator('[role="status"]').waitFor({ timeout: 20000 }).catch(() => {});
-  const credTxt = await staff.locator('section:has(h2:text-is("Le client"))').innerText();
+  const credTxt = await staff.locator(DESK).innerText();
   check("crediting by the short code works", /\+5/.test(credTxt), credTxt.split("\n").find((l) => /\+5/.test(l)) ?? "");
   check("credit result shows a name, not the phone", !credTxt.includes(`+216${PHONE}`));
 

@@ -35,9 +35,23 @@ r = await anon.rpc("redeem_at_counter", {
 });
 t("redeem_at_counter()", !!r.error, r.error?.code ?? "SUCCEEDED");
 
-// 4. read every diner's PIN hash
-r = await anon.from("accounts").select("phone, pin_hash");
-t("read accounts.pin_hash", !!r.error || (r.data?.length ?? 0) === 0, r.error?.code ?? `${r.data?.length ?? 0} rows`);
+// 4. read every diner's PIN hash — and their account code, which is now the
+//    thing you show at any counter on the platform. A column-level grant slip
+//    would leave it world-readable while a pin_hash-only probe stayed green.
+r = await anon.from("accounts").select("phone, pin_hash, code");
+t("read accounts.pin_hash + code", !!r.error || (r.data?.length ?? 0) === 0, r.error?.code ?? `${r.data?.length ?? 0} rows`);
+
+// 4b. resolve ANY account from its 4-char code, straight from the browser key.
+//     The code is platform-wide, so this one call would be a whole-platform
+//     customer directory.
+r = await anon.rpc("account_by_code", { p_code: "AAAA" });
+t("account_by_code()", !!r.error, r.error?.code ?? "SUCCEEDED");
+
+// 4c. mint an account (and a code) without going through signup
+r = await anon.rpc("create_account", {
+  p_phone: "+21600000009", p_pin_hash: "x", p_name: "attacker",
+});
+t("create_account()", !!r.error, r.error?.code ?? "SUCCEEDED");
 
 // 5. write points straight into the ledger
 r = await anon.from("points_ledger").insert({
