@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { elevateAction, type ElevateState } from "./actions";
 
 export function ElevateForm() {
@@ -8,6 +8,15 @@ export function ElevateForm() {
     elevateAction,
     {},
   );
+
+  /*
+    A full document load, not a client navigation. See elevateAction: the router
+    is holding the payload of the bounce that sent us here, and only a real
+    document load is guaranteed to be free of it.
+  */
+  useEffect(() => {
+    if (state.ok) window.location.assign("/console");
+  }, [state.ok]);
 
   return (
     <form action={action} className="space-y-2.5">

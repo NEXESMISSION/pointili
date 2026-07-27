@@ -7,7 +7,9 @@ import { redeemAtCounter } from "@/lib/db";
 
 export type RedeemState = {
   error?: string;
-  ok?: { code: string; label: string; balance: number };
+  /** expiryHours: the code is on a clock, and the screen that spends the points
+   *  is the only place the diner is guaranteed to look. */
+  ok?: { code: string; label: string; balance: number; expiryHours: number };
 };
 
 /**
@@ -56,5 +58,12 @@ export async function redeemAction(
 
   revalidatePath(`/${slug}`);
   revalidatePath(`/${slug}/boutique`);
-  return { ok: { code: res.code, label: res.label, balance: res.balance } };
+  return {
+    ok: {
+      code: res.code,
+      label: res.label,
+      balance: res.balance,
+      expiryHours: program.redeemExpiryHours,
+    },
+  };
 }

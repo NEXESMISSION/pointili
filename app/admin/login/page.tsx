@@ -16,9 +16,9 @@ export const dynamic = "force-dynamic";
  */
 export default async function AdminLogin() {
   const owner = await currentOwner();
-  if (!owner) redirect("/owner/login");
+  if (!owner) redirect("/login");
   if (owner.role !== "super_admin") notFound();
-  if (await isElevated(owner.id)) redirect("/admin");
+  if (await isElevated(owner.id)) redirect("/console");
 
   return (
     <div className="modern mx-auto flex min-h-dvh max-w-md flex-col bg-[#0b0d12] px-6 py-8">
@@ -49,7 +49,7 @@ export default async function AdminLogin() {
         <ElevateForm />
 
         <p className="mt-5 text-center text-[12px] text-[#8b93a7]">
-          <Link href="/owner" className="font-semibold text-[#9d86ff] underline underline-offset-2">
+          <Link href="/" className="font-semibold text-[#9d86ff] underline underline-offset-2">
             Retour à mon café
           </Link>
         </p>

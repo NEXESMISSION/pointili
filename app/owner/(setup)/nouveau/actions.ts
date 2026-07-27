@@ -22,7 +22,7 @@ export async function createCafeAction(
   formData: FormData,
 ): Promise<CreateState> {
   const owner = await currentOwner();
-  if (!owner) redirect("/owner/login");
+  if (!owner) redirect("/login");
 
   const name = String(formData.get("name") ?? "").trim().slice(0, 60);
   const rawSlug = String(formData.get("slug") ?? "").trim().toLowerCase();
@@ -47,5 +47,5 @@ export async function createCafeAction(
   const type = String(formData.get("businessType") ?? "");
   if (TYPE_KEYS.has(type) && type !== "other") await setBusinessType(res.id, type);
 
-  redirect("/owner");
+  redirect("/");
 }

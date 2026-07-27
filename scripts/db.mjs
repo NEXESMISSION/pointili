@@ -1,6 +1,19 @@
 // Thin psql-ish helper: node scripts/db.mjs "select 1"
 import pg from "pg";
+import { setDefaultResultOrder } from "node:dns";
 import { readFileSync } from "node:fs";
+
+/*
+  Prefer IPv4 when resolving the database host.
+
+  Supabase's pooler publishes four addresses: two IPv4 and two NAT64 IPv6
+  (64:ff9b::/96). Node 18+ returns them in DNS order and will happily try an
+  IPv6 one first — which fails with ENETUNREACH on any network without IPv6
+  egress, and `pg` surfaces that as a bare AggregateError with no hostname in it.
+  The symptom is every fixture-based test suite hanging before its first
+  assertion, which reads like a broken test rather than a broken route.
+*/
+setDefaultResultOrder("ipv4first");
 
 const env = Object.fromEntries(
   readFileSync(".env.local", "utf8")

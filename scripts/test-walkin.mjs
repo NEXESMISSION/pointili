@@ -6,6 +6,14 @@ import { ensureTestCafe, dropTestCafe, TEST_SLUG } from "./fixture.mjs";
 
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
+
+/*
+  Two hosts now. The customer side keeps the apex (every printed QR points at it)
+  and the business side lives on app.* — Chrome resolves app.localhost without a
+  hosts-file entry, so this exercises the real split rather than a special case.
+  Owner paths are SHORT there: the till is "/", not "/owner".
+*/
+const APP = process.env.APP_URL ?? BASE.replace("//", "//app.");
 const LOCAL = `2${String(Date.now()).slice(-7)}`;
 const NORM = `+216${LOCAL}`;
 
@@ -17,7 +25,7 @@ const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_RO
 
 const b = await chromium.launch({ executablePath: CHROME });
 const s = await b.newPage({ viewport: { width: 390, height: 844 } });
-await s.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
+await s.goto(`${APP}/login`, { waitUntil: "networkidle" });
 await s.fill('input[name="email"]', env.SUPER_ADMIN_EMAIL);
 await s.fill('input[name="password"]', env.SUPER_ADMIN_PASSWORD);
 await s.click('button[type="submit"]');
@@ -26,7 +34,7 @@ await s.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 20000 }).ca
 /* 1 · credit a phone that has NEVER signed up */
 // The terminal rests on the keypad, which is where a phone number gets typed.
 const DESK = '[role="dialog"]';
-await s.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+await s.goto(`${APP}`, { waitUntil: "networkidle" });
 await s.locator('input[name="customer"]').waitFor({ timeout: 15000 });
 await s.fill('input[name="customer"]', LOCAL);
 await s.locator('button:has-text("Chercher")').click();
@@ -52,7 +60,7 @@ t("no ghost account was invented", !acc);
 t("a walk-in is reachable by no code at all", !acc?.code);
 
 /* 2 · the walk-in is visible in the client list */
-await s.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+await s.goto(`${APP}`, { waitUntil: "networkidle" });
 await s.locator('input[name="search"]').fill(LOCAL);
 // The row is searchable BY phone but never displays it — it shows the balance
 // and a "—" where the code will be once they create an account.

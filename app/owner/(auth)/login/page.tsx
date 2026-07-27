@@ -11,7 +11,7 @@ export default async function Login() {
   // café-gated, so an owner without one must go to setup — otherwise the two
   // pages bounce off each other forever.
   const owner = await currentOwner();
-  if (owner) redirect((await ownerCafe()) ? "/owner" : "/owner/nouveau");
+  if (owner) redirect((await ownerCafe()) ? "/" : "/nouveau");
   const configured = supabaseConfigured();
 
   return (
@@ -27,7 +27,7 @@ export default async function Login() {
         <p className="mt-4 rounded-xl bg-[#ffd27a]/12 px-3.5 py-2.5 text-[12px] leading-relaxed text-[#ffd27a]">
           Supabase n&apos;est pas encore configuré. En développement, l&apos;espace
           est accessible sans connexion —{" "}
-          <Link href="/owner" className="font-bold underline">
+          <Link href="/" className="font-bold underline">
             entrer directement
           </Link>
           .
@@ -40,7 +40,7 @@ export default async function Login() {
 
       <p className="mt-5 text-center text-[13px] text-white/55">
         Pas encore de compte ?{" "}
-        <Link href="/owner/signup" className="font-bold text-[#b9a3ff]">
+        <Link href="/signup" className="font-bold text-[#b9a3ff]">
           Créer un compte
         </Link>
       </p>

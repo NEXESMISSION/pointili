@@ -68,7 +68,7 @@ export function JoinForm({ slug }: { slug: string }) {
           pattern="\d{4}"
           maxLength={4}
           required
-          placeholder={returning ? "Ton code à 4 chiffres" : "Choisis un code à 4 chiffres"}
+          placeholder={returning ? "Ton code secret" : "Choisis un code secret"}
           aria-label="Code à 4 chiffres"
           className={field}
         />
@@ -105,7 +105,7 @@ export function JoinForm({ slug }: { slug: string }) {
         <p className="pt-0.5 text-center text-[12px] text-white/55">
           {returning
             ? "Entre le numéro et le code de ta carte."
-            : "Ton code te servira à retrouver ta carte."}
+            : "Garde-le : c'est lui qui te rendra ta carte sur un autre téléphone."}
         </p>
       </form>
     </div>

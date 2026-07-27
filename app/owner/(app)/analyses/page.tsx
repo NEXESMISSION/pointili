@@ -33,7 +33,7 @@ export default async function Analytics({
   searchParams: Promise<{ p?: string }>;
 }) {
   const cafe = await ownerCafe();
-  if (!cafe) redirect("/owner/nouveau");
+  if (!cafe) redirect("/nouveau");
 
   const { p } = await searchParams;
   const picked = RANGES.find((r) => r.slug === p) ?? RANGES[1];
@@ -51,7 +51,7 @@ export default async function Analytics({
         {RANGES.map((r) => (
           <Link
             key={r.slug}
-            href={`/owner/analyses?p=${r.slug}`}
+            href={`/analyses?p=${r.slug}`}
             scroll={false}
             className={`rounded-xl py-2.5 text-center text-[13px] font-bold transition ${
               r.slug === picked.slug ? "bg-[#6d4ae6] text-white shadow-lg" : "text-white/55"
@@ -297,24 +297,29 @@ function Money({ s }: { s: Stats }) {
       <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-white/45">
         L&apos;argent · depuis le début
       </p>
-      <div className="mt-2 flex items-end justify-between gap-3">
-        <span>
-          <span className="block font-display text-[28px] font-extrabold leading-none tabular-nums text-white">
-            {Math.round(s.revenueTnd)}
-          </span>
-          <span className="text-[11px] font-semibold text-white/50">TND encaissés</span>
+      {/*
+        No "net", deliberately.
+
+        It was revenue minus points-redeemed-at-the-sale-rate, which values a free
+        espresso the shop bought for ~1 DT at the 40 points a customer paid — off
+        by roughly the shop's margin, every time. On the one screen an owner uses
+        to decide whether to renew, that turned a working programme into an
+        apparent loss. The schema has no per-reward cost anywhere, so ANY number
+        computed here is a guess dressed as accounting. Show what is true instead:
+        what came in, and what was given away, without pretending to subtract.
+      */}
+      <div className="mt-2">
+        <span className="block font-display text-[28px] font-extrabold leading-none tabular-nums text-white">
+          {Math.round(s.revenueTnd)}
+          <span className="ml-1.5 align-middle text-[13px] font-bold text-white/45">TND</span>
         </span>
-        <span className="text-right">
-          <span className="block font-display text-[22px] font-extrabold leading-none tabular-nums text-[#7ff0b0]">
-            {Math.round(s.netTnd)}
-          </span>
-          <span className="text-[11px] font-semibold text-white/50">net</span>
-        </span>
+        <span className="text-[11px] font-semibold text-white/50">passés par la caisse</span>
       </div>
 
       <div className="mt-3.5 space-y-1.5 border-t border-white/12 pt-3">
         <Line label="Ticket moyen" value={`${s.avgTicketTnd.toFixed(2)} TND`} />
-        <Line label="Coût des récompenses" value={`− ${s.rewardCostTnd.toFixed(0)} TND`} />
+        <Line label="Récompenses servies" value={String(s.rewardsClaimed)} />
+        <Line label="Points échangés" value={String(s.pointsRedeemed)} />
       </div>
       <p className="mt-2.5 text-[11px] leading-snug text-white/40">
         Uniquement ce qui est passé par la caisse Pointili.
@@ -356,13 +361,20 @@ function Owed({ s }: { s: Stats }) {
       <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-white/45">
         Ce que vous devez encore
       </p>
+      {/*
+        No TND conversion here either. "4 200 ≈ 4 200 TND" under a heading that
+        says "ce que vous devez" reads as a four-figure debt, when what it really
+        means is "points people could still spend" — and it counts free welcome
+        bonuses as liability. Express it in the only unit that is honest: how many
+        of the cheapest reward those points could buy.
+      */}
       <div className="mt-2.5 space-y-1.5">
-        <Line
-          label="Points en circulation"
-          value={`${s.outstandingPoints} ≈ ${(s.outstandingPoints / s.pointsPerTnd).toFixed(0)} TND`}
-        />
-        <Line label="Codes en attente" value={String(s.pendingCodes)} />
+        <Line label="Points en circulation" value={String(s.outstandingPoints)} />
+        <Line label="Codes déjà émis, pas encore récupérés" value={String(s.pendingCodes)} />
       </div>
+      <p className="mt-2.5 text-[11px] leading-snug text-white/40">
+        Des points que vos clients peuvent encore dépenser — pas une dette.
+      </p>
     </section>
   );
 }

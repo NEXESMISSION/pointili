@@ -17,7 +17,7 @@ export default async function OwnerHome() {
   const cafe = await ownerCafe();
   // No café yet → set one up. NOT /owner/login: that would see a valid session
   // and bounce straight back here, forever.
-  if (!cafe) redirect("/owner/nouveau");
+  if (!cafe) redirect("/nouveau");
   const program = await getLoyaltyProgram(cafe.id);
 
   return (

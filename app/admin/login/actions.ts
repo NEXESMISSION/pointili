@@ -6,7 +6,7 @@ import { clearElevation, setElevation } from "@/lib/auth/elevate";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-export type ElevateState = { error?: string };
+export type ElevateState = { error?: string; ok?: boolean };
 
 /**
  * Step up into the platform console.
@@ -22,7 +22,7 @@ export async function elevateAction(
   formData: FormData,
 ): Promise<ElevateState> {
   const owner = await currentOwner();
-  if (!owner) redirect("/owner/login");
+  if (!owner) redirect("/login");
 
   // Never reveal that /admin exists to a non-super-admin — same message either
   // way, and they'd fail the role check regardless.
@@ -77,13 +77,30 @@ export async function elevateAction(
     p_detail: {},
   });
 
-  redirect("/admin");
+  /*
+    Deliberately NOT redirect().
+
+    Getting here means the operator already tried /console and was bounced to
+    this form, so the client Router Cache is holding the RSC payload of that
+    bounce. A server redirect is a CLIENT navigation and would arrive at that
+    cached login screen — elevation granted, console apparently still locked,
+    fixed only by a manual reload.
+
+    revalidatePath cannot clear it either: it addresses the internal route
+    (/admin) while the router keys on the public URL (/console), and the host
+    rewrite means those are different keys. So the form does a full document
+    load, which no cache survives.
+  */
+  return { ok: true };
 }
 
 /** Drop elevation but stay signed in as an owner. */
 export async function dropElevationAction() {
   await clearElevation();
-  redirect("/owner");
+  // No revalidatePath here either: it addresses the internal route (/admin)
+  // while the router keys on the public one (/console). Locking redirects to the
+  // till, a different page, so a stale console payload is never rendered.
+  redirect("/");
 }
 
 /** Leave the console AND sign out entirely. */

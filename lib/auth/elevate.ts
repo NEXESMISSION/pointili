@@ -95,14 +95,22 @@ export async function setElevation(userId: string) {
     httpOnly: true,
     sameSite: "strict", // stricter than the owner session: no cross-site sends at all
     secure: process.env.NODE_ENV === "production",
-    path: "/admin",     // scoped: never sent to the owner app or the diner app
+    /*
+      Scoped so it is never sent to the till or the diner app.
+
+      This is the PUBLIC path (/console), not the internal one (/admin). Cookie
+      Path is matched by the browser against the URL BAR, and the proxy's rewrite
+      does not change that — a cookie set on /admin would simply never be sent
+      back, and the console would be permanently locked out of itself.
+    */
+    path: "/console",
     maxAge: TTL_SECONDS,
   });
 }
 
 export async function clearElevation() {
   const jar = await cookies();
-  jar.delete({ name: ADMIN_COOKIE, path: "/admin" });
+  jar.delete({ name: ADMIN_COOKIE, path: "/console" });
 }
 
 /**

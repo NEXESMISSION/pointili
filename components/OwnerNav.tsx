@@ -16,16 +16,18 @@ import { ChartIcon, QrIcon, SlidersIcon, TillIcon } from "./icons";
   Both read from one list, so a tab can never exist in one and not the other.
 */
 
+/* Public paths on app.pointili.online — the proxy maps them onto /owner/*.
+   Using the internal paths here would double the prefix and 404. */
 const TABS = [
-  { label: "Caisse", Icon: TillIcon, href: "/owner" },
-  { label: "Analyses", Icon: ChartIcon, href: "/owner/analyses" },
-  { label: "QR", Icon: QrIcon, href: "/owner/qr" },
-  { label: "Réglages", Icon: SlidersIcon, href: "/owner/reglages" },
+  { label: "Caisse", Icon: TillIcon, href: "/" },
+  { label: "Analyses", Icon: ChartIcon, href: "/analyses" },
+  { label: "QR", Icon: QrIcon, href: "/qr" },
+  { label: "Réglages", Icon: SlidersIcon, href: "/reglages" },
 ];
 
-/** /owner matches only itself; the rest match their whole subtree. */
+/** "/" matches only itself; the rest match their whole subtree. */
 function isActive(pathname: string, href: string) {
-  return href === "/owner" ? pathname === "/owner" : pathname.startsWith(href);
+  return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
 /* ── phone: thumb-height tabs at the bottom ───────────────────────────── */

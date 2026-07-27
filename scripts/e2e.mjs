@@ -13,6 +13,14 @@ import { chromium } from "playwright-core";
 
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
+
+/*
+  Two hosts now. The customer side keeps the apex (every printed QR points at it)
+  and the business side lives on app.* — Chrome resolves app.localhost without a
+  hosts-file entry, so this exercises the real split rather than a special case.
+  Owner paths are SHORT there: the till is "/", not "/owner".
+*/
+const APP = process.env.APP_URL ?? BASE.replace("//", "//app.");
 const SLUG = TEST_SLUG;
 
 // a fresh phone per run so signup is always exercised
@@ -53,7 +61,7 @@ check("signup grants welcome bonus", balAfterJoin === 10, `balance=${balAfterJoi
 
 // ── 2. Owner signs in (real Supabase Auth) ──────────────────────────
 const staff = await browser.newPage({ viewport: { width: 390, height: 844 } });
-await staff.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
+await staff.goto(`${APP}/login`, { waitUntil: "networkidle" });
 if (staff.url().includes("/login")) {
   await staff.fill('input[name="email"]', OWNER_EMAIL);
   await staff.fill('input[name="password"]', OWNER_PASSWORD);
@@ -80,7 +88,7 @@ check("owner signs in with Supabase Auth", !staff.url().includes("/login"), staf
 const DESK = '[role="dialog"]';
 
 async function openCustomer(page, who) {
-  await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await page.goto(`${APP}`, { waitUntil: "networkidle" });
   await page.locator('input[name="customer"]').waitFor({ timeout: 15000 });
   await page.fill('input[name="customer"]', who);
   await page.locator('button:has-text("Chercher")').click();
@@ -89,14 +97,14 @@ async function openCustomer(page, who) {
 
 /** Switch the terminal to its "a code" mode. */
 async function openCodeMode(page) {
-  await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await page.goto(`${APP}`, { waitUntil: "networkidle" });
   await page.locator('button:has-text("Un code")').click();
   await page.locator('input[name="code"]').waitFor({ timeout: 15000 });
 }
 
 /** Réglages is a settings list — each knob lives one tap deep in its own editor. */
 async function openSetting(page, row) {
-  await page.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
+  await page.goto(`${APP}/reglages`, { waitUntil: "networkidle" });
   await page.locator(`button:has-text("${row}")`).click();
 }
 async function openPointsEditor(page) {
@@ -402,7 +410,7 @@ if (redeemCode) {
 
   // the owner can find this cardholder on the Clients page (searchable by number,
   // but the row shows the name + opaque id — never the raw phone)
-  await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await staff.goto(`${APP}`, { waitUntil: "networkidle" });
   await staff.locator('input[name="search"]').fill(PHONE);
   const found = await staff
     .waitForFunction(() => /E2E/.test(document.querySelector("main")?.innerText ?? ""), undefined, { timeout: 10000 })
@@ -450,21 +458,21 @@ if (redeemCode) {
     if (f === fresh.mainFrame()) hops.push(new URL(f.url()).pathname);
   });
 
-  await fresh.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
+  await fresh.goto(`${APP}/login`, { waitUntil: "networkidle" });
   await fresh.fill('input[name="email"]', email);
   await fresh.fill('input[name="password"]', "Test-12345678");
   await fresh.click('button[type="submit"]');
-  await fresh.waitForURL("**/owner/nouveau", { timeout: 20000 }).catch(() => {});
+  await fresh.waitForURL("**/nouveau", { timeout: 20000 }).catch(() => {});
 
   check(
     "new owner with no café is not stuck in a redirect loop",
-    hops.filter((h) => h === "/owner").length <= 1 && fresh.url().includes("/nouveau"),
+    hops.filter((h) => h === "/").length <= 1 && fresh.url().includes("/nouveau"),
     hops.join(" → "),
   );
 
   await fresh.fill('input[name="name"]', "Café de l'Étoile & Co");
   await fresh.locator('form:has(input[name="name"]) button[type="submit"]').click();
-  await fresh.waitForURL((u) => u.pathname === "/owner", { timeout: 25000 }).catch(() => {});
+  await fresh.waitForURL((u) => u.pathname === "/", { timeout: 25000 }).catch(() => {});
 
   const { data: biz } = await admin
     .from("businesses")
@@ -474,7 +482,7 @@ if (redeemCode) {
 
   check(
     "café is created and the owner lands on Analyses",
-    fresh.url().endsWith("/owner") && !!biz,
+    new URL(fresh.url()).pathname === "/" && !!biz,
     biz ? `/${biz.slug}` : "no café row",
   );
 

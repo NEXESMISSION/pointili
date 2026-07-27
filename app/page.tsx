@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentDiner } from "@/lib/auth/diner";
+import { appUrl } from "@/lib/hosts";
 
 /**
  * Marketing landing — the real pointili.online brand (modern, Royal Mauve, Poppins).
@@ -13,10 +14,15 @@ import { currentDiner } from "@/lib/auth/diner";
  * wallet so the two audiences never bleed into each other.
  */
 
+/*
+  The title has to work for BOTH audiences: this page is what anyone searching
+  "pointili" lands on, customer or shop owner. The old one ("Vos clients de
+  passage, en habitués") only ever spoke to the buyer.
+*/
 export const metadata = {
-  title: "pointili.online — Vos clients de passage, en habitués",
+  title: "pointili.online — Une carte de fidélité, tous vos commerces",
   description:
-    "Le programme de fidélité pour cafés, restaurants et commerçants : points à la caisse, récompenses réelles, et les analyses qui prouvent que vos clients reviennent. Sans app à installer.",
+    "La carte de fidélité sans application. Les clients cumulent des points avec un seul code, partout. Les commerces créditent à la caisse et voient enfin qui revient.",
 };
 
 /* — marketing-only icons, kept local — */
@@ -66,7 +72,7 @@ const steps = [
   {
     n: "02", who: "Le client", Icon: Cup,
     title: "Il scanne. Aucune application.",
-    text: "Sa carte s'ouvre dans son navigateur : un numéro, un code à 4 chiffres, c'est fini.",
+    text: "Sa carte s'ouvre dans son navigateur : son numéro, un code secret, c'est fini.",
   },
   {
     n: "03", who: "Vous", Icon: Gift,
@@ -110,17 +116,27 @@ export default async function Landing({
           <summary className="grid h-10 w-10 cursor-pointer list-none place-items-center rounded-xl text-charcoal [&::-webkit-details-marker]:hidden">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-6 w-6" aria-hidden><path d="M4 7h16M4 12h16M4 17h16" /></svg>
           </summary>
-          <nav className="absolute right-0 top-12 z-30 w-48 rounded-2xl border border-hair bg-white p-2 shadow-[0_20px_50px_-20px_rgba(40,18,59,.35)]">
-            <Link href="/owner/login" className="block rounded-xl px-3 py-2.5 text-[14px] font-semibold text-charcoal hover:bg-lilac-2">Espace café</Link>
-            <Link href="/owner/signup" className="mt-1 block rounded-xl bg-royal px-3 py-2.5 text-center text-[14px] font-bold text-white">Créer mon compte</Link>
-            {/*
-              The customer's way in. Deliberately last, small and unstyled: this
-              page sells to shop owners, and a second loud CTA would make the
-              paying audience choose a side before reading anything. A customer
-              who needs it is looking for it.
-            */}
-            <Link href="/moi" className="mt-1.5 block border-t border-hair px-3 pb-1 pt-3 text-[13px] font-semibold text-slate hover:text-royal">
-              Je suis client · mes cartes
+          {/*
+            Both doors, named plainly. This page explains the product to
+            everyone, so neither audience should have to guess which link is
+            theirs — the commerçant one leaves for app.pointili.online, the
+            client one stays here.
+          */}
+          <nav className="absolute right-0 top-12 z-30 w-56 rounded-2xl border border-hair bg-white p-2 shadow-[0_20px_50px_-20px_rgba(40,18,59,.35)]">
+            <p className="px-3 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-slate/70">
+              Je suis client
+            </p>
+            <Link href="/moi" className="block rounded-xl px-3 py-2.5 text-[14px] font-semibold text-charcoal hover:bg-lilac-2">
+              Mes cartes &amp; mes points
+            </Link>
+            <p className="mt-1.5 border-t border-hair px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.08em] text-slate/70">
+              Je suis commerçant
+            </p>
+            <Link href={appUrl("/login")} className="block rounded-xl px-3 py-2.5 text-[14px] font-semibold text-charcoal hover:bg-lilac-2">
+              Espace café
+            </Link>
+            <Link href={appUrl("/signup")} className="mt-1 block rounded-xl bg-royal px-3 py-2.5 text-center text-[14px] font-bold text-white">
+              Créer mon compte
             </Link>
           </nav>
         </details>
@@ -129,21 +145,52 @@ export default async function Landing({
       {/* ── hero ────────────────────────────────────────────── */}
       <section className="mx-auto max-w-md px-5 pt-3 pb-2">
         <span className="inline-block rounded-full bg-lilac px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-royal">
-          Pour les entreprises &amp; commerçants
+          La carte de fidélité de vos commerces
         </span>
 
         <h1 className="mt-5 text-[40px] font-extrabold leading-[1.05] text-charcoal">
-          Vos clients de passage,
+          Une carte.
           <br />
-          <span className="text-royal">en habitués.</span>
+          <span className="text-royal">Tous vos commerces.</span>
         </h1>
 
         <p className="mt-4 text-[15.5px] leading-relaxed text-slate">
-          Ils gagnent des points en consommant et les échangent contre de vraies récompenses — chez vous.
+          Un seul code à 4 caractères, le même partout. Vous consommez, vous
+          cumulez des points, vous repartez avec de vraies récompenses.
         </p>
         <p className="mt-3 text-[15.5px] leading-relaxed text-slate">
-          Et vous voyez enfin, chiffres à l&apos;appui, s&apos;ils reviennent.
+          Pas d&apos;application à installer. Pas de carte en carton à perdre.
         </p>
+
+        {/*
+          Both audiences, named on the page itself rather than hidden in a menu.
+          A visitor should never have to work out whether this product is for
+          them — and the commerçant link is the one that leaves for the app.
+        */}
+        <div className="mt-6 grid grid-cols-2 gap-2.5">
+          <Link
+            href="/moi"
+            className="rounded-2xl border border-hair bg-white px-4 py-3.5 text-center shadow-[0_10px_30px_-24px_rgba(40,18,59,.5)] active:scale-[0.98]"
+          >
+            <span className="block text-[10px] font-bold uppercase tracking-[0.07em] text-slate/70">
+              Je suis client
+            </span>
+            <span className="mt-0.5 block text-[14px] font-extrabold text-charcoal">
+              Mes cartes
+            </span>
+          </Link>
+          <Link
+            href={appUrl("/login")}
+            className="rounded-2xl bg-royal px-4 py-3.5 text-center shadow-[0_14px_32px_-16px_rgba(91,63,209,.7)] active:scale-[0.98]"
+          >
+            <span className="block text-[10px] font-bold uppercase tracking-[0.07em] text-white/70">
+              Je suis commerçant
+            </span>
+            <span className="mt-0.5 block text-[14px] font-extrabold text-white">
+              Espace café
+            </span>
+          </Link>
+        </div>
 
         {/* the product, illustrated */}
         <div className="mt-7 overflow-hidden rounded-[26px]">
@@ -160,7 +207,7 @@ export default async function Landing({
         {/* CTAs */}
         <div className="mt-7 space-y-3">
           <Link
-            href="/owner/signup"
+            href={appUrl("/signup")}
             className="flex flex-col items-center justify-center rounded-2xl bg-royal py-3.5 shadow-[0_12px_28px_-10px_rgba(91,63,209,.6)] active:scale-[0.99]"
           >
             <span className="flex items-center gap-2 text-[15.5px] font-bold text-white">
@@ -171,7 +218,7 @@ export default async function Landing({
             </span>
           </Link>
           <Link
-            href="/owner/login"
+            href={appUrl("/login")}
             className="flex items-center justify-center rounded-2xl border-2 border-hair bg-white py-4 text-[15.5px] font-bold text-charcoal active:scale-[0.99]"
           >
             Se connecter
@@ -316,7 +363,7 @@ export default async function Landing({
         </ul>
 
         <Link
-          href="/owner/signup"
+          href={appUrl("/signup")}
           className="mt-6 flex items-center justify-center gap-2 rounded-2xl bg-royal py-4 text-[15.5px] font-bold text-white shadow-[0_12px_28px_-10px_rgba(91,63,209,.6)] active:scale-[0.99]"
         >
           Commencer l&apos;essai gratuit <Arrow />
@@ -337,7 +384,7 @@ export default async function Landing({
             fidélité.
           </p>
           <Link
-            href="/owner/signup"
+            href={appUrl("/signup")}
             className="relative mt-6 flex items-center justify-center gap-2 rounded-2xl bg-white py-4 text-[15px] font-bold text-royal active:scale-[0.99]"
           >
             Créer mon compte gratuit <Arrow className="h-4 w-4" />
