@@ -27,15 +27,9 @@ export const metadata = {
 
 /* — marketing-only icons, kept local — */
 type I = { className?: string };
-const Clock = ({ className = "h-5 w-5" }: I) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className={className} aria-hidden><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
-);
-const Smile = ({ className = "h-5 w-5" }: I) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className={className} aria-hidden><circle cx="12" cy="12" r="9" /><path d="M8.5 14a4 4 0 0 0 7 0" /><path d="M9 9.5h.01M15 9.5h.01" /></svg>
-);
-const Shield = ({ className = "h-5 w-5" }: I) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" className={className} aria-hidden><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" /><path d="m9 12 2 2 4-4" strokeLinecap="round" /></svg>
-);
+/* Clock / Smile / Shield lived on the "5 min · sans engagement · support réactif"
+   strip. The first claim was false and the other two unverifiable, so the strip
+   and its icons are gone. */
 const Cup = ({ className = "h-6 w-6" }: I) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Z" /><path d="M17 9.5h1.5a2.5 2.5 0 0 1 0 5H17" /><path d="M7.5 2.5v2M11 2.5v2M14.5 2.5v2" /></svg>
 );
@@ -84,12 +78,6 @@ const steps = [
     title: "Il revient chercher sa récompense",
     text: "Et vous voyez dans vos analyses combien reviennent vraiment.",
   },
-];
-
-const trust = [
-  { Icon: Clock, label: "Mise en place\nen 5 min" },
-  { Icon: Smile, label: "Sans\nengagement" },
-  { Icon: Shield, label: "Support\nréactif" },
 ];
 
 export default async function Landing({
@@ -225,17 +213,6 @@ export default async function Landing({
           </Link>
         </div>
 
-        {/* reassurance strip */}
-        <div className="mt-5 grid grid-cols-3 gap-1 rounded-2xl border border-hair bg-white px-2 py-4 shadow-[0_10px_30px_-22px_rgba(40,18,59,.4)]">
-          {trust.map(({ Icon, label }) => (
-            <div key={label} className="flex flex-col items-center gap-1.5 px-1 text-center">
-              <Icon className="h-6 w-6 text-royal" />
-              <span className="whitespace-pre-line text-[11.5px] font-semibold leading-tight text-charcoal">
-                {label}
-              </span>
-            </div>
-          ))}
-        </div>
       </section>
 
       {/* ── the loop, 4 steps ───────────────────────────────── */}
@@ -281,25 +258,6 @@ export default async function Landing({
             </li>
           ))}
         </ol>
-      </section>
-
-      {/* ── social proof ────────────────────────────────────── */}
-      <section className="mx-auto max-w-md px-5 py-6">
-        <div className="rounded-3xl border border-hair bg-cloud px-5 py-6">
-          <p className="text-center text-[11px] font-bold uppercase tracking-[0.14em] text-slate">
-            Conçu pour des lieux comme
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-center">
-            {["Espace Café", "Le Comptoir", "Urban Grill", "Sweet Corner"].map((n) => (
-              <span key={n} className="text-[15px] font-extrabold tracking-tight text-charcoal/70">
-                {n}
-              </span>
-            ))}
-            <span className="col-span-2 text-[15px] font-extrabold tracking-[0.15em] text-charcoal/70">
-              NERO
-            </span>
-          </div>
-        </div>
       </section>
 
       {/* ── pricing ─────────────────────────────────────────── */}
@@ -353,7 +311,7 @@ export default async function Landing({
             "Analyses : qui revient, combien vous encaissez",
             "QR + autocollants (ou présentoir) pour vos tables",
             "Sans app à installer — vos clients scannent, c'est tout",
-            "Support réactif",
+            "Créditez un client avant même qu'il s'inscrive — ses points l'attendent",
           ].map((f) => (
             <li key={f} className="flex items-start gap-2.5 text-[14px] leading-snug text-charcoal">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mt-[3px] h-[15px] w-[15px] shrink-0 text-royal" aria-hidden><path d="m5 12.5 4.5 4.5L19 7" /></svg>
@@ -376,12 +334,12 @@ export default async function Landing({
           <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" />
           <div aria-hidden className="pointer-events-none absolute -bottom-14 -left-8 h-44 w-44 rounded-full bg-white/5" />
           <h2 className="relative text-[28px] font-extrabold leading-tight">
-            Vos clients reviennent.{" "}
-            <span className="text-[#FFCE4D]">Vraiment.</span>
+            Combien de vos clients reviennent&nbsp;?{" "}
+            <span className="text-[#FFCE4D]">Aujourd&apos;hui, vous n&apos;en savez rien.</span>
           </h2>
           <p className="relative mt-3 max-w-[34ch] text-[14.5px] leading-relaxed text-white/80">
-            Créez votre compte gratuitement et transformez chaque passage en
-            fidélité.
+            Quatorze jours gratuits. À partir de votre cinquième client, le
+            chiffre est sur votre téléphone.
           </p>
           <Link
             href={appUrl("/owner/signup")}
@@ -400,15 +358,18 @@ export default async function Landing({
       <footer className="mx-auto max-w-md px-5 pb-12 pt-6">
         <BrandMark />
         <p className="mt-3 max-w-[42ch] text-[13px] leading-relaxed text-slate">
-          Le programme de fidélité nouvelle génération pour les entreprises &amp;
-          commerçants.
+          La carte de fidélité des commerces tunisiens. Sans application.
         </p>
-        <div className="mt-4 flex gap-2">
-          {["f", "◎", "♪"].map((s, i) => (
-            <span key={i} className="grid h-9 w-9 place-items-center rounded-full border border-hair text-[13px] font-bold text-slate">
-              {s}
-            </span>
-          ))}
+        {/*
+          No social icons. The three that were here were the literal characters
+          "f ◎ ♪" in circles, linking nowhere — a placeholder shipped as if it
+          were a fact, in the footer where someone checks whether you are real.
+          They come back the day the accounts do.
+        */}
+        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-[12.5px] font-semibold text-slate">
+          <Link href="/moi" className="hover:text-royal">Mes points</Link>
+          <Link href={appUrl("/owner/login")} className="hover:text-royal">Espace café</Link>
+          <span className="text-slate/60">Fait en Tunisie 🇹🇳</span>
         </div>
       </footer>
     </div>
