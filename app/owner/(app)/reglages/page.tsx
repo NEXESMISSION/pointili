@@ -104,6 +104,44 @@ export default async function Reglages() {
         </div>
       </section>
 
+      {/*
+        The prices, in the product.
+
+        The banners upstairs say "your shop is about to go dark" — and until now
+        there was nowhere to go from there. This is not a checkout: there is no
+        payment integration and inventing one would be a much bigger change than
+        the problem needs. What an owner actually lacks is the two numbers and a
+        way to reach someone, so that is what this is.
+      */}
+      <section>
+        <h2 className="mb-1.5 px-1.5 text-[10.5px] font-bold uppercase tracking-[0.1em] text-white/40">
+          Formules
+        </h2>
+        <div className="a-card p-4">
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="rounded-2xl bg-white/[0.07] px-3 py-3 text-center">
+              <p className="text-[11px] font-semibold text-white/55">6 mois</p>
+              <p className="mt-0.5 font-display text-[24px] font-extrabold leading-none text-white">
+                65 <span className="text-[12px] font-bold text-white/50">TND</span>
+              </p>
+              <p className="mt-0.5 text-[10.5px] text-white/40">≈ 11 TND / mois</p>
+            </div>
+            <div className="rounded-2xl bg-[#6d4ae6]/25 px-3 py-3 text-center ring-1 ring-[#8b6bff]/40">
+              <p className="text-[11px] font-semibold text-[#b9a3ff]">1 an</p>
+              <p className="mt-0.5 font-display text-[24px] font-extrabold leading-none text-white">
+                80 <span className="text-[12px] font-bold text-white/50">TND</span>
+              </p>
+              <p className="mt-0.5 text-[10.5px] text-[#b9a3ff]">≈ 7 TND / mois</p>
+            </div>
+          </div>
+          <p className="mt-3 text-[12px] leading-relaxed text-white/55">
+            Tout est compris : points, récompenses, tampons, analyses et le kit QR
+            pour vos tables. Écrivez-nous pour renouveler — on active votre compte
+            le jour même.
+          </p>
+        </div>
+      </section>
+
       <form action={logoutAction} className="px-1">
         <button
           type="submit"

@@ -39,7 +39,7 @@ export async function signInAction(_prev: SignInState, formData: FormData): Prom
   const keep = { phone: rawPhone };
 
   if (!isValidPhone(phone)) return { ...keep, error: "Numéro de téléphone invalide." };
-  if (!isValidPin(pin)) return { ...keep, error: "Le code doit contenir 4 chiffres." };
+  if (!isValidPin(pin)) return { ...keep, error: "Le code secret doit contenir 4 chiffres." };
 
   // Throttle BEFORE touching the PIN — this is the brute-force gate, and it is
   // keyed by phone, so exposing this form at a fixed URL does not widen it.
@@ -66,7 +66,7 @@ export async function signInAction(_prev: SignInState, formData: FormData): Prom
     // discover it on the next submit.
     const lockedNow = await pinLockedFor(phone);
     if (lockedNow > 0) return { ...keep, error: `Trop d'essais. Réessaie dans ${lockedNow} min.` };
-    return { ...keep, error: "Numéro ou code incorrect." };
+    return { ...keep, error: "Numéro ou code secret incorrect." };
   }
 
   await pinClear(phone);

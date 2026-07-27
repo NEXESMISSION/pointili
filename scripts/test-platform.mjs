@@ -8,6 +8,14 @@ import { connect, env } from "./db.mjs";
 import { ensureTestCafe, dropTestCafe, TEST_SLUG } from "./fixture.mjs";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
+
+/*
+  Two hosts now. The customer side keeps the apex (every printed QR points at it)
+  and the business side lives on app.* — Chrome resolves app.localhost without a
+  hosts-file entry, so this exercises the real split rather than a special case.
+  Paths are real on both hosts: the till is /owner.
+*/
+const APP = process.env.APP_URL ?? BASE.replace("//", "//app.");
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const SUPER = { email: env.SUPER_ADMIN_EMAIL, password: env.SUPER_ADMIN_PASSWORD };
 const SLUG = TEST_SLUG;
@@ -26,7 +34,7 @@ const sql = await connect();
 const b = await chromium.launch({ executablePath: CHROME });
 
 const login = async (page, email, password) => {
-  await page.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
+  await page.goto(`${APP}/owner/login`, { waitUntil: "networkidle" });
   await page.fill('input[name="email"]', email);
   await page.fill('input[name="password"]', password);
   await page.click('button[type="submit"]');
@@ -38,7 +46,7 @@ const login = async (page, email, password) => {
  * re-auth (see scripts/test-console.mjs for that boundary itself).
  */
 const elevate = async (page, password) => {
-  await page.goto(`${BASE}/admin/login`, { waitUntil: "networkidle" });
+  await page.goto(`${APP}/admin/login`, { waitUntil: "networkidle" });
   if (new URL(page.url()).pathname === "/admin/login") {
     await page.fill('input[name="password"]', password);
     await page.click('button[type="submit"]');
@@ -63,7 +71,7 @@ const pw = "Test-12345678";
 const { data: made } = await admin.auth.admin.createUser({ email, password: pw, email_confirm: true });
 const plain = await b.newPage();
 await login(plain, email, pw);
-const plainRes = await plain.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+const plainRes = await plain.goto(`${APP}/admin`, { waitUntil: "networkidle" });
 check(
   "plain owner cannot reach /admin",
   plainRes?.status() === 404 || !new URL(plain.url()).pathname.startsWith("/admin"),
@@ -88,7 +96,7 @@ check("admin RPC refuses a non-super-admin", !!direct.error, direct.error?.code 
   drawer that opens. Returns the drawer so every form is scoped to it.
 */
 const openCafe = async (name = "Café Test") => {
-  await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+  await sa.goto(`${APP}/admin`, { waitUntil: "networkidle" });
   await sa.locator(`tr:has-text("${name}")`).first().click();
   const drawer = sa.locator('[role="dialog"]');
   await drawer.waitFor({ timeout: 15000 });
@@ -199,7 +207,7 @@ const noticeForm = row4.locator('form:has(textarea[name="message"])');
 await noticeForm.locator('textarea[name="message"]').fill("Test notice for the owner");
 await noticeForm.locator('button[type="submit"]').click();
 await row4.locator('[role="status"], [role="alert"]').first().waitFor({ timeout: 20000 }).catch(() => {});
-await sa.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+await sa.goto(`${APP}/owner`, { waitUntil: "networkidle" });
 check("owner sees the notice", /Test notice for the owner/.test(await sa.locator("body").innerText()));
 
 // ── 9. everything privileged is written down ────────────────────────

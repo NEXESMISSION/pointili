@@ -65,7 +65,7 @@ export default async function Profil({
           */}
           <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-white/12 px-2.5 py-1">
             <span className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-white/55">
-              Mon code
+              Mon code client
             </span>
             <span className="font-mono text-[13px] font-extrabold tracking-[0.14em] text-white">
               {diner.code}

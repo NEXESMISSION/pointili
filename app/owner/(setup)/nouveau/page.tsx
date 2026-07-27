@@ -6,7 +6,7 @@ export const metadata = { title: "Créer mon café" };
 
 export default async function NouveauCafe() {
   // Already has one → nothing to set up.
-  if (await ownerCafe()) redirect("/owner");
+  if (await ownerCafe()) redirect("/");
 
   return (
     <div>

@@ -36,12 +36,12 @@ export function RedeemForm({
     diner had genuinely earned. The code is theirs — it must survive. A ref, not
     state: state.ok changing already re-renders us, so this only has to remember.
   */
-  const [lastCode, setLastCode] = useState<string | null>(null);
+  const [lastCode, setLastCode] = useState<{ code: string; expiryHours: number } | null>(null);
   useEffect(() => {
     /* Copying an async action result into state we own: the code must outlive
        the next run of useActionState, which replaces its whole value. */
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (state.ok) setLastCode(state.ok.code);
+    if (state.ok) setLastCode({ code: state.ok.code, expiryHours: state.ok.expiryHours });
   }, [state.ok]);
 
   /*
@@ -61,7 +61,18 @@ export function RedeemForm({
       {lastCode && (
         <div className="rounded-xl bg-white px-3 py-1.5 text-center">
           <p className="text-[8.5px] font-bold uppercase tracking-[0.08em] text-slate">Code · comptoir</p>
-          <p className="font-mono text-[15px] font-bold tracking-[0.16em] text-charcoal">{lastCode}</p>
+          <p className="font-mono text-[15px] font-bold tracking-[0.16em] text-charcoal">
+            {lastCode.code}
+          </p>
+          {/*
+            The deadline belongs HERE, on the screen where the points were spent.
+            It was rendered on the card and in Mes codes — i.e. only if the diner
+            went looking. Buy on Friday, come back Monday, and both the reward
+            and the points are gone without a clock ever being shown.
+          */}
+          <p className="mt-0.5 text-[8.5px] font-bold uppercase tracking-[0.05em] text-[#c0341c]">
+            À utiliser sous {lastCode.expiryHours} h
+          </p>
         </div>
       )}
       {state.error && (

@@ -42,7 +42,7 @@ export async function joinAction(
 
   const phone = normalisePhone(rawPhone);
   if (!isValidPhone(phone)) return { error: "Numéro de téléphone invalide." };
-  if (!isValidPin(pin)) return { error: "Le code doit contenir 4 chiffres." };
+  if (!isValidPin(pin)) return { error: "Le code secret doit contenir 4 chiffres." };
 
   const cafe = await getCafe(slug);
   if (!cafe) return { error: "Café introuvable." };
@@ -75,7 +75,7 @@ export async function joinAction(
     // the diner only learns they're locked on the next submit and keeps trying.
     const lockedNow = await pinLockedFor(phone);
     if (lockedNow > 0) return { error: `Trop d'essais. Réessaie dans ${lockedNow} min.` };
-    return { error: "Numéro ou code incorrect." };
+    return { error: "Numéro ou code secret incorrect." };
   }
 
   if (!existing) {

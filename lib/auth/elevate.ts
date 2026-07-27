@@ -95,7 +95,7 @@ export async function setElevation(userId: string) {
     httpOnly: true,
     sameSite: "strict", // stricter than the owner session: no cross-site sends at all
     secure: process.env.NODE_ENV === "production",
-    path: "/admin",     // scoped: never sent to the owner app or the diner app
+    path: "/admin", // scoped: never sent to the till or the diner app
     maxAge: TTL_SECONDS,
   });
 }

@@ -47,5 +47,8 @@ export async function createCafeAction(
   const type = String(formData.get("businessType") ?? "");
   if (TYPE_KEYS.has(type) && type !== "other") await setBusinessType(res.id, type);
 
+  // Straight to the till. "/" would only 307 here anyway, and a server-action
+  // redirect is a client navigation — one that has to follow a redirect of its
+  // own does not always commit.
   redirect("/owner");
 }

@@ -49,7 +49,7 @@ export default async function AdminLogin() {
         <ElevateForm />
 
         <p className="mt-5 text-center text-[12px] text-[#8b93a7]">
-          <Link href="/owner" className="font-semibold text-[#9d86ff] underline underline-offset-2">
+          <Link href="/" className="font-semibold text-[#9d86ff] underline underline-offset-2">
             Retour à mon café
           </Link>
         </p>

@@ -42,7 +42,7 @@ type Resolved = { phone: string; name: string | null; code: string | null };
 
 async function resolveCustomer(cafeId: string, raw: string): Promise<Resolved | { error: string }> {
   const cleaned = String(raw ?? "").trim().replace(/[\s-]/g, "");
-  if (!cleaned) return { error: "Numéro ou code du client requis." };
+  if (!cleaned) return { error: "Code client ou numéro requis." };
 
   if (/[A-Za-z]/.test(cleaned)) {
     const card = await cardByCode(cafeId, cleaned);
@@ -60,7 +60,7 @@ async function resolveCustomer(cafeId: string, raw: string): Promise<Resolved | 
   const card = await cardByCode(cafeId, cleaned);
   return card
     ? { phone: card.phone, name: card.name, code: card.code }
-    : { error: "Numéro ou code invalide." };
+    : { error: "Code client ou numéro invalide." };
 }
 
 /** "+216 24 ••• 123" — enough to confirm the right person, never the full number. */

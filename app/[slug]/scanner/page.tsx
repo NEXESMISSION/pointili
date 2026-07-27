@@ -48,7 +48,7 @@ export default async function Scanner({
         <div className="mx-auto w-[200px] [&>svg]:h-auto [&>svg]:w-full">
           <div dangerouslySetInnerHTML={{ __html: qr }} />
         </div>
-        <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">Mon code</p>
+        <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">Mon code client</p>
         <p className="mt-1 font-mono text-[32px] font-extrabold tracking-[0.3em] text-charcoal">
           {diner.code}
         </p>

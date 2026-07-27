@@ -107,6 +107,15 @@ export function CaisseDesk({
   const [mode, setMode] = useState<Mode>("client");
   const [stage, setStage] = useState<Stage>("keypad");
   const [typed, setTyped] = useState("");
+  /*
+    Bumped after every successful read, to REMOUNT the scanner.
+
+    QrScanner stops its MediaStream once it decodes something — it has to, or it
+    would fire again on the same frame. But its effect only depends on `facing`,
+    so nothing ever restarted it: the camera read customer #1 and then showed a
+    frozen frame for the rest of the shift, with no error to explain why.
+  */
+  const [scanNonce, setScanNonce] = useState(0);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [error, setError] = useState("");
   const [busy, start] = useTransition();
@@ -155,7 +164,14 @@ export function CaisseDesk({
             <section>
               <div className="overflow-hidden rounded-3xl border border-white/12">
                 {/* no camera on this device → drop straight back to the pad */}
-                <QrScanner onScan={find} onUnavailable={() => setStage("keypad")} />
+                <QrScanner
+                  key={scanNonce}
+                  onScan={(text) => {
+                    setScanNonce((n) => n + 1);
+                    find(text);
+                  }}
+                  onUnavailable={() => setStage("keypad")}
+                />
               </div>
               <p className="mt-3 text-center text-[13px] text-white/55">
                 {busy ? "Recherche…" : "Pointez le QR du client"}
@@ -180,7 +196,7 @@ export function CaisseDesk({
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && find(typed)}
-                placeholder="Numéro ou code"
+                placeholder="Code client ou numéro"
                 inputMode="text"
                 className="w-full rounded-2xl bg-white/[0.06] px-4 py-4 text-center text-[26px] font-extrabold tracking-[0.06em] text-white outline-none placeholder:text-[16px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-white/35"
               />
@@ -375,9 +391,12 @@ function CustomerSheet({
   const earned = Math.floor((Number(amount.replace(",", ".")) || 0) * pointsPerTnd);
 
   function credit() {
+    // Clear BOTH first. Otherwise a refusal renders underneath the previous
+    // sale's green confirmation, and the screen says yes and no at once.
+    setFlash(null);
+    setErr("");
     const n = Number(amount.replace(",", "."));
     if (!Number.isFinite(n) || n <= 0) return setErr("Montant invalide.");
-    setErr("");
     start(async () => {
       const fd = new FormData();
       fd.set("customer", customer.ref);
@@ -397,6 +416,7 @@ function CustomerSheet({
   }
 
   function stamp() {
+    setFlash(null);
     setErr("");
     start(async () => {
       const fd = new FormData();

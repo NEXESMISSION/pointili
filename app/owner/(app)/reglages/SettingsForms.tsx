@@ -487,6 +487,7 @@ function RewardImageUploader({ reward }: { reward: Reward }) {
 /** One row per reward — the ladder is the main tuning lever for returns. */
 function RewardRow({ reward }: { reward: Reward | null }) {
   const [state, action, pending] = useActionState<SettingsState, FormData>(saveRewardAction, {});
+  const [confirming, setConfirming] = useState(false);
   return (
     <div className="border-b border-white/10 px-4 py-3.5 last:border-b-0">
       {reward && <RewardImageUploader reward={reward} />}
@@ -524,14 +525,41 @@ function RewardRow({ reward }: { reward: Reward | null }) {
         </label>
 
         <span className="flex items-center gap-3">
+          {/*
+            Two-step, because this is irreversible and it sits inches from
+            "Enregistrer". One mis-aimed tap used to delete a reward with no
+            confirmation and no acknowledgement that anything had happened.
+            Deliberately in-page rather than confirm(): a native dialog is
+            blocked in some in-app browsers, which silently made it a one-tap
+            delete again.
+          */}
           {reward && (
-            <button
-              type="submit"
-              formAction={deleteRewardAction.bind(null, reward.id)}
-              className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#ff9a9a] underline underline-offset-2"
-            >
-              Supprimer
-            </button>
+            confirming ? (
+              <span className="flex items-center gap-2">
+                <button
+                  type="submit"
+                  formAction={deleteRewardAction.bind(null, reward.id)}
+                  className="rounded-lg bg-[#ff6b6b] px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.05em] text-white"
+                >
+                  Confirmer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirming(false)}
+                  className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-white/45"
+                >
+                  Annuler
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirming(true)}
+                className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#ff9a9a] underline underline-offset-2"
+              >
+                Supprimer
+              </button>
+            )
           )}
           <button
             type="submit"

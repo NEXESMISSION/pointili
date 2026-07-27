@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { OwnerSidebar, OwnerTabs } from "@/components/OwnerNav";
 import { ownerAccess, ownerCafe } from "@/lib/auth/owner";
@@ -37,7 +38,10 @@ export default async function OwnerLayout({
   return (
     /* Phone: one column, header on top, tabs at the bottom.
        Laptop: a sidebar owns navigation, so the header collapses to nothing. */
-    <div className="app-shell a-shell flex min-h-dvh md:items-start">
+    /* NOT .app-shell — that is the diner's phone column and it would cap this
+       whole app (sidebar included) at ~480px. It is unlayered CSS, so a
+       md:max-w-* utility cannot win against it; the class has to be absent. */
+    <div className="a-shell flex min-h-dvh md:items-start">
       <OwnerSidebar
         name={cafe?.name ?? null}
         initial={(cafe?.name ?? "P").charAt(0).toUpperCase()}
@@ -97,13 +101,23 @@ export default async function OwnerLayout({
               ? `Suspendu : ${cafe.suspendedReason ?? "contactez-nous"}`
               : "Votre abonnement a expiré — vos clients ne peuvent plus scanner."}
           </p>
+          {/* A dead end otherwise: the product told an owner their shop was dark
+              and gave them nothing to press. */}
+          {!cafe.suspendedAt && (
+            <Link href="/owner/reglages" className="mt-1.5 inline-block text-[12px] font-bold text-white underline underline-offset-2">
+              Renouveler mon abonnement →
+            </Link>
+          )}
         </div>
       )}
 
       {cafe?.live && left?.soon && !left.unlimited && (
         <p className="border-b border-[#ffd27a]/30 bg-[#ffd27a]/12 px-5 py-2 text-[11.5px] leading-snug text-[#ffd27a]">
           Votre {cafe.plan === "trial" ? "essai" : "abonnement"} se termine dans{" "}
-          <b>{left.label}</b>.
+          <b>{left.label}</b>.{" "}
+          <Link href="/owner/reglages" className="font-bold underline underline-offset-2">
+            Voir les formules
+          </Link>
         </p>
       )}
 

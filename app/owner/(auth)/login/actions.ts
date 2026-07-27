@@ -28,7 +28,17 @@ export async function loginAction(
   // Vague on purpose — don't reveal which accounts exist.
   if (error) return { error: "E-mail ou mot de passe incorrect." };
 
-  redirect("/owner");
+  /*
+    Send them straight to the right screen instead of bouncing off "/".
+
+    A server-action redirect is a CLIENT navigation, and "/" is itself a server
+    redirect for an owner with no café ("/" → /nouveau). Chaining those two
+    across the host rewrite left a brand-new owner parked on an empty till: the
+    second hop never committed. Resolving the destination here removes the chain
+    — and saves every returning owner a redirect on every sign-in.
+  */
+  const { ownerCafe } = await import("@/lib/auth/owner");
+  redirect((await ownerCafe()) ? "/owner" : "/owner/nouveau");
 }
 
 export async function signupAction(

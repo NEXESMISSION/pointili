@@ -16,6 +16,7 @@ import { ChartIcon, QrIcon, SlidersIcon, TillIcon } from "./icons";
   Both read from one list, so a tab can never exist in one and not the other.
 */
 
+/* Real paths. The host split does not rewrite them — see proxy.ts. */
 const TABS = [
   { label: "Caisse", Icon: TillIcon, href: "/owner" },
   { label: "Analyses", Icon: ChartIcon, href: "/owner/analyses" },

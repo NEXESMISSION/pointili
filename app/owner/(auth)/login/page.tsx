@@ -27,7 +27,7 @@ export default async function Login() {
         <p className="mt-4 rounded-xl bg-[#ffd27a]/12 px-3.5 py-2.5 text-[12px] leading-relaxed text-[#ffd27a]">
           Supabase n&apos;est pas encore configuré. En développement, l&apos;espace
           est accessible sans connexion —{" "}
-          <Link href="/owner" className="font-bold underline">
+          <Link href="/" className="font-bold underline">
             entrer directement
           </Link>
           .

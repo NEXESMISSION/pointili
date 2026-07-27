@@ -10,6 +10,14 @@ import { connect, env } from "./db.mjs";
 import { ensureTestCafe, dropTestCafe } from "./fixture.mjs";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
+
+/*
+  Two hosts now. The customer side keeps the apex (every printed QR points at it)
+  and the business side lives on app.* — Chrome resolves app.localhost without a
+  hosts-file entry, so this exercises the real split rather than a special case.
+  Paths are real on both hosts: the till is /owner.
+*/
+const APP = process.env.APP_URL ?? BASE.replace("//", "//app.");
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const SUPER = { email: env.SUPER_ADMIN_EMAIL, password: env.SUPER_ADMIN_PASSWORD };
 
@@ -28,7 +36,7 @@ const sql = await connect();
 const b = await chromium.launch({ executablePath: CHROME });
 
 const login = async (page, email, password) => {
-  await page.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
+  await page.goto(`${APP}/owner/login`, { waitUntil: "networkidle" });
   await page.fill('input[name="email"]', email);
   await page.fill('input[name="password"]', password);
   await page.click('button[type="submit"]');
@@ -38,7 +46,7 @@ const login = async (page, email, password) => {
 // ── 1. THE THREAT: a signed-in super-admin is NOT automatically in ──
 const sa = await b.newPage({ viewport: { width: 390, height: 844 } });
 await login(sa, SUPER.email, SUPER.password);
-await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+await sa.goto(`${APP}/admin`, { waitUntil: "networkidle" });
 check(
   "owner session alone does NOT open the console",
   new URL(sa.url()).pathname === "/admin/login",
@@ -46,12 +54,12 @@ check(
 );
 
 // the owner app must not advertise it
-await sa.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+await sa.goto(`${APP}/owner`, { waitUntil: "networkidle" });
 const navHtml = await sa.locator("nav").last().innerHTML();
 check("owner nav does not link the console", !/\/admin/.test(navHtml));
 
 // ── 2. a wrong password does not elevate ────────────────────────────
-await sa.goto(`${BASE}/admin/login`, { waitUntil: "networkidle" });
+await sa.goto(`${APP}/admin/login`, { waitUntil: "networkidle" });
 await sa.fill('input[name="password"]', "definitely-not-it");
 await sa.click('button[type="submit"]');
 const refused = await sa
@@ -59,7 +67,7 @@ const refused = await sa
   .then(() => true)
   .catch(() => false);
 check("wrong password refused", refused);
-await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+await sa.goto(`${APP}/admin`, { waitUntil: "networkidle" });
 check("still locked out after a wrong password", new URL(sa.url()).pathname === "/admin/login");
 
 // ── 3. the right password elevates ──────────────────────────────────
@@ -77,6 +85,8 @@ check("console shows the cafés", listed);
 const cookies = await sa.context().cookies();
 const elev = cookies.find((c) => c.name === "pointili_admin");
 check("elevation cookie is httpOnly", elev?.httpOnly === true);
+// The cookie Path is matched against the URL BAR, which shows the PUBLIC path.
+// Scoping it to the internal /admin would mean it is simply never sent back.
 check("elevation cookie is scoped to /admin", elev?.path === "/admin", elev?.path);
 check("elevation cookie is sameSite=Strict", elev?.sameSite === "Strict", String(elev?.sameSite));
 check(
@@ -90,16 +100,16 @@ check("elevation cookie unreadable from JS (XSS-proof)", !jsReadable);
 // ── 5. locking drops elevation, session survives ────────────────────
 await sa.locator('button:has-text("Verrouiller")').click();
 await sa.waitForURL((u) => !u.pathname.startsWith("/admin"), { timeout: 20000 }).catch(() => {});
-await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+await sa.goto(`${APP}/admin`, { waitUntil: "networkidle" });
 check("locking re-closes the console", new URL(sa.url()).pathname === "/admin/login");
-await sa.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+await sa.goto(`${APP}/owner`, { waitUntil: "networkidle" });
 check("locking keeps the owner signed in", new URL(sa.url()).pathname === "/owner");
 
 // ── 6. a forged elevation cookie is rejected ────────────────────────
 await sa.context().addCookies([
-  { name: "pointili_admin", value: "forged.token", domain: "localhost", path: "/admin" },
+  { name: "pointili_admin", value: "forged.token", domain: "app.localhost", path: "/admin" },
 ]);
-await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+await sa.goto(`${APP}/admin`, { waitUntil: "networkidle" });
 check("forged elevation cookie rejected", new URL(sa.url()).pathname === "/admin/login");
 await sa.context().clearCookies();
 
@@ -109,7 +119,7 @@ const pw = "Test-12345678";
 const { data: made } = await admin.auth.admin.createUser({ email, password: pw, email_confirm: true });
 const plain = await b.newPage();
 await login(plain, email, pw);
-const res = await plain.goto(`${BASE}/admin/login`, { waitUntil: "networkidle" });
+const res = await plain.goto(`${APP}/admin/login`, { waitUntil: "networkidle" });
 check("plain owner gets 404 on the console door", res?.status() === 404, `status=${res?.status()}`);
 
 // ── 8. an unelevated action fails closed at the server ──────────────
@@ -119,7 +129,7 @@ const before = target?.plan;
 const forged = await plain.evaluate(async (base) => {
   const r = await fetch(base + "/admin", { method: "POST", body: new URLSearchParams({ plan: "free" }) });
   return r.status;
-}, BASE);
+}, APP);
 const after = target
   ? (await sql.query(`select plan from businesses where id=$1`, [target.id])).rows[0].plan
   : before;

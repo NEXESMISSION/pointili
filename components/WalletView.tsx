@@ -95,7 +95,7 @@ export function WalletView({
         {code && (
           <span className="shrink-0 rounded-2xl bg-white/12 px-3 py-1.5 text-center">
             <span className="block text-[9px] font-bold uppercase tracking-[0.08em] text-white/55">
-              Mon code
+              Mon code client
             </span>
             <span className="block font-mono text-[15px] font-extrabold tracking-[0.14em]">
               {code}
