@@ -148,7 +148,7 @@ export function CaisseDesk({
 
         {customer && (
           <CustomerPanel
-            key={customer.code}
+            key={customer.ref}
             customer={customer}
             pointsPerTnd={pointsPerTnd}
             stampsEnabled={stampsEnabled}
@@ -213,7 +213,7 @@ function CustomerPanel({
     setErr("");
     start(async () => {
       const fd = new FormData();
-      fd.set("customer", customer.code);
+      fd.set("customer", customer.ref);
       fd.set("amount", String(n));
       const res = await creditAction({}, fd);
       if (res.error) return setErr(res.error);
@@ -234,7 +234,7 @@ function CustomerPanel({
     setErr("");
     start(async () => {
       const fd = new FormData();
-      fd.set("customer", customer.code);
+      fd.set("customer", customer.ref);
       const { addStampAction } = await import("./actions");
       const res = await addStampAction({}, fd);
       if (res.error) return setErr(res.error);
@@ -252,7 +252,7 @@ function CustomerPanel({
   function openMore() {
     setShowMore((v) => !v);
     if (history === null) {
-      start(async () => setHistory(await historyByCodeAction(customer.code)));
+      start(async () => setHistory(await historyByCodeAction(customer.ref)));
     }
   }
 
@@ -262,9 +262,15 @@ function CustomerPanel({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[16px] font-extrabold text-charcoal">{customer.name ?? "Client"}</p>
-          <p className="mt-0.5 font-mono text-[12px] font-bold tracking-[0.1em] text-slate">
-            {customer.code}
-          </p>
+          {customer.enrolled ? (
+            <p className="mt-0.5 font-mono text-[12px] font-bold tracking-[0.1em] text-slate">
+              {customer.code}
+            </p>
+          ) : (
+            <p className="mt-0.5 text-[11.5px] font-semibold text-gold-deep">
+              Pas encore inscrit — ses points l’attendent
+            </p>
+          )}
         </div>
         <button
           type="button"
@@ -365,7 +371,7 @@ function CustomerPanel({
                 const n = Number(delta.replace(",", "."));
                 if (!Number.isFinite(n) || n === 0) return;
                 start(async () => {
-                  const r = await adjustByCodeAction(customer.code, n);
+                  const r = await adjustByCodeAction(customer.ref, n);
                   if (r.ok && typeof r.balance === "number") {
                     setBalance(r.balance);
                     setDelta("");
@@ -389,17 +395,17 @@ function CustomerPanel({
                   defaultValue={String(stamps)}
                   inputMode="numeric"
                   className="o-field !bg-white font-mono"
-                  id={`st-${customer.code}`}
+                  id={`st-${customer.ref}`}
                 />
                 <button
                   type="button"
                   disabled={busy}
                   onClick={() => {
-                    const el = document.getElementById(`st-${customer.code}`) as HTMLInputElement | null;
+                    const el = document.getElementById(`st-${customer.ref}`) as HTMLInputElement | null;
                     const n = Number(el?.value ?? "");
                     if (!Number.isFinite(n) || n < 0) return;
                     start(async () => {
-                      const r = await setStampsByCodeAction(customer.code, n);
+                      const r = await setStampsByCodeAction(customer.ref, n);
                       if (r.ok && typeof r.stamps === "number") {
                         setStamps(r.stamps);
                         setFlash(`${r.stamps} / ${stampsRequired} tampons`);
@@ -640,7 +646,7 @@ function CardList({
             <li key={c.phone}>
               <button
                 type="button"
-                onClick={() => c.code && onPick(c.code)}
+                onClick={() => onPick(c.code || c.phone)}
                 className="flex w-full items-center gap-3 py-2.5 text-left active:opacity-70"
               >
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-lilac-2 text-[14px] font-extrabold text-royal">

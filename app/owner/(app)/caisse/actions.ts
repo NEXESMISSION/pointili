@@ -133,7 +133,17 @@ export type StampState = {
 
 export type ResolveState = {
   error?: string;
-  customer?: { code: string; name: string | null; balance: number; stamps: number };
+  customer?: {
+    /** What every later action is addressed by: the short code once they have a
+     *  card, otherwise the phone the cashier typed. resolveCustomer takes both. */
+    ref: string;
+    /** null until they sign up — the till still works. */
+    code: string | null;
+    enrolled: boolean;
+    name: string | null;
+    balance: number;
+    stamps: number;
+  };
 };
 
 /**
@@ -152,8 +162,25 @@ export async function resolveCustomerAction(idOrPhone: string): Promise<ResolveS
     getBalance(cafe.id, who.phone),
     getStamps(cafe.id, who.phone),
   ]);
-  if (!code) return { error: "Ce client n'a pas encore de carte ici." };
-  return { customer: { code, name: who.name, balance, stamps: stamps.count } };
+
+  /*
+    No card yet is FINE — this is the walk-in case.
+
+    The ledger is keyed by (café, phone), so points credited to someone who has
+    never signed up simply wait for them: the day they scan the QR and join,
+    the balance is already on their card. Refusing here would have forced the
+    cashier to turn a paying customer away at the till.
+  */
+  return {
+    customer: {
+      ref: code || who.phone,
+      code: code || null,
+      enrolled: Boolean(code),
+      name: who.name,
+      balance,
+      stamps: stamps.count,
+    },
+  };
 }
 
 export type PeekState = {

@@ -414,8 +414,10 @@ export async function createCafe(
 
 export type OwnerCard = {
   phone: string;
-  /** Short per-shop code used to identify the card (never the phone). */
+  /** Short per-shop code — null for a walk-in who has not signed up yet. */
   code: string | null;
+  /** false = credited at the till but never joined; their points are waiting. */
+  enrolled: boolean;
   name: string | null;
   balance: number;
   stamps: number;
