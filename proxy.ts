@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { apexHost, appHost, isAppHost, isPassthrough } from "@/lib/hosts";
+import { appHost, isAppHost, isPassthrough } from "@/lib/hosts";
 
 /**
  * Two jobs, in this order: put the request on the right HOST, then refresh the
@@ -9,12 +9,13 @@ import { apexHost, appHost, isAppHost, isPassthrough } from "@/lib/hosts";
  * ── the host split ────────────────────────────────────────────────────────
  * pointili.online is the customer side and app.pointili.online is the business
  * side. This runs on every navigation so each screen has exactly one address:
- * asking for the other host's routes gets a permanent redirect, never a second
- * working URL. Two addresses for one page splits bookmarks and search results
- * and quietly doubles the surface anyone has to reason about.
+ * asking for the other host's routes never yields a second working URL. Two
+ * addresses for one page splits bookmarks and search results and quietly
+ * doubles the surface anyone has to reason about.
  *
- * Redirects, not 404s. A 404 would strand anyone holding an existing /owner
- * bookmark, and a 308 tells crawlers which URL is canonical just as well.
+ * Asymmetric on purpose: /owner on the apex REDIRECTS, so an existing bookmark
+ * still lands. A customer route on the business host 404s instead, because a
+ * redirect in that direction cannot be made loop-proof — see crossHost.
  *
  * ── the session refresh ───────────────────────────────────────────────────
  * Access tokens are short-lived. Without this, a signed-in owner silently drops
@@ -44,11 +45,30 @@ export async function proxy(request: NextRequest) {
     So the paths are real on both hosts. What the split still buys — and the
     reason it exists — is cookie isolation: nothing here sets a cookie Domain,
     so a diner session and an owner session can no longer see each other.
+
+    ── THE SPLIT IS OPT-IN ────────────────────────────────────────────────
+    It only runs when NEXT_PUBLIC_APP_URL names the business host. This is not
+    caution for its own sake: shipping it unconditionally took the owner app
+    down in production the same day. The apex redirects to www, appHost() blindly
+    prefixed "app.", and every owner asking for /owner was sent to
+    app.www.pointili.online — a name with no DNS record.
+
+    Infrastructure that does not exist yet must not be able to break the site.
+    With the variable unset the app serves everything from one host, exactly as
+    it did before the split; setting it turns the split on.
   */
-  if (!isPassthrough(path)) {
+  const businessOrigin = process.env.NEXT_PUBLIC_APP_URL;
+
+  if (businessOrigin && !isPassthrough(path)) {
     const business = path === "/owner" || path.startsWith("/owner/")
       || path === "/admin" || path.startsWith("/admin/");
 
+    /*
+      307/302, never 308/301. A permanent redirect is cached by the browser and
+      outlives the fix — if the target host is wrong or its DNS is not live yet,
+      a permanent redirect strands that visitor even after the deploy that
+      repairs it. Make these permanent only once both hosts have been stable.
+    */
     if (isAppHost(host)) {
       // Bare app host → the till.
       if (path === "/") {
@@ -56,22 +76,49 @@ export async function proxy(request: NextRequest) {
         to.pathname = "/owner";
         return NextResponse.redirect(to, 307);
       }
-      // Anything customer-facing belongs on the apex, where the printed QRs point.
+      /*
+        Customer routes do not exist on the business host — 404, not a redirect
+        to the apex.
+
+        A redirect here cannot be made reliable: Next rewrites the Location
+        header of a proxy response whenever the target matches its own
+        normalised origin, and in development app.localhost and localhost share
+        that origin. The header came back as a bare `/moi`, which is not a hop to
+        the other host — it is an infinite loop. A 404 is honest and loop-proof,
+        and nothing ever sends a customer here: every printed QR points at the
+        apex.
+      */
       if (!business) {
-        const to = new URL(request.url);
-        to.host = apexHost(host ?? to.host);
-        return NextResponse.redirect(to, 308);
+        return new NextResponse(null, { status: 404 });
       }
     } else if (business) {
-      // The customer side does not serve the business routes.
-      const to = new URL(request.url);
-      to.host = appHost(host ?? to.host);
-      return NextResponse.redirect(to, 308);
+      // The customer side does not serve the business routes. This direction IS
+      // a real cross-origin hop, so the header survives.
+      return crossHost(request, appHost(host ?? ""));
     }
   }
 
   /* ── 2. session refresh ───────────────────────────────────────────── */
   return withSession(request, (req) => NextResponse.next({ request: req }));
+}
+
+/**
+ * A redirect to the SAME path on a DIFFERENT host, with an absolute Location.
+ *
+ * Deliberately not NextResponse.redirect(). Two things conspire against it:
+ * the target is built from the Host header (mutating `new URL(request.url)`
+ * does nothing, because request.url already carries Next's normalised origin),
+ * and NextResponse.redirect then serialises a same-origin target RELATIVELY —
+ * against that same normalised origin. On app.localhost the result was
+ * `location: /moi`, which is not a hop to the other host, it is an infinite
+ * loop. Writing the header ourselves is the only way to guarantee the hop.
+ */
+function crossHost(request: NextRequest, targetHost: string): NextResponse {
+  const proto =
+    request.headers.get("x-forwarded-proto") ??
+    (targetHost.split(":")[0] === "localhost" ? "http" : "https");
+  const target = `${proto}://${targetHost}${request.nextUrl.pathname}${request.nextUrl.search}`;
+  return new NextResponse(null, { status: 307, headers: { location: target } });
 }
 
 /**

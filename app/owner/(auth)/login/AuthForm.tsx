@@ -16,6 +16,13 @@ export function AuthForm({
 }) {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(action, {});
   const [show, setShow] = useState(false);
+  /*
+    React 19 resets an uncontrolled <form action={…}> after every submit — so a
+    mistyped password also wiped the e-mail, and the owner had to retype both.
+    Keeping the e-mail controlled means a wrong password costs only the password.
+    (The same fix is on the diner join form for the same reason.)
+  */
+  const [email, setEmail] = useState("");
 
   return (
     <form action={formAction} className="space-y-3">
@@ -26,6 +33,8 @@ export function AuthForm({
           type="email"
           autoComplete="email"
           required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           placeholder="vous@boutique.tn"
           className="a-field"
         />

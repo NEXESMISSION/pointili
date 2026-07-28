@@ -43,27 +43,47 @@ export function apexHost(host: string): string {
   return host.replace(/^app\./, "");
 }
 
-/** The app-host equivalent of the apex, for sending an owner to their side. */
+/**
+ * The app-host equivalent of whatever host the request arrived on.
+ *
+ * NOT a blind `app.` prefix. This shipped as one and broke production the same
+ * day: pointili.online redirects to www.pointili.online, so every owner asking
+ * for /owner was sent to `app.www.pointili.online` — a name with no DNS record.
+ * Any alias does it, and a preview deployment or a bare IP would too.
+ *
+ * NEXT_PUBLIC_APP_URL is the answer when it is set: the business side has ONE
+ * address and it is configured, not guessed. Without it, strip a leading `www.`
+ * before prefixing, so at least the common alias resolves.
+ */
 export function appHost(host: string): string {
-  return host.startsWith("app.") ? host : `app.${host}`;
+  const configured = process.env.NEXT_PUBLIC_APP_URL;
+  if (configured) {
+    try {
+      // Keep the request's port in development, where it is not the default.
+      const port = host.includes(":") ? `:${host.split(":")[1]}` : "";
+      const target = new URL(configured).host;
+      return target.includes(":") ? target : `${target}${port.replace(":443", "").replace(":80", "")}`;
+    } catch {
+      /* misconfigured → fall through to the derivation below */
+    }
+  }
+  if (host.startsWith("app.")) return host;
+  return `app.${host.replace(/^www\./, "")}`;
 }
 
 /**
- * Absolute URL of the business side, for the few links that must cross origins
+ * Where the business side lives, for the links that may have to cross origins
  * (the marketing page's "Espace café" and "Créer mon compte").
  *
- * Falls back to deriving it from the public site URL so a preview deployment
- * with only one env var set still produces a working link.
+ * Returns a RELATIVE path when the split is off, so the link stays on whatever
+ * host is serving. It used to derive `app.<something>` unconditionally, which
+ * meant the landing page advertised a domain that did not exist — the link was
+ * dead for every visitor until the DNS was created.
+ *
+ * Pass the same paths you would use in a same-origin link (`/owner/login`).
  */
 export function appUrl(path = "/"): string {
   const explicit = process.env.NEXT_PUBLIC_APP_URL;
-  if (explicit) return `${explicit.replace(/\/$/, "")}${path}`;
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pointili.online";
-  try {
-    const u = new URL(site);
-    u.host = appHost(u.host);
-    return `${u.origin}${path}`;
-  } catch {
-    return `https://app.pointili.online${path}`;
-  }
+  if (!explicit) return path; // split off → one host, ordinary internal link
+  return `${explicit.replace(/\/$/, "")}${path}`;
 }
