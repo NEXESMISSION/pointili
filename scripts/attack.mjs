@@ -3,7 +3,7 @@
  * any diner can read out of the browser bundle.
  */
 import { createClient } from "@supabase/supabase-js";
-import { env } from "./db.mjs";
+import { env, onExit } from "./db.mjs";
 
 const anon = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 let held = 0;
@@ -86,6 +86,8 @@ const { data: made } = await svc.auth.admin.createUser({
   password: pw,
   email_confirm: true,
 });
+// deleted here AND on failure — a suite that throws used to leave a live account
+onExit(() => svc.auth.admin.deleteUser(made.user.id));
 
 // Any real café the attacker doesn't own works as the victim — RLS is what has
 // to hold, not the café's identity.
@@ -167,6 +169,8 @@ const { data: after } = await svc.from("businesses").select("name").eq("id", vic
 t("café B survived intact", after?.name === victim.name, after?.name ?? "GONE");
 
 await svc.from("businesses").delete().eq("id", mine.id);
+/* Registered as well as called: a suite that throws before this line used to
+   leave a live, sign-in-able account in the production database. */
 await svc.auth.admin.deleteUser(made.user.id);
 
 console.log(`\n${held} blocked, ${broke} exploitable`);

@@ -6,7 +6,7 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import { chromium } from "playwright-core";
-import { connect, env } from "./db.mjs";
+import { connect, env, onExit } from "./db.mjs";
 import { ensureTestCafe, dropTestCafe } from "./fixture.mjs";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
@@ -80,6 +80,8 @@ check("the old step-up screen is gone", goneRes?.status() === 404, `status=${gon
 const email = `plain${Date.now()}@example.com`;
 const pw = "Test-12345678";
 const { data: made } = await admin.auth.admin.createUser({ email, password: pw, email_confirm: true });
+// deleted here AND on failure — a suite that throws used to leave a live account
+onExit(() => admin.auth.admin.deleteUser(made.user.id));
 const plain = await b.newPage();
 await login(plain, email, pw);
 const res = await plain.goto(`${APP}/admin`, { waitUntil: "networkidle" });
@@ -98,6 +100,8 @@ check("plain owner gets 404 on the console", res?.status() === 404, `status=${re
   const { data: opMade } = await admin.auth.admin.createUser({
     email: opEmail, password: opPw, email_confirm: true,
   });
+  // deleted here AND on failure — a suite that throws used to leave a live account
+  onExit(() => admin.auth.admin.deleteUser(opMade.user.id));
   await admin.from("profiles").upsert(
     { id: opMade.user.id, email: opEmail, role: "super_admin" },
     { onConflict: "id" },

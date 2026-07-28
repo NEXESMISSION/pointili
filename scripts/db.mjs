@@ -34,6 +34,38 @@ export async function connect() {
 export { env };
 
 /*
+  Teardown that survives a failure.
+
+  Every suite here cleans up on its last line, which is never reached when an
+  assertion throws first — and the suites run against the REAL database. That is
+  how nine live, sign-in-able accounts ended up in production. Anything
+  registered below runs whichever way the suite ends.
+*/
+const _teardown = [];
+export const onExit = (fn) => _teardown.push(fn);
+let _ran = false;
+async function _sweep() {
+  if (_ran) return;
+  _ran = true;
+  for (const fn of _teardown.reverse()) {
+    try { await fn(); } catch { /* best effort — never mask the real failure */ }
+  }
+}
+process.on("unhandledRejection", async (e) => {
+  console.error("\n--- suite failed, cleaning up ---");
+  await _sweep();
+  console.error(e);
+  process.exit(1);
+});
+process.on("uncaughtException", async (e) => {
+  console.error("\n--- suite crashed, cleaning up ---");
+  await _sweep();
+  console.error(e);
+  process.exit(1);
+});
+
+
+/*
   The one-liner CLI — but ONLY when this file is what was run.
 
   Without the entry check, importing { env } from any script that takes its own

@@ -7,6 +7,7 @@ import type { Activity, OwnerCard } from "@/lib/db";
 import {
   addStampAction,
   adjustByCodeAction,
+  resetPinAction,
   collectAction,
   creditAction,
   historyByCodeAction,
@@ -386,6 +387,7 @@ function CustomerSheet({
   const [more, setMore] = useState(false);
   const [history, setHistory] = useState<Activity[] | null>(null);
   const [delta, setDelta] = useState("");
+  const [newPin, setNewPin] = useState("");
   const [stampSet, setStampSet] = useState(String(customer.stamps));
 
   const earned = Math.floor((Number(amount.replace(",", ".")) || 0) * pointsPerTnd);
@@ -615,6 +617,54 @@ function CustomerSheet({
                     className="a-btn a-btn--dark !w-auto shrink-0 px-4 !text-[12.5px]"
                   >
                     Définir
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/*
+              The ONLY way a customer can recover a forgotten code.
+
+              pin_hash is written in exactly one other place — account creation —
+              so before this, forgetting the code meant losing every card at
+              every shop, permanently, with nobody able to help. It belongs at
+              the counter because the hard part of a reset is proving who you
+              are, and that is already solved by standing in front of someone.
+            */}
+            {customer.enrolled && (
+              <>
+                <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.06em] text-white/45">
+                  Code secret oublié
+                </p>
+                <p className="mt-1 text-[11.5px] leading-snug text-white/45">
+                  Le client choisit un nouveau code à 4 chiffres et vous le tapez ici.
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    name="newPin"
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value.replace(/D/g, "").slice(0, 4))}
+                    inputMode="numeric"
+                    maxLength={4}
+                    placeholder="••••"
+                    aria-label="Nouveau code secret"
+                    className="a-field font-mono tracking-[0.4em]"
+                  />
+                  <button
+                    type="button"
+                    disabled={busy || newPin.length !== 4}
+                    onClick={() =>
+                      start(async () => {
+                        const r = await resetPinAction(customer.ref, newPin);
+                        if (r.ok) {
+                          setNewPin("");
+                          setFlash(r.message ?? "Code réinitialisé.");
+                        } else setErr(r.error ?? "Échec.");
+                      })
+                    }
+                    className="a-btn a-btn--dark !w-auto shrink-0 px-4 !text-[12.5px]"
+                  >
+                    Réinitialiser
                   </button>
                 </div>
               </>

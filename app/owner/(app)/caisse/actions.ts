@@ -333,3 +333,61 @@ export async function collectAction(
   revalidatePath(`/${cafe.slug}`); // the diner's history now shows what they collected
   return { ok: { label: res.label, code } };
 }
+
+/**
+ * Reset a customer's secret code, at the counter.
+ *
+ * THE HOLE THIS CLOSES: `pin_hash` was written in exactly one place — account
+ * creation. A customer who forgot their code lost every card at every shop,
+ * permanently, and nobody could help: not the shop, not the platform operator.
+ * There was no recovery path in the product at all.
+ *
+ * The counter is the right place for it, and the reason is that the hard part
+ * of a password reset is proving who you are — and here that is already solved
+ * by standing in front of someone. The cashier sees the customer, resolves them
+ * the same way they resolve anyone (code or number), and sets a new code the
+ * customer chooses out loud.
+ *
+ * Deliberately NOT self-service: a "forgot my code?" link on the diner side
+ * would need SMS to prove possession of the number, and until that exists such
+ * a link would be a way to take over any account by typing its phone number.
+ *
+ * It is scoped, not absolute: an owner can only reset someone who is a customer
+ * OF THEIR OWN SHOP — resolveCustomer already refuses anyone else — and the
+ * reset is written to the ledger of that shop so it is not silent.
+ */
+export type ResetPinResult = { ok: boolean; error?: string; message?: string };
+
+export async function resetPinAction(ref: string, newPin: string): Promise<ResetPinResult> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { ok: false, error: "Non autorisé." };
+
+  const pin = String(newPin ?? "").trim();
+  const { isValidPin, hashPin } = await import("@/lib/auth/crypto");
+  if (!isValidPin(pin)) return { ok: false, error: "Le code doit contenir 4 chiffres." };
+
+  // Resolving through the shop is the authorisation: it only ever returns a
+  // customer of THIS café, so an owner cannot reset a stranger.
+  const who = await resolveCustomer(cafe.id, ref);
+  if ("error" in who) return { ok: false, error: who.error };
+
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const db = createAdminClient();
+  const { data, error } = await db
+    .from("accounts")
+    .update({ pin_hash: await hashPin(pin) })
+    .eq("phone", who.phone)
+    .select("phone");
+
+  if (error) return { ok: false, error: "Impossible de changer le code." };
+  if (!data?.length) {
+    // A walk-in credited before signing up has no account row to reset.
+    return { ok: false, error: "Ce client n'a pas encore de compte." };
+  }
+
+  // Clear any lockout: the whole point is that they can get back in now.
+  await db.from("pin_attempts").delete().eq("phone", who.phone);
+
+  revalidatePath("/owner");
+  return { ok: true, message: `Code réinitialisé pour ${customerLabel(who)}.` };
+}
