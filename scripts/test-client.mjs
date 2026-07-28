@@ -158,16 +158,47 @@ await d.goto(`${BASE}/${TEST_SLUG}/boutique`, { waitUntil: "networkidle" });
   browsers suppress repeated native dialogs and a suppressed confirm() returns
   false, which silently killed the repeat-buy flow.
 */
-const buyOnce = () => d.locator('button:has-text("Échanger")').first().click();
+/*
+  The page is pick-then-commit now: choosing a reward highlights it, ONE button
+  commits, and the code takes over the screen. So a repeat buy is
+  reveal → "Échanger autre chose" → back to the picker → commit again.
+*/
+const buyOnce = async () => {
+  await d.locator('form button[type="submit"]').first().click();
+  await d
+    .waitForFunction(
+      () => /\b[A-Z2-9]{6}\b/.test(document.querySelector("main")?.innerText ?? ""),
+      undefined,
+      { timeout: 20000 },
+    )
+    .catch(() => {});
+};
 
+// remember what is on offer, so "still buyable" can mean something afterwards
+const offered = await d.locator("main").innerText();
 await buyOnce();
-await d.waitForFunction(() => /\b[A-Z2-9]{6}\b/.test(document.querySelector("main")?.innerText ?? ""), undefined, { timeout: 20000 }).catch(() => {});
 const buy1 = await d.locator("main").innerText();
 const code1 = buy1.match(/\b[A-Z2-9]{6}\b/)?.[0] ?? "";
 check("buying issues a counter code", !!code1, code1 || "none");
-check("the reward stays buyable after a purchase", /Échanger/.test(buy1));
+check(
+  "the code is shown with its deadline",
+  /à utiliser sous/i.test(buy1),
+  (buy1.match(/À utiliser[^\n]*/i) ?? [""])[0],
+);
 
-// buy a second time — a diner with points may stack codes
+// back to the picker, then buy again — a diner with points may stack codes
+await d.locator('button:has-text("Échanger autre chose")').click();
+await d.locator('form button[type="submit"]').first().waitFor({ timeout: 10000 });
+/* A reward is never consumed: it stays in the ladder and can be bought again.
+   NOT asserted on the button label — after spending, it correctly reads
+   "Encore N points" until the balance recovers. */
+const back1 = await d.locator("main").innerText();
+const firstReward = offered.match(/^(.+?)\n\s*\d+ points/m)?.[1]?.trim() ?? "";
+check(
+  "the reward stays listed after a purchase",
+  Boolean(firstReward) && back1.includes(firstReward),
+  firstReward || "no reward parsed",
+);
 await buyOnce();
 await d.waitForTimeout(3000);
 const { count: redemptions } = await admin

@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { CafeClosed } from "@/components/CafeClosed";
 import { GiftIcon } from "@/components/icons";
 import { getCafe, getMember, getRewards, nextRewardNudge } from "@/lib/data";
-import { RedeemForm } from "./RedeemForm";
+import { RewardPicker } from "./RewardPicker";
 
 export const metadata = { title: "Offres" };
 
@@ -26,76 +26,48 @@ export default async function Offres({
   const ladder = [...rewards].sort((a, b) => a.pointsCost - b.pointsCost);
 
   return (
-    <div className="flex flex-1 flex-col px-5 pb-6">
-      <section className="pb-4 pt-3">
-        <div className="flex items-baseline justify-between">
-          <h1 className="text-[24px] font-extrabold">Offres</h1>
-          <span className="text-[14px] font-bold tabular-nums text-white/90">{diner.balance} points ⭐</span>
-        </div>
-        {nudge && (
-          <p className="mt-1 text-[13px] font-medium text-white/70">
-            Encore <b className="text-white">{nudge.needed} points</b> pour{" "}
-            {nudge.target.label.toLowerCase()} !
+    <div className="relative flex flex-1 flex-col overflow-hidden px-5 pb-8">
+      {/* the same ambient glow as the signup screen — one client look */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-28 left-1/2 h-[300px] w-[300px] -translate-x-1/2 rounded-full opacity-60 blur-[70px]"
+        style={{ background: "radial-gradient(circle, #7b52ff 0%, transparent 68%)" }}
+      />
+
+      <div className="relative mx-auto w-full max-w-[420px]">
+        <section className="pb-5 pt-3 text-center">
+          <h1 className="text-[24px] font-extrabold text-white">Choisis ta récompense</h1>
+          <p className="mt-1 text-[13.5px] text-white/55">
+            Échange tes points contre du réel, chez {cafe.name}.
           </p>
+          <p className="mt-3 inline-flex items-baseline gap-1.5 rounded-full bg-white/[0.08] px-4 py-1.5">
+            <span className="text-[18px] font-extrabold tabular-nums text-[#b9a3ff]">
+              {diner.balance}
+            </span>
+            <span className="text-[12.5px] font-semibold text-white/60">points disponibles</span>
+          </p>
+          {nudge && (
+            <p className="mt-2 text-[12.5px] text-white/50">
+              Encore <b className="text-white/80">{nudge.needed}</b> pour{" "}
+              {nudge.target.label.toLowerCase()}.
+            </p>
+          )}
+        </section>
+
+        {ladder.length === 0 ? (
+          <div className="d-card px-5 py-10 text-center">
+            <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white/12">
+              <GiftIcon className="h-6 w-6 text-white" />
+            </span>
+            <p className="mt-3 text-[15px] font-bold text-white">Pas encore d&apos;offres</p>
+            <p className="mx-auto mt-1 max-w-[26ch] text-[13px] text-white/60">
+              Continue de cumuler des points — {cafe.name} en prépare.
+            </p>
+          </div>
+        ) : (
+          <RewardPicker slug={slug} rewards={ladder} balance={diner.balance} />
         )}
-        {ladder.length > 0 && (
-          <p className="mt-2 rounded-xl bg-white/[0.07] px-3.5 py-2 text-[12px] leading-snug text-white/70 ring-1 ring-white/10">
-            Échange tes points → tu reçois un <b className="text-white">code</b> à montrer au comptoir.
-          </p>
-        )}
-      </section>
-
-      {ladder.length === 0 ? (
-        <div className="d-card px-5 py-10 text-center">
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white/12">
-            <GiftIcon className="h-6 w-6 text-white" />
-          </span>
-          <p className="mt-3 text-[15px] font-bold text-white">Pas encore d&apos;offres</p>
-          <p className="mx-auto mt-1 max-w-[26ch] text-[13px] text-white/60">
-            Continue de cumuler des points — {cafe.name} en prépare.
-          </p>
-        </div>
-      ) : (
-        <ul className="space-y-2.5">
-          {ladder.map((r) => {
-            const affordable = diner.balance >= r.pointsCost;
-            return (
-              <li
-                key={r.id}
-                className={`flex items-center gap-3.5 rounded-2xl border bg-white/[0.06] px-3.5 py-3 ${
-                  affordable ? "border-white/30" : "border-white/12"
-                }`}
-              >
-                {r.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-                  <img src={r.imageUrl} alt="" className="h-11 w-11 shrink-0 rounded-xl object-cover" />
-                ) : (
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/12">
-                    <GiftIcon className="h-5 w-5 text-white" />
-                  </span>
-                )}
-
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[14.5px] font-bold text-white">{r.label}</span>
-                  <span className={`block text-[12.5px] font-bold ${affordable ? "text-[#ffd27a]" : "text-white/55"}`}>
-                    {r.pointsCost} points 🪙
-                  </span>
-                  {!affordable && (
-                    <span className="mt-1.5 block h-[4px] w-full overflow-hidden rounded-full bg-white/12">
-                      <span
-                        className="block h-full rounded-full bg-white/70"
-                        style={{ width: `${Math.min(100, Math.round((diner.balance / r.pointsCost) * 100))}%` }}
-                      />
-                    </span>
-                  )}
-                </span>
-
-                <RedeemForm slug={slug} reward={r} affordable={affordable} missing={r.pointsCost - diner.balance} />
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      </div>
     </div>
   );
 }
