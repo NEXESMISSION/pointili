@@ -446,3 +446,12 @@ h4 {
 }
 .k-quick:hover { border-color: #3d465e; color: #fff; }
 .k-quick:active { transform: scale(0.97); }
+
+/* The landing is dark while the app's default page surface is light lavender.
+   Without this the BODY behind the page stays light, which shows as a pale
+   flash on overscroll and behind the fold on short viewports. :has() scopes it
+   to the one route that opts in, so no layout needs to know about it. */
+body:has(.landing-dark) {
+  background: #070510;
+  color: #fff;
+}
