@@ -165,9 +165,9 @@ export default async function Landing({
         <div aria-hidden className="pointer-events-none absolute left-[-18%] top-[38%] h-[420px] w-[420px] rounded-full opacity-40 blur-[110px]"
           style={{ background: "radial-gradient(circle, #3b1d8f 0%, transparent 70%)" }} />
 
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-5 pb-16 pt-8 md:grid-cols-12 md:px-8 md:pb-28 md:pt-14">
+        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-5 pb-16 pt-8 md:grid-cols-12 md:px-8 md:pb-20 md:pt-12">
           <div className="md:col-span-7">
-            <h1 className="text-[46px] font-extrabold leading-[0.98] tracking-[-0.035em] md:text-[68px]">
+            <h1 className="text-[46px] font-extrabold leading-[0.98] tracking-[-0.035em] md:text-[56px] lg:text-[64px]">
               Une seule carte.
               <br />
               <span className="bg-gradient-to-r from-[#a78bfa] via-[#8b5cf6] to-[#6d28d9] bg-clip-text text-transparent">
@@ -195,7 +195,7 @@ export default async function Landing({
           </div>
 
           {/* bleeds past the right edge — the page does not end where the grid does */}
-          <div className="md:col-span-5 md:-mr-24 lg:-mr-32">
+          <div className="md:col-span-5 md:-mr-10 lg:-mr-16">
             <HeroStage />
           </div>
         </div>
@@ -525,8 +525,12 @@ function HeroStage() {
     { left: "76%", bottom: "72%", size: 8,  delay: "4.2s", dur: "6.9s" },
   ];
 
+  /* Capped, and capped tight. The render is 585×1090 — at full column width it
+     stood 1040px tall in a 900px viewport, so the entire first screen was phone
+     and the headline had to fight it. It is the proof, not the pitch: it stays
+     shorter than the fold and lets the type lead. */
   return (
-    <div className="relative mx-auto w-full max-w-[400px] md:max-w-none">
+    <div className="relative mx-auto w-full max-w-[400px] md:ml-auto md:mr-0 md:max-w-[340px] lg:max-w-[385px]">
       {/* the light it sits in */}
       <div
         aria-hidden
