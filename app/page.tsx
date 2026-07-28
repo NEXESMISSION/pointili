@@ -129,111 +129,140 @@ export default async function Landing({
       </header>
 
       {/* ── hero ─────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute right-[-10%] top-[-10%] h-[560px] w-[560px] rounded-full opacity-60 blur-[90px]"
-          style={{ background: "radial-gradient(circle, #7c3aed 0%, transparent 65%)" }}
-        />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-5 pb-10 pt-4 md:grid-cols-2 md:px-8 md:pb-20">
-          <div>
-            <h1 className="text-[44px] font-extrabold leading-[1.03] tracking-[-0.02em] md:text-[56px]">
+      {/*
+        Asymmetric on purpose: 7 columns of type against 5 of art, and the art
+        runs past the right edge. A centred two-up with equal halves is the
+        shape every generated page has.
+      */}
+      <section className="grain relative overflow-hidden">
+        {/* two lights, not one blob — a warm core and a cold rim */}
+        <div aria-hidden className="pointer-events-none absolute right-[-14%] top-[-24%] h-[620px] w-[620px] rounded-full opacity-70 blur-[100px]"
+          style={{ background: "radial-gradient(circle, #7c3aed 0%, rgba(124,58,237,.15) 45%, transparent 68%)" }} />
+        <div aria-hidden className="pointer-events-none absolute left-[-18%] top-[38%] h-[420px] w-[420px] rounded-full opacity-40 blur-[110px]"
+          style={{ background: "radial-gradient(circle, #3b1d8f 0%, transparent 70%)" }} />
+
+        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-5 pb-16 pt-8 md:grid-cols-12 md:px-8 md:pb-28 md:pt-14">
+          <div className="md:col-span-7">
+            <h1 className="text-[46px] font-extrabold leading-[0.98] tracking-[-0.035em] md:text-[68px]">
               Une seule carte.
               <br />
-              <span className="text-[#8b5cf6]">Toutes vos récompenses.</span>
+              <span className="bg-gradient-to-r from-[#a78bfa] via-[#8b5cf6] to-[#6d28d9] bg-clip-text text-transparent">
+                Toutes vos récompenses.
+              </span>
             </h1>
 
-            <p className="mt-6 text-[16.5px] leading-[1.75] text-white/65">
-              Scannez. Cumulez des points.
-              <br />
-              Revenez quand vous voulez.
-              <br />
-              <span className="font-bold text-[#8b5cf6]">Sans application.</span>
+            <p className="mt-7 max-w-[34ch] text-[17px] leading-[1.7] text-white/55">
+              Scannez. Cumulez des points. Revenez quand vous voulez.{" "}
+              <span className="font-semibold text-white">Sans application.</span>
             </p>
 
-            <Link
-              href={appUrl("/owner/signup")}
-              className="mt-8 inline-flex items-center gap-2.5 rounded-2xl bg-[#7c3aed] px-7 py-4 text-[15.5px] font-bold text-white shadow-[0_18px_44px_-16px_rgba(124,58,237,.95)] transition active:scale-[0.98]"
-            >
-              Commencer gratuitement <Arrow />
-            </Link>
-            <p className="mt-3 text-[12.5px] text-white/40">
-              14 jours gratuits • Sans carte bancaire
-            </p>
+            <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Link
+                href={appUrl("/owner/signup")}
+                className="group inline-flex items-center gap-2.5 rounded-full bg-[#7c3aed] px-7 py-4 text-[15px] font-bold text-white shadow-[0_20px_50px_-18px_rgba(124,58,237,1)] transition hover:bg-[#8b5cf6] active:scale-[0.98]"
+              >
+                Commencer gratuitement
+                <span className="transition-transform group-hover:translate-x-0.5"><Arrow /></span>
+              </Link>
+              <p className="text-[12.5px] text-white/35">
+                14 jours gratuits <span className="text-white/20">•</span> Sans carte bancaire
+              </p>
+            </div>
           </div>
 
-          <HeroArt className="mx-auto w-full max-w-[380px]" />
+          {/* bleeds past the right edge — the page does not end where the grid does */}
+          <div className="md:col-span-5 md:-mr-24 lg:-mr-32">
+            <HeroArt className="mx-auto w-full max-w-[400px] drop-shadow-[0_40px_80px_rgba(88,28,235,.45)] md:max-w-none" />
+          </div>
         </div>
       </section>
 
       {/* ── used by ──────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-10 md:px-8">
-        <p className="text-center text-[11px] font-bold uppercase tracking-[0.22em] text-white/35">
-          Utilisé par
-        </p>
-        <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+      {/* One line, not five cards. This is a credential, not a feature — giving
+          it the same visual weight as the pricing was the mistake. */}
+      <section className="mx-auto max-w-6xl px-5 md:px-8">
+        <div className="seam" />
+        <ul className="flex flex-wrap items-center justify-center gap-x-9 gap-y-5 py-8">
+          <li className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/25">
+            Utilisé par
+          </li>
           {TRADES.map(({ Icon, label }) => (
-            <li
-              key={label}
-              className="flex flex-col items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] px-3 py-7"
-            >
-              <Icon className="h-7 w-7 text-[#a78bfa]" />
-              <span className="text-[13.5px] font-semibold text-white/80">{label}</span>
+            <li key={label} className="flex items-center gap-2.5 text-white/45 transition hover:text-white/80">
+              <Icon className="h-[19px] w-[19px]" />
+              <span className="text-[14px] font-medium">{label}</span>
             </li>
           ))}
         </ul>
+        <div className="seam" />
       </section>
 
       {/* ── how it works ─────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-10 md:px-8">
-        <p className="text-center text-[11px] font-bold uppercase tracking-[0.22em] text-white/60">
+      <section className="mx-auto max-w-6xl px-5 py-20 md:px-8 md:py-28">
+        {/* A headline, not a fourth uppercase eyebrow. Repeating the same
+            label treatment at every section is what flattens a page. */}
+        <h2 className="max-w-[16ch] text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] md:text-[38px]">
           Comment <span className="text-[#8b5cf6]">ça marche</span>
-        </p>
+        </h2>
 
-        <ol className="mt-9 grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
-          {STEPS.map(({ n, Icon, a, b }, i) => (
+        <ol className="relative mt-12 grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-4">
+          {/* the thread the steps hang from — one line, behind everything */}
+          <span
+            aria-hidden
+            className="absolute left-0 right-0 top-[37px] hidden h-px md:block"
+            style={{ background: "linear-gradient(90deg,transparent,rgba(167,139,250,.28) 12%,rgba(167,139,250,.28) 88%,transparent)" }}
+          />
+          {STEPS.map(({ n, Icon, a, b }) => (
             <li key={n} className="relative flex flex-col items-center text-center">
-              <span className="relative">
-                <span className="grid h-[74px] w-[74px] place-items-center rounded-full border border-white/[0.09] bg-white/[0.04]">
-                  <Icon className="h-7 w-7 text-white" />
+              <span className="relative z-10">
+                {/* solid fill, so the thread passes behind and not through */}
+                <span className="grid h-[74px] w-[74px] place-items-center rounded-full border border-white/[0.09] bg-[#0d0919] transition group-hover:border-white/20">
+                  <Icon className="h-7 w-7 text-white/90" />
                 </span>
-                <span className="absolute -left-4 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-[#1a1330] text-[10.5px] font-bold text-white/70">
+                <span className="absolute -left-3 -top-1 grid h-[26px] w-[26px] place-items-center rounded-full bg-[#7c3aed] font-mono text-[10px] font-bold text-white tabular-nums">
                   {n}
                 </span>
               </span>
-              <p className="mt-4 text-[13.5px] font-semibold leading-snug text-white/85">
+              <p className="mt-5 text-[13.5px] font-semibold leading-snug text-white/75">
                 {a}
                 <br />
                 {b}
               </p>
-              {/* the connector, on wide screens only */}
-              {i < STEPS.length - 1 && (
-                <span aria-hidden className="absolute right-[-14px] top-[30px] hidden text-white/20 md:block">
-                  <Arrow className="h-5 w-5" />
-                </span>
-              )}
             </li>
           ))}
         </ol>
       </section>
 
       {/* ── three features ───────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-6 md:px-8">
-        <ul className="grid gap-3 md:grid-cols-3">
-          {FEATURES.map(({ Icon, title, text }) => (
-            <li key={title} className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6">
-              <div className="flex items-center gap-3">
-                <Icon className="h-6 w-6 shrink-0 text-[#a78bfa]" />
-                <p className="text-[15.5px] font-bold text-white">{title}</p>
-              </div>
-              <p className="mt-2.5 text-[13.5px] leading-relaxed text-white/50">{text}</p>
+      <section className="mx-auto max-w-6xl px-5 pb-6 md:px-8">
+        {/* Deliberately unequal. Three identical cards in a row is the single
+            most generated-looking shape on the web; the first one carries the
+            claim that matters and gets the room to say it. */}
+        <ul className="grid gap-3 md:grid-cols-5">
+          {FEATURES.map(({ Icon, title, text }, i) => (
+            <li
+              key={title}
+              className={`group relative overflow-hidden rounded-3xl border border-white/[0.07] bg-white/[0.02] p-7 transition hover:border-white/[0.14] hover:bg-white/[0.035] ${
+                i === 0 ? "md:col-span-3 md:p-9" : "md:col-span-2"
+              }`}
+            >
+              {i === 0 && (
+                <span aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full opacity-30 blur-3xl"
+                  style={{ background: "radial-gradient(circle,#7c3aed,transparent 70%)" }} />
+              )}
+              <Icon className={`relative text-[#a78bfa] ${i === 0 ? "h-8 w-8" : "h-6 w-6"}`} />
+              <p className={`relative mt-5 font-bold text-white ${i === 0 ? "text-[21px] tracking-[-0.01em]" : "text-[16px]"}`}>
+                {title}
+              </p>
+              <p className={`relative mt-2 leading-relaxed text-white/45 ${i === 0 ? "max-w-[30ch] text-[14.5px]" : "text-[13.5px]"}`}>
+                {text}
+              </p>
             </li>
           ))}
         </ul>
       </section>
 
       {/* ── the argument ─────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-6 md:px-8">
+      <section className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
         <div className="relative overflow-hidden rounded-3xl border border-[#7c3aed]/30 bg-gradient-to-br from-[#2b1065] via-[#1e1046] to-[#150c33] px-7 py-9 md:px-10 md:py-12">
           <div
             aria-hidden
@@ -241,7 +270,7 @@ export default async function Landing({
             style={{ background: "radial-gradient(circle, #8b5cf6 0%, transparent 65%)" }}
           />
           <div className="relative grid gap-8 md:grid-cols-2 md:items-center">
-            <h2 className="text-[30px] font-extrabold leading-[1.12] tracking-[-0.01em] md:text-[34px]">
+            <h2 className="text-[32px] font-extrabold leading-[1.06] tracking-[-0.03em] md:text-[40px]">
               Vos clients
               <br />
               reviennent déjà.
@@ -269,9 +298,12 @@ export default async function Landing({
       </section>
 
       {/* ── pricing ──────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-12 md:px-8">
-        <p className="text-center text-[11px] font-bold uppercase tracking-[0.22em] text-white/60">
+      <section className="mx-auto max-w-6xl px-5 pb-16 md:px-8 md:pb-24">
+        <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] md:text-[38px]">
           Un prix <span className="text-[#8b5cf6]">simple.</span>
+        </h2>
+        <p className="mt-3 max-w-[42ch] text-[14.5px] leading-relaxed text-white/45">
+          Pas de commission sur vos ventes. Pas de limite de clients.
         </p>
 
         <div className="mt-7 grid gap-3 md:grid-cols-[1.6fr_1fr]">
@@ -283,8 +315,11 @@ export default async function Landing({
 
             <div className="mt-5 grid gap-7 sm:grid-cols-2 sm:items-start">
               <div>
-                <p className="text-[46px] font-extrabold leading-none">
-                  80 <span className="align-middle text-[15px] font-bold text-white/60">TND / an</span>
+                <p className="text-[64px] font-extrabold leading-[0.85] tracking-[-0.04em] tabular-nums">
+                  80
+                  <span className="ml-1.5 align-super text-[14px] font-bold tracking-normal text-white/50">
+                    TND / an
+                  </span>
                 </p>
                 <p className="mt-3 max-w-[24ch] text-[13.5px] leading-relaxed text-white/55">
                   Tout ce dont vous avez besoin pour fidéliser vos clients.
@@ -318,8 +353,11 @@ export default async function Landing({
 
           {/* the half-year */}
           <div className="flex flex-col rounded-3xl border border-white/[0.07] bg-white/[0.025] p-7">
-            <p className="text-[38px] font-extrabold leading-none">
-              65 <span className="align-middle text-[14px] font-bold text-white/50">TND / 6 mois</span>
+            <p className="text-[40px] font-extrabold leading-[0.9] tracking-[-0.03em] tabular-nums text-white/85">
+              65
+              <span className="ml-1.5 align-super text-[12.5px] font-bold tracking-normal text-white/40">
+                TND / 6 mois
+              </span>
             </p>
             <p className="mt-3 text-[13.5px] leading-relaxed text-white/55">
               Parfait pour commencer.

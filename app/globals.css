@@ -455,3 +455,23 @@ body:has(.landing-dark) {
   background: #070510;
   color: #fff;
 }
+
+/* ── landing: the things that stop a dark page looking generated ────────
+   Flat #070510 with a clean radial blob is the giveaway. Real dark surfaces
+   have grain, and light that falls off unevenly. */
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
+}
+
+/* A hairline that fades at both ends — a full-width 1px border reads as a
+   wireframe, this reads as a seam. */
+.seam {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.09) 22%, rgba(255,255,255,.09) 78%, transparent);
+}
