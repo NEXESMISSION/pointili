@@ -196,15 +196,7 @@ export default async function Landing({
 
           {/* bleeds past the right edge — the page does not end where the grid does */}
           <div className="md:col-span-5 md:-mr-24 lg:-mr-32">
-            <Image
-              src="/hero-phone.png"
-              alt="La carte de fidélité Pointili sur un téléphone, avec la carte à QR code"
-              width={880}
-              height={1060}
-              priority
-              sizes="(max-width: 768px) 88vw, 42vw"
-              className="float mx-auto h-auto w-full max-w-[400px] drop-shadow-[0_50px_90px_rgba(88,28,235,.5)] md:max-w-none"
-            />
+            <HeroStage />
           </div>
         </div>
       </section>
@@ -499,6 +491,86 @@ export default async function Landing({
           <span>Contact</span>
         </nav>
       </footer>
+    </div>
+  );
+}
+
+/**
+ * The hero: a phone, and what happens around it.
+ *
+ * The render on its own is a static object in a lot of empty space. These three
+ * layers give it somewhere to be, and each one says something about the product
+ * rather than just moving:
+ *
+ *   the HALO   — the light it sits in, breathing
+ *   the RING   — slow rotation, so the frame is alive without being busy
+ *   the POINTS — small marks drifting upward past the phone. This is the literal
+ *                picture of "cumulez des points", which beats any abstract shape
+ *                because it is what the thing actually does.
+ *
+ * All decoration is aria-hidden: a screen reader gets the phone's alt text and
+ * nothing else. And it all stops dead under prefers-reduced-motion.
+ */
+function HeroStage() {
+  /* Deterministic, not random: a fresh layout every render would make the
+     server and client HTML disagree and hydration would complain. */
+  const points = [
+    { left: "6%",  bottom: "18%", size: 13, delay: "0s",   dur: "7.5s" },
+    { left: "16%", bottom: "42%", size: 9,  delay: "1.6s", dur: "6.4s" },
+    { left: "2%",  bottom: "62%", size: 11, delay: "3.1s", dur: "8.2s" },
+    { left: "84%", bottom: "26%", size: 10, delay: "0.9s", dur: "7.1s" },
+    { left: "92%", bottom: "54%", size: 14, delay: "2.4s", dur: "8.8s" },
+    { left: "76%", bottom: "72%", size: 8,  delay: "4.2s", dur: "6.9s" },
+  ];
+
+  return (
+    <div className="relative mx-auto w-full max-w-[400px] md:max-w-none">
+      {/* the light it sits in */}
+      <div
+        aria-hidden
+        className="halo pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[112%] w-[112%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[64px]"
+        style={{ background: "radial-gradient(circle, rgba(124,58,237,.7) 0%, rgba(124,58,237,.14) 46%, transparent 68%)" }}
+      />
+
+      {/* a ring, turning slowly */}
+      <div
+        aria-hidden
+        className="orbit pointer-events-none absolute left-1/2 top-1/2 -z-10 aspect-square w-[104%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{
+          background:
+            "conic-gradient(from 0deg, transparent 0deg, rgba(167,139,250,.34) 40deg, transparent 110deg, transparent 250deg, rgba(124,58,237,.22) 300deg, transparent 350deg)",
+          maskImage: "radial-gradient(circle, transparent 61%, #000 62%, #000 63.4%, transparent 64.4%)",
+          WebkitMaskImage: "radial-gradient(circle, transparent 61%, #000 62%, #000 63.4%, transparent 64.4%)",
+        }}
+      />
+
+      {/* points, rising past it */}
+      {points.map((p, i) => (
+        <span
+          key={i}
+          aria-hidden
+          className="spark pointer-events-none absolute -z-10 rounded-full bg-[#c4b5fd]"
+          style={{
+            left: p.left,
+            bottom: p.bottom,
+            width: p.size,
+            height: p.size,
+            animationDelay: p.delay,
+            animationDuration: p.dur,
+            boxShadow: "0 0 14px 3px rgba(167,139,250,.6)",
+          }}
+        />
+      ))}
+
+      <Image
+        src="/hero-phone-v2.png"
+        alt="La carte de fidélité Pointili sur un téléphone : 230 points, carte à tampons et récompenses à récupérer"
+        width={585}
+        height={1090}
+        priority
+        sizes="(max-width: 768px) 88vw, 42vw"
+        className="float relative h-auto w-full drop-shadow-[0_50px_90px_rgba(88,28,235,.55)]"
+      />
     </div>
   );
 }

@@ -550,3 +550,42 @@ body:has(.landing-dark) {
     box-shadow: 0 12px 30px -10px rgba(124,58,237,.85);
   }
 }
+
+/* ══ hero stage ═══════════════════════════════════════════════════════════
+   What sits BEHIND the phone. Three layers, each earning its place — this is
+   the first thing a visitor looks at, so it has to suggest the product rather
+   than just move.
+
+   Everything animates transform and opacity ONLY. Animating blur or box-shadow
+   would repaint a 600px area every frame and make a mid-range Android phone —
+   which is most of the audience — stutter on the one screen that matters. */
+
+/* the light the phone sits in, breathing slowly */
+@media (prefers-reduced-motion: no-preference) {
+  .halo { animation: halo-breathe 9s ease-in-out infinite; }
+}
+@keyframes halo-breathe {
+  0%, 100% { transform: scale(1);    opacity: .55; }
+  50%      { transform: scale(1.09); opacity: .8; }
+}
+
+/* a ring turning behind it — motion without noise, and slow enough that you
+   notice it only if you stop and look */
+@media (prefers-reduced-motion: no-preference) {
+  .orbit { animation: orbit-spin 46s linear infinite; }
+}
+@keyframes orbit-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* points, rising. The literal picture of "cumulez des points" — which beats any
+   abstract shape, because it is what the product does. */
+@media (prefers-reduced-motion: no-preference) {
+  .spark { animation: spark-rise 7s ease-in-out infinite; opacity: 0; }
+}
+@keyframes spark-rise {
+  0%       { opacity: 0; transform: translateY(26px) scale(.7); }
+  18%      { opacity: .95; }
+  70%      { opacity: .5; }
+  100%     { opacity: 0; transform: translateY(-92px) scale(1.05); }
+}
