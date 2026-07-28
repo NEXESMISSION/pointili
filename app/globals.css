@@ -493,7 +493,11 @@ body:has(.landing-dark) {
     .rise {
       animation: rise-in linear both;
       animation-timeline: view();
-      animation-range: entry 0% entry 55%;
+      /* Finishes as soon as the element is properly on screen. A longer range
+         looked smoother and meant a tall block sat half-faded for most of its
+         own height — and anything rendered without scrolling (a full-page
+         screenshot, a print, some crawlers) caught the whole page at 0. */
+      animation-range: entry 5% entry 35%;
     }
   }
 }

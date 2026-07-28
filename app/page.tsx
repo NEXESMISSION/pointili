@@ -221,14 +221,14 @@ export default async function Landing({
       </section>
 
       {/* ── how it works ─────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-20 md:px-8 md:py-28">
+      <section className="mx-auto max-w-6xl px-5 py-14 md:px-8 md:py-20">
         {/* A headline, not a fourth uppercase eyebrow. Repeating the same
             label treatment at every section is what flattens a page. */}
-        <h2 className="max-w-[16ch] text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] md:text-[38px]">
+        <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] md:text-[38px]">
           Comment <span className="text-[#8b5cf6]">ça marche</span>
         </h2>
 
-        <ol className="rise relative mt-12 grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-4">
+        <ol className="rise relative mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
           {/* the thread the steps hang from — one line, behind everything */}
           <span
             aria-hidden
@@ -257,7 +257,7 @@ export default async function Landing({
       </section>
 
       {/* ── three features ───────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 pb-6 md:px-8">
+      <section className="mx-auto max-w-6xl px-5 pb-4 md:px-8">
         {/*
           Deliberately unequal. Three identical cards in a row is the single most
           generated-looking shape on the web; the first carries the claim that
@@ -267,12 +267,14 @@ export default async function Landing({
           tile tilts and lights, and a hairline draws itself in. Nothing loops —
           a card shimmering forever in the corner of the eye reads as an advert.
         */}
-        <ul className="grid gap-3.5 md:grid-cols-5">
+        <ul className="grid gap-3.5 md:auto-rows-fr md:grid-cols-12">
           {FEATURES.map(({ Icon, title, text }, i) => (
             <li
               key={title}
-              className={`rise card-lift group rounded-3xl border border-white/[0.07] bg-white/[0.02] p-7 hover:border-white/[0.16] hover:bg-white/[0.04] ${
-                i === 0 ? "md:col-span-3 md:p-9" : "md:col-span-2"
+              className={`rise card-lift group flex flex-col rounded-3xl border border-white/[0.07] bg-white/[0.02] p-7 hover:border-white/[0.16] hover:bg-white/[0.04] ${
+                i === 0
+                  ? "md:col-span-5 md:row-span-2 md:justify-end md:p-9"
+                  : "md:col-span-7"
               }`}
               style={{ animationDelay: `${i * 90}ms` }}
             >
@@ -287,8 +289,8 @@ export default async function Landing({
               />
 
               <span
-                className={`tile relative flex items-center justify-center rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] text-white shadow-[0_10px_26px_-12px_rgba(124,58,237,.9)] ${
-                  i === 0 ? "h-14 w-14" : "h-12 w-12"
+                className={`tile relative flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] text-white shadow-[0_10px_26px_-12px_rgba(124,58,237,.9)] ${
+                  i === 0 ? "h-14 w-14 md:mb-auto" : "h-12 w-12"
                 }`}
               >
                 <Icon className={i === 0 ? "h-7 w-7" : "h-6 w-6"} />
@@ -303,7 +305,7 @@ export default async function Landing({
               </p>
               <p
                 className={`relative mt-2 leading-relaxed text-white/45 ${
-                  i === 0 ? "max-w-[30ch] text-[14.5px]" : "text-[13.5px]"
+                  i === 0 ? "max-w-[26ch] text-[15px]" : "text-[13.5px]"
                 }`}
               >
                 {text}
@@ -312,7 +314,7 @@ export default async function Landing({
               {/* the card's underline, drawn on hover */}
               <span
                 aria-hidden
-                className="mt-6 block h-px w-0 bg-gradient-to-r from-[#a78bfa] to-transparent transition-all duration-500 group-hover:w-full"
+                className="mt-5 block h-px w-0 bg-gradient-to-r from-[#a78bfa] to-transparent transition-all duration-500 group-hover:w-full"
               />
             </li>
           ))}
