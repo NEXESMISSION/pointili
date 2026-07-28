@@ -475,3 +475,78 @@ body:has(.landing-dark) {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,.09) 22%, rgba(255,255,255,.09) 78%, transparent);
 }
+
+/* ══ landing motion ═══════════════════════════════════════════════════════
+   Rules this obeys, because motion that ignores them is worse than none:
+
+   1. CONTENT IS VISIBLE BY DEFAULT. The reveal is applied only inside
+      @supports (animation-timeline: view()), so a browser without scroll-driven
+      animations shows a finished page rather than a blank one. Never hide
+      something and hope the JS/CSS lands.
+   2. prefers-reduced-motion wins, always. Vestibular disorders are real and a
+      marketing page is not worth a headache.
+   3. Nothing loops in the reader's periphery. Movement happens on arrival and
+      on intent (hover), then stops. */
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .rise {
+      animation: rise-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(26px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The hero art breathes — very slowly, and only once the page is idle. */
+@media (prefers-reduced-motion: no-preference) {
+  .float {
+    animation: float-y 7s ease-in-out infinite;
+  }
+}
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-14px); }
+}
+
+/* A card that answers the cursor. The sheen is a single pass on hover, not a
+   loop — a permanently shimmering card reads as an advert. */
+.card-lift {
+  position: relative;
+  overflow: hidden;
+  transition: transform .35s cubic-bezier(.2,.7,.3,1), border-color .35s, background-color .35s;
+}
+.card-lift::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 35%, rgba(167,139,250,.13) 50%, transparent 65%);
+  transform: translateX(-120%);
+  transition: transform .8s cubic-bezier(.2,.7,.3,1);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .card-lift:hover { transform: translateY(-4px); }
+  .card-lift:hover::after { transform: translateX(120%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-lift, .card-lift::after { transition: none; }
+  .card-lift:hover { transform: none; }
+}
+
+/* The icon tile lights up with its card. */
+.card-lift .tile {
+  transition: transform .35s cubic-bezier(.2,.7,.3,1), box-shadow .35s;
+}
+@media (hover: hover) {
+  .card-lift:hover .tile {
+    transform: scale(1.06) rotate(-3deg);
+    box-shadow: 0 12px 30px -10px rgba(124,58,237,.85);
+  }
+}

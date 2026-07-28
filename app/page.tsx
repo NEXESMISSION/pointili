@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { currentDiner } from "@/lib/auth/diner";
 import { appUrl } from "@/lib/hosts";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
-import { HeroArt, ShopArt } from "./LandingArt";
+import { ShopArt } from "./LandingArt";
 
 /**
  * The landing page, dark.
@@ -196,7 +196,15 @@ export default async function Landing({
 
           {/* bleeds past the right edge — the page does not end where the grid does */}
           <div className="md:col-span-5 md:-mr-24 lg:-mr-32">
-            <HeroArt className="mx-auto w-full max-w-[400px] drop-shadow-[0_40px_80px_rgba(88,28,235,.45)] md:max-w-none" />
+            <Image
+              src="/hero-phone.png"
+              alt="La carte de fidélité Pointili sur un téléphone, avec la carte à QR code"
+              width={880}
+              height={1060}
+              priority
+              sizes="(max-width: 768px) 88vw, 42vw"
+              className="float mx-auto h-auto w-full max-w-[400px] drop-shadow-[0_50px_90px_rgba(88,28,235,.5)] md:max-w-none"
+            />
           </div>
         </div>
       </section>
@@ -228,7 +236,7 @@ export default async function Landing({
           Comment <span className="text-[#8b5cf6]">ça marche</span>
         </h2>
 
-        <ol className="relative mt-12 grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-4">
+        <ol className="rise relative mt-12 grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-4">
           {/* the thread the steps hang from — one line, behind everything */}
           <span
             aria-hidden
@@ -258,28 +266,62 @@ export default async function Landing({
 
       {/* ── three features ───────────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-5 pb-6 md:px-8">
-        {/* Deliberately unequal. Three identical cards in a row is the single
-            most generated-looking shape on the web; the first one carries the
-            claim that matters and gets the room to say it. */}
-        <ul className="grid gap-3 md:grid-cols-5">
+        {/*
+          Deliberately unequal. Three identical cards in a row is the single most
+          generated-looking shape on the web; the first carries the claim that
+          matters and gets the room to say it.
+
+          Each card answers the cursor: it lifts, a sheen passes ONCE, the icon
+          tile tilts and lights, and a hairline draws itself in. Nothing loops —
+          a card shimmering forever in the corner of the eye reads as an advert.
+        */}
+        <ul className="grid gap-3.5 md:grid-cols-5">
           {FEATURES.map(({ Icon, title, text }, i) => (
             <li
               key={title}
-              className={`group relative overflow-hidden rounded-3xl border border-white/[0.07] bg-white/[0.02] p-7 transition hover:border-white/[0.14] hover:bg-white/[0.035] ${
+              className={`rise card-lift group rounded-3xl border border-white/[0.07] bg-white/[0.02] p-7 hover:border-white/[0.16] hover:bg-white/[0.04] ${
                 i === 0 ? "md:col-span-3 md:p-9" : "md:col-span-2"
               }`}
+              style={{ animationDelay: `${i * 90}ms` }}
             >
-              {i === 0 && (
-                <span aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full opacity-30 blur-3xl"
-                  style={{ background: "radial-gradient(circle,#7c3aed,transparent 70%)" }} />
-              )}
-              <Icon className={`relative text-[#a78bfa] ${i === 0 ? "h-8 w-8" : "h-6 w-6"}`} />
-              <p className={`relative mt-5 font-bold text-white ${i === 0 ? "text-[21px] tracking-[-0.01em]" : "text-[16px]"}`}>
+              {/* the light each card sits under, brightest on the wide one */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -right-20 -top-20 h-52 w-52 rounded-full blur-3xl transition-opacity duration-500 group-hover:opacity-70"
+                style={{
+                  background: "radial-gradient(circle,#7c3aed,transparent 70%)",
+                  opacity: i === 0 ? 0.34 : 0.16,
+                }}
+              />
+
+              <span
+                className={`tile relative flex items-center justify-center rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] text-white shadow-[0_10px_26px_-12px_rgba(124,58,237,.9)] ${
+                  i === 0 ? "h-14 w-14" : "h-12 w-12"
+                }`}
+              >
+                <Icon className={i === 0 ? "h-7 w-7" : "h-6 w-6"} />
+              </span>
+
+              <p
+                className={`relative mt-6 font-bold tracking-[-0.015em] text-white ${
+                  i === 0 ? "text-[22px]" : "text-[16.5px]"
+                }`}
+              >
                 {title}
               </p>
-              <p className={`relative mt-2 leading-relaxed text-white/45 ${i === 0 ? "max-w-[30ch] text-[14.5px]" : "text-[13.5px]"}`}>
+              <p
+                className={`relative mt-2 leading-relaxed text-white/45 ${
+                  i === 0 ? "max-w-[30ch] text-[14.5px]" : "text-[13.5px]"
+                }`}
+              >
                 {text}
               </p>
+
+              {/* the card's underline, drawn on hover */}
+              <span
+                aria-hidden
+                className="mt-6 block h-px w-0 bg-gradient-to-r from-[#a78bfa] to-transparent transition-all duration-500 group-hover:w-full"
+              />
             </li>
           ))}
         </ul>
@@ -287,12 +329,23 @@ export default async function Landing({
 
       {/* ── the argument ─────────────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
-        <div className="relative overflow-hidden rounded-3xl border border-[#7c3aed]/30 bg-gradient-to-br from-[#2b1065] via-[#1e1046] to-[#150c33] px-7 py-9 md:px-10 md:py-12">
-          <div
+        {/*
+          The panel artwork carries this section — light falls off across it in a
+          way a CSS gradient does not. object-cover on a 2.5:1 source, so it crops
+          rather than stretches when the box gets tall on a phone.
+        */}
+        <div className="rise relative overflow-hidden rounded-3xl px-7 py-9 md:px-10 md:py-12">
+          <Image
+            src="/panel-glow.png"
+            alt=""
             aria-hidden
-            className="pointer-events-none absolute -bottom-24 -right-16 h-72 w-72 rounded-full opacity-40 blur-[70px]"
-            style={{ background: "radial-gradient(circle, #8b5cf6 0%, transparent 65%)" }}
+            fill
+            sizes="(max-width: 768px) 100vw, 1152px"
+            className="-z-10 object-cover"
           />
+          {/* keeps the copy legible wherever the artwork happens to be bright */}
+          <div aria-hidden className="absolute inset-0 -z-10 bg-[#0d0722]/35" />
+
           <div className="relative grid gap-8 md:grid-cols-2 md:items-center">
             <h2 className="text-[32px] font-extrabold leading-[1.06] tracking-[-0.03em] md:text-[40px]">
               Vos clients
@@ -330,7 +383,7 @@ export default async function Landing({
           Pas de commission sur vos ventes. Pas de limite de clients.
         </p>
 
-        <div className="mt-7 grid gap-3 md:grid-cols-[1.6fr_1fr]">
+        <div className="rise mt-7 grid gap-3 md:grid-cols-[1.6fr_1fr]">
           {/* the year */}
           <div className="relative overflow-hidden rounded-3xl border border-[#7c3aed]/40 bg-gradient-to-br from-[#3b1a86] via-[#2a1263] to-[#1a0f3d] p-7 md:p-8">
             <span className="inline-block rounded-md bg-[#7c3aed] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
