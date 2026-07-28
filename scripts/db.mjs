@@ -2,6 +2,7 @@
 import pg from "pg";
 import { setDefaultResultOrder } from "node:dns";
 import { readFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 /*
   Prefer IPv4 when resolving the database host.
@@ -32,7 +33,17 @@ export async function connect() {
 }
 export { env };
 
-if (process.argv[2]) {
+/*
+  The one-liner CLI — but ONLY when this file is what was run.
+
+  Without the entry check, importing { env } from any script that takes its own
+  arguments made this fire and try to execute argv[2] as SQL. A script called
+  with an e-mail address died inside the Postgres scanner, nowhere near the
+  actual mistake.
+*/
+const isEntry = process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
+
+if (isEntry && process.argv[2]) {
   const c = await connect();
   const r = await c.query(process.argv[2]);
   console.table(r.rows);

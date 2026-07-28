@@ -18,7 +18,7 @@ export default function AdminError({
       title="Console indisponible"
       message="Ta session console a peut-être expiré, ou la base n'a pas répondu."
       reset={reset}
-      homeHref="/admin/login"
+      homeHref="/admin"
       homeLabel="Reconnecter la console"
     />
   );

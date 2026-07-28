@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import QRCode from "qrcode";
-import { ownerCafe } from "@/lib/auth/owner";
+import { ownerCafe, ownerHome } from "@/lib/auth/owner";
 import { businessType } from "@/lib/businessTypes";
 import { getLoyaltyProgram } from "@/lib/data";
 import { PrintKit } from "./PrintKit";
@@ -19,7 +19,7 @@ export default async function QrPage() {
   const cafe = await ownerCafe();
   // No café yet → set one up. NOT /owner/login: that would see a valid session
   // and bounce straight back here, forever.
-  if (!cafe) redirect("/owner/nouveau");
+  if (!cafe) redirect(await ownerHome());
 
   const program = await getLoyaltyProgram(cafe.id);
   const type = businessType(cafe.businessType);

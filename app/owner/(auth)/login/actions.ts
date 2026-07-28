@@ -37,8 +37,8 @@ export async function loginAction(
     second hop never committed. Resolving the destination here removes the chain
     — and saves every returning owner a redirect on every sign-in.
   */
-  const { ownerCafe } = await import("@/lib/auth/owner");
-  redirect((await ownerCafe()) ? "/owner" : "/owner/nouveau");
+  const { ownerHome } = await import("@/lib/auth/owner");
+  redirect(await ownerHome());
 }
 
 export async function signupAction(

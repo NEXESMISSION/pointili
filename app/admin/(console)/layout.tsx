@@ -1,21 +1,30 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { elevationRemaining, isElevated } from "@/lib/auth/elevate";
 import { currentOwner } from "@/lib/auth/owner";
-import { adminLogoutAction, dropElevationAction } from "../login/actions";
+import { adminLogoutAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 /**
- * The platform console — modern brand (Royal Mauve), matching the landing.
+ * The platform console shell.
  *
- * Three gates, in order:
- *   1. signed in           → else /owner/login
- *   2. role = super_admin  → else 404 (never confirm the console exists)
- *   3. elevated in the last 30 min → else /admin/login
+ * TWO gates, and no ceremony:
+ *   1. signed in          → else /owner/login
+ *   2. role = super_admin → else 404, so the console never confirms it exists
  *
- * The RPCs behind every action re-check the role in Postgres, so removing this
- * layout would only make the UI reachable, not hand anyone the keys.
+ * There is no step-up screen. It used to demand the same password a second time
+ * behind a "ZONE SENSIBLE" banner with a 30-minute countdown — which announced
+ * the console's existence, made an operator authenticate twice to reach their
+ * own tool, and locked them out mid-task. One sign-in at /owner/login is the
+ * whole door now.
+ *
+ * The chrome is deliberately plain: no gradient header, no badges, no alarm
+ * colours. This is an internal tool for one person and it should read like a
+ * table of facts. Everything decorative in here was competing with the only
+ * question that matters — which café needs a decision.
+ *
+ * The RPCs behind every action re-check is_super() in Postgres, so this layout
+ * decides what is SHOWN, never what is ALLOWED.
  */
 export default async function ConsoleLayout({
   children,
@@ -25,60 +34,35 @@ export default async function ConsoleLayout({
   const owner = await currentOwner();
   if (!owner) redirect("/owner/login");
   if (owner.role !== "super_admin") notFound();
-  if (!(await isElevated(owner.id))) redirect("/admin/login");
-
-  const minsLeft = Math.ceil((await elevationRemaining()) / 60);
 
   return (
-    /* max-w-5xl, not max-w-md: the whole point of the café table is comparing
-       shops side by side, and a 448px column around a 560px table means it
-       scrolls sideways forever with two thirds of a laptop screen empty. */
-    <div className="modern mx-auto flex min-h-dvh max-w-5xl flex-col bg-[#0b0d12]">
-      <header className="bg-gradient-to-br from-[#5b3fd1] to-[#3a2494] px-5 py-4">
-        <div className="flex items-center justify-between">
-          <span className="text-[16px] font-extrabold text-white">
-            pointili<span className="text-white/60">.console</span>
+    /* max-w-5xl, not max-w-md: the point of the café table is comparing shops
+       side by side, and a 448px column around a 560px table scrolls sideways
+       forever with two thirds of a laptop screen empty. */
+    <div className="k-shell mx-auto flex min-h-dvh max-w-5xl flex-col">
+      <header className="flex items-center justify-between border-b border-[#232838] px-5 py-3">
+        <span className="font-mono text-[13px] font-semibold tracking-tight text-[#8b93a7]">
+          pointili<span className="text-[#4b5163]">/</span>console
+        </span>
+        <div className="flex items-center gap-4">
+          <span className="hidden font-mono text-[11px] text-[#5b6478] sm:inline">
+            {owner.email}
           </span>
-          <span className="rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
-            {minsLeft} min
-          </span>
-        </div>
-      </header>
-
-      {minsLeft <= 5 && (
-        <p className="bg-[#fff3d6] px-5 py-2 text-[11.5px] font-semibold text-[#ffc861]">
-          Verrouillage dans {minsLeft} min — vous devrez retaper votre mot de passe.
-        </p>
-      )}
-
-      <main className="flex-1 px-5 py-5">{children}</main>
-
-      <nav className="sticky bottom-0 z-20 flex items-center justify-between gap-2 border-t border-[#232838] bg-[#0e1118] px-3 py-2.5">
-        <Link
-          href="/"
-          className="rounded-xl px-3 py-3 text-[12px] font-bold text-[#8b93a7]"
-        >
-          ← Mon café
-        </Link>
-        <div className="flex items-center gap-1">
-          <form action={dropElevationAction}>
-            <button
-              type="submit"
-              className="rounded-xl px-3 py-3 text-[12px] font-bold text-[#8b93a7]"
-            >
-              Verrouiller
-            </button>
-          </form>
+          <Link href="/" className="text-[12px] font-medium text-[#8b93a7] hover:text-[#e6e8ee]">
+            Site
+          </Link>
           <form action={adminLogoutAction}>
             <button
               type="submit"
-              className="rounded-xl px-3 py-3 text-[12px] font-bold text-[#e5484d]"
+              className="text-[12px] font-medium text-[#8b93a7] hover:text-[#e5484d]"
             >
-              Déconnexion
+              Quitter
             </button>
           </form>
         </div>
-      </nav>
+      </header>
+
+      <main className="flex-1 px-5 py-6">{children}</main>
     </div>
   );
 }

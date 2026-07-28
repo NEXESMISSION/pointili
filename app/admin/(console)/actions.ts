@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireElevatedSuperAdmin } from "@/lib/auth/owner";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export type AdminState = { error?: string; ok?: string };
 
@@ -15,8 +17,10 @@ export type AdminState = { error?: string; ok?: string };
  */
 function guardMessage(e: unknown): string {
   const m = e instanceof Error ? e.message : "";
-  if (m === "NEEDS_ELEVATION") {
-    return "Console verrouillée — retapez votre mot de passe.";
+  // NEEDS_ELEVATION is gone with the step-up screen, but a stale in-flight
+  // request can still carry it — treat it as "sign in again", which is now true.
+  if (m === "NEEDS_ELEVATION" || m === "UNAUTHORISED") {
+    return "Session expirée — reconnectez-vous.";
   }
   if (m === "UNAUTHORISED") {
     return "Session expirée — reconnectez-vous.";
@@ -168,7 +172,7 @@ export async function dismissNoticeAction(id: string): Promise<void> {
   try {
     me = await requireElevatedSuperAdmin();
   } catch {
-    return; // fail closed; the notice simply stays until the operator re-elevates
+    return; // fail closed; the notice simply stays
   }
   if (!id) return;
 
@@ -177,4 +181,33 @@ export async function dismissNoticeAction(id: string): Promise<void> {
 
   revalidatePath("/admin");
   revalidatePath("/owner"); // the owner's banner should disappear too
+}
+
+/**
+ * Leave the console and sign out entirely.
+ *
+ * Lives here rather than under /admin/login, which no longer exists: signing in
+ * once at /owner/login is the only door to the console now.
+ */
+export async function adminLogoutAction() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/");
+}
+
+/**
+ * One-tap renewal from the work queue.
+ *
+ * A plain <form action={…}> passes only FormData, while setPlanAction has the
+ * useActionState signature (prev, formData). This adapts it, so the queue can
+ * offer "+6 mois" as a single button instead of making the operator open a
+ * drawer and fill three fields to do the most common thing on the screen.
+ */
+export async function quickRenewAction(formData: FormData): Promise<void> {
+  await setPlanAction({}, formData);
+}
+
+/** Lift a suspension from the queue, without opening the drawer. */
+export async function quickUnsuspendAction(formData: FormData): Promise<void> {
+  await setSuspendedAction({}, formData);
 }

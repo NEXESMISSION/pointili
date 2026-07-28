@@ -42,23 +42,19 @@ const login = async (page, email, password) => {
 };
 
 /**
- * Signing in is no longer enough to reach the console — it needs a step-up
- * re-auth (see scripts/test-console.mjs for that boundary itself).
+ * Signing in IS enough to reach the console — the step-up screen is gone. The
+ * role is the gate, checked in the layout and re-checked by every admin_* RPC
+ * in Postgres. scripts/test-console.mjs guards that boundary itself.
  */
-const elevate = async (page, password) => {
-  await page.goto(`${APP}/admin/login`, { waitUntil: "networkidle" });
-  if (new URL(page.url()).pathname === "/admin/login") {
-    await page.fill('input[name="password"]', password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL((u) => u.pathname === "/admin", { timeout: 20000 }).catch(() => {});
-  }
+const openConsole = async (page) => {
+  await page.goto(`${APP}/admin`, { waitUntil: "networkidle" });
 };
 
 // ── 1. super-admin reaches /admin ───────────────────────────────────
 const sa = await b.newPage({ viewport: { width: 390, height: 844 } });
 await login(sa, SUPER.email, SUPER.password);
-await elevate(sa, SUPER.password);
-check("elevated super-admin reaches /admin", new URL(sa.url()).pathname === "/admin", new URL(sa.url()).pathname);
+await openConsole(sa);
+check("super-admin reaches /admin with one sign-in", new URL(sa.url()).pathname === "/admin", new URL(sa.url()).pathname);
 const adminTxt = await sa.locator("main").innerText();
 // Assert on the café this test provisions ("Café Test"). The admin query has no
 // owner filter, so the fixture appearing proves the console lists every café —

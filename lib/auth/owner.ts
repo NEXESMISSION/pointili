@@ -90,6 +90,25 @@ export async function ownerAccess(): Promise<OwnerAccess | null> {
   return null;
 }
 
+/**
+ * Where a signed-in account belongs the moment it arrives.
+ *
+ * A PLATFORM OPERATOR is not a shop. A super-admin with no café of their own —
+ * which is what a dedicated operator account should be — used to be told to
+ * "créez votre café" by every screen in the owner app, because the only branch
+ * was "has a café / does not". They would then either create a junk café to get
+ * past it, or never find the console at all.
+ *
+ * So the question is not "do you have a café" but "what are you here to do".
+ */
+export async function ownerHome(): Promise<string> {
+  const owner = await ownerAccess();
+  if (!owner) return "/owner/login";
+  if (await ownerCafe()) return "/owner";
+  // No café: an operator goes to the console, a shop owner goes to set one up.
+  return owner.role === "super_admin" ? "/admin" : "/owner/nouveau";
+}
+
 export async function requireSuperAdmin(): Promise<OwnerSession> {
   const owner = await requireOwner();
   if (owner.role !== "super_admin") throw new Error("FORBIDDEN");
@@ -99,17 +118,18 @@ export async function requireSuperAdmin(): Promise<OwnerSession> {
 /**
  * The gate for EVERY platform action.
  *
- * Being a super-admin is not enough — the console is a separate, sensitive
- * surface, so it demands a recent, explicit re-authentication (see
- * lib/auth/elevate.ts). A stolen owner session cannot suspend a café; it would
- * also need the password, within the last 30 minutes.
+ * Being a signed-in super-admin IS the gate. There is no second password
+ * screen: the console used to demand a step-up re-authentication with a
+ * 30-minute window, which meant an operator typed the same password twice to
+ * reach their own tool, and got thrown out mid-task when the clock ran down.
  *
- * Throws NEEDS_ELEVATION so callers can send the user to /admin/login rather
- * than showing a dead end.
+ * What that bought is worth naming, because it is now gone: a STOLEN owner
+ * session can reach the console. What still stands is the part that mattered
+ * more — profiles.role is not writable by anyone (0021), so the role cannot be
+ * self-issued, and every admin_* RPC re-checks is_super(p_actor) in Postgres,
+ * so the UI is never the thing holding the door.
  */
 export async function requireElevatedSuperAdmin(): Promise<OwnerSession> {
-  const owner = await requireSuperAdmin();
-  const { isElevated } = await import("./elevate");
-  if (!(await isElevated(owner.id))) throw new Error("NEEDS_ELEVATION");
-  return owner;
+  return requireSuperAdmin();
 }
+

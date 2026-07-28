@@ -43,75 +43,38 @@ const login = async (page, email, password) => {
   await page.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 20000 }).catch(() => {});
 };
 
-// ── 1. THE THREAT: a signed-in super-admin is NOT automatically in ──
+/*
+  ── THE DOOR ────────────────────────────────────────────────────────
+  There is ONE sign-in. The console used to demand a second password behind a
+  "ZONE SENSIBLE" screen with a 30-minute countdown; that is gone, so what
+  guards the console now is the ROLE, checked in the layout AND re-checked by
+  every admin_* RPC in Postgres.
+
+  These assertions are what stands in its place. The console must open for a
+  super-admin with nothing but their session, and must be invisible — not
+  merely refused — to everyone else.
+*/
 const sa = await b.newPage({ viewport: { width: 390, height: 844 } });
 await login(sa, SUPER.email, SUPER.password);
 await sa.goto(`${APP}/admin`, { waitUntil: "networkidle" });
 check(
-  "owner session alone does NOT open the console",
-  new URL(sa.url()).pathname === "/admin/login",
+  "one sign-in opens the console — no second password",
+  new URL(sa.url()).pathname === "/admin",
   new URL(sa.url()).pathname,
 );
+
+const consoleTxt = await sa.locator("body").innerText();
+check("the console shows the work queue", /À traiter/i.test(consoleTxt));
+check("the console does not shout", !/ZONE SENSIBLE|Confirmez votre mot de passe/i.test(consoleTxt));
 
 // the owner app must not advertise it
 await sa.goto(`${APP}/owner`, { waitUntil: "networkidle" });
 const navHtml = await sa.locator("nav").last().innerHTML();
-check("owner nav does not link the console", !/\/admin/.test(navHtml));
+check("owner nav does not link the console", !navHtml.includes("/admin"));
 
-// ── 2. a wrong password does not elevate ────────────────────────────
-await sa.goto(`${APP}/admin/login`, { waitUntil: "networkidle" });
-await sa.fill('input[name="password"]', "definitely-not-it");
-await sa.click('button[type="submit"]');
-const refused = await sa
-  .waitForFunction(() => /incorrect/i.test(document.body.innerText), undefined, { timeout: 20000 })
-  .then(() => true)
-  .catch(() => false);
-check("wrong password refused", refused);
-await sa.goto(`${APP}/admin`, { waitUntil: "networkidle" });
-check("still locked out after a wrong password", new URL(sa.url()).pathname === "/admin/login");
-
-// ── 3. the right password elevates ──────────────────────────────────
-await sa.fill('input[name="password"]', SUPER.password);
-await sa.click('button[type="submit"]');
-await sa.waitForURL((u) => u.pathname === "/admin", { timeout: 20000 }).catch(() => {});
-check("correct password unlocks the console", new URL(sa.url()).pathname === "/admin", new URL(sa.url()).pathname);
-const listed = await sa
-  .waitForFunction(() => /Tous les caf/.test(document.body.innerText), undefined, { timeout: 20000 })
-  .then(() => true)
-  .catch(() => false);
-check("console shows the cafés", listed);
-
-// ── 4. the elevation cookie is scoped + httpOnly ────────────────────
-const cookies = await sa.context().cookies();
-const elev = cookies.find((c) => c.name === "pointili_admin");
-check("elevation cookie is httpOnly", elev?.httpOnly === true);
-// The cookie Path is matched against the URL BAR, which shows the PUBLIC path.
-// Scoping it to the internal /admin would mean it is simply never sent back.
-check("elevation cookie is scoped to /admin", elev?.path === "/admin", elev?.path);
-check("elevation cookie is sameSite=Strict", elev?.sameSite === "Strict", String(elev?.sameSite));
-check(
-  "elevation is short-lived (<= 30 min)",
-  elev ? elev.expires * 1000 - Date.now() <= 31 * 60 * 1000 : false,
-  elev ? `${Math.round((elev.expires * 1000 - Date.now()) / 60000)} min` : "none",
-);
-const jsReadable = await sa.evaluate(() => document.cookie.includes("pointili_admin"));
-check("elevation cookie unreadable from JS (XSS-proof)", !jsReadable);
-
-// ── 5. locking drops elevation, session survives ────────────────────
-await sa.locator('button:has-text("Verrouiller")').click();
-await sa.waitForURL((u) => !u.pathname.startsWith("/admin"), { timeout: 20000 }).catch(() => {});
-await sa.goto(`${APP}/admin`, { waitUntil: "networkidle" });
-check("locking re-closes the console", new URL(sa.url()).pathname === "/admin/login");
-await sa.goto(`${APP}/owner`, { waitUntil: "networkidle" });
-check("locking keeps the owner signed in", new URL(sa.url()).pathname === "/owner");
-
-// ── 6. a forged elevation cookie is rejected ────────────────────────
-await sa.context().addCookies([
-  { name: "pointili_admin", value: "forged.token", domain: "app.localhost", path: "/admin" },
-]);
-await sa.goto(`${APP}/admin`, { waitUntil: "networkidle" });
-check("forged elevation cookie rejected", new URL(sa.url()).pathname === "/admin/login");
-await sa.context().clearCookies();
+// the old step-up door is gone for good
+const goneRes = await sa.goto(`${APP}/admin/login`, { waitUntil: "networkidle" });
+check("the old step-up screen is gone", goneRes?.status() === 404, `status=${goneRes?.status()}`);
 
 // ── 7. a plain owner learns nothing ─────────────────────────────────
 const email = `plain${Date.now()}@example.com`;
@@ -119,8 +82,40 @@ const pw = "Test-12345678";
 const { data: made } = await admin.auth.admin.createUser({ email, password: pw, email_confirm: true });
 const plain = await b.newPage();
 await login(plain, email, pw);
-const res = await plain.goto(`${APP}/admin/login`, { waitUntil: "networkidle" });
-check("plain owner gets 404 on the console door", res?.status() === 404, `status=${res?.status()}`);
+const res = await plain.goto(`${APP}/admin`, { waitUntil: "networkidle" });
+check("plain owner gets 404 on the console", res?.status() === 404, `status=${res?.status()}`);
+
+// ── 7b. a PLATFORM OPERATOR is not a shop ───────────────────────────
+/*
+  A super-admin with no café of their own is the normal shape for an operator
+  account. Every screen in the owner app used to answer "no café" with
+  "créez votre café", so an operator was trapped on a shop-creation form with
+  no way out but to create a junk café.
+*/
+{
+  const opEmail = `operator-${Date.now()}@example.com`;
+  const opPw = "Operator-12345678";
+  const { data: opMade } = await admin.auth.admin.createUser({
+    email: opEmail, password: opPw, email_confirm: true,
+  });
+  await admin.from("profiles").upsert(
+    { id: opMade.user.id, email: opEmail, role: "super_admin" },
+    { onConflict: "id" },
+  );
+
+  const op = await b.newPage({ viewport: { width: 390, height: 844 } });
+  await login(op, opEmail, opPw);
+  const landed = new URL(op.url()).pathname;
+  check("an operator with no café is not sent to café setup",
+    !landed.startsWith("/owner/nouveau"), landed);
+
+  await op.goto(`${APP}/owner`, { waitUntil: "networkidle" });
+  check("the till redirects an operator to the console",
+    new URL(op.url()).pathname.startsWith("/admin"), new URL(op.url()).pathname);
+
+  await op.close();
+  await admin.auth.admin.deleteUser(opMade.user.id);
+}
 
 // ── 8. an unelevated action fails closed at the server ──────────────
 // Read whatever café exists — this only asserts the forged POST changed nothing.

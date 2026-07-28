@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ownerCafe } from "@/lib/auth/owner";
+import { ownerCafe, ownerHome } from "@/lib/auth/owner";
 import { getStats, MIN_SAMPLE, type Range, type Stats } from "@/lib/stats";
 
 export const metadata = { title: "Analyses" };
@@ -33,7 +33,7 @@ export default async function Analytics({
   searchParams: Promise<{ p?: string }>;
 }) {
   const cafe = await ownerCafe();
-  if (!cafe) redirect("/owner/nouveau");
+  if (!cafe) redirect(await ownerHome());
 
   const { p } = await searchParams;
   const picked = RANGES.find((r) => r.slug === p) ?? RANGES[1];

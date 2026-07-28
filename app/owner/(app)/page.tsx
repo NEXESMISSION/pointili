@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { ownerCafe } from "@/lib/auth/owner";
+import { ownerCafe, ownerHome } from "@/lib/auth/owner";
 import { getLoyaltyProgram } from "@/lib/data";
 import { CaisseDesk } from "./caisse/CaisseForms";
 
@@ -17,7 +17,7 @@ export default async function OwnerHome() {
   const cafe = await ownerCafe();
   // No café yet → set one up. NOT /owner/login: that would see a valid session
   // and bounce straight back here, forever.
-  if (!cafe) redirect("/owner/nouveau");
+  if (!cafe) redirect(await ownerHome());
   const program = await getLoyaltyProgram(cafe.id);
 
   return (

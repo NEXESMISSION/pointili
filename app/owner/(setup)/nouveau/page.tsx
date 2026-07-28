@@ -1,12 +1,18 @@
 import { redirect } from "next/navigation";
-import { ownerCafe } from "@/lib/auth/owner";
+import { ownerHome } from "@/lib/auth/owner";
 import { CreateCafeForm } from "./CreateCafeForm";
 
 export const metadata = { title: "Créer mon café" };
 
 export default async function NouveauCafe() {
-  // Already has one → nothing to set up.
-  if (await ownerCafe()) redirect("/");
+  /*
+    Only a shop owner with no café belongs here. Anyone else is sent where they
+    actually belong — a café they already own, or, for a platform operator, the
+    console. A super-admin used to be trapped on this form with no way out but
+    to create a junk café.
+  */
+  const home = await ownerHome();
+  if (home !== "/owner/nouveau") redirect(home);
 
   return (
     <div>

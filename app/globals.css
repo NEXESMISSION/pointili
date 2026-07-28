@@ -430,3 +430,19 @@ h4 {
     opacity: 0 !important;
   }
 }
+
+/* A queue action in the console: small, plain, and identical whether it renews
+   or reactivates. The console has one visual weight on purpose — nothing in an
+   internal tool should look more important than the row it sits on. */
+.k-quick {
+  border-radius: 6px;
+  border: 1px solid #2b3145;
+  background: #1a1f2b;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #c9cfdd;
+  white-space: nowrap;
+}
+.k-quick:hover { border-color: #3d465e; color: #fff; }
+.k-quick:active { transform: scale(0.97); }
