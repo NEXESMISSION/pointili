@@ -338,7 +338,7 @@ if (redeemCode) {
   // browser.newPage() gets a fresh context — no diner cookie, like a new phone.
   const back = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await back.goto(`${BASE}/${SLUG}/rejoindre`, { waitUntil: "networkidle" });
-  await back.locator('button:has-text("déjà une carte")').click();
+  await back.locator('button:has-text("déjà un compte")').click();
   await back.fill('input[name="phone"]', PHONE);
   await back.fill('input[name="pin"]', PIN);
   await back.locator('form button[type="submit"]').click();

@@ -82,7 +82,7 @@ for (const [path, needle] of [["/codes", "Mes codes"], ["/historique", "Historiq
 {
   const back = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await back.goto(`${BASE}/${TEST_SLUG}/rejoindre`, { waitUntil: "networkidle" });
-  await back.locator('button:has-text("déjà une carte")').click();
+  await back.locator('button:has-text("déjà un compte")').click();
   await back.fill('input[name="phone"]', `216${LOCAL}`); // country code, no '+'
   await back.fill('input[name="pin"]', PIN);
   await back.locator('form button[type="submit"]').click();
@@ -104,7 +104,7 @@ for (const [path, needle] of [["/codes", "Mes codes"], ["/historique", "Historiq
   const typo = `${LOCAL.slice(0, -1)}${(Number(LOCAL.slice(-1)) + 1) % 10}`;
   const t = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await t.goto(`${BASE}/${TEST_SLUG}/rejoindre`, { waitUntil: "networkidle" });
-  await t.locator('button:has-text("déjà une carte")').click();
+  await t.locator('button:has-text("déjà un compte")').click();
   await t.fill('input[name="phone"]', typo);
   await t.fill('input[name="pin"]', PIN);
   await t.locator('form button[type="submit"]').click();
