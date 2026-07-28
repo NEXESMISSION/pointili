@@ -414,15 +414,11 @@ export default async function Landing({
           <Brand />
           <p className="mt-2 text-[12px] text-white/40">Produit tunisien 🇹🇳</p>
         </div>
-        {/*
-          Plain text, not links: there is no privacy page and no terms page yet,
-          and a link to nothing is the defect that already had to be removed from
-          this footer once (three social icons that led nowhere). Each becomes a
-          link the day its page exists.
-        */}
+        {/* Real links now — both pages exist. "Contact" stays plain text until
+            there is an address to put behind it. */}
         <nav className="flex flex-wrap gap-x-7 gap-y-2 text-[13px] text-white/40">
-          <span>Confidentialité</span>
-          <span>Conditions</span>
+          <Link href="/confidentialite" className="hover:text-white/70">Confidentialité</Link>
+          <Link href="/conditions" className="hover:text-white/70">Conditions</Link>
           <span>Contact</span>
         </nav>
       </footer>

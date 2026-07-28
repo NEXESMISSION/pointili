@@ -161,11 +161,15 @@ export function JoinForm({ slug }: { slug: string }) {
         </button>
 
         {!returning && (
-          /* Plain text, not a link: there is no terms page yet, and a link to
-             nothing is the same defect as the dead social icons just removed
-             from the landing. It becomes a link the day the page exists. */
           <p className="pt-0.5 text-center text-[11.5px] leading-relaxed text-white/35">
-            En continuant, tu acceptes nos conditions d&apos;utilisation.
+            En continuant, tu acceptes nos{" "}
+            <a href="/conditions" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-white/60">
+              conditions
+            </a>{" "}
+            et notre{" "}
+            <a href="/confidentialite" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-white/60">
+              politique de confidentialité
+            </a>.
           </p>
         )}
       </form>

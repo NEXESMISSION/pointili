@@ -8,6 +8,28 @@ import { createClient } from "@/lib/supabase/server";
 
 export type AdminState = { error?: string; ok?: string };
 
+/** What the row looks like AFTER the write — the only thing worth reporting. */
+type PostState = { ok: boolean; live?: boolean; until?: string | null; reason?: string };
+
+/**
+ * Turn the post-state into a sentence.
+ *
+ * Deliberately built from what came BACK, never from what was sent. The console
+ * used to compose its confirmation from the form values, in a branch order that
+ * did not match Postgres's — so "Gratuit" with duration 0 announced
+ * « illimitée » at the moment it took the café dark.
+ */
+function verdict(r: PostState, done: string): string {
+  const until = r.until ? new Date(r.until) : null;
+  const dark = r.live === false;
+  const when = until
+    ? until.getTime() <= Date.now()
+      ? "expiré"
+      : `jusqu'au ${until.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}`
+    : "sans limite";
+  return dark ? `${done} — le café est HORS LIGNE (${when}).` : `${done} — en ligne, ${when}.`;
+}
+
 /**
  * Turn a guard failure into something the operator can act on.
  *
@@ -74,20 +96,15 @@ export async function setPlanAction(
     p_amount: amount,
     p_unit: unit,
   });
-  if (error || !(data as { ok: boolean })?.ok) {
-    return { error: "Impossible de changer la formule." };
+  const res = data as PostState | null;
+  if (error || !res?.ok) {
+    return { error: res?.reason === "introuvable" ? "Café introuvable." : "Impossible de changer la formule." };
   }
 
   revalidatePath("/admin");
   revalidatePath("/owner");
-  const label = { hours: "h", days: "j", months: "mois" }[unit];
   return {
-    ok:
-      plan === "free"
-        ? "Formule gratuite (illimitée) appliquée."
-        : amount === 0
-          ? "Expiré immédiatement."
-          : `${plan} · +${amount} ${label}.`,
+    ok: verdict(res, `Formule « ${plan} »`),
   };
 }
 
@@ -117,12 +134,15 @@ export async function setSuspendedAction(
     p_suspended: suspend,
     p_reason: reason || null,
   });
-  if (error || !(data as { ok: boolean })?.ok) {
-    return { error: "Action impossible." };
+  const res = data as PostState | null;
+  if (error || !res?.ok) {
+    return { error: res?.reason === "introuvable" ? "Café introuvable." : "Action impossible." };
   }
 
   revalidatePath("/admin");
-  return { ok: suspend ? "Café suspendu." : "Café réactivé." };
+  /* Reactivating does NOT necessarily make a café live — its subscription may
+     have expired while it was off. verdict() reads that from the row. */
+  return { ok: verdict(res, suspend ? "Café suspendu" : "Suspension levée") };
 }
 
 export async function noticeAction(
