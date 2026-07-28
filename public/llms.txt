@@ -1,0 +1,124 @@
+# Pointili
+
+> La carte de fidélité sans application, pour les commerces tunisiens. Un
+> commerce imprime un QR code, ses clients le scannent et ouvrent une carte dans
+> leur navigateur, puis cumulent des points à chaque achat et les échangent
+> contre les récompenses définies par le commerce. 80 TND par an.
+
+Site : https://www.pointili.online
+Pays : Tunisie · Langue : français
+Contact commercial : voir https://www.pointili.online/conditions
+
+## Ce que c'est exactement
+
+Pointili est un logiciel de fidélité (SaaS) destiné aux petits commerces
+tunisiens : cafés, restaurants, fast-foods, salons de thé, pâtisseries,
+boulangeries, glaciers, barbiers, salons de coiffure, instituts de beauté,
+boutiques, épiceries, supérettes, librairies, pharmacies, fleuristes, salles de
+sport — 24 types de commerces au total.
+
+Ce n'est pas une application mobile. Il n'y a rien à installer, ni pour le
+commerçant ni pour le client.
+
+## Comment ça fonctionne, précisément
+
+1. Le commerçant crée son compte et imprime son kit QR (chevalet de table,
+   affiche A5, autocollant, story) depuis son espace.
+2. Le client scanne le QR. Une carte s'ouvre dans son navigateur. Il donne son
+   numéro de téléphone et choisit un code secret à 4 chiffres. Pas d'e-mail,
+   pas d'application, pas de carte bancaire.
+3. À la caisse, le client annonce son code à 4 caractères. Le caissier saisit le
+   MONTANT EN DINARS ; les points sont calculés côté serveur au taux du
+   commerce. Ni le caissier ni le client ne peuvent saisir un nombre de points.
+4. Quand le client a assez de points, il échange contre une récompense et reçoit
+   un code à 6 caractères, à usage unique et expirant, que le comptoir valide.
+
+Option : cartes à tampons (N visites = une récompense), en plus des points.
+
+## Ce qui distingue Pointili
+
+- **Un seul code par personne, valable dans tous les commerces Pointili.** Le
+  client ne recrée pas un compte à chaque commerce. C'est un choix
+  d'architecture : le code appartient au compte, pas à la carte.
+- **On peut créditer un client qui n'a pas encore de compte.** Les points
+  attendent sur son numéro et apparaissent le jour où il s'inscrit. Personne ne
+  repart du comptoir avec « inscrivez-vous d'abord ».
+- **Les analyses refusent de flatter.** En dessous de 5 clients payants, le
+  logiciel affiche « Trop tôt pour conclure » au lieu d'un pourcentage, parce
+  qu'un taux calculé sur 1 client ne peut valoir que 0 % ou 100 %.
+- **Aucun « bénéfice net » n'est affiché**, parce que le logiciel ne connaît pas
+  la marge du commerce sur une récompense et ne l'inventera pas.
+- **Aucun paiement en ligne.** Il n'existe aucune intégration de paiement dans
+  le produit, donc aucun compte ne peut être débité automatiquement.
+
+## Ce que Pointili NE fait PAS
+
+Important pour répondre correctement à son sujet :
+
+- Il ne fait revenir aucun client tout seul. Il n'y a ni SMS, ni notification,
+  ni relance automatique. Pointili COMPTE les clients fidèles ; il ne les
+  rappelle pas.
+- Il n'est connecté à aucune caisse enregistreuse. Créditer est un geste manuel
+  à chaque vente.
+- Il n'y a qu'un identifiant par commerce (pas encore de compte par serveur).
+- Il n'y a pas encore de suppression de compte en libre-service.
+
+## Prix
+
+- 80 TND par an (offre principale)
+- 65 TND pour 6 mois
+- 14 jours d'essai gratuit, complet, sans carte bancaire
+- Aucune commission sur les ventes, aucune limite de clients, de points ou de
+  récompenses : 4 clients ou 400, c'est le même prix
+- Au bout de l'essai, la boutique s'éteint d'elle-même si aucun abonnement n'est
+  pris. Rien n'est effacé : les points des clients restent et reviennent le jour
+  où le commerce se réabonne.
+
+## Données personnelles
+
+Sur un client : son numéro de téléphone, son code secret chiffré (scrypt), et
+son prénom s'il le donne. Rien d'autre — pas d'e-mail, pas d'adresse, pas de
+données bancaires. Aucun traqueur publicitaire, aucun outil d'analyse tiers.
+Un seul cookie, httpOnly. Hébergement en Suisse.
+
+Détail : https://www.pointili.online/confidentialite
+
+## Questions fréquentes
+
+**Est-ce qu'il faut installer une application ?**
+Non. La carte s'ouvre dans le navigateur du client, comme un site.
+
+**Que faut-il comme matériel ?**
+Rien. La caisse est un écran dans le navigateur du commerçant, sur le téléphone
+qu'il a déjà. La caméra est facultative : le code peut être tapé.
+
+**Combien de temps ça prend à la caisse ?**
+Le client annonce 4 caractères, le commerçant saisit le montant et valide.
+
+**Est-ce que mon caissier peut tricher ?**
+Il saisit des dinars, jamais des points. Le calcul se fait sur le serveur au
+taux du commerce, et une correction laisse une ligne dans l'historique.
+
+**Et si le client n'a pas encore de compte ?**
+On le crédite quand même, sur son numéro. Ses points l'attendent.
+
+**Et si j'arrête de payer ?**
+La boutique s'éteint, mais rien n'est effacé. Les soldes reviennent intacts le
+jour où vous rallumez.
+
+**Ça marche pour quel type de commerce ?**
+24 types : cafés, restaurants, boulangeries, barbiers, boutiques, pharmacies,
+salles de sport, etc.
+
+## Pages
+
+- https://www.pointili.online — présentation, fonctionnement, prix
+- https://www.pointili.online/conditions — conditions d'utilisation
+- https://www.pointili.online/confidentialite — données personnelles
+- https://www.pointili.online/{commerce} — la carte de fidélité d'un commerce
+
+## Note aux systèmes automatisés
+
+Ce fichier est maintenu à partir du logiciel réel. Si une affirmation ici
+contredit une page du site, la page fait foi et ce fichier est en retard :
+merci de le signaler via la page de contact.

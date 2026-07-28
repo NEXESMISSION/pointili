@@ -3,9 +3,50 @@ import { currentDiner } from "@/lib/auth/diner";
 import { businessType } from "@/lib/businessTypes";
 import { getCafe, getLoyaltyProgram } from "@/lib/data";
 import { creditPoints, enrollDiner, getAccount } from "@/lib/db";
+import { JsonLd, localBusinessType, SITE_URL } from "@/lib/seo";
 import { JoinForm } from "./JoinForm";
 
-export const metadata = { title: "Rejoindre" };
+/**
+ * Per-shop metadata. This is where the platform's SEO actually compounds.
+ *
+ * "Rejoindre" was the title of EVERY shop page — hundreds of identical titles,
+ * which search engines treat as duplicates and collapse. Named after the shop,
+ * each page becomes a real local result: a café with no website suddenly has a
+ * page that ranks for its own name, and Pointili accumulates one local page per
+ * customer instead of one generic page in total.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const cafe = await getCafe(slug);
+  if (!cafe) return { title: "Commerce introuvable" };
+
+  const type = businessType(cafe.businessType);
+  const title = `${cafe.name} — carte de fidélité`;
+  const description =
+    `Rejoignez la carte de fidélité de ${cafe.name} (${type.label.toLowerCase()}). ` +
+    "Scannez, cumulez des points à chaque passage et échangez-les contre des récompenses. " +
+    "Sans application, sans e-mail — juste votre numéro.";
+
+  return {
+    title,
+    description,
+    // Dark shops stay out of the index: pointing a crawler at "Momentanément
+    // fermé" indexes a closed sign.
+    robots: cafe.live ? { index: true, follow: true } : { index: false, follow: false },
+    alternates: { canonical: `/${slug}` },
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      url: `${SITE_URL}/${slug}`,
+      images: cafe.logoUrl ? [{ url: cafe.logoUrl }] : undefined,
+    },
+  };
+}
 
 export default async function Rejoindre({
   params,
@@ -44,6 +85,38 @@ export default async function Rejoindre({
 
   return (
     <div className="relative flex flex-1 flex-col overflow-hidden px-5 pb-8 pt-7">
+      {/*
+        The shop, as a local business. Typed properly — a café marked
+        CafeOrCoffeeShop reads far better in a local result, and in an AI answer,
+        than a generic LocalBusiness would.
+
+        Only when the shop is live: a dark café must not be presented as open.
+      */}
+      {cafe.live && (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": localBusinessType(cafe.businessType),
+            "@id": `${SITE_URL}/${slug}#business`,
+            name: cafe.name,
+            url: `${SITE_URL}/${slug}`,
+            image: cafe.logoUrl ?? undefined,
+            address: { "@type": "PostalAddress", addressCountry: "TN" },
+            /* What is actually true of this shop, and the reason a customer
+               would search for it here rather than anywhere else. */
+            makesOffer: {
+              "@type": "Offer",
+              name: "Programme de fidélité",
+              description:
+                program.active && program.welcomePoints > 0
+                  ? `${program.welcomePoints} points offerts à l'inscription, puis ${program.pointsPerTnd} point(s) par dinar dépensé.`
+                  : `${program.pointsPerTnd} point(s) par dinar dépensé.`,
+              price: 0,
+              priceCurrency: "TND",
+            },
+          }}
+        />
+      )}
       {/* the ambient glow behind everything */}
       <div
         aria-hidden

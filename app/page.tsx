@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentDiner } from "@/lib/auth/diner";
 import { appUrl } from "@/lib/hosts";
+import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
 import { HeroArt, ShopArt } from "./LandingArt";
 
 /**
@@ -21,9 +22,9 @@ import { HeroArt, ShopArt } from "./LandingArt";
  */
 
 export const metadata = {
-  title: "pointili.online — Une carte de fidélité, tous vos commerces",
-  description:
-    "La carte de fidélité sans application. Vos clients scannent un QR code, cumulent des points et récupèrent leurs récompenses. 80 TND par an, 14 jours gratuits.",
+  title: "Une carte de fidélité, tous vos commerces",
+  description: DESCRIPTION,
+  alternates: { canonical: "/" },
 };
 
 /* ── icons, local to this page ────────────────────────────────────────── */
@@ -96,6 +97,29 @@ export default async function Landing({
 
   return (
     <div className="landing-dark min-h-dvh bg-[#070510] text-white">
+      {/*
+        Server-rendered schema.org, so a crawler that runs no JavaScript still
+        sees it — which is most AI crawlers. Deliberately no aggregateRating: we
+        have no reviews, and inventing one is both a lie and the fastest way to
+        have the whole block ignored.
+      */}
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@graph": [
+            organisation(),
+            product(),
+            {
+              "@type": "WebSite",
+              "@id": `${SITE_URL}/#website`,
+              url: SITE_URL,
+              name: "Pointili",
+              inLanguage: "fr",
+              publisher: { "@id": `${SITE_URL}/#organization` },
+            },
+          ],
+        }}
+      />
       {/* ── top bar ──────────────────────────────────────────────── */}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 md:px-8">
         <Brand />

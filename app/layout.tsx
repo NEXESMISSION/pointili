@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { DESCRIPTION, KEYWORDS, SITE_NAME, SITE_URL, TAGLINE } from "@/lib/seo";
 import { Fraunces, Space_Mono, Inter, Poppins } from "next/font/google";
 import "./globals.css";
 
@@ -27,13 +28,50 @@ const poppins = Poppins({
   weight: ["500", "600", "700", "800"],
 });
 
+/*
+  The default title said "Drink. Earn. Play. Win." and the description promised
+  "jeux" — both left over from the prize wheel, which is not part of the product
+  and has not been for some time. A stale title is not cosmetic: it is what a
+  search result and an AI answer both quote.
+
+  metadataBase matters more than it looks. Without it every Open Graph and
+  canonical URL is emitted relative, which means a shared link has no image and
+  a crawler cannot resolve the canonical. Set NEXT_PUBLIC_SITE_URL to the host
+  that does NOT redirect — the apex 308s to www, so it is the www one.
+*/
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "pointili.online — Drink. Earn. Play. Win.",
-    template: "%s · pointili.online",
+    default: `${SITE_NAME} — ${TAGLINE}`,
+    template: `%s · ${SITE_NAME}`,
   },
-  description:
-    "Le programme de fidélité qui transforme vos clients de passage en habitués. Points, jeux et récompenses — sans app à installer.",
+  description: DESCRIPTION,
+  keywords: KEYWORDS,
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  alternates: { canonical: "/" },
+  category: "business",
+  openGraph: {
+    type: "website",
+    locale: "fr_TN",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — ${TAGLINE}`,
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} — ${TAGLINE}`,
+    description: DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+  },
+  formatDetection: { telephone: false },
 };
 
 // Mobile-only mandate (§01): lock the viewport to phone width.
