@@ -50,7 +50,7 @@ export default async function Codes({
           </span>
           <p className="mt-3 text-[15px] font-bold text-white">Aucun code en attente</p>
           <p className="mx-auto mt-1 max-w-[28ch] text-[13px] text-white/60">
-            Échange tes points dans les Offres — le code apparaîtra ici.
+            Échange tes points dans les Récompenses — le code apparaîtra ici.
           </p>
         </div>
       ) : (
@@ -67,7 +67,7 @@ export default async function Codes({
                 </span>
               </span>
               <span className="shrink-0 rounded-xl bg-white px-3 py-2 text-center">
-                <span className="block font-mono text-[18px] font-extrabold tracking-[0.14em] text-charcoal">
+                <span className="block font-mono text-[18px] font-bold tracking-[0.14em] text-charcoal">
                   {c.code}
                 </span>
               </span>

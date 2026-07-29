@@ -12,6 +12,14 @@ const fraunces = Fraunces({
 const spaceMono = Space_Mono({
   variable: "--font-space-mono",
   subsets: ["latin"],
+  /*
+    400 and 700 are the ONLY weights Space Mono ships. Anything heavier is
+    synthesised by the browser, and at the sizes the customer's 4-character code
+    is drawn (13–34px) the fake bold smears the wide glyphs — M and W fill in
+    solid. Four independent walkthroughs of the app failed to read a code for
+    exactly this reason ("E A ▮ ▮"), on the one string a customer has to say out
+    loud at a counter. Every code chip is font-bold, never font-extrabold.
+  */
   weight: ["400", "700"],
 });
 

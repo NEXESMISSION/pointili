@@ -139,7 +139,21 @@ export function CaisseDesk({
 
   return (
     <div className="space-y-4">
-      {/* two modes, nothing else */}
+      {/*
+        Two modes, named by the JOB, not by the input.
+
+        They used to read "Un client" / "Un code", and both sides then explained
+        themselves as "the code the customer shows on their phone" — because
+        that is literally true of both: the account code is 4 characters, the
+        reward voucher is 6, and they come from the same alphabet. So the tabs
+        described the same thing twice and the cashier had to know which code
+        was which to pick a tab. Guess wrong and the answer was "Client
+        introuvable — vérifiez le code", which blames the customer for a tab
+        mistake, in front of a queue.
+
+        The cashier does not think "I have a code". They think "this person is
+        paying" or "this person is collecting". So that is what the tabs say.
+      */}
       <div className="grid grid-cols-2 gap-1 rounded-2xl bg-white/[0.07] p-1">
         {(["client", "code"] as const).map((m) => (
           <button
@@ -149,11 +163,11 @@ export function CaisseDesk({
               setMode(m);
               setError("");
             }}
-            className={`rounded-xl py-3 text-[14px] font-bold transition ${
+            className={`rounded-xl px-2 py-3 text-[13.5px] font-bold leading-tight transition ${
               mode === m ? "bg-[#6d4ae6] text-white shadow-lg" : "text-white/55"
             }`}
           >
-            {m === "client" ? "Un client" : "Un code"}
+            {m === "client" ? "Ajouter des points" : "Valider une récompense"}
           </button>
         ))}
       </div>
@@ -387,6 +401,17 @@ function CustomerSheet({
   const [more, setMore] = useState(false);
   const [history, setHistory] = useState<Activity[] | null>(null);
   const [delta, setDelta] = useState("");
+  /*
+    The last credit, so it can be taken back from the line that announces it.
+
+    The confirmation is the ONLY moment the cashier learns they fat-fingered —
+    "+600 points · nouveau solde 610" is where a 60 typed as 600 becomes
+    visible. Until now the reversal lived behind "Corriger / Historique", the
+    smallest control on a screen whose every other control is 16–24px, and then
+    asked them to work out and type "-600" while a queue watched. The undo now
+    sits in the sentence that caused the doubt.
+  */
+  const [lastCredit, setLastCredit] = useState<number | null>(null);
   const [newPin, setNewPin] = useState("");
   const [stampSet, setStampSet] = useState(String(customer.stamps));
 
@@ -408,6 +433,9 @@ function CustomerSheet({
       if (res.ok) {
         setBalance(res.ok.balance);
         setAmount("");
+        // only the earned points are reversible here — a one-time welcome bonus
+        // is not part of the mistake and taking it back would be a second one
+        setLastCredit(res.ok.earned > 0 ? res.ok.earned : null);
         setFlash(
           `+${res.ok.earned} points` +
             (res.ok.welcome > 0 ? ` · +${res.ok.welcome} de bienvenue` : "") +
@@ -492,9 +520,35 @@ function CustomerSheet({
         </p>
 
         {flash && (
-          <p role="status" className="mt-3 rounded-2xl bg-[#7ff0b0]/12 px-4 py-3 text-[13.5px] font-bold text-[#7ff0b0]">
-            {flash}
-          </p>
+          <div
+            role="status"
+            className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-[#7ff0b0]/12 px-4 py-3"
+          >
+            <p className="min-w-0 text-[13.5px] font-bold text-[#7ff0b0]">{flash}</p>
+            {lastCredit !== null && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  const back = lastCredit;
+                  setLastCredit(null);
+                  start(async () => {
+                    const r = await adjustByCodeAction(customer.ref, -back);
+                    if (r.ok && typeof r.balance === "number") {
+                      setBalance(r.balance);
+                      setFlash(`Annulé : −${back} points · solde ${r.balance} points`);
+                    } else {
+                      setLastCredit(back);
+                      setErr(r.error ?? "Échec.");
+                    }
+                  });
+                }}
+                className="shrink-0 rounded-full bg-white/12 px-3.5 py-1.5 text-[12.5px] font-bold text-white active:scale-95"
+              >
+                Annuler
+              </button>
+            )}
+          </div>
         )}
         {err && (
           <p role="alert" className="mt-3 rounded-2xl bg-[#ff6b6b]/12 px-4 py-3 text-[13.5px] font-semibold text-[#ff9a9a]">
@@ -751,7 +805,7 @@ function ValidateInner({ onReset }: { onReset: () => void }) {
 
   return (
     <section className="a-card p-5">
-      <h2 className="text-[15px] font-extrabold text-white">Valider un code</h2>
+      <h2 className="text-[15px] font-extrabold text-white">Valider une récompense</h2>
 
       {done ? (
         <>

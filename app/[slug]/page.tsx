@@ -73,7 +73,7 @@ export default async function Carte({
         {program.stampsEnabled ? (
           <StampCard shown={stampView.shown} expiry={stampView.expiry} program={program} />
         ) : (
-          <PointsCard balance={diner.balance} rewards={rewards} />
+          <PointsCard balance={diner.balance} rewards={rewards} rate={program.pointsPerTnd} />
         )}
       </div>
 
@@ -116,7 +116,7 @@ export default async function Carte({
             and these are a different thing — expiring reward vouchers.
           */}
           <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-white/55">
-            Cadeaux à récupérer
+            Récompenses à récupérer
           </p>
           <ul className="space-y-2">
             {diner.codes.map((c) => (
@@ -143,7 +143,7 @@ export default async function Carte({
       {offers.length > 0 && (
         <section className="px-5 pt-5">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-[15px] font-extrabold text-white">Offres disponibles</h2>
+            <h2 className="text-[15px] font-extrabold text-white">Récompenses disponibles</h2>
             <Link href={`/${slug}/boutique`} className="text-[12.5px] font-bold text-white/70">
               Voir tout
             </Link>
@@ -253,7 +253,15 @@ function StampCard({
 }
 
 /** Points mode: progress toward the next reward. */
-function PointsCard({ balance, rewards }: { balance: number; rewards: Parameters<typeof nextRewardNudge>[1] }) {
+function PointsCard({
+  balance,
+  rewards,
+  rate,
+}: {
+  balance: number;
+  rewards: Parameters<typeof nextRewardNudge>[1];
+  rate: number;
+}) {
   const nudge = nextRewardNudge(balance, rewards);
   /*
     Fill the bar from the SAME numbers as its caption (balance / target).
@@ -293,8 +301,42 @@ function PointsCard({ balance, rewards }: { balance: number; rewards: Parameters
       ) : (
         <p className="mt-3 text-[13px] font-medium text-white/70">Cumule des points — des offres arrivent bientôt.</p>
       )}
+
+      {/*
+        The scale, and the fact that nothing runs out.
+
+        Without the rate, "40 points" is a number with no unit: the first thing
+        a customer asks on this screen is whether 40 points is 40 dinars or 4.
+        The rate was printed on the owner's Créditer button and on Réglages, and
+        reached the customer exactly once — inside a JSON-LD blob no human sees.
+
+        "Ils n'expirent jamais" is a promise, so it is checked, not assumed:
+        nothing in the codebase ever writes a ledger row with reason 'expire'.
+        If that ever changes this line has to change with it.
+      */}
+      <p className="mt-3 border-t border-white/10 pt-2.5 text-[11.5px] leading-relaxed text-white/45">
+        {rateLabel(rate)}
+        {" · Tes points n'expirent jamais."}
+      </p>
     </div>
   );
+}
+
+/**
+ * "1 dinar = 1 point", or "1 dinar = 2 points", or "2 dinars = 1 point".
+ *
+ * Always phrased from the dinar, because that is the number the customer is
+ * about to hand over. A rate below 1 is inverted rather than shown as "0,5
+ * point par dinar", which nobody converts in their head at a counter.
+ */
+function rateLabel(rate: number): string {
+  if (!rate || rate <= 0) return "Cumule des points à chaque achat";
+  if (rate >= 1) {
+    const n = Math.round(rate * 100) / 100;
+    return `1 dinar dépensé = ${n} point${n > 1 ? "s" : ""}`;
+  }
+  const dinars = Math.round((1 / rate) * 10) / 10;
+  return `${dinars} dinars dépensés = 1 point`;
 }
 
 /**

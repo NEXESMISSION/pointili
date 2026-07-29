@@ -41,8 +41,8 @@ export default async function Profil({
       label: "À récupérer",
       hint: pendingCodes > 0 ? `${pendingCodes} code${pendingCodes > 1 ? "s" : ""} en attente` : "Aucun code",
     },
-    { href: `/${slug}/boutique`, Icon: GiftIcon, label: "Offres", hint: "Échanger mes points" },
-    { href: `/${slug}/historique`, Icon: HistoryIcon, label: "Historique", hint: "Mes points & cadeaux" },
+    { href: `/${slug}/boutique`, Icon: GiftIcon, label: "Récompenses", hint: "Échanger mes points" },
+    { href: `/${slug}/historique`, Icon: HistoryIcon, label: "Historique", hint: "Mes points & récompenses" },
   ];
 
   return (
@@ -67,7 +67,7 @@ export default async function Profil({
             <span className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-white/55">
               Mon code client
             </span>
-            <span className="font-mono text-[13px] font-extrabold tracking-[0.14em] text-white">
+            <span className="font-mono text-[13px] font-bold tracking-[0.14em] text-white">
               {diner.code}
             </span>
           </span>

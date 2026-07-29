@@ -135,10 +135,10 @@ const stampCode = full.match(/code\s+([A-Z2-9]{6})/)?.[1] ?? "";
 check("a full stamp card issues a code", /Carte pleine/i.test(full) && !!stampCode, stampCode || "none");
 
 /* ── 6. The counter validates that code exactly once ───────────────── */
-const SEC = 'section:has(h2:has-text("Valider un code"))';
+const SEC = 'section:has(h2:has-text("Valider une récompense"))';
 const collect = async (code) => {
   await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await staff.locator('button:has-text("Un code")').click(); // the terminal's second mode
+  await staff.locator('button:has-text("Valider une récompense")').click(); // the terminal's second mode
   await staff.locator(`${SEC} input[name="code"]`).waitFor({ timeout: 15000 });
   await staff.fill(`${SEC} input[name="code"]`, code);
   await staff.locator(`${SEC} button:has-text("Vérifier")`).click();

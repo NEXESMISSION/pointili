@@ -33,7 +33,7 @@ export default async function CafeLayout({
       it, and everything is one phone-width column.
     */
     <div
-      className="app-shell flex min-h-dvh flex-col text-white"
+      className="app-shell app-shell--dark flex min-h-dvh flex-col text-white"
       style={{ ["--cafe" as string]: BRAND_COLOR, ...DINER_BG }}
     >
       <TopBar

@@ -168,6 +168,54 @@ allow("owner can still rename their own café", !denied(x), detail(x));
 const { data: after } = await svc.from("businesses").select("name").eq("id", victim.id).maybeSingle();
 t("café B survived intact", after?.name === victim.name, after?.name ?? "GONE");
 
+/* ── the PIN reset must be scoped to the shop's OWN cardholders ──────────
+   resetPinAction used to authorise by "resolveCustomer returned someone",
+   which is not an authorisation: its phone branch resolves ANY number on
+   purpose, so a walk-in who has never been here can still be credited. That
+   made the reset a way to rewrite any Pointili account's pin_hash by typing
+   its phone number — and pin_hash is account-wide, so it is that person's
+   identity and points at EVERY shop, not just a card at this one.
+
+   The guard is `isCardholder(cafe.id, phone)`: a row in diner_cafes. This
+   asserts the two halves that make it correct — a stranger has no row (so the
+   reset is refused) and the shop's own customer does (so it still works). */
+{
+  const stranger = `+2169${String(Date.now()).slice(-7)}`;
+  const dropStranger = async () => {
+    await svc.from("diner_cafes").delete().eq("phone", stranger);
+    await svc.from("accounts").delete().eq("phone", stranger);
+  };
+  onExit(dropStranger);
+
+  // diner_cafes.phone references accounts(phone), so the identity comes first
+  await svc.from("accounts").insert({ phone: stranger, pin_hash: "x", name: "Stranger" });
+  // enrolled at the VICTIM's café, never at the attacker's
+  await svc.from("diner_cafes").insert({ business_id: victim.id, phone: stranger });
+
+  const member = async (bizId) => {
+    const { data } = await svc
+      .from("diner_cafes")
+      .select("phone")
+      .eq("business_id", bizId)
+      .eq("phone", stranger)
+      .maybeSingle();
+    return Boolean(data);
+  };
+
+  t(
+    "PIN reset is refused for someone who holds no card here",
+    !(await member(mine.id)),
+    "no diner_cafes row at the attacker's café",
+  );
+  allow(
+    "PIN reset still works for the shop's own cardholder",
+    await member(victim.id),
+    "diner_cafes row present at their own café",
+  );
+
+  await dropStranger();
+}
+
 await svc.from("businesses").delete().eq("id", mine.id);
 /* Registered as well as called: a suite that throws before this line used to
    leave a live, sign-in-able account in the production database. */

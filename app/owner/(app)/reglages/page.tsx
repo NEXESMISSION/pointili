@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentOwner, ownerCafe, ownerHome } from "@/lib/auth/owner";
 import { businessType } from "@/lib/businessTypes";
@@ -138,6 +139,23 @@ export default async function Reglages() {
             Tout est compris : points, récompenses, tampons, analyses et le kit QR
             pour vos tables. Écrivez-nous pour renouveler — on active votre compte
             le jour même.
+          </p>
+          {/*
+            The question an owner asks at exactly this moment, answered here
+            instead of only in the small print. The answer is true and already
+            written at /conditions ("Rien n'est effacé…"); until now nothing in
+            the owner app linked it, so the person deciding whether to spend 80
+            TND had no way to reach the paragraph written for them.
+          */}
+          <p className="mt-2 text-[12px] leading-relaxed text-white/55">
+            Si vous vous arrêtez, rien n&apos;est effacé : vos clients et leurs
+            points restent, et reviennent intacts le jour où vous rallumez.{" "}
+            <Link
+              href="/conditions"
+              className="font-bold text-[#b9a3ff] underline underline-offset-2"
+            >
+              Conditions
+            </Link>
           </p>
         </div>
       </section>

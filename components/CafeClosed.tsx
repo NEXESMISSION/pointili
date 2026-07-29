@@ -14,7 +14,7 @@ import { BRAND_COLOR } from "@/lib/brand";
 export function CafeClosed({ name }: { name: string }) {
   return (
     <div
-      className="app-shell flex min-h-dvh flex-col items-center justify-center px-6 text-center text-white"
+      className="app-shell app-shell--dark flex min-h-dvh flex-col items-center justify-center px-6 text-center text-white"
       style={{
         backgroundColor: "#0f0a1c",
         backgroundImage: `linear-gradient(180deg, color-mix(in oklab, ${BRAND_COLOR}, #000 45%) 0%, #0a0614 100%)`,

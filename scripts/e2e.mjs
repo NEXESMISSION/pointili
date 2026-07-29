@@ -91,7 +91,7 @@ async function openCustomer(page, who) {
 /** Switch the terminal to its "a code" mode. */
 async function openCodeMode(page) {
   await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await page.locator('button:has-text("Un code")').click();
+  await page.locator('button:has-text("Valider une récompense")').click();
   await page.locator('input[name="code"]').waitFor({ timeout: 15000 });
 }
 
@@ -122,6 +122,43 @@ async function credit(amount, expectBalance) {
 const creditTxt = await credit(12.5, 22);
 check("caisse credits floor(12.5 x 1) = 12", /\+12/.test(creditTxt), creditTxt.split("\n")[0]);
 check("balance = 10 welcome + 12 earned = 22", /22 points/.test(creditTxt));
+
+/*
+  The ledger has to remember the DINARS, not just the points it derived from
+  them. Without this the amount the cashier keyed vanished at commit, so a
+  correction could never explain itself and Analyses had to rebuild revenue by
+  dividing by the CURRENT rate — silently rewriting last month every time an
+  owner edited that setting. 12.5 also proves the decimal survives.
+*/
+{
+  const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+  const { data: biz } = await admin.from("businesses").select("id").eq("slug", SLUG).maybeSingle();
+  const { data: rows } = await admin
+    .from("points_ledger")
+    .select("delta, reason, amount_tnd")
+    .eq("business_id", biz?.id ?? "")
+    .eq("customer_phone", `+216${PHONE}`)
+    .eq("reason", "earn")
+    .order("id", { ascending: true });
+  const first = rows?.[0];
+  check(
+    "the ledger records the dinars, not only the points",
+    Number(first?.amount_tnd) === 12.5,
+    `delta=${first?.delta} amount_tnd=${first?.amount_tnd}`,
+  );
+  const welcome = await admin
+    .from("points_ledger")
+    .select("amount_tnd")
+    .eq("business_id", biz?.id ?? "")
+    .eq("customer_phone", `+216${PHONE}`)
+    .eq("reason", "welcome")
+    .maybeSingle();
+  check(
+    "a welcome bonus records no amount — nobody paid for it",
+    welcome.data?.amount_tnd === null,
+    String(welcome.data?.amount_tnd),
+  );
+}
 
 // ── 4. Welcome must not be granted twice ────────────────────────────
 const credit2 = await credit(5, 27);
@@ -159,11 +196,11 @@ if (await redeemBtn.count()) {
 
   await diner.goto(`${BASE}/${SLUG}`, { waitUntil: "networkidle" });
   const cardTxt = await diner.locator("main").innerText();
-  // "Cadeaux à récupérer", not "À montrer au comptoir": that older wording now
+  // "Récompenses à récupérer", not "À montrer au comptoir": that older wording now
   // collides with the account-code CTA higher up the same page.
   check(
-    "redeemed reward appears on Accueil (Cadeaux à récupérer)",
-    /CADEAUX À RÉCUPÉRER/i.test(cardTxt) && cardTxt.includes(redeemCode),
+    "redeemed reward appears on Accueil (Récompenses à récupérer)",
+    /RÉCOMPENSES À RÉCUPÉRER/i.test(cardTxt) && cardTxt.includes(redeemCode),
     redeemCode,
   );
 } else {
@@ -177,7 +214,7 @@ if (redeemCode) {
     "Collecter" only if the operator confirms. A peek must NOT serve the code, so
     the loop clicks Collecter explicitly; a second visit finds it already claimed.
   */
-  const SEC = 'section:has(h2:has-text("Valider un code"))';
+  const SEC = 'section:has(h2:has-text("Valider une récompense"))';
   const claim = async () => {
     await openCodeMode(staff);
     await staff.fill(`${SEC} input[name="code"]`, redeemCode);
@@ -384,7 +421,7 @@ if (redeemCode) {
 
   // the diner can collect that code at the counter, exactly like any reward
   if (stampCode) {
-    const SEC = 'section:has(h2:has-text("Valider un code"))';
+    const SEC = 'section:has(h2:has-text("Valider une récompense"))';
     await openCodeMode(staff);
     await staff.fill(`${SEC} input[name="code"]`, stampCode);
     await staff.locator(`${SEC} button:has-text("Vérifier")`).click();

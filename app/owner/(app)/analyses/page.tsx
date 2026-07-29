@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ownerCafe, ownerHome } from "@/lib/auth/owner";
+import { cafeCardCount } from "@/lib/db";
 import { getStats, MIN_SAMPLE, type Range, type Stats } from "@/lib/stats";
 
 export const metadata = { title: "Analyses" };
@@ -37,10 +38,29 @@ export default async function Analytics({
 
   const { p } = await searchParams;
   const picked = RANGES.find((r) => r.slug === p) ?? RANGES[1];
-  const s = await getStats(cafe.id, picked.key);
+  /*
+    Two different populations, and the empty state used to confuse them.
+
+    `s.customers` counts people who have BOUGHT (ledger rows with reason
+    'earn'). `cardCount` counts people who hold a card here. Enrolling at the
+    QR writes no ledger row, so a shop whose QR works before its till does has
+    cards and no purchases — the normal day one. The page then said "Pas encore
+    de client" one nav tap from a Caisse screen headed "Mes clients · 1" with
+    the person's name under it, and argued against its own renewal.
+  */
+  const [s, cardCount] = await Promise.all([
+    getStats(cafe.id, picked.key),
+    cafeCardCount(cafe.id),
+  ]);
 
   return (
-    <div className="space-y-3.5">
+    /*
+      The one owner screen that asks the layout for more room. Every other page
+      here is a phone-shaped tool used at a counter; this one is read at a desk,
+      and at 680px it was a narrow strip with a third of the window empty beside
+      it. The layout reads --owner-col (owner/(app)/layout.tsx).
+    */
+    <div data-owner-wide className="space-y-3.5">
       <div className="px-1">
         <h1 className="text-[24px] font-extrabold text-white">Analyses</h1>
         <p className="mt-0.5 text-[13px] text-white/55">Est-ce que vos clients reviennent ?</p>
@@ -63,7 +83,7 @@ export default async function Analytics({
       </nav>
 
       {s.customers === 0 ? (
-        <Empty />
+        <Empty cards={cardCount} />
       ) : (
         <>
           <Period s={s} label={picked.label} />
@@ -381,15 +401,49 @@ function Owed({ s }: { s: Stats }) {
 
 /* ── empty ───────────────────────────────────────────────────────────── */
 
-function Empty() {
+/**
+ * Two empty states, because there are two ways to be empty and they need
+ * opposite things from the owner.
+ *
+ * No cards yet → the QR is not doing its job; go and put it on the tables.
+ * Cards but no purchase → the QR IS working and the till is not; the next move
+ * is at the counter, not on the wall. Saying "pas encore de client" to someone
+ * whose Caisse screen names their customers reads as the software being wrong,
+ * and it is the software being imprecise: here a "client" means someone who
+ * has bought, and that had never been said out loud.
+ */
+function Empty({ cards }: { cards: number }) {
+  if (cards === 0) {
+    return (
+      <section className="a-card p-6 text-center">
+        <p className="text-[36px]">✦</p>
+        <p className="mt-2 text-[16px] font-extrabold text-white">Pas encore de carte</p>
+        <p className="mx-auto mt-1.5 max-w-[30ch] text-[13px] leading-relaxed text-white/55">
+          Posez votre QR sur les tables. Dès la première carte, vous verrez ici
+          s&apos;ils reviennent.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="a-card p-6 text-center">
       <p className="text-[36px]">✦</p>
-      <p className="mt-2 text-[16px] font-extrabold text-white">Pas encore de client</p>
-      <p className="mx-auto mt-1.5 max-w-[30ch] text-[13px] leading-relaxed text-white/55">
-        Posez votre QR sur le comptoir. Dès la première carte, vous verrez ici
-        s&apos;ils reviennent.
+      <p className="mt-2 text-[16px] font-extrabold text-white">
+        {cards} carte{cards > 1 ? "s" : ""} — aucun passage en caisse
       </p>
+      <p className="mx-auto mt-1.5 max-w-[32ch] text-[13px] leading-relaxed text-white/55">
+        Votre QR marche : {cards === 1 ? "une personne a" : `${cards} personnes ont`} déjà
+        pris {cards === 1 ? "sa" : "leur"} carte. Cette page compte les passages,
+        pas les inscriptions — créditez un achat en caisse et les chiffres
+        démarrent.
+      </p>
+      <Link
+        href="/owner"
+        className="mt-4 inline-flex rounded-full bg-[#7c3aed] px-5 py-2.5 text-[13px] font-bold text-white"
+      >
+        Aller à la caisse
+      </Link>
     </section>
   );
 }

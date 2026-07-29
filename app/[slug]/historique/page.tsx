@@ -52,7 +52,7 @@ export default async function Historique({
 
       {activity.length === 0 ? (
         <p className="d-card px-4 py-12 text-center text-[13.5px] text-white/60">
-          Rien pour l&apos;instant — tes points et tes cadeaux s&apos;afficheront ici.
+          Rien pour l&apos;instant — tes points et tes récompenses s&apos;afficheront ici.
         </p>
       ) : (
         <ul className="d-card divide-y divide-white/10 px-4">

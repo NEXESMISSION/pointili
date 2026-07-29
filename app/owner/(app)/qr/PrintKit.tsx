@@ -167,11 +167,41 @@ export function PrintKit({
         ))}
       </div>
 
-      {/* the artwork, at its real proportions — this IS what prints */}
-      <div className="@container print:contents">
+      {/*
+        The artwork, at its real proportions — this IS what prints.
+
+        THE CONTAINER AND THE CARD MUST BE THE SAME BOX. Everything inside is
+        sized in `cqw`, so whatever element carries `@container` decides the
+        scale of the whole design, and the width cap has to live on that same
+        element or the two disagree.
+
+        Both ways of getting it wrong are already on the record here:
+
+        1. Container on a full-width wrapper, cap on the card. `cqw` measured
+           the owner's 680px column while the card was 380px, so the contents
+           came out ~1.8× too large, overflowed, and `overflow-hidden` with
+           `justify-center` sliced the top and bottom off symmetrically — the
+           shop name and "Scannez pour commencer" gone, the QR surviving only
+           because it sat in the middle. It looked right on a phone for the
+           worst possible reason: there the wrapper is ~350px, under the cap,
+           so the two widths coincided. And it was not just the preview —
+           print measured 680px too, so an owner would have paid a print shop
+           for a card with its head and feet cut off.
+
+        2. Container on the card itself. Tempting, and wrong in a quieter way:
+           an element cannot query its own size, so the card's OWN
+           `px-[7cqw]/py-[6cqw]` fell back to the viewport. At 1440 that is
+           100.8px of padding on a 380px card — the artwork stopped being
+           clipped and became a stamp in the middle of an empty box.
+
+        So: the cap and `@container` both sit on the wrapper, and the card is
+        simply `w-full` inside it. At print the cap lifts, the wrapper becomes
+        the page, and the same one layout fills it.
+      */}
+      <div className="@container mx-auto w-full max-w-[380px] print:max-w-none">
         <div
           style={{ aspectRatio: String(fmt.ratio) }}
-          className="mx-auto flex w-full max-w-[380px] flex-col items-center justify-center overflow-hidden rounded-3xl bg-[#140d24] px-[7cqw] py-[6cqw] text-center text-white print:h-screen print:max-w-none print:rounded-none"
+          className="flex w-full flex-col items-center justify-center overflow-hidden rounded-3xl bg-[#140d24] px-[7cqw] py-[6cqw] text-center text-white print:h-screen print:rounded-none"
         >
           <div className="flex items-center justify-center gap-[2.5cqw]">
             {logoUrl ? (

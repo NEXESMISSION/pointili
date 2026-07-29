@@ -123,7 +123,18 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
     byPhone.set(r.customer_phone, [...(byPhone.get(r.customer_phone) ?? []), at]);
   }
 
-  // (every phone the café has ever touched, incl. welcome-only signups)
+  /*
+    People who have BOUGHT — byPhone is built from 'earn' rows only, so a
+    signup who has never been to the counter is not counted here.
+
+    The comment that used to sit on this line said the opposite ("every phone
+    the café has ever touched, incl. welcome-only signups"). It was wrong, and
+    it was load-bearing: Analyses gates its empty state on this number, so a
+    shop with cards and no purchases was told "Pas encore de client" while the
+    Caisse screen listed those same people by name. Cardholders are counted by
+    cafeCardCount() in lib/db.ts; these two are different populations on
+    purpose and must not be confused again.
+  */
   const customers = byPhone.size;
   const repeatCustomers = [...byPhone.values()].filter((v) => v.length > 1).length;
 

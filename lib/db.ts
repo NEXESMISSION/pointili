@@ -458,6 +458,24 @@ export type OwnerCard = {
 export type OwnerCards = { total: number; cards: OwnerCard[] };
 
 /**
+ * How many people hold a card at this café.
+ *
+ * Deliberately NOT the same number as `Stats.customers`, which counts people
+ * who have bought. Enrolling at the QR writes a diner_cafes row and no ledger
+ * row, so a shop can have cards and no purchases — and Analyses needs to be
+ * able to tell those two emptinesses apart instead of calling both "pas encore
+ * de client".
+ */
+export async function cafeCardCount(businessId: string): Promise<number> {
+  const db = createAdminClient();
+  const { count } = await db
+    .from("diner_cafes")
+    .select("phone", { count: "exact", head: true })
+    .eq("business_id", businessId);
+  return count ?? 0;
+}
+
+/**
  * Every cardholder at a café, newest-active first, searchable by name/phone.
  *
  * The business_id is resolved from the owner's session before this is called

@@ -46,9 +46,19 @@ async function resolveCustomer(cafeId: string, raw: string): Promise<Resolved | 
 
   if (/[A-Za-z]/.test(cleaned)) {
     const card = await cardByCode(cafeId, cleaned);
-    return card
-      ? { phone: card.phone, name: card.name, code: card.code }
-      : { error: "Client introuvable — vérifiez le code." };
+    if (card) return { phone: card.phone, name: card.name, code: card.code };
+    /*
+      Six characters means they handed over a REWARD voucher, not their
+      identity: account codes are 4 (0019_*.sql), vouchers are 6
+      (pointili_gen_code, 0003_rpcs.sql:24-33), and both draw on the same
+      alphabet, so the two are indistinguishable to a cashier under pressure.
+      Saying "client introuvable" here sent the owner hunting a signup problem
+      that does not exist. Name the actual mistake instead.
+    */
+    if (cleaned.length === 6) {
+      return { error: "C'est un code de récompense — passez à « Valider une récompense »." };
+    }
+    return { error: "Client introuvable — vérifiez le code." };
   }
   const phone = normalisePhone(cleaned);
   if (isValidPhone(phone)) {
@@ -352,9 +362,21 @@ export async function collectAction(
  * would need SMS to prove possession of the number, and until that exists such
  * a link would be a way to take over any account by typing its phone number.
  *
- * It is scoped, not absolute: an owner can only reset someone who is a customer
- * OF THEIR OWN SHOP — resolveCustomer already refuses anyone else — and the
- * reset is written to the ledger of that shop so it is not silent.
+ * It is scoped to the shop's OWN cardholders, and the scoping is enforced HERE.
+ *
+ * It used to lean on resolveCustomer for that, on the reasoning that resolving
+ * through the café "only ever returns a customer of THIS café". That was false
+ * and it was the more dangerous kind of false — the comment asserted the check
+ * that was missing. resolveCustomer's phone branch calls the global getAccount()
+ * on purpose, because crediting a WALK-IN who has never been here is a feature.
+ * Reused as authorisation, it meant any owner — and signup is open, free and
+ * instant — could type any Tunisian number into the till and rewrite that
+ * account's PIN. pin_hash lives on `accounts`, not on a card, so that is not
+ * "their customer at my shop": it is the person's whole Pointili identity, and
+ * their points, at every shop they hold a card with.
+ *
+ * The rule now: resetting requires that they are a cardholder HERE. Crediting
+ * deliberately does not, and must not.
  */
 export type ResetPinResult = { ok: boolean; error?: string; message?: string };
 
@@ -366,10 +388,19 @@ export async function resetPinAction(ref: string, newPin: string): Promise<Reset
   const { isValidPin, hashPin } = await import("@/lib/auth/crypto");
   if (!isValidPin(pin)) return { ok: false, error: "Le code doit contenir 4 chiffres." };
 
-  // Resolving through the shop is the authorisation: it only ever returns a
-  // customer of THIS café, so an owner cannot reset a stranger.
   const who = await resolveCustomer(cafe.id, ref);
   if ("error" in who) return { ok: false, error: who.error };
+
+  /*
+    THE authorisation check. resolveCustomer does not perform one — it resolves
+    anybody, including a walk-in this shop has never served, which is exactly
+    what crediting needs. Membership is asked for explicitly here, server-side:
+    the client also hides the button behind `enrolled`, but that is a courtesy
+    to the cashier, not a gate — this action is a public HTTP endpoint.
+  */
+  if (!(await isCardholder(cafe.id, who.phone))) {
+    return { ok: false, error: "Ce client n'a pas de carte chez vous." };
+  }
 
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const db = createAdminClient();

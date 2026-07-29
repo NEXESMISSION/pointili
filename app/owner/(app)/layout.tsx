@@ -96,10 +96,25 @@ export default async function OwnerLayout({
           <p className="text-[9.5px] font-semibold uppercase tracking-[0.06em] text-[#ff9a9a]">
             ◆ Café hors ligne
           </p>
+          {/*
+            Say the frightening half AND the reassuring half.
+
+            This used to stop at "vos clients ne peuvent plus scanner", which is
+            the whole of what an owner is told when their shop goes dark. The
+            answer to the question they actually have — do I lose my customers?
+            — was already written, and true, and filed where only a diner would
+            find it: /conditions says "Rien n'est effacé", and CafeClosed.tsx
+            tells the DINER "tes points sont conservés". The person paying was
+            the one left guessing.
+          */}
           <p className="mt-0.5 text-[12px] leading-snug text-[#ff9a9a]">
             {cafe.suspendedAt
               ? `Suspendu : ${cafe.suspendedReason ?? "contactez-nous"}`
               : "Votre abonnement a expiré — vos clients ne peuvent plus scanner."}
+          </p>
+          <p className="mt-1 text-[11.5px] leading-snug text-white/55">
+            Rien n&apos;est effacé : vos clients et leurs points vous attendent,
+            intacts, le jour où vous rallumez.
           </p>
           {/* A dead end otherwise: the product told an owner their shop was dark
               and gave them nothing to press. */}
@@ -114,7 +129,7 @@ export default async function OwnerLayout({
       {cafe?.live && left?.soon && !left.unlimited && (
         <p className="border-b border-[#ffd27a]/30 bg-[#ffd27a]/12 px-5 py-2 text-[11.5px] leading-snug text-[#ffd27a]">
           Votre {cafe.plan === "trial" ? "essai" : "abonnement"} se termine dans{" "}
-          <b>{left.label}</b>.{" "}
+          <b>{left.label}</b>. Vos clients et leurs points sont conservés.{" "}
           <Link href="/owner/reglages" className="font-bold underline underline-offset-2">
             Voir les formules
           </Link>
@@ -139,7 +154,21 @@ export default async function OwnerLayout({
         </div>
       ))}
 
-      <main className="flex-1 px-5 py-5 md:px-8 md:py-8">
+      {/*
+        680px is right for the till and wrong for the dashboard.
+
+        The counter is a one-handed terminal — one customer, one amount, one
+        button — and widening it would only push the keypad further from the
+        thumb. Analyses is the opposite: it is the reason an owner opens a
+        laptop at all, and it was one small card with ~530px of empty page
+        beneath it and 224px of dead background either side.
+
+        A page opts in by rendering [data-owner-wide]; the widening rule lives
+        in globals.css. Not a CSS variable set by the page — custom properties
+        inherit DOWNWARD, and this cap is on the page's own parent, so the
+        variable would never have reached it.
+      */}
+      <main className="owner-main flex-1 px-5 py-5 md:px-8 md:py-8">
         <div className="mx-auto w-full max-w-[680px]">{children}</div>
       </main>
 

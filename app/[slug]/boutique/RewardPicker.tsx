@@ -193,7 +193,7 @@ function CodeReveal({
         old version printed it at 15px in a chip.
       */}
       <div className="mt-3 rounded-2xl border-2 border-[#8b6bff] bg-[#6d4ae6]/12 px-4 py-6 shadow-[0_0_28px_-6px_rgba(139,107,255,.8),inset_0_0_22px_-10px_rgba(139,107,255,.9)]">
-        <p className="font-mono text-[34px] font-extrabold leading-none tracking-[0.18em] text-white [text-shadow:0_0_18px_rgba(185,163,255,.9)]">
+        <p className="font-mono text-[34px] font-bold leading-none tracking-[0.18em] text-white [text-shadow:0_0_18px_rgba(185,163,255,.9)]">
           {issued.code}
         </p>
       </div>

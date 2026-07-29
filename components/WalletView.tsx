@@ -97,7 +97,7 @@ export function WalletView({
             <span className="block text-[9px] font-bold uppercase tracking-[0.08em] text-white/55">
               Mon code client
             </span>
-            <span className="block font-mono text-[15px] font-extrabold tracking-[0.14em]">
+            <span className="block font-mono text-[15px] font-bold tracking-[0.14em]">
               {code}
             </span>
           </span>

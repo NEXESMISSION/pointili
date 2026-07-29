@@ -4,9 +4,9 @@ import { GiftIcon } from "@/components/icons";
 import { getCafe, getMember, getRewards, nextRewardNudge } from "@/lib/data";
 import { RewardPicker } from "./RewardPicker";
 
-export const metadata = { title: "Offres" };
+export const metadata = { title: "Récompenses" };
 
-export default async function Offres({
+export default async function Recompenses({
   params,
 }: {
   params: Promise<{ slug: string }>;

@@ -124,6 +124,50 @@ h4 {
   position: relative;
 }
 
+/*
+  On a laptop, the diner app is a 480px column — and it should stay one. The
+  whole journey starts at a QR glued to a table, so a phone column is the honest
+  shape and rebuilding it wide would be building for a visitor who barely
+  exists.
+
+  What was NOT a decision was the page around it: the app is dark and the page
+  under it was #eae5f6, so two thirds of a desktop window was pale lavender with
+  a dark slab down the middle. It read as broken rather than deliberate — the
+  customer's own note was "am I looking at a page or at a screenshot of a
+  phone?".
+
+  So the surround is painted to match, and only for the DARK diner screens.
+  Keyed off .app-shell--dark, never .app-shell alone: app/not-found.tsx is a
+  light screen wearing the same class, and this rule would black out its page
+  and leave dark text on it. #07030f is DINER_BG's own base colour (lib/brand.ts)
+  — same value on purpose, so the column edge shows no seam.
+
+  :has() is the mechanism and it degrades correctly: a browser without it simply
+  keeps the old light surround.
+*/
+@media (min-width: 768px) {
+  body:has(.app-shell--dark) {
+    background: #07030f;
+  }
+}
+
+/*
+  The one owner screen that earns a wider column.
+
+  The owner layout caps its content at 680px, which is right for the till — a
+  one-handed terminal used at a counter — and wrong for Analyses, the screen an
+  owner opens a laptop specifically to read. A page asks for the room by
+  rendering [data-owner-wide]; nothing else changes.
+
+  Written here rather than as a CSS variable set by the page, because the cap
+  lives on the page's PARENT and custom properties only inherit downward.
+*/
+@media (min-width: 1024px) {
+  .owner-main:has([data-owner-wide]) > div {
+    max-width: 980px;
+  }
+}
+
 /* ── shared helpers (modernised from the old "printed toolkit") ────── */
 
 /* small eyebrow label — Inter, uppercase, tracked (was mono "ticket voice") */

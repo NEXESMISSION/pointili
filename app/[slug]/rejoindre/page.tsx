@@ -170,6 +170,23 @@ export default async function Rejoindre({
               <>Création de ton compte</>
             )}
           </p>
+          {/*
+            The scale, before they commit — not after.
+
+            Everything below this line asks the customer for something (their
+            number, a secret code). The one thing they are being offered,
+            "points", had no unit anywhere on the screen: the rate lived in the
+            page's JSON-LD, which is for crawlers, not for the person deciding
+            whether to type their phone number in.
+          */}
+          {program.active && program.pointsPerTnd > 0 && (
+            <p className="mt-1.5 text-[12px] text-white/40">
+              {program.pointsPerTnd >= 1
+                ? `1 dinar dépensé = ${Math.round(program.pointsPerTnd * 100) / 100} point${program.pointsPerTnd > 1 ? "s" : ""}`
+                : `${Math.round((1 / program.pointsPerTnd) * 10) / 10} dinars dépensés = 1 point`}
+              {" · ils n'expirent jamais"}
+            </p>
+          )}
         </div>
 
         <div className="mt-7">

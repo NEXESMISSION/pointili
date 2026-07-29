@@ -53,7 +53,7 @@ export function SettingsList({
       body: <StampsForm program={program} />,
     },
     shop: {
-      title: "Ma boutique",
+      title: "Ma vitrine",
       sub: "Le logo, le nom et le type que voient vos clients.",
       body: <CafeForm cafe={cafe} />,
     },

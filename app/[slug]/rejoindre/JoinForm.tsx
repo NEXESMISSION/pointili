@@ -114,10 +114,17 @@ export function JoinForm({ slug }: { slug: string }) {
               {showPin ? "Cacher" : "Voir"}
             </button>
           </div>
+          {/*
+            The "and if I forget it?" answer, on the screen where the worry
+            starts. It exists — an owner can reset a code for one of their own
+            cardholders (caisse/actions.ts resetPinAction) — and it was
+            announced to nobody, so the customer's only model of losing the code
+            was losing everything.
+          */}
           <p className="mt-2 text-[12px] leading-snug text-white/45">
             {returning
-              ? "Le code que tu as choisi en créant ton compte."
-              : "Garde-le : c'est lui qui te rendra tes cartes sur un autre téléphone."}
+              ? "Le code que tu as choisi en créant ton compte. Oublié ? Demande au comptoir."
+              : "Garde-le : c'est lui qui te rendra tes cartes sur un autre téléphone. Oublié ? Le commerce peut le réinitialiser."}
           </p>
         </div>
 
