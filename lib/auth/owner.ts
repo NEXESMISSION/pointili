@@ -1,4 +1,5 @@
 import "server-only";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
 export type OwnerSession = {
@@ -42,6 +43,28 @@ export async function currentOwner(): Promise<OwnerSession | null> {
     email: user.email ?? null,
     role: (profile?.role as OwnerSession["role"]) ?? "owner",
   };
+}
+
+/**
+ * Is there an owner session cookie on this device? PRESENCE ONLY — this does
+ * NOT prove anything and must never gate access.
+ *
+ * It exists for one job: the landing page has to decide, without a network
+ * round trip, whether a visitor holding a diner cookie is a customer heading
+ * for their wallet or a shop owner heading for their till. Since the host split
+ * was removed both cookies arrive on the same origin, so "has a diner cookie"
+ * stopped being enough to answer that.
+ *
+ * Supabase names its cookies `sb-<project-ref>-auth-token`, optionally chunked
+ * with a `.0` / `.1` suffix when the token outgrows one cookie — so match the
+ * prefix, never an exact name.
+ *
+ * Use currentOwner() for anything that grants access; it verifies with the auth
+ * server. A forged cookie here wins nothing but the sight of the sales page.
+ */
+export async function hasOwnerCookie(): Promise<boolean> {
+  const jar = await cookies();
+  return jar.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("auth-token"));
 }
 
 export async function requireOwner(): Promise<OwnerSession> {

@@ -68,5 +68,12 @@ export async function logoutAction() {
     const supabase = await createClient();
     await supabase.auth.signOut();
   }
-  redirect("/");
+  /*
+    The sign-in screen, not "/". Someone who just signed out wants to sign back
+    in, not a sales page — and on one domain "/" is dangerous here: signOut()
+    has already cleared the session, so the landing page's owner-cookie guard
+    cannot see them, and a diner cookie left on a shared phone would bounce
+    them into somebody else's wallet.
+  */
+  redirect("/owner/login");
 }

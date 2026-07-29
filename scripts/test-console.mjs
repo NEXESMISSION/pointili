@@ -11,13 +11,6 @@ import { ensureTestCafe, dropTestCafe } from "./fixture.mjs";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 
-/*
-  Two hosts now. The customer side keeps the apex (every printed QR points at it)
-  and the business side lives on app.* — Chrome resolves app.localhost without a
-  hosts-file entry, so this exercises the real split rather than a special case.
-  Paths are real on both hosts: the till is /owner.
-*/
-const APP = process.env.APP_URL ?? BASE.replace("//", "//app.");
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const SUPER = { email: env.SUPER_ADMIN_EMAIL, password: env.SUPER_ADMIN_PASSWORD };
 
@@ -36,7 +29,7 @@ const sql = await connect();
 const b = await chromium.launch({ executablePath: CHROME });
 
 const login = async (page, email, password) => {
-  await page.goto(`${APP}/owner/login`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
   await page.fill('input[name="email"]', email);
   await page.fill('input[name="password"]', password);
   await page.click('button[type="submit"]');
@@ -56,7 +49,7 @@ const login = async (page, email, password) => {
 */
 const sa = await b.newPage({ viewport: { width: 390, height: 844 } });
 await login(sa, SUPER.email, SUPER.password);
-await sa.goto(`${APP}/admin`, { waitUntil: "networkidle" });
+await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
 check(
   "one sign-in opens the console — no second password",
   new URL(sa.url()).pathname === "/admin",
@@ -68,12 +61,12 @@ check("the console shows the work queue", /À traiter/i.test(consoleTxt));
 check("the console does not shout", !/ZONE SENSIBLE|Confirmez votre mot de passe/i.test(consoleTxt));
 
 // the owner app must not advertise it
-await sa.goto(`${APP}/owner`, { waitUntil: "networkidle" });
+await sa.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
 const navHtml = await sa.locator("nav").last().innerHTML();
 check("owner nav does not link the console", !navHtml.includes("/admin"));
 
 // the old step-up door is gone for good
-const goneRes = await sa.goto(`${APP}/admin/login`, { waitUntil: "networkidle" });
+const goneRes = await sa.goto(`${BASE}/admin/login`, { waitUntil: "networkidle" });
 check("the old step-up screen is gone", goneRes?.status() === 404, `status=${goneRes?.status()}`);
 
 // ── 7. a plain owner learns nothing ─────────────────────────────────
@@ -84,7 +77,7 @@ const { data: made } = await admin.auth.admin.createUser({ email, password: pw, 
 onExit(() => admin.auth.admin.deleteUser(made.user.id));
 const plain = await b.newPage();
 await login(plain, email, pw);
-const res = await plain.goto(`${APP}/admin`, { waitUntil: "networkidle" });
+const res = await plain.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
 check("plain owner gets 404 on the console", res?.status() === 404, `status=${res?.status()}`);
 
 // ── 7b. a PLATFORM OPERATOR is not a shop ───────────────────────────
@@ -113,7 +106,7 @@ check("plain owner gets 404 on the console", res?.status() === 404, `status=${re
   check("an operator with no café is not sent to café setup",
     !landed.startsWith("/owner/nouveau"), landed);
 
-  await op.goto(`${APP}/owner`, { waitUntil: "networkidle" });
+  await op.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
   check("the till redirects an operator to the console",
     new URL(op.url()).pathname.startsWith("/admin"), new URL(op.url()).pathname);
 
@@ -128,7 +121,7 @@ const before = target?.plan;
 const forged = await plain.evaluate(async (base) => {
   const r = await fetch(base + "/admin", { method: "POST", body: new URLSearchParams({ plan: "free" }) });
   return r.status;
-}, APP);
+}, BASE);
 const after = target
   ? (await sql.query(`select plan from businesses where id=$1`, [target.id])).rows[0].plan
   : before;

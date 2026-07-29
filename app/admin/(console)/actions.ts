@@ -212,7 +212,9 @@ export async function dismissNoticeAction(id: string): Promise<void> {
 export async function adminLogoutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/");
+  // /owner/login is that door, so it is also the way back out. Not "/": the
+  // session is already gone, and a diner cookie there would take over.
+  redirect("/owner/login");
 }
 
 /**

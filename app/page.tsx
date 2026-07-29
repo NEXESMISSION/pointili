@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentDiner } from "@/lib/auth/diner";
-import { appUrl } from "@/lib/hosts";
+import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
 import { ShopArt } from "./LandingArt";
 
@@ -88,12 +88,30 @@ export default async function Landing({
   /*
     Customers never see the owner marketing page — straight to their wallet.
 
-    ?pro=1 is the escape hatch: without it a device that once held a diner
-    cookie could NEVER reach this page again, so an owner who is also a customer
-    (or anyone on a shared phone) was locked out of signup entirely.
+    THE CARE THIS NEEDS NOW. Until the host split was removed this page only
+    ever loaded on the customer host, so an owner could not reach it and this
+    line could not hurt them. On one domain it is also the owner's front door,
+    and the diner cookie is sent here, so an unguarded bounce would throw a
+    shop owner into a family member's wallet — the exact bug the split was
+    bought to fix. Three things keep that shut:
+
+      1. an owner session on the device wins over a diner cookie (below);
+      2. logout goes to /owner/login, never here — by the time redirect runs
+         signOut() has already cleared the session, so rule 1 cannot help;
+      3. /owner/login and /owner/signup are reachable directly on this domain
+         whatever cookies the phone holds. Only "/" bounces.
+
+    Rule 1 is by cookie PRESENCE, not verification: this is a routing tiebreak,
+    not an authorisation decision, and currentOwner() would cost a getUser()
+    round trip on every anonymous landing-page hit. If the cookie is a forgery
+    the only prize is seeing the marketing page.
+
+    ?pro=1 stays as the manual escape hatch.
   */
   const { pro } = await searchParams;
-  if (!pro && (await currentDiner())) redirect("/cartes");
+  if (!pro && !(await hasOwnerCookie()) && (await currentDiner())) {
+    redirect("/cartes");
+  }
 
   return (
     <div className="landing-dark min-h-dvh bg-[#070510] text-white">
@@ -142,10 +160,10 @@ export default async function Landing({
             <p className="mt-1.5 border-t border-white/10 px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.08em] text-white/35">
               Je suis commerçant
             </p>
-            <Link href={appUrl("/owner/login")} className="block rounded-xl px-3 py-2.5 text-[14px] font-semibold text-white/85 hover:bg-white/[0.06]">
+            <Link href="/owner/login" className="block rounded-xl px-3 py-2.5 text-[14px] font-semibold text-white/85 hover:bg-white/[0.06]">
               Espace café
             </Link>
-            <Link href={appUrl("/owner/signup")} className="mt-1 block rounded-xl bg-[#7c3aed] px-3 py-2.5 text-center text-[14px] font-bold text-white">
+            <Link href="/owner/signup" className="mt-1 block rounded-xl bg-[#7c3aed] px-3 py-2.5 text-center text-[14px] font-bold text-white">
               Créer mon compte
             </Link>
           </nav>
@@ -182,7 +200,7 @@ export default async function Landing({
 
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3">
               <Link
-                href={appUrl("/owner/signup")}
+                href="/owner/signup"
                 className="group inline-flex items-center gap-2.5 rounded-full bg-[#7c3aed] px-7 py-4 text-[15px] font-bold text-white shadow-[0_20px_50px_-18px_rgba(124,58,237,1)] transition hover:bg-[#8b5cf6] active:scale-[0.98]"
               >
                 Commencer gratuitement
@@ -412,7 +430,7 @@ export default async function Landing({
             </div>
 
             <Link
-              href={appUrl("/owner/signup")}
+              href="/owner/signup"
               className="mt-7 flex flex-col items-center rounded-2xl bg-[#7c3aed] px-6 py-4 text-center shadow-[0_16px_38px_-16px_rgba(124,58,237,.9)] transition active:scale-[0.99]"
             >
               <span className="flex items-center gap-2 text-[15px] font-bold text-white">
@@ -436,7 +454,7 @@ export default async function Landing({
               Parfait pour commencer.
             </p>
             <Link
-              href={appUrl("/owner/signup")}
+              href="/owner/signup"
               className="mt-auto rounded-2xl border border-white/15 px-5 py-3.5 text-center text-[14px] font-bold text-white transition hover:bg-white/[0.05] active:scale-[0.99]"
             >
               Choisir cette offre
@@ -466,7 +484,7 @@ export default async function Landing({
 
             <div className="text-center">
               <Link
-                href={appUrl("/owner/signup")}
+                href="/owner/signup"
                 className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-4 text-[15px] font-bold text-[#2a1263] transition active:scale-[0.98]"
               >
                 Créer ma boutique <Arrow />

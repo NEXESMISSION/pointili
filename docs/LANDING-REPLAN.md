@@ -28,7 +28,7 @@ Le problème n'est pas une liste de détails. C'est que la page actuelle est **u
 *(NOUVEAU = n'existe pas · SURVIT = conservé, réécrit · MEURT = supprimé)*
 
 **0. Barre fixe — NOUVEAU** (remplace le hamburger, MEURT)
-Logo à gauche. À droite, deux pastilles permanentes : **« Mes points »** (contour) → `/moi` · **« Caisse »** (plein) → `app.pointili.online/login`. Après le hero, une puce apparaît : **« 65 TND / 6 mois »**. Aucune formulation en « Je suis… ».
+Logo à gauche. À droite, deux pastilles permanentes : **« Mes points »** (contour) → `/moi` · **« Caisse »** (plein) → `/owner/login`. Après le hero, une puce apparaît : **« 65 TND / 6 mois »**. Aucune formulation en « Je suis… ».
 
 **1. Hero + la carte vivante — NOUVEAU** (remplace le hero, la photo barista, les deux boutons-fourche et le bandeau de réassurance — tous MEURENT)
 

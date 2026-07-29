@@ -14,13 +14,6 @@ import { chromium } from "playwright-core";
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 
-/*
-  Two hosts now. The customer side keeps the apex (every printed QR points at it)
-  and the business side lives on app.* — Chrome resolves app.localhost without a
-  hosts-file entry, so this exercises the real split rather than a special case.
-  Paths are real on both hosts: the till is /owner.
-*/
-const APP = process.env.APP_URL ?? BASE.replace("//", "//app.");
 const SLUG = TEST_SLUG;
 
 // a fresh phone per run so signup is always exercised
@@ -61,7 +54,7 @@ check("signup grants welcome bonus", balAfterJoin === 10, `balance=${balAfterJoi
 
 // ── 2. Owner signs in (real Supabase Auth) ──────────────────────────
 const staff = await browser.newPage({ viewport: { width: 390, height: 844 } });
-await staff.goto(`${APP}/owner/login`, { waitUntil: "networkidle" });
+await staff.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
 if (staff.url().includes("/login")) {
   await staff.fill('input[name="email"]', OWNER_EMAIL);
   await staff.fill('input[name="password"]', OWNER_PASSWORD);
@@ -88,7 +81,7 @@ check("owner signs in with Supabase Auth", !staff.url().includes("/login"), staf
 const DESK = '[role="dialog"]';
 
 async function openCustomer(page, who) {
-  await page.goto(`${APP}/owner`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
   await page.locator('input[name="customer"]').waitFor({ timeout: 15000 });
   await page.fill('input[name="customer"]', who);
   await page.locator('button:has-text("Chercher")').click();
@@ -97,14 +90,14 @@ async function openCustomer(page, who) {
 
 /** Switch the terminal to its "a code" mode. */
 async function openCodeMode(page) {
-  await page.goto(`${APP}/owner`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
   await page.locator('button:has-text("Un code")').click();
   await page.locator('input[name="code"]').waitFor({ timeout: 15000 });
 }
 
 /** Réglages is a settings list — each knob lives one tap deep in its own editor. */
 async function openSetting(page, row) {
-  await page.goto(`${APP}/owner/reglages`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
   await page.locator(`button:has-text("${row}")`).click();
 }
 async function openPointsEditor(page) {
@@ -410,7 +403,7 @@ if (redeemCode) {
 
   // the owner can find this cardholder on the Clients page (searchable by number,
   // but the row shows the name + opaque id — never the raw phone)
-  await staff.goto(`${APP}/owner`, { waitUntil: "networkidle" });
+  await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
   await staff.locator('input[name="search"]').fill(PHONE);
   const found = await staff
     .waitForFunction(() => /E2E/.test(document.querySelector("main")?.innerText ?? ""), undefined, { timeout: 10000 })
@@ -460,7 +453,7 @@ if (redeemCode) {
     if (f === fresh.mainFrame()) hops.push(new URL(f.url()).pathname);
   });
 
-  await fresh.goto(`${APP}/owner/login`, { waitUntil: "networkidle" });
+  await fresh.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
   await fresh.fill('input[name="email"]', email);
   await fresh.fill('input[name="password"]', "Test-12345678");
   await fresh.click('button[type="submit"]');
@@ -515,6 +508,80 @@ const playStatus = await anon.evaluate(async (slug) => {
   return r.status;
 }, SLUG);
 check("wheel endpoint /api/play is removed", playStatus === 404 || playStatus === 405, `status=${playStatus}`);
+
+/* ── 14. ONE ORIGIN, TWO SESSIONS ────────────────────────────────────
+   The host split is gone, so the diner cookie and the owner session now
+   arrive on the same origin. They used to be isolated by accident — two
+   hosts, host-only cookies — and this is the test that replaces that
+   accident with something checked.
+
+   Every other page in this suite comes from browser.newPage(), which gets
+   its own context and therefore its own empty cookie jar. That is the one
+   thing that must NOT happen here: this block uses a single context and
+   deliberately puts BOTH cookies in it, which is a real shared family
+   phone. The failure it guards is documented and specific — a shop owner
+   thrown into a family member's wallet, unable to get back because the
+   sign-in link lives on the page the bounce prevents. */
+{
+  const shared = await browser.newContext();
+  const page = await shared.newPage();
+  const hasDiner = async () =>
+    (await shared.cookies()).some((c) => c.name === "pointili_diner");
+
+  /* Become a diner the way a diner does — /moi with the phone and PIN minted
+     back in step 1. Merely visiting a shop page sets no cookie. */
+  await page.goto(`${BASE}/moi`, { waitUntil: "networkidle" });
+  await page.fill('input[name="phone"]', PHONE);
+  await page.fill('input[name="pin"]', PIN);
+  await page.click('button[type="submit"]');
+  await page.waitForURL("**/cartes**", { timeout: 20000 }).catch(() => {});
+  check("shared phone holds a diner session", await hasDiner(), page.url());
+
+  // the owner doors must be reachable ANYWAY — they are what the split used
+  // to guarantee by living on another host
+  for (const p of ["/owner/login", "/owner/signup"]) {
+    await page.goto(BASE + p, { waitUntil: "networkidle" });
+    check(`a diner cookie does not block ${p}`, new URL(page.url()).pathname === p, new URL(page.url()).pathname);
+  }
+
+  // and signing in must work from that same jar
+  await page.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
+  await page.fill('input[name="email"]', OWNER_EMAIL);
+  await page.fill('input[name="password"]', OWNER_PASSWORD);
+  await page.click('button[type="submit"]');
+  await page.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 20000 }).catch(() => {});
+  check(
+    "an owner signs in on a phone that already holds a diner cookie",
+    !new URL(page.url()).pathname.startsWith("/cartes") && !new URL(page.url()).pathname.includes("/login"),
+    new URL(page.url()).pathname,
+  );
+
+  // with an owner session present, "/" must show the site — not the wallet
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  check(
+    "an owner session outranks a diner cookie on /",
+    new URL(page.url()).pathname === "/",
+    new URL(page.url()).pathname,
+  );
+
+  // signing out lands on the sign-in screen, never on "/" where the diner
+  // cookie would take over the moment the session is gone
+  await page.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
+  const logout = page.locator('form button:has-text("Se déconnecter")').first();
+  await logout.waitFor({ timeout: 15000 });
+  await logout.click();
+  await page.waitForURL((u) => !u.pathname.startsWith("/owner/reglages"), { timeout: 20000 }).catch(() => {});
+  check(
+    "signing out lands on /owner/login, not the wallet",
+    new URL(page.url()).pathname === "/owner/login",
+    new URL(page.url()).pathname,
+  );
+
+  // the diner is still a diner — isolation, not eviction
+  check("the diner session survived all of it", await hasDiner());
+
+  await shared.close();
+}
 
 await browser.close();
 
