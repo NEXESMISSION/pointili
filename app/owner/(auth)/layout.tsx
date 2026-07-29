@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { BrandLockup } from "@/components/BrandMark";
 
 /**
  * Public auth shell — deliberately OUTSIDE app/owner/(app)/layout.tsx, whose
@@ -16,11 +16,22 @@ export default function OwnerAuthLayout({
 }) {
   return (
     <div className="a-shell flex min-h-dvh flex-col items-center px-5 py-9">
-      <Link href="/" className="mb-7 mt-2 inline-flex items-center gap-2">
-        <Image src="/logo-icon.png" alt="" width={30} height={30} priority className="h-[26px] w-auto" />
-        <span className="text-[18px] font-extrabold tracking-[-0.02em] text-white">
-          pointili<span className="text-[#b9a3ff]">.online</span>
-        </span>
+      {/*
+        The mark sits on PAPER, not straight on the page.
+
+        The artwork is a purple card on a transparent background, and .a-shell is
+        #08040f under a purple gradient — so purple-on-purple made the mark
+        effectively invisible next to a crisp white wordmark. The fix is not to
+        recolour the brand: it is to give it the same light tile it already wears
+        as an app icon. Two wins for one change — it reads on any background, and
+        the sign-in screen now looks like the icon the owner just installed on
+        their home screen.
+
+        Same tile as components/InstallPrompt.tsx and the same #f8f7fc as
+        scripts/icons.mjs, so all three are one object.
+      */}
+      <Link href="/" className="mb-7 mt-2 inline-flex">
+        <BrandLockup size={40} />
       </Link>
       <div className="w-full max-w-[400px]">{children}</div>
     </div>

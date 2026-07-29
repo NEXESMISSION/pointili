@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { CafeClosed } from "@/components/CafeClosed";
 import { TopBar } from "@/components/TopBar";
 import { BRAND_COLOR, DINER_BG } from "@/lib/brand";
@@ -46,6 +47,8 @@ export default async function CafeLayout({
       <main className="flex flex-1 flex-col">{children}</main>
 
       <BottomNav slug={cafe.slug} />
+      {/* the customer's card is the thing worth keeping one tap away */}
+      <InstallPrompt audience="client" />
     </div>
   );
 }

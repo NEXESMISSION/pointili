@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { BrandLockup } from "@/components/BrandMark";
 
 /**
  * Shell for the legal pages.
@@ -12,10 +12,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
     <div className="landing-dark min-h-dvh bg-[#070510] text-white">
       <header className="mx-auto flex max-w-3xl items-center justify-between px-5 py-6">
         <Link href="/" className="inline-flex items-center gap-2.5">
-          <Image src="/logo-icon.png" alt="" width={26} height={26} className="h-[24px] w-auto" />
-          <span className="text-[16px] font-extrabold tracking-[-0.02em]">
-            pointili<span className="text-[#8b5cf6]">.online</span>
-          </span>
+          <BrandLockup size={32} accent="#8b5cf6" />
         </Link>
         <Link href="/" className="text-[13px] text-white/45 hover:text-white/80">
           Retour

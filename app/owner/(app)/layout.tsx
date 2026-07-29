@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { OwnerSidebar, OwnerTabs } from "@/components/OwnerNav";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { ownerAccess, ownerCafe } from "@/lib/auth/owner";
 import { ownerNotices, remaining } from "@/lib/platform";
 
@@ -173,6 +174,8 @@ export default async function OwnerLayout({
       </main>
 
       <OwnerTabs />
+      {/* the till is opened dozens of times a shift, on one phone */}
+      <InstallPrompt audience="owner" />
       </div>
     </div>
   );

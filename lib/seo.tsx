@@ -68,7 +68,7 @@ export function organisation() {
     "@id": `${SITE_URL}/#organization`,
     name: SITE_NAME,
     url: SITE_URL,
-    logo: `${SITE_URL}/logo-icon.png`,
+    logo: `${SITE_URL}/icon-512.png`,
     description: TAGLINE,
     areaServed: { "@type": "Country", name: "Tunisie" },
     knowsLanguage: ["fr", "ar"],

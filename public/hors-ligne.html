@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hors ligne · Pointili</title>
+    <!--
+      Static and dependency-free on purpose: this is the page the service worker
+      serves when there is no network, so it cannot fetch a font, a stylesheet or
+      an icon at the moment it is needed. Everything is inline.
+
+      It does not pretend to work offline. Pointili is a live points ledger — a
+      cached balance is worse than no balance, because a cashier would credit
+      against a number that is no longer true. So this says the honest thing and
+      offers the one useful action.
+    -->
+    <style>
+      :root { color-scheme: dark }
+      * { box-sizing: border-box }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        text-align: center;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        color: #fff;
+        background:
+          radial-gradient(90% 40% at 50% -6%, #6b4bd8 0%, transparent 60%),
+          linear-gradient(180deg, #2b1c66 0%, #150c33 40%, #07030f 100%);
+      }
+      .mark {
+        width: 62px; height: 62px; margin: 0 auto 20px;
+        border-radius: 18px; background: #f8f7fc;
+        display: grid; place-items: center;
+      }
+      .mark span { font-size: 28px; line-height: 1 }
+      h1 { margin: 0 0 10px; font-size: 22px; font-weight: 800; letter-spacing: -0.02em }
+      p { margin: 0 auto; max-width: 30ch; font-size: 14px; line-height: 1.65; color: rgba(255,255,255,.6) }
+      a {
+        display: inline-block; margin-top: 22px; padding: 13px 26px;
+        border-radius: 999px; background: #7c3aed;
+        font-size: 14px; font-weight: 700; color: #fff; text-decoration: none;
+      }
+      .note { margin-top: 26px; font-size: 12px; color: rgba(255,255,255,.35) }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark"><span>✦</span></div>
+      <h1>Pas de connexion</h1>
+      <p>
+        Tes points sont en sécurité — ils sont enregistrés chez Pointili, pas sur
+        ton téléphone. Reconnecte-toi et tout sera là.
+      </p>
+      <a href="/">Réessayer</a>
+      <p class="note">pointili.online</p>
+    </main>
+  </body>
+</html>

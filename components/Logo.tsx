@@ -20,7 +20,7 @@ export function Logo({
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <Image
-        src="/logo-icon.png"
+        src="/brand-mark.png"
         alt=""
         width={size}
         height={size}

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { WalletView } from "@/components/WalletView";
 import { currentDiner } from "@/lib/auth/diner";
 import { BRAND_COLOR, DINER_BG } from "@/lib/brand";
@@ -38,6 +39,8 @@ export default async function Cartes({
       {/* The wallet is the only shop-neutral diner screen, which makes it the
           right home for a code that is the same at every shop. */}
       <WalletView cards={cards} currentSlug={from ?? null} code={account?.code ?? null} />
+      {/* the wallet is the customer's home base — the likeliest place to install from */}
+      <InstallPrompt audience="client" />
     </div>
   );
 }

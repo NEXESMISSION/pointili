@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { BrandLockup } from "@/components/BrandMark";
 import { currentDiner } from "@/lib/auth/diner";
 import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
@@ -642,10 +643,7 @@ function HeroStage() {
 function Brand() {
   return (
     <span className="inline-flex items-center gap-2.5">
-      <Image src="/logo-icon.png" alt="" width={30} height={30} priority className="h-[26px] w-auto" />
-      <span className="text-[17px] font-extrabold tracking-[-0.02em] text-white">
-        pointili<span className="text-[#8b5cf6]">.online</span>
-      </span>
+      <BrandLockup size={34} accent="#8b5cf6" />
     </span>
   );
 }

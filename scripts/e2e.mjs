@@ -345,7 +345,7 @@ if (redeemCode) {
   // The uploader downscales on a canvas and auto-saves, so wait for the verdict.
   const logoInput = 'label:has-text("logo") input[type="file"]';
   await staff.locator(logoInput).waitFor({ state: "attached", timeout: 15000 });
-  await staff.setInputFiles(logoInput, "public/logo-icon.png");
+  await staff.setInputFiles(logoInput, "public/brand-mark.png");
   await staff.locator("text=Enregistré ✦").first().waitFor({ timeout: 20000 }).catch(() => {});
 
   const { data: withLogo } = await admin.from("businesses").select("logo_url").eq("id", biz.id).single();

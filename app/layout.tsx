@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DESCRIPTION, KEYWORDS, SITE_NAME, SITE_URL, TAGLINE } from "@/lib/seo";
 import { Fraunces, Space_Mono, Inter, Poppins } from "next/font/google";
+import { ServiceWorker } from "@/components/ServiceWorker";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -26,7 +27,20 @@ const spaceMono = Space_Mono({
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  /*
+    NO weight list, on purpose — that loads Inter's VARIABLE font, which covers
+    100–900 in a single file.
+
+    Pinning it to 400/500/600/700 meant every `font-extrabold` that resolved to
+    Inter got a browser-synthesised bold: the brand wordmark ".online" in every
+    header, and the primary button on both auth screens. Fake bold is the same
+    defect that made the customer's 4-character code unreadable (see Space Mono
+    below) — it thickens strokes until counters close up.
+
+    One variable file is also fewer requests than four static cuts, so this is
+    cheaper as well as correct. Poppins stays pinned: it is not variable on
+    Google Fonts, so it has to name its weights.
+  */
 });
 
 // The brand's display face (marketing + admin, the "modern" surfaces).
@@ -80,6 +94,24 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
   },
   formatDetection: { telephone: false },
+  /*
+    The iOS half of "add to home screen".
+
+    Android reads display/theme/icons out of the manifest. Safari reads some of
+    it, but the installed-app behaviour still hangs off these meta tags: without
+    `capable` an installed icon can reopen inside Safari chrome, which defeats
+    the point. `title` is what shows UNDER the icon on the home screen — the full
+    "Pointili — la carte de fidélité…" would be truncated to nonsense there.
+
+    statusBarStyle black-translucent so the dark app paints under the notch
+    rather than sitting below a white bar.
+  */
+  appleWebApp: {
+    capable: true,
+    title: SITE_NAME,
+    statusBarStyle: "black-translucent",
+  },
+  manifest: "/manifest.webmanifest",
 };
 
 // Mobile-only mandate (§01): lock the viewport to phone width.
@@ -105,7 +137,12 @@ export default function RootLayout({
         phone column is applied by app/[slug] and app/owner. The marketing
         landing page is explicitly outside the app and lays out full-width.
       */}
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* Registers the service worker for the whole origin, which is what
+            makes the site installable. Renders nothing. */}
+        <ServiceWorker />
+      </body>
     </html>
   );
 }
