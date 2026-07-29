@@ -19,6 +19,19 @@ import { useState } from "react";
 
 export type Format = "tent" | "poster" | "sticker" | "story";
 
+/**
+ * Four objects, named by WHERE THEY GO and sized in centimetres a Tunisian print
+ * shop quotes on.
+ *
+ * The hints are the important part. An owner does not know what A6 is; they know
+ * they want something that stands on a table and something for the window. So
+ * the label is the object, the hint is the place, and the size is spelled out
+ * because that is what gets read down the phone to the printer.
+ *
+ * "Affiche 20×30" replaced an A5. A5 is 14.8×21 — fine on a counter, too small
+ * on a wall across the room, and 20×30 is what the owner asked for and what
+ * every print shop stocks as a standard cut.
+ */
 const FORMATS: {
   id: Format;
   label: string;
@@ -27,11 +40,19 @@ const FORMATS: {
   ratio: number;
   /** what @page gets during print — story is screen-only */
   page: string | null;
+  /**
+   * Export width in pixels: the physical width at 300 dpi, which is what a print
+   * shop asks for. A single fixed width for every format meant the 20×30 poster
+   * came out at ~178 dpi — the QR still scans at that, but the type goes soft,
+   * and soft type on a wall is the one place it shows. Story is screen-only, so
+   * it gets Instagram's 1080 instead.
+   */
+  px: number;
 }[] = [
-  { id: "tent", label: "Chevalet", hint: "Sur la table", ratio: 3 / 4, page: "A6 portrait" },
-  { id: "poster", label: "Affiche A5", hint: "Vitrine, mur", ratio: 1 / 1.414, page: "A5 portrait" },
-  { id: "sticker", label: "Autocollant", hint: "Comptoir", ratio: 1, page: "80mm 80mm" },
-  { id: "story", label: "Story", hint: "Instagram", ratio: 9 / 16, page: null },
+  { id: "tent", label: "Chevalet", hint: "Table · 10×15", ratio: 3 / 4, page: "A6 portrait", px: 1240 },
+  { id: "sticker", label: "Autocollant", hint: "Table · 8×8", ratio: 1, page: "80mm 80mm", px: 945 },
+  { id: "poster", label: "Affiche", hint: "Mur, vitrine · 20×30", ratio: 20 / 30, page: "200mm 300mm", px: 2362 },
+  { id: "story", label: "Story", hint: "Instagram", ratio: 9 / 16, page: null, px: 1080 },
 ];
 
 export function PrintKit({
@@ -81,7 +102,7 @@ export function PrintKit({
   const download = async () => {
     setSaving(true);
     try {
-      const W = 1400;
+      const W = fmt.px;
       const H = Math.round(W / fmt.ratio);
       const c = document.createElement("canvas");
       c.width = W;

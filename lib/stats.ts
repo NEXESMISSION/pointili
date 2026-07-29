@@ -82,6 +82,9 @@ type LedgerRow = {
   delta: number;
   reason: string;
   created_at: string;
+  /** Dinars the cashier keyed. NULL on welcome/redeem/adjust, and on any earn
+   *  row written before migration 0024 added the column. */
+  amount_tnd: number | null;
 };
 
 const DAY = 86_400_000;
@@ -93,7 +96,7 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
     await Promise.all([
       db
         .from("points_ledger")
-        .select("customer_phone, delta, reason, created_at")
+        .select("customer_phone, delta, reason, created_at, amount_tnd")
         .eq("business_id", businessId)
         .order("created_at"),
       db.from("stamp_rewards").select("status, label").eq("business_id", businessId),
@@ -112,6 +115,31 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
   const rows = (ledger ?? []) as LedgerRow[];
   const pointsPerTnd = Number(program?.points_per_tnd ?? 1) || 1;
   const now = Date.now();
+
+  /*
+    The dinars the cashier actually keyed, when the row remembers them.
+
+    Every money figure on this page goes through here — the headline, the bar
+    chart, the window comparison and the ticket average — because they used to
+    each reconstruct it separately as points / rate, and disagreed. Analyses
+    showed 2280 TND at the top and 2344 in the money card, for the same shop over
+    the same period, which is the worst possible failure for the one screen whose
+    job is to be believed.
+
+    The derivation was wrong twice over. It UNDER-REPORTS, because credit_points
+    floors the points: across the demo café's 280 visits it lost 61 TND, 2.6%, to
+    half-dinars. And it divides by the CURRENT rate, so editing that setting in
+    Réglages silently rewrote every past month.
+
+    Migration 0024 added points_ledger.amount_tnd for exactly this. The old
+    derivation survives ONLY as a fallback for rows written before it — those
+    genuinely do not know their amount, and back-filling them at today's rate
+    would bake in the very error being removed.
+  */
+  const spend = (r: LedgerRow) =>
+    r.amount_tnd !== null && r.amount_tnd !== undefined
+      ? Number(r.amount_tnd)
+      : r.delta / pointsPerTnd;
 
   // ── purchases, grouped by customer ────────────────────────────────
   // Only 'earn' rows are purchases. Welcome bonuses aren't visits — counting
@@ -163,14 +191,10 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
   }
 
   // ── money ─────────────────────────────────────────────────────────
-  // Revenue is reconstructed from the points the caisse credited, at the café's
-  // own rate. It is therefore ONLY the spend that went through Pointili.
-  const earnedPoints = purchases.reduce((s, r) => s + r.delta, 0);
-  const revenueTnd = earnedPoints / pointsPerTnd;
-  const revenue30d =
-    purchases
-      .filter((r) => now - new Date(r.created_at).getTime() <= 30 * DAY)
-      .reduce((s, r) => s + r.delta, 0) / pointsPerTnd;
+  const revenueTnd = purchases.reduce((s, r) => s + spend(r), 0);
+  const revenue30d = purchases
+    .filter((r) => now - new Date(r.created_at).getTime() <= 30 * DAY)
+    .reduce((s, r) => s + spend(r), 0);
 
   const pointsIssued = rows.filter((r) => r.delta > 0).reduce((s, r) => s + r.delta, 0);
   const pointsRedeemed = rows
@@ -195,7 +219,7 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
     });
     daily.push({
       day: new Date(start).toISOString().slice(0, 10),
-      revenue: Math.round((inDay.reduce((s, r) => s + r.delta, 0) / pointsPerTnd) * 100) / 100,
+      revenue: Math.round((inDay.reduce((s, r) => s + spend(r), 0)) * 100) / 100,
       visits: inDay.length,
       newCustomers: [...firstSeen.values()].filter((t) => t >= start && t < end).length,
     });
@@ -207,7 +231,7 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
   const measure = (from: number, to: number): Window => {
     const inside = purchases.filter((r) => at(r) >= from && at(r) < to);
     return {
-      revenue: Math.round((inside.reduce((s, r) => s + r.delta, 0) / pointsPerTnd) * 100) / 100,
+      revenue: Math.round((inside.reduce((s, r) => s + spend(r), 0)) * 100) / 100,
       visits: inside.length,
       newCustomers: [...firstSeen.values()].filter((t) => t >= from && t < to).length,
       activeCustomers: new Set(inside.map((r) => r.customer_phone)).size,
@@ -216,9 +240,24 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
 
   // "Tout" starts at the first purchase (or today, on an empty shop).
   const firstAt = purchases.length ? Math.min(...purchases.map(at)) : now;
-  const spanDays = range || Math.max(1, Math.ceil((now - firstAt) / DAY));
   // Windows end at midnight tomorrow so today's sales are inside the window.
   const windowEnd = new Date(now).setHours(24, 0, 0, 0);
+  /*
+    Measured between DAY BOUNDARIES, and that is the whole point.
+
+    This used to be ceil((now - firstAt) / DAY) — a span counted from the current
+    clock time, then subtracted from midnight tomorrow. The two anchors disagree
+    by however many hours are left in today, so windowStart landed AFTER the
+    first purchase and "Tout" quietly dropped the shop's opening day: the
+    headline read 2341 TND while the money card below it read 2344, on the same
+    screen, for the same period. Small, and fatal for the one page whose entire
+    job is to be believed.
+
+    Anchoring on the start of firstAt's day makes windowStart land exactly on it,
+    so "Tout" means all of it.
+  */
+  const spanDays =
+    range || Math.max(1, Math.round((windowEnd - new Date(firstAt).setHours(0, 0, 0, 0)) / DAY));
   const windowStart = windowEnd - spanDays * DAY;
 
   const window = measure(windowStart, windowEnd);
@@ -238,7 +277,7 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
     const inside = purchases.filter((r) => at(r) >= start && at(r) < end);
     series.push({
       at: start,
-      revenue: Math.round((inside.reduce((s, r) => s + r.delta, 0) / pointsPerTnd) * 100) / 100,
+      revenue: Math.round((inside.reduce((s, r) => s + spend(r), 0)) * 100) / 100,
       visits: inside.length,
     });
   }

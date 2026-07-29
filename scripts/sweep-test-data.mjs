@@ -19,6 +19,16 @@ import { createClient } from "@supabase/supabase-js";
 import { connect, env } from "./db.mjs";
 
 const APPLY = process.argv.includes("--apply");
+/*
+  The showcase café (scripts/demo.mjs) is the one shape here that is NOT crash
+  residue — it is provisioned on purpose, and someone may be about to demo it.
+  So it is reported like everything else and skipped unless asked for by name.
+
+  `--apply` cleans up after the suites. `--apply --with-demo` also removes the
+  demo. Deleting a deliberate fixture as a side effect of tidying would be the
+  kind of surprise this script exists to prevent.
+*/
+const WITH_DEMO = process.argv.includes("--with-demo");
 
 const PATTERNS = [
   /^plain\d+@example\.com$/,
@@ -28,6 +38,12 @@ const PATTERNS = [
   /^probe-\d+@example\.com$/,
 ];
 const SLUGS = /^(probe-\d+|susp-\d+|attack-\d+|e2etest|e2e-second-shop|cafe-de-letoile-co)$/;
+
+/** The deliberate fixture, opt-in only. */
+const DEMO_EMAIL = /^demo-cafe@example\.com$/;
+const DEMO_SLUG = /^demo-el-manar$/;
+const doomedEmail = (e) => PATTERNS.some((p) => p.test(e)) || (WITH_DEMO && DEMO_EMAIL.test(e));
+const doomedSlug = (sl) => SLUGS.test(sl) || (WITH_DEMO && DEMO_SLUG.test(sl));
 
 const svc = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -42,11 +58,11 @@ for (let page = 1; page <= 20; page++) {
   users.push(...data.users);
   if (data.users.length < 200) break;
 }
-const doomed = users.filter((u) => u.email && PATTERNS.some((p) => p.test(u.email)));
+const doomed = users.filter((u) => u.email && doomedEmail(u.email));
 
 /* ── cafés ──────────────────────────────────────────────────────────── */
 const { rows: cafes } = await sql.query(`select id, slug, name from businesses order by created_at`);
-const doomedCafes = cafes.filter((c) => SLUGS.test(c.slug));
+const doomedCafes = cafes.filter((c) => doomedSlug(c.slug));
 
 console.log(`accounts to remove : ${doomed.length}`);
 for (const u of doomed) console.log(`   ${u.email}`);
