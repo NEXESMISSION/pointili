@@ -165,7 +165,7 @@ export default async function Landing({
         <div aria-hidden className="pointer-events-none absolute left-[-18%] top-[38%] h-[420px] w-[420px] rounded-full opacity-40 blur-[110px]"
           style={{ background: "radial-gradient(circle, #3b1d8f 0%, transparent 70%)" }} />
 
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-5 pb-16 pt-8 md:grid-cols-12 md:px-8 md:pb-20 md:pt-12">
+        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-5 pb-14 pt-6 md:grid-cols-12 md:gap-10 md:px-8 md:pb-16 md:pt-12">
           <div className="md:col-span-7">
             <h1 className="text-[46px] font-extrabold leading-[0.98] tracking-[-0.035em] md:text-[56px] lg:text-[64px]">
               Une seule carte.
@@ -194,8 +194,10 @@ export default async function Landing({
             </div>
           </div>
 
-          {/* bleeds past the right edge — the page does not end where the grid does */}
-          <div className="md:col-span-5 md:-mr-10 lg:-mr-16">
+          {/* No bleed. The art ran off the right edge to feel expansive and only
+              managed to feel oversized; centred in its half it reads as an
+              object on the page rather than a wall. */}
+          <div className="md:col-span-5">
             <HeroStage />
           </div>
         </div>
@@ -514,6 +516,11 @@ export default async function Landing({
  * nothing else. And it all stops dead under prefers-reduced-motion.
  */
 function HeroStage() {
+  /* --hero-fade is set per breakpoint on the image, so one gradient serves both
+     crop depths. Two stops only: solid to true transparent at the box edge. */
+  const HERO_FADE =
+    "linear-gradient(to bottom, #000 0%, #000 var(--hero-fade), transparent 100%)";
+
   /* Deterministic, not random: a fresh layout every render would make the
      server and client HTML disagree and hydration would complain. */
   const points = [
@@ -525,12 +532,29 @@ function HeroStage() {
     { left: "76%", bottom: "72%", size: 8,  delay: "4.2s", dur: "6.9s" },
   ];
 
-  /* Capped, and capped tight. The render is 585×1090 — at full column width it
-     stood 1040px tall in a 900px viewport, so the entire first screen was phone
-     and the headline had to fight it. It is the proof, not the pitch: it stays
-     shorter than the fold and lets the type lead. */
+  /* Cropped, not shrunk — that distinction is the whole fix.
+
+     The render is 585×1090, a 0.537 aspect ratio, so ANY width that keeps the
+     whole device keeps it 1.86× as tall as it is wide. Two rounds of shrinking
+     made the art quieter and the product less legible at the same time, which
+     is the worst trade available: you pay in credibility for something a crop
+     gives away free.
+
+     So the width stays and the END moves. The image is a window onto the top of
+     the render — the shop, the name, 230 points, the full stamp card — and
+     dissolves below it. Height drops ~40% while every pixel of the card renders
+     at exactly the size it did before.
+
+     The fade is not decoration. A hard cut across a device reads as a broken
+     image; a dissolve reads as "the app continues", which is true. It has to
+     reach real transparency at the box edge — a fade that stops at 15% alpha
+     looks like a rendering fault.
+
+     Mobile crops harder (585/700) than desktop (585/900) for a different
+     reason: a phone-shaped object at 90% of a phone's width is a phone inside
+     a phone. Killing the portrait silhouette is what fixes that, not size. */
   return (
-    <div className="relative mx-auto w-full max-w-[400px] md:ml-auto md:mr-0 md:max-w-[340px] lg:max-w-[385px]">
+    <div className="relative mx-auto w-full max-w-[250px] md:max-w-[280px] lg:max-w-[300px]">
       {/* the light it sits in */}
       <div
         aria-hidden
@@ -568,15 +592,31 @@ function HeroStage() {
         />
       ))}
 
-      <Image
-        src="/hero-phone-v2.png"
-        alt="La carte de fidélité Pointili sur un téléphone : 230 points, carte à tampons et récompenses à récupérer"
-        width={585}
-        height={1090}
-        priority
-        sizes="(max-width: 768px) 88vw, 42vw"
-        className="float relative h-auto w-full drop-shadow-[0_50px_90px_rgba(88,28,235,.55)]"
-      />
+      {/* The float and the shadow live on the wrapper, not on the image.
+          `mask` is applied after `filter`, so a shadow set on the masked image
+          is eaten by its own mask; on the parent it reads the already-faded
+          alpha and dies out with the artwork. */}
+      <div className="float relative drop-shadow-[0_26px_60px_rgba(88,28,235,.45)]">
+        <Image
+          src="/hero-phone-v2.png"
+          alt="La carte de fidélité Pointili sur un téléphone : Yassine a 230 points et 7 tampons sur 10 chez Café El Ali"
+          width={585}
+          height={1090}
+          priority
+          sizes="(max-width: 767px) 250px, (max-width: 1023px) 280px, 300px"
+          className="block aspect-[585/700] h-auto w-full object-cover object-top [--hero-fade:80%] md:aspect-[585/900] md:[--hero-fade:85%]"
+          style={{
+            maskImage: HERO_FADE,
+            WebkitMaskImage: HERO_FADE,
+            maskSize: "100% 100%",
+            WebkitMaskSize: "100% 100%",
+            /* mask-repeat defaults to `repeat`: without this the gradient tiles
+               below the box and paints the shadow solid again. */
+            maskRepeat: "no-repeat",
+            WebkitMaskRepeat: "no-repeat",
+          }}
+        />
+      </div>
     </div>
   );
 }
