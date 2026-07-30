@@ -3,6 +3,7 @@ import { CafeClosed } from "@/components/CafeClosed";
 import { GiftIcon } from "@/components/icons";
 import { getCafe, getMember, getRewards, nextRewardNudge } from "@/lib/data";
 import { RewardPicker } from "./RewardPicker";
+import { BackLink } from "@/components/BackLink";
 
 export const metadata = { title: "Récompenses" };
 
@@ -35,7 +36,10 @@ export default async function Recompenses({
       />
 
       <div className="relative mx-auto w-full max-w-[420px]">
-        <section className="pb-5 pt-3 text-center">
+        <div className="pt-3">
+          <BackLink fallback={`/${slug}`} />
+        </div>
+        <section className="pb-5 pt-1 text-center">
           <h1 className="text-[24px] font-extrabold text-white">Choisis ta récompense</h1>
           <p className="mt-1 text-[13.5px] text-white/55">
             Échange tes points contre du réel, chez {cafe.name}.

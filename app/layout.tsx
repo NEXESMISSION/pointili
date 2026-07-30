@@ -120,6 +120,25 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   themeColor: "#5b3fd1",
+  /*
+    THE LINE THAT MAKES THE SAFE AREAS REAL.
+
+    BottomNav and OwnerTabs have carried pb-[env(safe-area-inset-bottom)] all
+    along and it did nothing: without viewport-fit=cover the browser keeps the
+    layout inside the safe area itself and every env(safe-area-inset-*) resolves
+    to 0px. In a normal tab that is invisible, because the browser chrome is
+    doing the insetting.
+
+    Installed to a home screen there IS no browser chrome, so the page owns the
+    whole display — and the status bar / notch sat on top of the header while the
+    home indicator sat on top of the tab bar. Which is exactly the cropping the
+    owner reported, top AND bottom.
+
+    Turning it on hands us the full screen and makes the env() values non-zero;
+    the padding those bars already had then starts working, and .safe-t /
+    .safe-b in globals.css handle the top.
+  */
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

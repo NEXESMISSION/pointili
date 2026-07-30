@@ -31,7 +31,8 @@ export function TopBar({
   const type = businessType(businessTypeKey);
 
   return (
-    <header className="flex items-center justify-center px-5 pt-4 pb-1">
+    /* safe-t: installed, the status bar sits on top of this row. */
+    <header className="safe-t flex items-center justify-center px-5 pt-4 pb-1">
       <Link
         href={`/cartes?from=${slug}`}
         className="inline-flex max-w-full items-center gap-2 rounded-full bg-white/10 py-1.5 pl-1.5 pr-3.5 ring-1 ring-white/15 active:scale-[0.98]"

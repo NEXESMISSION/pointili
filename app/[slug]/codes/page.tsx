@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { CafeClosed } from "@/components/CafeClosed";
 import { GiftIcon } from "@/components/icons";
 import { getCafe, getMember } from "@/lib/data";
+import { BackLink } from "@/components/BackLink";
 
 export const metadata = { title: "Mes codes" };
 
@@ -37,7 +38,8 @@ export default async function Codes({
   return (
     <div className="flex flex-1 flex-col px-5 pb-6">
       <section className="pb-4 pt-3">
-        <h1 className="text-[24px] font-extrabold">Mes codes</h1>
+        <BackLink fallback={`/${slug}`} />
+        <h1 className="mt-1 text-[24px] font-extrabold">Mes codes</h1>
         <p className="mt-0.5 text-[13px] text-white/60">
           Montre-les au comptoir pour récupérer tes récompenses.
         </p>

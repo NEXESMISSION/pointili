@@ -4,6 +4,7 @@ import { ownerCafe, ownerHome } from "@/lib/auth/owner";
 import { businessType } from "@/lib/businessTypes";
 import { getLoyaltyProgram } from "@/lib/data";
 import { PrintKit } from "./PrintKit";
+import { BackLink } from "@/components/BackLink";
 
 export const metadata = { title: "Mon QR" };
 
@@ -44,6 +45,7 @@ export default async function QrPage() {
   return (
     <div className="space-y-3.5">
       <div className="px-1 print:hidden">
+        <BackLink fallback="/owner" className="md:hidden print:hidden" />
         <h1 className="text-[24px] font-extrabold text-white">Mon QR</h1>
         <p className="mt-0.5 text-[13px] text-white/55">
           Posez-le sur vos tables. C&apos;est par là que tout commence.

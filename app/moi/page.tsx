@@ -27,7 +27,7 @@ export default async function Moi() {
 
   return (
     <div
-      className="app-shell app-shell--dark flex min-h-dvh flex-col px-5 pb-10 pt-8 text-white"
+      className="safe-t safe-b app-shell app-shell--dark flex min-h-dvh flex-col px-5 pb-10 pt-8 text-white"
       style={{ ["--cafe" as string]: BRAND_COLOR, ...DINER_BG }}
     >
       <div className="mx-auto w-full max-w-md">

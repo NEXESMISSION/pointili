@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { CafeClosed } from "@/components/CafeClosed";
 import QRCode from "qrcode";
 import { getCafe, getMember } from "@/lib/data";
+import { BackLink } from "@/components/BackLink";
 
 export const metadata = { title: "Ma carte" };
 
@@ -39,7 +40,10 @@ export default async function Scanner({
 
   return (
     <div className="flex flex-1 flex-col px-5 pb-8">
-      <section className="pb-5 pt-3 text-center">
+      <div className="pt-3">
+        <BackLink fallback={`/${slug}`} />
+      </div>
+      <section className="pb-5 pt-1 text-center">
         <h1 className="text-[24px] font-extrabold">Ma carte</h1>
         <p className="mt-0.5 text-[13px] text-white/60">Montre ce code au comptoir.</p>
       </section>

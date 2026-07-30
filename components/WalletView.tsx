@@ -186,7 +186,22 @@ function CardRow({ card, current, nudge }: { card: WalletCafe; current: boolean;
     <li>
       <Link
         href={`/${card.slug}`}
-        className={`group relative block aspect-[16/9] overflow-hidden rounded-[22px] p-4 transition active:scale-[0.985] ${
+        /*
+          A card SHAPE, not a card CAGE.
+
+          aspect-[16/9] plus overflow-hidden looked right and cut its own content
+          off. A card carrying the header, the next-reward line and bar, a 38px
+          balance, a stamp row AND a pending badge needs about 192px; at 350px
+          wide the box is 197 and at 320px it is only 180, so the bottom of a busy
+          card was simply sliced away — on exactly the phones most likely to be
+          used.
+
+          min-height keeps the proportion as a floor: an ordinary card is still
+          16/9, a full one grows a few pixels rather than hiding what it holds.
+          The aspect-ratio property stays so the shape survives when there is
+          little content, and `h-auto` lets it lose.
+        */
+        className={`group relative block aspect-[16/9] h-auto min-h-[196px] overflow-hidden rounded-[22px] p-4 transition active:scale-[0.985] ${
           current ? "ring-2 ring-white/45" : "ring-1 ring-white/[0.16]"
         }`}
         style={{

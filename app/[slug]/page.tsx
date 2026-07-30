@@ -5,6 +5,7 @@ import { GiftIcon, ScanIcon, Sparkle } from "@/components/icons";
 import { getCafe, getLoyaltyProgram, getMember, getRewards, nextRewardNudge } from "@/lib/data";
 import { touchCardOpened } from "@/lib/db";
 import type { LoyaltyProgram } from "@/lib/types";
+import { CardArrived } from "@/components/CardArrived";
 
 /**
  * Carte — the diner's loyalty card, in the deep-purple mockup:
@@ -14,10 +15,14 @@ import type { LoyaltyProgram } from "@/lib/types";
  */
 export default async function Carte({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ nouveau?: string }>;
 }) {
   const { slug } = await params;
+  // Set only by /rejoindre, and stripped by the overlay the moment it plays.
+  const { nouveau } = await searchParams;
   const cafe = await getCafe(slug);
   if (!cafe) notFound();
   // Re-checked per PAGE, not just in the layout: Next does not re-run a layout
@@ -43,6 +48,8 @@ export default async function Carte({
 
   return (
     <div className="flex flex-1 flex-col pb-6">
+      {/* Plays once, over a card that is already rendered and already usable. */}
+      {nouveau && <CardArrived cafeName={cafe.name} points={program.welcomePoints ?? 0} />}
       {/* greeting + points badge */}
       <section className="px-5 pb-5 pt-3">
         <div className="flex items-start justify-between gap-3">

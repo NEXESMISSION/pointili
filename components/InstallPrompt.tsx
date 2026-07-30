@@ -124,11 +124,12 @@ export function InstallPrompt({
   return (
     <>
       {/*
-        bottom-[68px] clears the diner's BottomNav and the owner's nav, both of
-        which are fixed. pointer-events-none on the wrapper so the gap either
+        The offset clears the diner's BottomNav and the owner's nav, both of
+        which are fixed — plus the home indicator, since installed there is no
+        browser chrome holding anything clear of it. pointer-events-none on the wrapper so the gap either
         side of the bar never swallows a tap meant for the page.
       */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-[68px] z-40 flex justify-center px-3">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-40 flex justify-center px-3">
         <div className="pointer-events-auto flex w-full max-w-[420px] items-center gap-3 rounded-2xl border border-white/12 bg-[#181031]/95 px-3.5 py-3 shadow-[0_16px_40px_-12px_rgba(0,0,0,.8)] backdrop-blur">
           <BrandMark size={40} />
           <span className="min-w-0 flex-1 leading-tight">

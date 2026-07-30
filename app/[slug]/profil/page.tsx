@@ -6,6 +6,7 @@ import { BRAND_COLOR } from "@/lib/brand";
 import { businessType } from "@/lib/businessTypes";
 import { getCafe, getMember } from "@/lib/data";
 import { logoutDinerAction } from "../actions";
+import { BackLink } from "@/components/BackLink";
 
 export const metadata = { title: "Profil" };
 
@@ -49,6 +50,9 @@ export default async function Profil({
     <div className="flex flex-1 flex-col px-5 pb-6">
       {/* who */}
       <section className="flex items-center gap-3.5 pb-5 pt-3">
+      <div className="pb-2">
+        <BackLink fallback={`/${slug}`} />
+      </div>
         <span className="grid h-14 w-14 place-items-center rounded-full bg-white/12 text-[22px] font-extrabold ring-1 ring-white/20">
           {(diner.name ?? "M").charAt(0).toUpperCase()}
         </span>

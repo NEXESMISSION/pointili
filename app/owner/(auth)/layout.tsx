@@ -15,7 +15,7 @@ export default function OwnerAuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="a-shell flex min-h-dvh flex-col items-center px-5 py-9">
+    <div className="safe-t safe-b a-shell flex min-h-dvh flex-col items-center px-5 py-9">
       {/*
         The mark sits on PAPER, not straight on the page.
 

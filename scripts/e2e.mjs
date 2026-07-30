@@ -593,10 +593,29 @@ check("wheel endpoint /api/play is removed", playStatus === 404 || playStatus ==
     new URL(page.url()).pathname,
   );
 
-  // with an owner session present, "/" must show the site — not the wallet
+  /*
+    "/" is the manifest's start_url, so this is also what the installed app opens
+    on. An owner session must win over the diner cookie AND be sent somewhere
+    useful.
+
+    This check used to assert pathname === "/" — the owner cookie only stopped
+    the diner bounce and then fell through to the marketing page. That passed,
+    and it was wrong: an owner who installed the app opened it every morning onto
+    a page selling them the product they already pay for. Landing on the till is
+    the contract; not landing in someone else's wallet is the half of it that was
+    ever tested.
+  */
   await page.goto(BASE, { waitUntil: "networkidle" });
   check(
-    "an owner session outranks a diner cookie on /",
+    "an owner opens the app on their till, not the wallet or the sales page",
+    new URL(page.url()).pathname === "/owner",
+    new URL(page.url()).pathname,
+  );
+
+  // …and can still reach their own marketing page deliberately
+  await page.goto(`${BASE}/?pro=1`, { waitUntil: "networkidle" });
+  check(
+    "?pro=1 still shows an owner the sales page",
     new URL(page.url()).pathname === "/",
     new URL(page.url()).pathname,
   );

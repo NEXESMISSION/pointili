@@ -6,6 +6,7 @@ import { getLoyaltyProgram, getRewards } from "@/lib/data";
 import { remaining } from "@/lib/platform";
 import { logoutAction } from "../../(auth)/login/actions";
 import { SettingsList } from "./SettingsList";
+import { BackLink } from "@/components/BackLink";
 
 export const metadata = { title: "Réglages" };
 
@@ -33,6 +34,12 @@ export default async function Reglages() {
 
   return (
     <div className="space-y-4">
+      {/* Phone only: at md+ the sidebar is the way back, and a chevron beside a
+          permanent nav is noise. */}
+      <div className="px-1 md:hidden">
+        <BackLink fallback="/owner" />
+      </div>
+
       {/* ── who you are ────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-1">
         {cafe.logoUrl ? (

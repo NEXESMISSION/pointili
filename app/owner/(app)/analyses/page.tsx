@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ownerCafe, ownerHome } from "@/lib/auth/owner";
 import { cafeCardCount } from "@/lib/db";
 import { getStats, MIN_SAMPLE, type Range, type Stats } from "@/lib/stats";
+import { BackLink } from "@/components/BackLink";
 
 export const metadata = { title: "Analyses" };
 
@@ -62,6 +63,7 @@ export default async function Analytics({
     */
     <div data-owner-wide className="space-y-3.5">
       <div className="px-1">
+        <BackLink fallback="/owner" className="md:hidden" />
         <h1 className="text-[24px] font-extrabold text-white">Analyses</h1>
         <p className="mt-0.5 text-[13px] text-white/55">Est-ce que vos clients reviennent ?</p>
       </div>

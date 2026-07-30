@@ -87,31 +87,38 @@ export default async function Landing({
   searchParams: Promise<{ pro?: string }>;
 }) {
   /*
-    Customers never see the owner marketing page — straight to their wallet.
+    "/" IS A SWITCHBOARD, not just a sales page.
 
-    THE CARE THIS NEEDS NOW. Until the host split was removed this page only
-    ever loaded on the customer host, so an owner could not reach it and this
-    line could not hurt them. On one domain it is also the owner's front door,
-    and the diner cookie is sent here, so an unguarded bounce would throw a
-    shop owner into a family member's wallet — the exact bug the split was
-    bought to fix. Three things keep that shut:
+    It is also the manifest's start_url, which makes this the code that decides
+    what the installed app opens on. Getting it wrong is very visible: tapping
+    the icon on a home screen and landing on a page that tries to sell you the
+    product you already bought.
 
-      1. an owner session on the device wins over a diner cookie (below);
-      2. logout goes to /owner/login, never here — by the time redirect runs
-         signOut() has already cleared the session, so rule 1 cannot help;
-      3. /owner/login and /owner/signup are reachable directly on this domain
-         whatever cookies the phone holds. Only "/" bounces.
+    The order below is the whole of it:
 
-    Rule 1 is by cookie PRESENCE, not verification: this is a routing tiebreak,
-    not an authorisation decision, and currentOwner() would cost a getUser()
-    round trip on every anonymous landing-page hit. If the cookie is a forgery
-    the only prize is seeing the marketing page.
+      ?pro=1        always the sales page. The manual escape hatch, and the only
+                    way an owner reaches their own marketing copy.
+      owner session their till. They pay for it; it is what the icon means to
+                    them. /owner re-checks the session properly and sends a
+                    signed-out visitor to /owner/login, so a stale cookie here
+                    costs one redirect and grants nothing.
+      diner cookie  their wallet.
+      otherwise     the sales page.
 
-    ?pro=1 stays as the manual escape hatch.
+    THE OWNER BRANCH IS NEW AND IT WAS THE BUG. The owner cookie was already
+    read here, but only to STOP the diner bounce — so a signed-in owner fell
+    through to the marketing page, and an owner who had installed the app opened
+    it every morning onto a "Commencer gratuitement" button. Winning the tiebreak
+    is not the same as being sent somewhere.
+
+    Both checks are by cookie PRESENCE, not verification: this is routing, not
+    authorisation, and currentOwner() would cost a getUser() round trip on every
+    anonymous hit of the busiest public page. Neither destination trusts it.
   */
   const { pro } = await searchParams;
-  if (!pro && !(await hasOwnerCookie()) && (await currentDiner())) {
-    redirect("/cartes");
+  if (!pro) {
+    if (await hasOwnerCookie()) redirect("/owner");
+    if (await currentDiner()) redirect("/cartes");
   }
 
   return (

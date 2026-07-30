@@ -28,10 +28,26 @@ export function AuthForm({
     <form action={formAction} className="space-y-3">
       <label className="block">
         <span className="mb-1.5 block text-[12.5px] font-bold text-white">E-mail</span>
+        {/*
+          autoCapitalize / autoCorrect / spellCheck are not optional here.
+
+          A phone keyboard capitalises the first letter and autocorrects the rest,
+          so "elmanar@pointili.online" is offered back as "Elmanar@pointili.online"
+          and an unfamiliar word like a shop's name gets "helpfully" rewritten.
+          The account is then reported as a wrong password, which is the one error
+          message that makes somebody give up rather than retry.
+
+          type="email" alone does NOT prevent this — it only changes the key
+          layout, and several Android keyboards still capitalise inside it.
+        */}
         <input
           name="email"
           type="email"
+          inputMode="email"
           autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -47,6 +63,13 @@ export function AuthForm({
             name="password"
             type={show ? "text" : "password"}
             autoComplete={passwordAutoComplete}
+            /* Once "Voir" flips this to type="text" it becomes an ordinary field
+               again — and an ordinary field gets autocapitalised and
+               autocorrected. Someone checking their typing must not have it
+               changed under them. */
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             required
             placeholder="••••••••"
             className="a-field pr-16"

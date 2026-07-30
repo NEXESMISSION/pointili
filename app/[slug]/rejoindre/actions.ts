@@ -125,5 +125,7 @@ export async function joinAction(
   }
 
   await setDinerSession(signSession(phone));
-  redirect(`/${slug}`);
+  /* ?nouveau is what tells the card screen to play the arrival once. The card
+     page strips it immediately, so it never survives a refresh or a share. */
+  redirect(`/${slug}?nouveau=1`);
 }
