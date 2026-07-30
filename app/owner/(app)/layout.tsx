@@ -51,7 +51,7 @@ export default async function OwnerLayout({
       />
 
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
-      <header className="safe-t sticky top-0 z-30 flex items-center gap-3 border-b border-white/12 bg-[#0d0819]/80 px-4 py-3 backdrop-blur md:hidden">
+      <header className="safe-t sticky top-0 z-30 flex items-center gap-3 border-b border-white/12 bg-[#0d0819]/80 px-4 pb-3 backdrop-blur md:hidden [--safe-pt:0.75rem]">
         {cafe ? (
           <>
             <span

@@ -64,7 +64,28 @@ export async function currentOwner(): Promise<OwnerSession | null> {
  */
 export async function hasOwnerCookie(): Promise<boolean> {
   const jar = await cookies();
-  return jar.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("auth-token"));
+  return jar.getAll().some(
+    (c) =>
+      c.name.startsWith("sb-") &&
+      c.name.includes("auth-token") &&
+      /*
+        NOT the PKCE verifier. auth-js writes `sb-<ref>-auth-token-code-verifier`
+        at the START of a signup or password-reset flow and only removes it when
+        the exchange completes — so an abandoned signup leaves behind a cookie
+        whose name satisfies the two tests above and which is not a session at
+        all. A diner on that browser was then routed to the owner login screen
+        instead of their wallet.
+      */
+      !c.name.endsWith("-code-verifier") &&
+      /*
+        AND it must actually hold something. An empty value used to count, which
+        is how the deleted-then-resurrected cookie (see proxy.ts) turned one
+        expired token into a permanent redirect to /owner/login: "/" saw the
+        name, sent them to /owner, /owner found no session and sent them back to
+        the login screen — on every launch of the installed app, forever.
+      */
+      c.value.length > 0,
+  );
 }
 
 export async function requireOwner(): Promise<OwnerSession> {

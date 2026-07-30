@@ -58,7 +58,7 @@ export default async function Cartes({
 
   return (
     <div
-      className="safe-t safe-b app-shell app-shell--dark min-h-dvh px-5 pb-10 pt-6 text-white"
+      className="safe-t safe-b app-shell app-shell--dark min-h-dvh px-5 text-white [--safe-pb:2.5rem] [--safe-pt:1.5rem]"
       style={{ ["--cafe" as string]: BRAND_COLOR, ...DINER_BG }}
     >
       {/* The wallet is the only shop-neutral diner screen, which makes it the

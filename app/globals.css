@@ -126,11 +126,30 @@ h4 {
   which is fine — but writing it this way also lets a caller add its own
   minimum later without a second rule.
 */
+/*
+  THESE ADD THE INSET TO THE CALLER'S OWN PADDING. They used to REPLACE it.
+
+  Tailwind v4 ships its utilities inside @layer utilities, and these two classes
+  are unlayered — and unlayered CSS beats layered CSS outright, whatever the
+  specificity or the source order. So `class="safe-t pt-6"` did not mean
+  "inset plus 24px", it meant "inset, and pt-6 is discarded". On a notched phone
+  that was merely wrong; on a desktop, in the installed desktop app, and on
+  any device where env() resolves to 0 it meant ZERO padding, and the content
+  sat flush against the top edge of the window. /cartes and /moi lost their
+  bottom padding the same way.
+
+  (Third time this cascade has bitten this codebase — see the !w-[84px] and
+  !pl-11 overrides forced by .a-field.)
+
+  A caller now states its padding as the variable instead of a pt-*/pb-*
+  utility, so there is one declaration and nothing to lose a fight with. The
+  1rem default exists so a caller that says nothing still is not flush.
+*/
 .safe-t {
-  padding-top: max(env(safe-area-inset-top), 0px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + var(--safe-pt, 1rem));
 }
 .safe-b {
-  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--safe-pb, 1rem));
 }
 
 /* the phone column (mobile-only mandate, §01) */

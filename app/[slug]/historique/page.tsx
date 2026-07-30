@@ -2,7 +2,6 @@ import { notFound, redirect } from "next/navigation";
 import { CafeClosed } from "@/components/CafeClosed";
 import { getCafe, getMember } from "@/lib/data";
 import { getActivity, type Activity } from "@/lib/db";
-import { BackLink } from "@/components/BackLink";
 
 export const metadata = { title: "Historique" };
 
@@ -47,8 +46,7 @@ export default async function Historique({
   return (
     <div className="flex flex-1 flex-col px-5 pb-6">
       <section className="pb-4 pt-3">
-        <BackLink fallback={`/${slug}`} />
-        <h1 className="mt-1 text-[24px] font-extrabold">Historique</h1>
+        <h1 className="text-[24px] font-extrabold">Historique</h1>
         <p className="mt-0.5 text-[13px] text-white/60">Tes points et tes récompenses.</p>
       </section>
 

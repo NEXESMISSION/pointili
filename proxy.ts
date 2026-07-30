@@ -58,7 +58,41 @@ async function withSession(
         }
         response = build(request);
         for (const { name, value, options } of cookiesToSet) {
-          response.cookies.set(name, value, options);
+          /*
+            A DELETION MUST CARRY AN EXPIRES, NOT ONLY A MAX-AGE.
+
+            This is the auto-logout. Supabase clears the auth cookie by writing
+            an empty value with `maxAge: 0` and NO `expires`
+            (@supabase/ssr removeCookieOptions). Next mirrors whatever we set
+            here into the `x-middleware-set-cookie` header, then re-parses that
+            header back into its own mutable jar — and the re-parse runs
+            `compact()`, which copies a key only `if (t[key])`. Both `maxAge: 0`
+            and `value: ""` are FALSY, so both are silently dropped.
+
+            On a redirect — and a dead session on /owner is always a redirect to
+            /owner/login — Next then re-emits that stripped cookie alongside
+            ours. The response carries two Set-Cookie headers for one name:
+
+              sb-…-auth-token=; Path=/; Max-Age=0; SameSite=lax   ← ours
+              sb-…-auth-token=; Path=/; SameSite=lax              ← the re-emit
+
+            The second has no expiry, so per RFC 6265 it wins and RESURRECTS the
+            cookie as an empty session cookie. The deletion becomes a creation.
+
+            It is then self-sustaining: the next request carries an empty value,
+            Supabase finds no session to remove and issues no Set-Cookie at all,
+            so nothing ever cleans it up. Combined with hasOwnerCookie() — which
+            matches on name — every launch of the installed app went
+            "/" → /owner → /owner/login, forever.
+
+            `expires` is a Date, and a Date is truthy, so compact() keeps it and
+            the re-emitted duplicate still deletes.
+          */
+          if (value === "") {
+            response.cookies.set(name, "", { ...options, maxAge: 0, expires: new Date(0) });
+          } else {
+            response.cookies.set(name, value, options);
+          }
         }
       },
     },
