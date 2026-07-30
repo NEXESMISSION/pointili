@@ -11,20 +11,36 @@
  * real answer, for screenshots, for a demo across a table, and for judging the
  * design against numbers instead of an empty state.
  *
- * ─── THIS WRITES TO PRODUCTION ────────────────────────────────────────────
- * There is no separate test project. So everything here is deliberately
- * recognisable and reversible:
+ * ─── EVERY VISIBLE STRING IS A REAL ONE ───────────────────────────────────
+ * This existed once with a `demo-` slug and an @example.com owner, and it was
+ * worthless: the whole point is to be screenshotted and shown to a café owner,
+ * and the first thing they read is the address bar and the Identifiant row. A
+ * shop called "demo" is not a demo of anything.
  *
- *   - the owner is demo-cafe@example.com. example.com is reserved by RFC 2606
- *     precisely so it can never be a real mailbox.
- *   - the slug is `demo-el-manar`, and scripts/sweep-test-data.mjs knows both,
- *     so a sweep can clear it like any other generated shape.
- *   - phones are +216 55 xxx xxx. Tunisian mobiles are 2x/4x/5x/9x, and 55 is
- *     inside a real range, so `--drop` matters: these are checked by prefix and
- *     by membership in this café, never by "looks fake".
- *   - it does NOT touch the real owner's café. It gets its own account, so
- *     ownerCafe() — which resolves the OLDEST café an owner holds — can never
- *     serve demo data to the person paying.
+ * So nothing a viewer can see says test:
+ *   - Café El Manar, at pointili.online/cafe-el-manar
+ *   - Identifiant elmanar@pointili.online — a real address on a domain WE own,
+ *     which is the one way to look right and still be certain it can never
+ *     collide with a stranger's mailbox. No mail is ever sent to it: the account
+ *     is created with email_confirm already true.
+ *   - customers on real Tunisian mobile prefixes (20/21/22/25/26/27/28/29,
+ *     50…59, 90…99), not a made-up range
+ *   - Tunisian first names, dinar amounts a café actually takes
+ *
+ * ─── AND IT WRITES TO PRODUCTION ──────────────────────────────────────────
+ * There is no separate test project, so looking real cannot mean being
+ * untraceable. What makes it safe is not the naming, it is this:
+ *
+ *   - `--drop` finds its customers through diner_cafes for THIS café, never by
+ *     guessing at a phone prefix, and only deletes an account once it holds no
+ *     card anywhere. A real customer who happens to share a number keeps theirs.
+ *   - a generated number that already belongs to somebody is skipped, not
+ *     reused, so the demo can never attach a card to a real person's account.
+ *   - scripts/sweep-test-data.mjs knows the café by name and leaves it alone
+ *     unless asked with --with-demo. Tidying up after a crashed test suite must
+ *     not delete the shop somebody is about to demo.
+ *   - it gets its OWN owner account, so ownerCafe() — which resolves the oldest
+ *     café an owner holds — can never serve demo data to the person paying.
  *
  * ─── WHY IT WRITES SQL AND NOT RPCs ───────────────────────────────────────
  * credit_points() stamps now(). Ninety days of history cannot be built by an
@@ -59,11 +75,19 @@ const SHOWCASE_PIN = "2468";
 
 const DROP = process.argv.includes("--drop");
 
-const SLUG = "demo-el-manar";
+const SLUG = "cafe-el-manar";
 const NAME = "Café El Manar";
-const OWNER_EMAIL = "demo-cafe@example.com";
-const OWNER_PASSWORD = process.env.DEMO_PASSWORD ?? "Demo-Pointili-2026";
-const PHONE_PREFIX = "+21655";
+const OWNER_EMAIL = "elmanar@pointili.online";
+const OWNER_PASSWORD = process.env.DEMO_PASSWORD ?? "ElManar2026";
+
+/* Real Tunisian mobile prefixes. Numbers are drawn from these rather than from
+   one invented block, because a caisse screenshot shows them and a column of
+   +216 55 1xx xxx reads as generated. */
+const PREFIXES = [
+  "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
+  "50", "51", "52", "53", "54", "55", "56", "58", "59",
+  "90", "91", "92", "93", "94", "95", "96", "97", "98", "99",
+];
 
 const RATE = 1; // 1 point per dinar
 const WELCOME = 10;
@@ -112,19 +136,29 @@ const sql = await connect();
 /* ── teardown ─────────────────────────────────────────────────────────── */
 async function drop() {
   const { rows } = await sql.query("select id from businesses where slug=$1", [SLUG]);
-  const phones = (
-    await sql.query("select phone from accounts where phone like $1", [`${PHONE_PREFIX}%`])
-  ).rows.map((r) => r.phone);
 
+  /*
+    Its customers are whoever holds a card HERE — read before the café goes, and
+    never guessed from the phone number. The numbers look real now, so "looks
+    fake" was never a safe test and is no longer even available.
+  */
+  let phones = [];
   if (rows.length) {
     const id = rows[0].id;
+    phones = (
+      await sql.query("select phone from diner_cafes where business_id=$1", [id])
+    ).rows.map((r) => r.phone);
+
     // diner_cafes is not cascaded by the business FK, so it goes first.
     await sql.query("delete from diner_cafes where business_id=$1", [id]);
     await sql.query("delete from businesses where id=$1", [id]);
   }
   if (phones.length) {
-    // Only accounts with no card left anywhere — never orphan a real customer
-    // who happens to sit in this prefix.
+    /*
+      Only accounts left holding NO card anywhere. If one of these numbers turned
+      out to belong to a real customer of a real shop, their account and their
+      other cards survive — the card they held here is all that goes.
+    */
     await sql.query(
       `delete from accounts a
         where a.phone = any($1)
@@ -217,10 +251,25 @@ const ledger = [];
 const people = [];
 let n = 0;
 
+/** Every phone that already exists, so a generated one never lands on a real account. */
+const taken = new Set(
+  (await sql.query("select phone from accounts")).rows.map((r) => r.phone),
+);
+
 for (const { kind, n: count, everyDays, joinedAgo } of KINDS) {
   for (let i = 0; i < count; i++) {
     const name = NAMES[n % NAMES.length];
-    const phone = `${PHONE_PREFIX}${String(100000 + n * 137).slice(-6)}`;
+    /*
+      A free number on a real prefix. `taken` is every phone already in accounts,
+      loaded once up front: if a generated number belongs to somebody, it is
+      skipped rather than reused, so the demo can never quietly attach a card to
+      a real person's account.
+    */
+    let phone = "";
+    do {
+      phone = `+216${pick(PREFIXES)}${String(Math.floor(between(100000, 999999)))}`;
+    } while (taken.has(phone));
+    taken.add(phone);
     n++;
     const joined = now - between(joinedAgo[0], joinedAgo[1]) * DAY;
 

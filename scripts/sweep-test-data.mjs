@@ -11,9 +11,14 @@
  * counted nine of them as "owners", and a leaked café even showed up in the
  * café table.
  *
- * Only these generated shapes are ever touched. A real address cannot match:
- * every pattern is anchored and ends in @example.com, which RFC 2606 reserves
- * precisely so it can never be a real mailbox.
+ * Only these generated shapes are ever touched. Every crash-residue pattern is
+ * anchored and ends in @example.com, which RFC 2606 reserves precisely so it can
+ * never be a real mailbox.
+ *
+ * The showcase café (scripts/demo.mjs) is the exception, and it is handled the
+ * opposite way. It is deliberately named like a real shop, because its whole job
+ * is to be shown to one — so it cannot be recognised by shape. It is matched by
+ * its exact address and slug instead, and skipped unless --with-demo is passed.
  */
 import { createClient } from "@supabase/supabase-js";
 import { connect, env } from "./db.mjs";
@@ -40,8 +45,8 @@ const PATTERNS = [
 const SLUGS = /^(probe-\d+|susp-\d+|attack-\d+|e2etest|e2e-second-shop|cafe-de-letoile-co)$/;
 
 /** The deliberate fixture, opt-in only. */
-const DEMO_EMAIL = /^demo-cafe@example\.com$/;
-const DEMO_SLUG = /^demo-el-manar$/;
+const DEMO_EMAIL = /^elmanar@pointili\.online$/;
+const DEMO_SLUG = /^cafe-el-manar$/;
 const doomedEmail = (e) => PATTERNS.some((p) => p.test(e)) || (WITH_DEMO && DEMO_EMAIL.test(e));
 const doomedSlug = (sl) => SLUGS.test(sl) || (WITH_DEMO && DEMO_SLUG.test(sl));
 
