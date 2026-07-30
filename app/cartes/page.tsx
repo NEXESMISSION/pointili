@@ -31,6 +31,31 @@ export default async function Cartes({
     getAccount(phone),
   ]);
 
+  /*
+    What each card is CLOSE to.
+
+    The wallet used to show a balance and nothing else, so every card said "223
+    points" — a number with no meaning to the person holding it. What makes them
+    open a card is being nearly there, and the shop already knows: the same
+    nextRewardNudge() the card screen uses.
+
+    Resolved here rather than inside diner_wallet, because that is an RPC and
+    this needs no migration — a wallet holds a handful of cards, and it is one
+    small query each, in parallel.
+  */
+  const { getRewards, nextRewardNudge } = await import("@/lib/data");
+  const nudges = Object.fromEntries(
+    await Promise.all(
+      cards.map(async (c) => {
+        const nudge = nextRewardNudge(c.balance, await getRewards(c.businessId));
+        return [
+          c.businessId,
+          nudge ? { label: nudge.target.label, needed: nudge.needed, progress: nudge.progress } : null,
+        ] as const;
+      }),
+    ),
+  );
+
   return (
     <div
       className="app-shell app-shell--dark min-h-dvh px-5 pb-10 pt-6 text-white"
@@ -38,7 +63,12 @@ export default async function Cartes({
     >
       {/* The wallet is the only shop-neutral diner screen, which makes it the
           right home for a code that is the same at every shop. */}
-      <WalletView cards={cards} currentSlug={from ?? null} code={account?.code ?? null} />
+      <WalletView
+        cards={cards}
+        currentSlug={from ?? null}
+        code={account?.code ?? null}
+        nudges={nudges}
+      />
       {/* the wallet is the customer's home base — the likeliest place to install from */}
       <InstallPrompt audience="client" />
     </div>
