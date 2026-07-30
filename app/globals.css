@@ -117,33 +117,34 @@ h4 {
 /*
   ── SAFE AREAS ────────────────────────────────────────────────────────
   Installed to a home screen the page owns the whole display: there is no
-  browser chrome to keep content clear of the status bar, the notch or the home
+  browser chrome keeping content clear of the status bar, the notch or the home
   indicator. app/layout.tsx sets viewport-fit=cover so these env() values are
-  real; these two classes are what spends them.
+  real; these two classes are what spend them.
 
-  max(…, 0px) rather than the bare env(): on a browser without support the
-  custom property is invalid and the whole declaration would be dropped,
-  which is fine — but writing it this way also lets a caller add its own
-  minimum later without a second rule.
-*/
-/*
-  THESE ADD THE INSET TO THE CALLER'S OWN PADDING. They used to REPLACE it.
+  THEY ADD THE INSET TO THE CALLER'S PADDING. They used to REPLACE it, and that
+  was a regression I shipped.
 
   Tailwind v4 ships its utilities inside @layer utilities, and these two classes
   are unlayered — and unlayered CSS beats layered CSS outright, whatever the
-  specificity or the source order. So `class="safe-t pt-6"` did not mean
-  "inset plus 24px", it meant "inset, and pt-6 is discarded". On a notched phone
-  that was merely wrong; on a desktop, in the installed desktop app, and on
-  any device where env() resolves to 0 it meant ZERO padding, and the content
-  sat flush against the top edge of the window. /cartes and /moi lost their
-  bottom padding the same way.
+  specificity or the source order. So `class="safe-t pt-4"` did not mean "inset
+  plus 16px", it meant "inset, and pt-4 is discarded". On a notched phone that
+  was merely wrong. Everywhere env() resolves to 0 — every desktop, every phone
+  without a notch, every browser tab — it meant ZERO padding, and the content
+  sat flush against the top edge. That is the "bad margin on the top of the
+  client pages, also the admin pages" that was reported, and it was every one of
+  them, because TopBar carries this class on every diner screen.
 
   (Third time this cascade has bitten this codebase — see the !w-[84px] and
   !pl-11 overrides forced by .a-field.)
 
-  A caller now states its padding as the variable instead of a pt-*/pb-*
-  utility, so there is one declaration and nothing to lose a fight with. The
-  1rem default exists so a caller that says nothing still is not flush.
+  So a caller now states its padding as a VARIABLE rather than a Tailwind
+  spacing utility: one declaration, nothing to lose a fight with. The 1rem
+  default means a caller that says nothing is still not flush.
+
+  Do not write a Tailwind class name containing an asterisk-slash inside this
+  comment. The first version of it did, which closed the comment early and
+  turned the rest of the sentence into stray CSS — the dev server refused the
+  whole stylesheet and every page 500'd.
 */
 .safe-t {
   padding-top: calc(env(safe-area-inset-top, 0px) + var(--safe-pt, 1rem));
