@@ -26,7 +26,17 @@ const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
 const SEARCH_FROM = 6;
 
 /** How close this card is to its next reward, resolved by app/cartes/page.tsx. */
-export type Nudge = { label: string; needed: number; progress: number } | null;
+/**
+ * `cost`, not a pre-computed percentage.
+ *
+ * The bar used to be filled from nudge.progress, which measures from the
+ * PREVIOUS reward tier. With rewards at 100 and 200 and a balance of 120, the
+ * wallet drew 20% while the shop's own card and /boutique both drew 60% for the
+ * same reward — the wallet, the one screen showing every shop at once, was the
+ * one that looked like points had gone missing. Every bar in the product now
+ * fills from balance / cost, the two numbers the caption already names.
+ */
+export type Nudge = { label: string; needed: number; cost: number } | null;
 
 export function WalletView({
   cards,
@@ -290,7 +300,9 @@ function CardRow({ card, current, nudge }: { card: WalletCafe; current: boolean;
                 <span className="mt-1.5 block h-[5px] overflow-hidden rounded-full bg-black/25">
                   <span
                     className="block h-full rounded-full bg-white/90"
-                    style={{ width: `${Math.round(nudge.progress * 100)}%` }}
+                    style={{
+                      width: `${Math.min(100, Math.round((card.balance / nudge.cost) * 100))}%`,
+                    }}
                   />
                 </span>
               </>

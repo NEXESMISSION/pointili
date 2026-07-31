@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { OwnerSidebar, OwnerTabs } from "@/components/OwnerNav";
 import { InstallPrompt } from "@/components/InstallPrompt";
-import { ownerAccess, ownerCafe } from "@/lib/auth/owner";
+import { ownerAccess, ownerCafe, ownerHome } from "@/lib/auth/owner";
 import { ownerNotices, remaining } from "@/lib/platform";
 
 export const metadata = { title: "Espace café" };
@@ -24,17 +24,27 @@ export default async function OwnerLayout({
   if (!owner) redirect("/owner/login");
 
   const cafe = await ownerCafe();
-  const notices = cafe ? await ownerNotices(cafe.id) : [];
+  /*
+    Every page in this group needs a café — /owner/nouveau lives in (setup),
+    outside it. Each page already refuses without one, but a redirect thrown
+    from a PAGE lands inside the loading.tsx boundary, and once that has
+    streamed Next can no longer send an HTTP 307: it emits <meta refresh>
+    instead. A brand-new owner's very first screen was a spinner, one dead
+    second, then a reload. Deciding here, above the boundary, makes it a real
+    redirect. The page-level guards stay — they are what narrows the type.
+  */
+  if (!cafe) redirect(await ownerHome());
 
-  const left = cafe ? remaining(cafe.planExpiresAt) : null;
+  const notices = await ownerNotices(cafe.id);
 
-  const planChip = cafe
-    ? cafe.plan === "pro"
+  const left = remaining(cafe.planExpiresAt);
+
+  const planChip =
+    cafe.plan === "pro"
       ? { text: "Pro", cls: "bg-[#6d4ae6] text-white" }
-      : left?.expired
+      : left.expired
         ? { text: "Expiré", cls: "bg-[#ff6b6b]/12 text-[#ff9a9a]" }
-        : { text: `Essai · ${left?.label ?? ""}`.trim(), cls: "bg-[#ffd27a]/12 text-[#ffd27a]" }
-    : null;
+        : { text: `Essai · ${left.label ?? ""}`.trim(), cls: "bg-[#ffd27a]/12 text-[#ffd27a]" };
 
   return (
     /* Phone: one column, header on top, tabs at the bottom.
@@ -44,41 +54,31 @@ export default async function OwnerLayout({
        md:max-w-* utility cannot win against it; the class has to be absent. */
     <div className="a-shell flex min-h-dvh md:items-start">
       <OwnerSidebar
-        name={cafe?.name ?? null}
-        initial={(cafe?.name ?? "P").charAt(0).toUpperCase()}
-        colour={cafe?.primaryColor ?? "#5b3fd1"}
+        name={cafe.name}
+        initial={cafe.name.charAt(0).toUpperCase()}
+        colour={cafe.primaryColor}
         plan={planChip}
       />
 
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
       <header className="safe-t sticky top-0 z-30 flex items-center gap-3 border-b border-white/12 bg-[#0d0819]/80 px-4 pb-3 backdrop-blur md:hidden [--safe-pt:0.75rem]">
-        {cafe ? (
-          <>
-            <span
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[15px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(40,18,59,.5)]"
-              style={{ background: cafe.primaryColor }}
-            >
-              {cafe.name.charAt(0).toUpperCase()}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[15px] font-extrabold leading-tight text-white">
-                {cafe.name}
-              </span>
-              <span className="block text-[10.5px] font-semibold text-white/55">
-                Espace café
-              </span>
-            </span>
-            {planChip && (
-              <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${planChip.cls}`}>
-                {planChip.text}
-              </span>
-            )}
-          </>
-        ) : (
-          <span className="text-[16px] font-extrabold text-white">
-            pointili<span className="text-[#b9a3ff]">.online</span>
+        <span
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[15px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(40,18,59,.5)]"
+          style={{ background: cafe.primaryColor }}
+        >
+          {cafe.name.charAt(0).toUpperCase()}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[15px] font-extrabold leading-tight text-white">
+            {cafe.name}
           </span>
-        )}
+          <span className="block text-[10.5px] font-semibold text-white/55">
+            Espace café
+          </span>
+        </span>
+        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${planChip.cls}`}>
+          {planChip.text}
+        </span>
       </header>
 
       {owner.dev && (
@@ -92,7 +92,7 @@ export default async function OwnerLayout({
         can't serve diners — so tell them plainly rather than letting them wonder
         why the QR stopped working.
       */}
-      {cafe && !cafe.live && (
+      {!cafe.live && (
         <div className="border-b border-[#ff6b6b]/35 bg-[#ff6b6b]/12 px-5 py-2.5">
           <p className="text-[9.5px] font-semibold uppercase tracking-[0.06em] text-[#ff9a9a]">
             ◆ Café hors ligne
@@ -127,7 +127,7 @@ export default async function OwnerLayout({
         </div>
       )}
 
-      {cafe?.live && left?.soon && !left.unlimited && (
+      {cafe.live && left.soon && !left.unlimited && (
         <p className="border-b border-[#ffd27a]/30 bg-[#ffd27a]/12 px-5 py-2 text-[11.5px] leading-snug text-[#ffd27a]">
           Votre {cafe.plan === "trial" ? "essai" : "abonnement"} se termine dans{" "}
           <b>{left.label}</b>. Vos clients et leurs points sont conservés.{" "}

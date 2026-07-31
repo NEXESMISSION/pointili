@@ -50,7 +50,7 @@ export default async function Cartes({
         const nudge = nextRewardNudge(c.balance, await getRewards(c.businessId));
         return [
           c.businessId,
-          nudge ? { label: nudge.target.label, needed: nudge.needed, progress: nudge.progress } : null,
+          nudge ? { label: nudge.target.label, needed: nudge.needed, cost: nudge.target.pointsCost } : null,
         ] as const;
       }),
     ),

@@ -51,7 +51,23 @@ export type Done =
       label: string;
     };
 
-export function DoneSheet({ done, onClose }: { done: Done; onClose: () => void }) {
+export function DoneSheet({
+  done,
+  onClose,
+  onNext,
+}: {
+  done: Done;
+  /** Dismiss the receipt only — the veil, Escape, and the auto-close. */
+  onClose: () => void;
+  /**
+   * Finish with this customer and return the till to the keypad.
+   *
+   * Separate from onClose on purpose. The button says "Client suivant" and used
+   * to call the dismiss handler, leaving the till bound to the same person
+   * behind a screen that looked ready for the next one.
+   */
+  onNext: () => void;
+}) {
   useEffect(() => {
     const t = setTimeout(onClose, 4000);
     const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -173,7 +189,7 @@ export function DoneSheet({ done, onClose }: { done: Done; onClose: () => void }
           )}
           <button
             type="button"
-            onClick={onClose}
+            onClick={onNext}
             className="flex-1 rounded-2xl bg-[#7c3aed] py-3 text-[14px] font-bold text-white active:scale-[0.98]"
           >
             Client suivant

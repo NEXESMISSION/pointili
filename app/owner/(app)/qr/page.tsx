@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { ownerCafe, ownerHome } from "@/lib/auth/owner";
 import { businessType } from "@/lib/businessTypes";
 import { getLoyaltyProgram } from "@/lib/data";
+import { SITE_URL } from "@/lib/seo";
 import { PrintKit } from "./PrintKit";
 import { BackLink } from "@/components/BackLink";
 
@@ -25,8 +26,13 @@ export default async function QrPage() {
   const program = await getLoyaltyProgram(cafe.id);
   const type = businessType(cafe.businessType);
 
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pointili.online";
-  const url = `${base.replace(/\/$/, "")}/${cafe.slug}`;
+  /*
+    SITE_URL, not a second copy of the env read — this one fell back to the
+    APEX, which 308s to www. That redirect is free in a browser and permanent on
+    paper: it is printed into a QR code, stuck to a table, and every scan for the
+    life of that sticker pays the extra hop.
+  */
+  const url = `${SITE_URL}/${cafe.slug}`;
 
   const svg = await QRCode.toString(url, {
     type: "svg",

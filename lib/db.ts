@@ -502,12 +502,21 @@ export async function ownerAdjustPoints(
   businessId: string,
   phone: string,
   delta: number,
+  /**
+   * The dinars this correction reverses, when it reverses a known sale.
+   *
+   * null for a manual "+10 / -5" — that has no sale behind it and must stay out
+   * of the revenue sum. Passed only by the till's undo, so a mistyped 600 comes
+   * off Analyses as well as off the customer's balance (0025).
+   */
+  amountTnd: number | null = null,
 ): Promise<{ ok: boolean; balance: number }> {
   const db = createAdminClient();
   const { data, error } = await db.rpc("owner_adjust_points", {
     p_business_id: businessId,
     p_phone: phone,
     p_delta: delta,
+    p_amount_tnd: amountTnd,
   });
   if (error) return { ok: false, balance: 0 };
   return data as { ok: boolean; balance: number };

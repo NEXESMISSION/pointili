@@ -145,6 +145,27 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
   // Only 'earn' rows are purchases. Welcome bonuses aren't visits — counting
   // them would make every signup look like a paying customer.
   const purchases = rows.filter((r) => r.reason === "earn");
+
+  /*
+    A REVERSED sale, and everything that has to move with it.
+
+    The till's Annuler writes reason 'adjust' carrying the dinars it is taking
+    back (0025). Counting only 'earn' meant undoing a 600-instead-of-60 typo
+    handed the customer their points back and left +600 TND, one extra visite
+    and a wrong ticket average on this page forever, with nothing in the product
+    able to correct it — on the one screen whose entire job is to be believed.
+
+    A MANUAL correction ("+10 because I like you") carries no amount and is not
+    a sale, so it is deliberately absent from both lists.
+
+    One reversal undoes exactly one credit, so subtracting the count of these is
+    the same arithmetic as removing the sales they cancel.
+  */
+  const reversals = rows.filter((r) => r.reason === "adjust" && r.amount_tnd !== null);
+  const moneyRows = [...purchases, ...reversals];
+  /** Sales that still stand, over a stretch of time. */
+  const visitsIn = (list: LedgerRow[], undone: LedgerRow[]) =>
+    Math.max(0, list.length - undone.length);
   const byPhone = new Map<string, number[]>();
   for (const r of purchases) {
     const at = new Date(r.created_at).getTime();
@@ -191,8 +212,10 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
   }
 
   // ── money ─────────────────────────────────────────────────────────
-  const revenueTnd = purchases.reduce((s, r) => s + spend(r), 0);
-  const revenue30d = purchases
+  /** Sales that still stand, all time — the denominator of the ticket average. */
+  const netVisits = visitsIn(purchases, reversals);
+  const revenueTnd = moneyRows.reduce((s, r) => s + spend(r), 0);
+  const revenue30d = moneyRows
     .filter((r) => now - new Date(r.created_at).getTime() <= 30 * DAY)
     .reduce((s, r) => s + spend(r), 0);
 
@@ -213,14 +236,16 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
   for (let i = 29; i >= 0; i--) {
     const start = new Date(now - i * DAY).setHours(0, 0, 0, 0);
     const end = start + DAY;
-    const inDay = purchases.filter((r) => {
+    const within = (r: LedgerRow) => {
       const t = new Date(r.created_at).getTime();
       return t >= start && t < end;
-    });
+    };
     daily.push({
       day: new Date(start).toISOString().slice(0, 10),
-      revenue: Math.round((inDay.reduce((s, r) => s + spend(r), 0)) * 100) / 100,
-      visits: inDay.length,
+      // Both figures net the reversals — measured the same way in every bucket
+      // and in the headline, or this page contradicts itself.
+      revenue: Math.round(moneyRows.filter(within).reduce((s, r) => s + spend(r), 0) * 100) / 100,
+      visits: visitsIn(purchases.filter(within), reversals.filter(within)),
       newCustomers: [...firstSeen.values()].filter((t) => t >= start && t < end).length,
     });
   }
@@ -229,10 +254,11 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
      Both are measured the same way, so the two are actually comparable. */
   const at = (r: LedgerRow) => new Date(r.created_at).getTime();
   const measure = (from: number, to: number): Window => {
-    const inside = purchases.filter((r) => at(r) >= from && at(r) < to);
+    const within = (r: LedgerRow) => at(r) >= from && at(r) < to;
+    const inside = purchases.filter(within);
     return {
-      revenue: Math.round((inside.reduce((s, r) => s + spend(r), 0)) * 100) / 100,
-      visits: inside.length,
+      revenue: Math.round(moneyRows.filter(within).reduce((s, r) => s + spend(r), 0) * 100) / 100,
+      visits: visitsIn(inside, reversals.filter(within)),
       newCustomers: [...firstSeen.values()].filter((t) => t >= from && t < to).length,
       activeCustomers: new Set(inside.map((r) => r.customer_phone)).size,
     };
@@ -274,11 +300,11 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
   for (let i = buckets - 1; i >= 0; i--) {
     const end = windowEnd - i * bucketDays * DAY;
     const start = end - bucketDays * DAY;
-    const inside = purchases.filter((r) => at(r) >= start && at(r) < end);
+    const within = (r: LedgerRow) => at(r) >= start && at(r) < end;
     series.push({
       at: start,
-      revenue: Math.round((inside.reduce((s, r) => s + spend(r), 0)) * 100) / 100,
-      visits: inside.length,
+      revenue: Math.round(moneyRows.filter(within).reduce((s, r) => s + spend(r), 0) * 100) / 100,
+      visits: visitsIn(purchases.filter(within), reversals.filter(within)),
     });
   }
 
@@ -331,13 +357,13 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
     confident: customers >= MIN_SAMPLE,
     pointsPerTnd,
 
-    visitsPerCustomer: customers ? Math.round((purchases.length / customers) * 10) / 10 : 0,
+    visitsPerCustomer: customers ? Math.round((netVisits / customers) * 10) / 10 : 0,
     medianDaysBetween,
     returnedWithin30d: cohort ? Math.round((cohortReturned / cohort) * 100) : 0,
 
     revenueTnd: round(revenueTnd),
     revenue30d: round(revenue30d),
-    avgTicketTnd: purchases.length ? round(revenueTnd / purchases.length) : 0,
+    avgTicketTnd: netVisits ? round(revenueTnd / netVisits) : 0,
     rewardCostTnd: round(rewardCostTnd),
     netTnd: round(revenueTnd - rewardCostTnd),
 

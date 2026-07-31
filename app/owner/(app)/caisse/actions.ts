@@ -92,7 +92,12 @@ function customerLabel(r: Resolved): string {
 
 export type ManageResult = { ok: boolean; error?: string; balance?: number; stamps?: number };
 
-export async function adjustByCodeAction(code: string, delta: number): Promise<ManageResult> {
+export async function adjustByCodeAction(
+  code: string,
+  delta: number,
+  /** Set only by the till's undo — the dinars of the sale being reversed. */
+  amountTnd?: number,
+): Promise<ManageResult> {
   const cafe = await ownerCafe();
   if (!cafe) return { ok: false, error: "Non autorisé." };
   if (!Number.isFinite(delta) || delta === 0) return { ok: false, error: "Entrez un nombre." };
@@ -101,7 +106,7 @@ export async function adjustByCodeAction(code: string, delta: number): Promise<M
   const who = await resolveCustomer(cafe.id, code);
   if ("error" in who) return { ok: false, error: who.error };
 
-  const res = await ownerAdjustPoints(cafe.id, who.phone, Math.round(delta));
+  const res = await ownerAdjustPoints(cafe.id, who.phone, Math.round(delta), amountTnd ?? null);
   if (!res.ok) return { ok: false, error: "Échec." };
 
   revalidatePath("/owner");

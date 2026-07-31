@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { CardIcon, HistoryIcon, UserIcon } from "./icons";
 
@@ -14,6 +14,41 @@ const tabs = [
   { key: "historique", label: "Historique", Icon: HistoryIcon, href: "/historique" },
   { key: "profil", label: "Profil", Icon: UserIcon, href: "/profil" },
 ];
+
+/**
+ * The tap has to land instantly, and there is no loading.tsx to do it.
+ *
+ * app/[slug] deliberately has no loading file: every page under it decides
+ * whether you are a member and redirects if you are not, and a redirect thrown
+ * inside a Suspense boundary that has already streamed cannot be an HTTP one —
+ * Next degrades it to <meta refresh>, which cost every QR scan a spinner, a
+ * full second, and a second page load. Removing the boundary put the 307 back
+ * and took the instant transition away with it.
+ *
+ * useLinkStatus is what Next offers for exactly this case (dynamic route, no
+ * loading.js). The tab lights up the moment it is pressed, so the wait belongs
+ * to the tab you chose rather than to a screen that looks frozen.
+ */
+function TabBody({ label, Icon, active }: { label: string; Icon: typeof CardIcon; active: boolean }) {
+  const { pending } = useLinkStatus();
+  const lit = active || pending;
+  return (
+    <>
+      <Icon
+        className={`h-[22px] w-[22px] transition-colors ${lit ? "text-white" : "text-white/45"} ${
+          pending && !active ? "animate-pulse" : ""
+        }`}
+      />
+      <span
+        className={`text-[10.5px] font-semibold transition-colors ${
+          lit ? "text-white" : "text-white/45"
+        }`}
+      >
+        {label}
+      </span>
+    </>
+  );
+}
 
 export function BottomNav({ slug }: { slug: string }) {
   const pathname = usePathname();
@@ -40,18 +75,7 @@ export function BottomNav({ slug }: { slug: string }) {
                 aria-current={active ? "page" : undefined}
                 className="flex min-h-[62px] flex-col items-center justify-center gap-1 py-2"
               >
-                <Icon
-                  className={`h-[22px] w-[22px] transition-colors ${
-                    active ? "text-white" : "text-white/45"
-                  }`}
-                />
-                <span
-                  className={`text-[10.5px] font-semibold transition-colors ${
-                    active ? "text-white" : "text-white/45"
-                  }`}
-                >
-                  {label}
-                </span>
+                <TabBody label={label} Icon={Icon} active={active} />
               </Link>
             </li>
           );

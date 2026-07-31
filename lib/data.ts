@@ -326,14 +326,15 @@ export function nextRewardNudge(balance: number, rewards: Reward[]) {
 
   if (!target) return null;
 
-  // Progress measured from the previous (affordable) tier, so the bar reflects
-  // real closeness rather than always starting at zero.
-  const prevCost = rewards
-    .filter((r) => r.pointsCost <= balance)
-    .sort((a, b) => b.pointsCost - a.pointsCost)[0]?.pointsCost;
-  const floor = prevCost ?? 0;
-  const span = target.pointsCost - floor;
-  const progress = span > 0 ? Math.min(1, Math.max(0, (balance - floor) / span)) : 0;
+  /*
+    No `progress` here on purpose.
 
-  return { target, needed: target.pointsCost - balance, progress };
+    It used to measure from the previous affordable tier — "real closeness"
+    rather than always starting at zero — and every surface that drew a bar
+    disagreed with the caption printed directly above it, and with the other
+    surfaces. Each bar now fills from balance / target.pointsCost, which is what
+    "450 / 500" says in words. One rule, three screens, no arithmetic hidden
+    from the person reading it.
+  */
+  return { target, needed: target.pointsCost - balance };
 }

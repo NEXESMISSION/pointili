@@ -395,7 +395,6 @@ function CustomerSheet({
   const [balance, setBalance] = useState(customer.balance);
   const [stamps, setStamps] = useState(customer.stamps);
   const [amount, setAmount] = useState("");
-  const [flash, setFlash] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const [busy, start] = useTransition();
 
@@ -403,22 +402,35 @@ function CustomerSheet({
   const [history, setHistory] = useState<Activity[] | null>(null);
   const [delta, setDelta] = useState("");
   /*
-    The last credit, so it can be taken back from the line that announces it.
+    THE MESSAGE OWNS ITS OWN UNDO.
 
-    The confirmation is the ONLY moment the cashier learns they fat-fingered —
-    "+600 points · nouveau solde 610" is where a 60 typed as 600 becomes
-    visible. Until now the reversal lived behind "Corriger / Historique", the
-    smallest control on a screen whose every other control is 16–24px, and then
-    asked them to work out and type "-600" while a queue watched. The undo now
-    sits in the sentence that caused the doubt.
+    This was two states — a `flash` string and a separate `lastCredit` number —
+    and nothing but a credit or a reversal ever touched the second one. So the
+    button was gated on "a credit happened at some point", not on "the line
+    above me is that credit". Stamp a card, correct a balance, set stamps, reset
+    a PIN: each wrote a new flash and left the old undo sitting under it.
+
+    The worst shape: a cashier stamps the wrong customer, reads "Carte pleine 🎉
+    — code XJFP6Y", and the only button beneath it says Annuler. Pressing it
+    cancels nothing about the card — it silently reverses the PREVIOUS
+    customer's points, then reports "Annulé : −30 points", which reads as
+    success. Balances drift down and nobody investigates.
+
+    One object. The undo can only render on the line that earned it, and every
+    other setFlash is structurally incapable of carrying one.
   */
-  const [lastCredit, setLastCredit] = useState<number | null>(null);
-  /*
-    The receipt. It is a SEPARATE state from `flash`, not a replacement: the
-    sheet is the loud confirmation the cashier sees at arm's length and it
-    auto-closes, while the flash line stays behind it as the quiet record — and
-    keeps the undo reachable after the sheet is gone.
-  */
+  type Flash = {
+    text: string;
+    /** Points to hand back — presence of this is what renders Annuler. */
+    undo?: number;
+    /** The dinars of the sale being reversed, so Analyses nets it out (0025). */
+    amount?: number;
+  };
+  const [flashState, setFlashState] = useState<Flash | null>(null);
+  const setFlash = (f: Flash | string | null) =>
+    setFlashState(f === null ? null : typeof f === "string" ? { text: f } : f);
+  const flash = flashState;
+
   const [done, setDone] = useState<Done | null>(null);
   const [newPin, setNewPin] = useState("");
   const [stampSet, setStampSet] = useState(String(customer.stamps));
@@ -443,7 +455,6 @@ function CustomerSheet({
         setAmount("");
         // only the earned points are reversible here — a one-time welcome bonus
         // is not part of the mistake and taking it back would be a second one
-        setLastCredit(res.ok.earned > 0 ? res.ok.earned : null);
         setDone({
           kind: "credit",
           who: res.ok.label,
@@ -453,13 +464,16 @@ function CustomerSheet({
           amount: res.ok.amount,
           unlocked: res.ok.unlocked,
           next: res.ok.next,
-          onUndo: res.ok.earned > 0 ? () => undoCredit(res.ok!.earned) : undefined,
+          onUndo: res.ok.earned > 0 ? () => undoCredit(res.ok!.earned, res.ok!.amount) : undefined,
         });
-        setFlash(
-          `+${res.ok.earned} points` +
+        setFlash({
+          undo: res.ok.earned > 0 ? res.ok.earned : undefined,
+          amount: res.ok.amount,
+          text:
+            `+${res.ok.earned} points` +
             (res.ok.welcome > 0 ? ` · +${res.ok.welcome} de bienvenue` : "") +
             ` · nouveau solde ${res.ok.balance} points`,
-        );
+        });
       }
     });
   }
@@ -470,15 +484,18 @@ function CustomerSheet({
     that behaves differently depending on which button you found would be worse
     than having only one button.
   */
-  function undoCredit(back: number) {
-    setLastCredit(null);
+  function undoCredit(back: number, dinars?: number) {
+    // drop the offer immediately — a double tap must not reverse twice
+    setFlash({ text: `Annulation de ${back} points…` });
     start(async () => {
-      const r = await adjustByCodeAction(customer.ref, -back);
+      // negative, so Analyses subtracts the sale instead of only the points
+      const r = await adjustByCodeAction(customer.ref, -back, dinars === undefined ? undefined : -dinars);
       if (r.ok && typeof r.balance === "number") {
         setBalance(r.balance);
         setFlash(`Annulé : −${back} points · solde ${r.balance} points`);
       } else {
-        setLastCredit(back);
+        // put the offer back: the reversal did not happen
+        setFlash({ text: `+${back} points`, undo: back, amount: dinars });
         setErr(r.error ?? "Échec.");
       }
     });
@@ -524,7 +541,25 @@ function CustomerSheet({
       className="fixed inset-0 z-50 flex flex-col bg-[#0a0614]/97 backdrop-blur-sm"
     >
       {/* The receipt, over the top of everything, closing itself after 4s. */}
-      {done && <DoneSheet done={done} onClose={() => setDone(null)} />}
+      {/*
+        onNext is NOT onClose. The sheet's primary button says "Client suivant"
+        and used to call the dismiss handler, which only hid the receipt — the
+        till stayed bound to the same person, showing an empty amount box and a
+        live Créditer. The cashier types the next customer's total and credits
+        the previous one, which is the exact failure the receipt exists to
+        prevent, reintroduced by its own label. Tapping the veil still just
+        dismisses.
+      */}
+      {done && (
+        <DoneSheet
+          done={done}
+          onClose={() => setDone(null)}
+          onNext={() => {
+            setDone(null);
+            onClose();
+          }}
+        />
+      )}
       <header className="mx-auto flex w-full max-w-[520px] items-start justify-between gap-3 px-5 pb-3 pt-5">
         <div className="min-w-0">
           <p className="truncate text-[24px] font-extrabold leading-tight text-white">
@@ -576,12 +611,12 @@ function CustomerSheet({
             role="status"
             className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-[#7ff0b0]/12 px-4 py-3"
           >
-            <p className="min-w-0 text-[13.5px] font-bold text-[#7ff0b0]">{flash}</p>
-            {lastCredit !== null && (
+            <p className="min-w-0 text-[13.5px] font-bold text-[#7ff0b0]">{flash.text}</p>
+            {flash.undo !== undefined && (
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => undoCredit(lastCredit)}
+                onClick={() => undoCredit(flash.undo!, flash.amount)}
                 className="shrink-0 rounded-full bg-white/12 px-3.5 py-1.5 text-[12.5px] font-bold text-white active:scale-95"
               >
                 Annuler
