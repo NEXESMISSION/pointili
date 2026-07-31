@@ -157,49 +157,22 @@ if (stampCode) {
   check("the same code cannot be reused", /déjà.*utilisé/i.test(again), again.replace(/\n/g, " · ").slice(0, 50));
 }
 
-/* ── 7. Clients: find the cardholder, correct points + stamps ──────── */
-await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-await staff.locator('input[name="search"]').fill(card.code);
+/* ── 7. Open the cardholder at the till, correct points + stamps ────
+   The browsable "Mes clients" list was removed from the caisse, so a customer
+   is reached the one way a cashier ever reaches one: by the code they show.
+   The cross-shop probe that used to live here went with the list — it asked
+   whether a stranger's code could be ENUMERATED out of a list that no longer
+   exists. The isolation that still has teeth is the PIN reset, and that is
+   guarded in scripts/attack.mjs. */
+await openCustomer(card.code);
 const listed = await staff
   .waitForFunction((c) => (document.querySelector("main")?.innerText ?? "").includes(c), card.code, { timeout: 10000 })
   .then(() => true)
   .catch(() => false);
-check("Clients finds a cardholder by code", listed, card.code);
+check("the till opens a cardholder by code", listed, card.code);
 const listTxt = await staff.locator("main").innerText();
-check("Clients never shows the raw phone", !listTxt.includes(NORM));
+check("the till never shows the raw phone", !listTxt.includes(NORM));
 
-/*
-  Cross-shop isolation. A code resolves platform-wide, but "Mes clients" must
-  still list only people THIS shop has actually served — otherwise one owner
-  could enumerate another's customers by typing codes into the search box.
-*/
-const { data: others } = await admin
-  .from("accounts").select("phone, code").neq("phone", NORM).limit(40);
-let outsider = null;
-for (const a of others ?? []) {
-  const [{ data: joined }, { data: credited }] = await Promise.all([
-    admin.from("diner_cafes").select("phone").eq("business_id", cafeId).eq("phone", a.phone).maybeSingle(),
-    admin.from("points_ledger").select("customer_phone").eq("business_id", cafeId).eq("customer_phone", a.phone).limit(1).maybeSingle(),
-  ]);
-  if (!joined && !credited) { outsider = a; break; }
-}
-if (outsider) {
-  await staff.locator('input[name="search"]').fill(outsider.code);
-  await staff.waitForTimeout(1200);
-  const isolated = await staff.locator('section:has(h2:text-is("Mes clients"))').innerText();
-  check(
-    "a code from another shop's customer is NOT listed here",
-    !isolated.includes(outsider.code),
-    outsider.code,
-  );
-}
-
-// open the card from the list, then correct the points in the panel
-// (the isolation probe above left a stranger's code in the search box)
-await staff.locator('input[name="search"]').fill(card.code);
-await staff.locator(`button:has-text("${card.code}")`).first().waitFor({ timeout: 15000 });
-await staff.locator(`button:has-text("${card.code}")`).first().click();
-await staff.locator(DESK).waitFor({ timeout: 20000 });
 await staff.locator('button:has-text("Corriger / Historique")').click();
 await staff.locator('input[placeholder="+10 ou -5"]').fill("25");
 const apply = staff.locator('button:has-text("Appliquer")');

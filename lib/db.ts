@@ -437,25 +437,8 @@ export async function createCafe(
 }
 
 /* -------------------------------------------------------------------------- */
-/* Owner card management — list, search, and correct cardholders               */
+/* Owner card management — correct one cardholder, addressed by code           */
 /* -------------------------------------------------------------------------- */
-
-export type OwnerCard = {
-  phone: string;
-  /** The diner's 4-char account code — null for a walk-in with no account. */
-  code: string | null;
-  /** false = credited at the till but never joined; their points are waiting. */
-  enrolled: boolean;
-  name: string | null;
-  balance: number;
-  stamps: number;
-  cycles: number;
-  pending: number;
-  lastAt: string | null;
-  joinedAt: string;
-};
-
-export type OwnerCards = { total: number; cards: OwnerCard[] };
 
 /**
  * How many people hold a card at this café.
@@ -475,27 +458,13 @@ export async function cafeCardCount(businessId: string): Promise<number> {
   return count ?? 0;
 }
 
-/**
- * Every cardholder at a café, newest-active first, searchable by name/phone.
- *
- * The business_id is resolved from the owner's session before this is called
- * (ownerCafe()), so — like every value RPC here — the service role trusts it.
- */
-export async function ownerCards(
-  businessId: string,
-  search = "",
-  limit = 50,
-  offset = 0,
-): Promise<OwnerCards> {
-  const db = createAdminClient();
-  const { data } = await db.rpc("owner_cards", {
-    p_business_id: businessId,
-    p_search: search,
-    p_limit: limit,
-    p_offset: offset,
-  });
-  return (data as OwnerCards | null) ?? { total: 0, cards: [] };
-}
+/*
+  The browsable cardholder list is gone from the till (the owner asked for the
+  counter to be the counter and nothing else), so ownerCards()/OwnerCard went
+  with it. The owner_cards RPC is left in place — it is granted to service_role
+  only, and keeping it means putting the list back is a component, not a
+  migration.
+*/
 
 /** Correct a cardholder's points (an 'adjust' ledger row). */
 export async function ownerAdjustPoints(

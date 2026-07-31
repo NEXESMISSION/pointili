@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { QrScanner } from "@/components/QrScanner";
 import { CheckIcon, QrIcon, StampIcon } from "@/components/icons";
 import { DoneSheet, type Done } from "./DoneSheet";
-import type { Activity, OwnerCard } from "@/lib/db";
+import type { Activity } from "@/lib/db";
 import {
   addStampAction,
   adjustByCodeAction,
@@ -14,7 +14,6 @@ import {
   historyByCodeAction,
   peekAction,
   resolveCustomerAction,
-  searchCardsAction,
   setStampsByCodeAction,
   type ResolveState,
 } from "./actions";
@@ -240,7 +239,6 @@ export function CaisseDesk({
             </p>
           )}
 
-          <Recents onPick={find} stampsEnabled={stampsEnabled} stampsRequired={stampsRequired} />
         </>
       ) : (
         <ValidateForm />
@@ -257,121 +255,6 @@ export function CaisseDesk({
         />
       )}
     </div>
-  );
-}
-
-/* ── the usual faces, one tap away ────────────────────────────────────── */
-
-function Recents({
-  onPick,
-  stampsEnabled,
-  stampsRequired,
-}: {
-  onPick: (ref: string) => void;
-  stampsEnabled: boolean;
-  stampsRequired: number;
-}) {
-  const [q, setQ] = useState("");
-  const [cards, setCards] = useState<OwnerCard[]>([]);
-  const [total, setTotal] = useState(0);
-  const [busy, start] = useTransition();
-  const first = useRef(true);
-
-  useEffect(() => {
-    const t = setTimeout(
-      () =>
-        start(async () => {
-          const res = await searchCardsAction(q, 0);
-          setCards(res.cards);
-          setTotal(res.total);
-        }),
-      first.current ? 0 : 250,
-    );
-    first.current = false;
-    return () => clearTimeout(t);
-  }, [q]);
-
-  return (
-    <section className="a-card p-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-[15px] font-extrabold text-white">Mes clients</h2>
-        <span className="text-[11.5px] text-white/45">{total}</span>
-      </div>
-
-      {!q && cards.length > 0 && (
-        <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1">
-          {cards.slice(0, 8).map((c) => (
-            <button
-              key={c.phone}
-              type="button"
-              onClick={() => onPick(c.code || c.phone)}
-              className="flex shrink-0 items-center gap-2 rounded-full bg-white/[0.09] py-1.5 pl-1.5 pr-3.5 active:scale-95"
-            >
-              <span className="grid h-7 w-7 place-items-center rounded-full bg-[#6d4ae6] text-[12px] font-extrabold text-white">
-                {(c.name ?? "?").charAt(0).toUpperCase()}
-              </span>
-              <span className="whitespace-nowrap text-[13px] font-bold text-white">
-                {c.name ?? c.code ?? "—"}
-              </span>
-              <span className="whitespace-nowrap text-[11px] font-semibold text-white/45">
-                {ago(c.lastAt)}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      <input
-        name="search"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Rechercher…"
-        inputMode="search"
-        className="a-field mt-3 !py-3"
-      />
-
-      {q && (
-        <ul className="mt-2 divide-y divide-white/10">
-          {cards.length === 0 ? (
-            <li className="py-5 text-center text-[13px] text-white/45">
-              {busy ? "Recherche…" : "Aucune carte."}
-            </li>
-          ) : (
-            cards.map((c) => (
-              <li key={c.phone}>
-                <button
-                  type="button"
-                  onClick={() => onPick(c.code || c.phone)}
-                  className="flex w-full items-center gap-3 py-3 text-left active:opacity-70"
-                >
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/[0.1] text-[15px] font-extrabold text-white">
-                    {(c.name ?? "?").charAt(0).toUpperCase()}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14.5px] font-bold text-white">
-                      {c.name ?? "Sans nom"}
-                    </span>
-                    <span className="block truncate text-[11.5px] text-white/45">
-                      <span className="font-mono font-bold">{c.code ?? "—"}</span> · {ago(c.lastAt)}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-right">
-                    <span className="block text-[15px] font-extrabold tabular-nums text-[#b9a3ff]">
-                      {c.balance}
-                    </span>
-                    {stampsEnabled && (
-                      <span className="block text-[10px] font-semibold text-white/45">
-                        {c.stamps}/{stampsRequired}
-                      </span>
-                    )}
-                  </span>
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      )}
-    </section>
   );
 }
 

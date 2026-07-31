@@ -15,11 +15,9 @@ import {
   isCardholder,
   getStamps,
   ownerAdjustPoints,
-  ownerCards,
   ownerSetStamps,
   peekCode,
   type Activity,
-  type OwnerCards,
 } from "@/lib/db";
 
 /**
@@ -136,13 +134,6 @@ export async function historyByCodeAction(code: string): Promise<Activity[]> {
   const who = await resolveCustomer(cafe.id, code);
   if ("error" in who) return [];
   return getActivity(cafe.id, who.phone, 12);
-}
-
-/** The cardholder list shown under the till — searchable, paginated. */
-export async function searchCardsAction(search: string, offset: number): Promise<OwnerCards> {
-  const cafe = await ownerCafe();
-  if (!cafe) return { total: 0, cards: [] };
-  return ownerCards(cafe.id, search.trim().slice(0, 60), 20, Math.max(0, offset));
 }
 
 export type CreditState = {

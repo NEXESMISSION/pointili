@@ -52,22 +52,24 @@ t("no ghost account was invented", !acc);
 // must never mint a platform identity.
 t("a walk-in is reachable by no code at all", !acc?.code);
 
-/* 2 · the walk-in is visible in the client list */
+/* 2 · the walk-in is still reachable, and still never printed
+   The browsable "Mes clients" list is gone from the till, so this puts the same
+   two questions to the surface that survived it: type the phone, and the
+   terminal opens them holding their points — with a masked number, never the
+   digits. */
 await s.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-await s.locator('input[name="search"]').fill(LOCAL);
-// The row is searchable BY phone but never displays it — it shows the balance
-// and a "—" where the code will be once they create an account.
-// (:text-is() is a Playwright selector — it is NOT valid inside querySelector,
-//  so poll through a locator instead of page.waitForFunction.)
-const LIST = 'section:has(h2:text-is("Mes clients"))';
+await s.locator('input[name="customer"]').waitFor({ timeout: 15000 });
+await s.fill('input[name="customer"]', LOCAL);
+await s.locator('button:has-text("Chercher")').click();
+await s.locator(DESK).waitFor({ timeout: 20000 }).catch(() => {});
 let listed = false;
 for (let i = 0; i < 20 && !listed; i++) {
-  listed = /\b40\b/.test(await s.locator(LIST).innerText().catch(() => ""));
+  listed = /\b40\b/.test(await s.locator(DESK).innerText().catch(() => ""));
   if (!listed) await s.waitForTimeout(500);
 }
-const listTxt = await s.locator(LIST).innerText();
-t("the walk-in appears in the client list", listed, listTxt.replace(/\n+/g, " · ").slice(0, 70));
-t("the list still never prints the phone", !listTxt.includes(LOCAL));
+const listTxt = await s.locator(DESK).innerText();
+t("the walk-in is reachable by phone at the till", listed, listTxt.replace(/\n+/g, " · ").slice(0, 70));
+t("the till still never prints the phone", !listTxt.includes(LOCAL));
 
 /* 3 · they sign up later — the points are already there */
 const d = await b.newPage({ viewport: { width: 390, height: 844 } });

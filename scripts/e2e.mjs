@@ -438,17 +438,17 @@ if (redeemCode) {
   const hist = await diner.locator("main").innerText();
   check("collected stamp reward appears in diner history", /Café offert \(tampons\)/i.test(hist));
 
-  // the owner can find this cardholder on the Clients page (searchable by number,
-  // but the row shows the name + opaque id — never the raw phone)
-  await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await staff.locator('input[name="search"]').fill(PHONE);
+  // the owner can still reach this cardholder by typing the number — the panel
+  // shows the name + opaque id, never the raw phone. (The browsable "Mes
+  // clients" list was removed from the caisse; this is the surface that stayed.)
+  await openCustomer(staff, PHONE);
   const found = await staff
     .waitForFunction(() => /E2E/.test(document.querySelector("main")?.innerText ?? ""), undefined, { timeout: 10000 })
     .then(() => true)
     .catch(() => false);
-  check("owner Clients finds a cardholder (searchable by number)", found);
+  check("the till finds a cardholder by number", found);
   const clientsTxt = await staff.locator("main").innerText();
-  check("Clients list never exposes the raw phone number", !clientsTxt.includes(`+216${PHONE}`), "phone hidden");
+  check("the till never exposes the raw phone number", !clientsTxt.includes(`+216${PHONE}`), "phone hidden");
 
   // ── 11e. Privacy: credit by the 4-char account code, no phone typed ──
   const { data: card } = await admin
