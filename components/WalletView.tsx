@@ -234,16 +234,17 @@ function CardRow({ card, current, nudge }: { card: WalletCafe; current: boolean;
             : "0 20px 40px -18px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.18)",
         }}
       >
-        {/* The watermark a printed card carries. It was 150px and sat under the
-            chevron, which read as a stray graphic rather than a watermark —
-            tucked into the corner and dimmer, it is texture. */}
-        <span
-          aria-hidden
-          className="pointer-events-none absolute -bottom-10 -right-7 select-none text-[110px] leading-none text-white/[0.045]"
-        >
-          ✦
-        </span>
+        {/*
+          THE WATERMARK IS GONE, and it should be.
 
+          It was a 110px ✦ tucked into the bottom-right corner, added to give a
+          half-empty card some texture. Two things happened since: the middle of
+          the card filled up with the reward progress, so there is no void left
+          to decorate — and the corner it occupied is exactly where the chevron
+          lives. Its diagonal edge cut straight through the circle, so the one
+          interactive element on the card read as a smudge behind glass rather
+          than as a button. Texture is not worth breaking an affordance for.
+        */}
         <div className="relative flex h-full flex-col justify-between">
           {/* ── the shop ── */}
           <div className="flex items-start gap-2.5">
@@ -339,7 +340,7 @@ function CardRow({ card, current, nudge }: { card: WalletCafe; current: boolean;
               )}
             </span>
 
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/12 text-white/80 ring-1 ring-white/15 transition group-active:bg-white/20">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/[0.18] text-white ring-1 ring-white/25 transition group-active:bg-white/30">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]" aria-hidden>
                 <path d="m9 18 6-6-6-6" />
               </svg>
