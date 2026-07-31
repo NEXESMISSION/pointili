@@ -6,6 +6,7 @@ import { BRAND_COLOR } from "@/lib/brand";
 import { businessType } from "@/lib/businessTypes";
 import { getCafe, getMember } from "@/lib/data";
 import { logoutDinerAction } from "../actions";
+import { fmtPoints } from "@/lib/points";
 
 export const metadata = { title: "Profil" };
 
@@ -111,7 +112,7 @@ export default async function Profil({
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[14.5px] font-bold text-white">{cafe.name}</span>
           <span className="block text-[11.5px] font-medium text-white/60">
-            {type.label} · {diner.balance} pts
+            {type.label} · {fmtPoints(diner.balance)} pts
           </span>
         </span>
       </div>

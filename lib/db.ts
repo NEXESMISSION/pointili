@@ -161,6 +161,24 @@ export async function addStamp(businessId: string, phone: string, delta = 1): Pr
   return data as StampResult;
 }
 
+/**
+ * The two figures a preview needs to promise what the server will actually
+ * grant: an active "points doublés" event, and the sub-point remainder banked
+ * from this customer's previous visits (0026).
+ */
+export async function pointsPreviewInputs(
+  businessId: string,
+  phone: string,
+): Promise<{ multiplier: number; carry: number }> {
+  const db = createAdminClient();
+  const { data } = await db.rpc("points_preview_inputs", {
+    p_business_id: businessId,
+    p_phone: phone,
+  });
+  const r = (data ?? {}) as { multiplier?: number; carry?: number };
+  return { multiplier: Number(r.multiplier ?? 1) || 1, carry: Number(r.carry ?? 0) || 0 };
+}
+
 export type CreditResult =
   | { ok: true; earned: number; welcome: number; balance: number; multiplier: number }
   | { ok: false; reason: string };

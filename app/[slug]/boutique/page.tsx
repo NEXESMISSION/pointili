@@ -3,6 +3,7 @@ import { CafeClosed } from "@/components/CafeClosed";
 import { GiftIcon } from "@/components/icons";
 import { getCafe, getMember, getRewards, nextRewardNudge } from "@/lib/data";
 import { RewardPicker } from "./RewardPicker";
+import { fmtPoints } from "@/lib/points";
 
 export const metadata = { title: "Récompenses" };
 
@@ -42,7 +43,7 @@ export default async function Recompenses({
           </p>
           <p className="mt-3 inline-flex items-baseline gap-1.5 rounded-full bg-white/[0.08] px-4 py-1.5">
             <span className="text-[18px] font-extrabold tabular-nums text-[#b9a3ff]">
-              {diner.balance}
+              {fmtPoints(diner.balance)}
             </span>
             <span className="text-[12.5px] font-semibold text-white/60">points disponibles</span>
           </p>

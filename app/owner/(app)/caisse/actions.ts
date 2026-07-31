@@ -17,6 +17,7 @@ import {
   ownerAdjustPoints,
   ownerSetStamps,
   peekCode,
+  pointsPreviewInputs,
   type Activity,
 } from "@/lib/db";
 
@@ -178,6 +179,13 @@ export type ResolveState = {
     name: string | null;
     balance: number;
     stamps: number;
+    /**
+     * What the keypad needs so its "→ N points" is the number the receipt will
+     * show: an active points event, and the fraction of a point this customer
+     * is already owed from previous visits (0026).
+     */
+    multiplier: number;
+    carry: number;
   };
 };
 
@@ -192,10 +200,11 @@ export async function resolveCustomerAction(idOrPhone: string): Promise<ResolveS
   const who = await resolveCustomer(cafe.id, idOrPhone);
   if ("error" in who) return { error: who.error };
 
-  const [enrolled, balance, stamps] = await Promise.all([
+  const [enrolled, balance, stamps, preview] = await Promise.all([
     isCardholder(cafe.id, who.phone),
     getBalance(cafe.id, who.phone),
     getStamps(cafe.id, who.phone),
+    pointsPreviewInputs(cafe.id, who.phone),
   ]);
 
   /*
@@ -214,6 +223,8 @@ export async function resolveCustomerAction(idOrPhone: string): Promise<ResolveS
       name: who.name,
       balance,
       stamps: stamps.count,
+      multiplier: preview.multiplier,
+      carry: preview.carry,
     },
   };
 }

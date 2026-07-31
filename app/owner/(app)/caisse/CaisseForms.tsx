@@ -5,6 +5,7 @@ import { QrScanner } from "@/components/QrScanner";
 import { CheckIcon, QrIcon, StampIcon } from "@/components/icons";
 import { DoneSheet, type Done } from "./DoneSheet";
 import type { Activity } from "@/lib/db";
+import { fmtPoints } from "@/lib/points";
 import {
   addStampAction,
   adjustByCodeAction,
@@ -318,7 +319,17 @@ function CustomerSheet({
   const [newPin, setNewPin] = useState("");
   const [stampSet, setStampSet] = useState(String(customer.stamps));
 
-  const earned = Math.floor((Number(amount.replace(",", ".")) || 0) * pointsPerTnd);
+  /*
+    The same arithmetic the server does, not an approximation of it.
+
+    This used to be floor(montant × taux) — it ignored an active "points
+    doublés" event, so the screen promised 174 and the receipt paid 348, and it
+    ignored the fraction of a point the customer was already owed (0026), so it
+    could also be a point short. A cashier reads this number out loud before
+    pressing Créditer; it has to be the number that lands.
+  */
+  const earned =
+    Math.round((Number(amount.replace(",", ".")) || 0) * pointsPerTnd * customer.multiplier * 100) / 100;
 
   function credit() {
     // Clear BOTH first. Otherwise a refusal renders underneath the previous
@@ -353,9 +364,9 @@ function CustomerSheet({
           undo: res.ok.earned > 0 ? res.ok.earned : undefined,
           amount: res.ok.amount,
           text:
-            `+${res.ok.earned} points` +
+            `+${fmtPoints(res.ok.earned)} points` +
             (res.ok.welcome > 0 ? ` · +${res.ok.welcome} de bienvenue` : "") +
-            ` · nouveau solde ${res.ok.balance} points`,
+            ` · nouveau solde ${fmtPoints(res.ok.balance)} points`,
         });
       }
     });
@@ -369,16 +380,16 @@ function CustomerSheet({
   */
   function undoCredit(back: number, dinars?: number) {
     // drop the offer immediately — a double tap must not reverse twice
-    setFlash({ text: `Annulation de ${back} points…` });
+    setFlash({ text: `Annulation de ${fmtPoints(back)} points…` });
     start(async () => {
       // negative, so Analyses subtracts the sale instead of only the points
       const r = await adjustByCodeAction(customer.ref, -back, dinars === undefined ? undefined : -dinars);
       if (r.ok && typeof r.balance === "number") {
         setBalance(r.balance);
-        setFlash(`Annulé : −${back} points · solde ${r.balance} points`);
+        setFlash(`Annulé : −${fmtPoints(back)} points · solde ${fmtPoints(r.balance)} points`);
       } else {
         // put the offer back: the reversal did not happen
-        setFlash({ text: `+${back} points`, undo: back, amount: dinars });
+        setFlash({ text: `+${fmtPoints(back)} points`, undo: back, amount: dinars });
         setErr(r.error ?? "Échec.");
       }
     });
@@ -479,7 +490,7 @@ function CustomerSheet({
         <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[13px] font-semibold text-white/50">
           <span>
             Solde{" "}
-            <b className="text-[15px] font-extrabold tabular-nums text-[#b9a3ff]">{balance}</b> points
+            <b className="text-[15px] font-extrabold tabular-nums text-[#b9a3ff]">{fmtPoints(balance)}</b> points
           </span>
           {stampsEnabled && (
             <span>
@@ -525,7 +536,12 @@ function CustomerSheet({
             className="w-full rounded-2xl bg-white/[0.06] px-4 py-4 text-center text-[34px] font-extrabold tabular-nums text-white outline-none placeholder:text-white/25"
           />
           <p className="mt-1.5 text-center text-[12px] font-semibold text-white/45">
-            {amount ? `→ ${earned} points` : `Montant en dinars · ${pointsPerTnd} pt/DT`}
+            {/* "+N points", not "→ N": beside "Solde 25 points" one line above,
+                an arrow read as the NEW BALANCE. It is what this sale earns. */}
+            {amount
+              ? `+${fmtPoints(earned)} points` +
+                (customer.multiplier > 1 ? ` · ×${customer.multiplier} en cours` : "")
+              : `Montant en dinars · ${pointsPerTnd} pt/DT`}
           </p>
           <div className="mt-3">
             <Keypad
@@ -589,7 +605,7 @@ function CustomerSheet({
                     if (r.ok && typeof r.balance === "number") {
                       setBalance(r.balance);
                       setDelta("");
-                      setFlash(`Solde corrigé : ${r.balance}`);
+                      setFlash(`Solde corrigé : ${fmtPoints(r.balance)}`);
                     } else setErr(r.error ?? "Échec.");
                   });
                 }}

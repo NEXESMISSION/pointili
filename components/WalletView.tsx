@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { businessType } from "@/lib/businessTypes";
 import type { WalletCafe } from "@/lib/db";
+import { fmtPoints } from "@/lib/points";
 
 /**
  * The wallet — every shop the diner holds a card at.
@@ -320,7 +321,7 @@ function CardRow({ card, current, nudge }: { card: WalletCafe; current: boolean;
             <span className="min-w-0">
               <span className="flex items-baseline gap-1.5">
                 <span className="text-[38px] font-extrabold leading-none tabular-nums tracking-[-0.02em]">
-                  {card.balance}
+                  {fmtPoints(card.balance)}
                 </span>
                 <span className="text-[12px] font-bold text-white/55">points</span>
               </span>

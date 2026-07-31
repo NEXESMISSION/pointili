@@ -40,12 +40,12 @@ export function SettingsList({
     points: {
       title: "Les points",
       sub: "Ce que chaque dinar dépensé rapporte à vos clients.",
-      body: <EarnForm cafe={cafe} program={program} />,
+      body: <EarnForm cafe={cafe} program={program} rewards={rewards} />,
     },
     rewards: {
       title: "Les récompenses",
       sub: "Visez une première récompense atteignable en 2–3 visites.",
-      body: <RewardsEditor rewards={rewards} />,
+      body: <RewardsEditor rewards={rewards} rate={program.pointsPerTnd} />,
     },
     stamps: {
       title: "Carte à tampons",

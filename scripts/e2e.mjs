@@ -119,9 +119,12 @@ async function credit(amount, expectBalance) {
   return staff.locator('[role="status"]').innerText();
 }
 
-const creditTxt = await credit(12.5, 22);
-check("caisse credits floor(12.5 x 1) = 12", /\+12/.test(creditTxt), creditTxt.split("\n")[0]);
-check("balance = 10 welcome + 12 earned = 22", /22 points/.test(creditTxt));
+/* 12,5 dinars earns 12,5 points — not 12. floor() used to delete the half
+   dinar on every single sale (migration 0027), and this is the check that
+   would have caught it: it asserted the bug instead. */
+const creditTxt = await credit(12.5, 22.5);
+check("caisse credits 12,5 × 1 = 12,5 — no fraction lost", /\+12,5/.test(creditTxt), creditTxt.split("\n")[0]);
+check("balance = 10 welcome + 12,5 earned = 22,5", /22,5 points/.test(creditTxt));
 
 /*
   The ledger has to remember the DINARS, not just the points it derived from
@@ -161,10 +164,10 @@ check("balance = 10 welcome + 12 earned = 22", /22 points/.test(creditTxt));
 }
 
 // ── 4. Welcome must not be granted twice ────────────────────────────
-const credit2 = await credit(5, 27);
+const credit2 = await credit(5, 27.5);
 check(
   "welcome bonus granted once only",
-  !/bienvenue/i.test(credit2) && /27 points/.test(credit2),
+  !/bienvenue/i.test(credit2) && /27,5 points/.test(credit2),
   credit2.replace(/\n/g, " · "),
 );
 
@@ -172,8 +175,8 @@ check(
 // endpoint is removed; the auth section below proves it's gone, not just hidden.
 
 // ── 5. Boutique: points buy a reward, which issues a counter code ────
-// Cheapest reward is 40 pts; balance is 27, so top up first (→ 67).
-await credit(40, 67);
+// Cheapest reward is 40 pts; balance is 27,5, so top up first (→ 67,5).
+await credit(40, 67.5);
 
 await diner.goto(`${BASE}/${SLUG}/boutique`, { waitUntil: "networkidle" });
 diner.once("dialog", (d) => d.accept()); // confirm step

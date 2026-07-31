@@ -6,6 +6,12 @@
 -- ---------------------------------------------------------------------------
 -- Small helpers
 -- ---------------------------------------------------------------------------
+/* 0027 changes this to numeric, and migrate.mjs replays the whole folder on
+   every run — so on an already-migrated database this line would try to turn a
+   numeric function back into an integer one and fail. Dropping first is a
+   no-op on a fresh database and keeps the folder re-runnable. */
+drop function if exists pointili_balance(uuid, text) cascade;
+
 create or replace function pointili_balance(p_business_id uuid, p_phone text)
 returns integer language sql stable security definer set search_path = public as $$
   select coalesce(sum(delta), 0)::integer

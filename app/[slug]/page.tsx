@@ -6,6 +6,7 @@ import { getCafe, getLoyaltyProgram, getMember, getRewards, nextRewardNudge } fr
 import { touchCardOpened } from "@/lib/db";
 import type { LoyaltyProgram } from "@/lib/types";
 import { CardArrived } from "@/components/CardArrived";
+import { fmtPoints } from "@/lib/points";
 
 /**
  * Carte — the diner's loyalty card, in the deep-purple mockup:
@@ -67,7 +68,7 @@ export default async function Carte({
               <Sparkle className="h-4 w-4" />
             </span>
             <span className="leading-none">
-              <span className="block text-[18px] font-extrabold tabular-nums">{diner.balance}</span>
+              <span className="block text-[18px] font-extrabold tabular-nums">{fmtPoints(diner.balance)}</span>
               <span className="block text-[10px] font-semibold text-white/60">points</span>
             </span>
           </div>
@@ -282,7 +283,7 @@ function PointsCard({
     <div className="d-card px-5 pb-5 pt-5">
       <p className="text-[12px] font-semibold text-white/70">Tes points</p>
       <p className="mt-1 flex items-center gap-2.5">
-        <span className="text-[52px] font-extrabold leading-none tabular-nums">{balance}</span>
+        <span className="text-[52px] font-extrabold leading-none tabular-nums">{fmtPoints(balance)}</span>
         <span
           className="grid h-8 w-8 place-items-center rounded-full bg-white/90"
           style={{ color: "var(--cafe)" }}
@@ -300,7 +301,7 @@ function PointsCard({
             <div className="h-full rounded-full bg-white transition-[width] duration-700" style={{ width: `${pct}%` }} />
           </div>
           <p className="mt-1.5 text-[11.5px] font-semibold tabular-nums text-white/55">
-            {balance} / {nudge.target.pointsCost}
+            {fmtPoints(balance)} / {nudge.target.pointsCost}
           </p>
         </>
       ) : rewards.length > 0 ? (

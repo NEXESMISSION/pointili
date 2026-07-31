@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { CafeClosed } from "@/components/CafeClosed";
 import QRCode from "qrcode";
 import { getCafe, getMember } from "@/lib/data";
+import { fmtPoints } from "@/lib/points";
 
 export const metadata = { title: "Ma carte" };
 
@@ -59,7 +60,7 @@ export default async function Scanner({
 
       <div className="mx-auto mt-4 w-full max-w-[320px] rounded-2xl bg-white/[0.07] px-4 py-3.5 text-center ring-1 ring-white/10">
         <p className="text-[12.5px] font-bold text-white/70">Solde actuel</p>
-        <p className="mt-0.5 text-[15px] font-extrabold text-white">{diner.balance} points 🪙</p>
+        <p className="mt-0.5 text-[15px] font-extrabold text-white">{fmtPoints(diner.balance)} points 🪙</p>
       </div>
     </div>
   );

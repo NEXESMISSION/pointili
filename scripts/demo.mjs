@@ -89,16 +89,31 @@ const PREFIXES = [
   "90", "91", "92", "93", "94", "95", "96", "97", "98", "99",
 ];
 
-const RATE = 1; // 1 point per dinar
-const WELCOME = 10;
+/*
+  Priced in VISITS, which is the only unit either side of the counter thinks in.
+
+  This shop used to run at 1 point per dinar against a 200-point espresso —
+  200 dinars of coffee, roughly eighty visits, for one free espresso. Nobody
+  would ever have got there, and the showcase was quietly demonstrating a
+  loyalty programme that does not work. Worse, at 1 pt/DT a 2,5 DT café earned
+  2 points and the half dinar was thrown away (see migration 0026).
+
+  At 10 pt/DT the arithmetic is legible: a ~6 DT ticket here is 60 points, the
+  mint tea at 400 is about seven visits, and the welcome bonus is already a
+  quarter of the way there. 10 also divides the half-dinar amounts this
+  generator produces exactly, so no fraction is invented that a real till
+  would have banked.
+*/
+const RATE = 10;
+const WELCOME = 100;
 
 const REWARDS = [
-  ["Espresso offert", 40, "/rewards/espresso-offert.png"],
-  ["Cappuccino offert", 70, "/rewards/cappuccino-offert.png"],
-  ["Thé à la menthe", 60, "/rewards/the-a-la-menthe.png"],
-  ["Croissant offert", 90, "/rewards/croissant-offert.png"],
-  ["Pâtisserie du jour", 140, "/rewards/patisserie-du-jour.png"],
-  ["Brunch complet", 320, "/rewards/brunch-complet.png"],
+  ["Thé à la menthe", 400, "/rewards/the-a-la-menthe.png"],
+  ["Espresso offert", 450, "/rewards/espresso-offert.png"],
+  ["Cappuccino offert", 550, "/rewards/cappuccino-offert.png"],
+  ["Croissant offert", 600, "/rewards/croissant-offert.png"],
+  ["Pâtisserie du jour", 850, "/rewards/patisserie-du-jour.png"],
+  ["Brunch complet", 1800, "/rewards/brunch-complet.png"],
 ];
 
 /*

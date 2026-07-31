@@ -5,6 +5,7 @@ import { useActionState, useEffect, useState, useTransition } from "react";
 import { GiftIcon } from "@/components/icons";
 import type { Reward } from "@/lib/types";
 import { redeemAction, type RedeemState } from "./actions";
+import { fmtPoints } from "@/lib/points";
 
 /*
   Pick a reward, then take the code.
@@ -117,7 +118,7 @@ export function RewardPicker({
                         />
                       </span>
                       <span className="mt-1 block text-[11px] text-white/40">
-                        Encore {r.pointsCost - balance} points
+                        Encore {fmtPoints(r.pointsCost - balance)} points
                       </span>
                     </>
                   )}
@@ -161,7 +162,7 @@ export function RewardPicker({
             ? "Choisis une récompense"
             : canBuy
               ? `Échanger ${chosen.pointsCost} points`
-              : `Encore ${chosen.pointsCost - balance} points`}
+              : `Encore ${fmtPoints(chosen.pointsCost - balance)} points`}
       </button>
     </form>
   );

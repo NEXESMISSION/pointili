@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { CheckIcon } from "@/components/icons";
+import { CardIcon, CheckIcon, Sparkle } from "@/components/icons";
+import { fmtPoints } from "@/lib/points";
 
 /**
  * The receipt, for the one action a shop performs hundreds of times a week.
@@ -51,13 +52,63 @@ export type Done =
       label: string;
     };
 
+/*
+  Fixed, not random. A celebration that lands differently every time reads as a
+  glitch on the twentieth sale of the morning, and Math.random() in a render is
+  a hydration mismatch waiting to happen. Twelve pieces, hand-placed around the
+  tick: left/right in %, drop in px, hue, and a stagger so they do not all pop
+  on the same frame.
+*/
+const CONFETTI: [number, number, string, number, number][] = [
+  [16, -6, "#8b6bff", 0, 7], [30, 12, "#7ff0b0", 60, 5], [44, -14, "#ffd27a", 120, 6],
+  [58, 8, "#8b6bff", 40, 5], [72, -10, "#7ff0b0", 100, 7], [86, 14, "#ffd27a", 150, 5],
+  [10, 26, "#ffd27a", 90, 5], [24, 40, "#8b6bff", 180, 6], [50, 46, "#7ff0b0", 30, 5],
+  [66, 34, "#ffd27a", 130, 6], [80, 44, "#8b6bff", 70, 5], [92, 28, "#7ff0b0", 160, 6],
+];
+
+function Celebration({ tone }: { tone: "green" | "gold" }) {
+  const ring = tone === "green" ? "#7ff0b0" : "#ffd27a";
+  return (
+    <span className="relative mx-auto block h-[104px] w-full">
+      <span aria-hidden className="pointer-events-none absolute inset-0">
+        {CONFETTI.map(([left, top, colour, delay, size], i) => (
+          <span
+            key={i}
+            className="done-confetti absolute block rounded-[2px]"
+            style={{
+              left: `${left}%`,
+              top: `${34 + top}px`,
+              width: size,
+              height: size + 2,
+              background: colour,
+              animationDelay: `${delay}ms`,
+            }}
+          />
+        ))}
+      </span>
+      {/* the halo is what makes the tick read as "yes" from across a counter */}
+      <span
+        aria-hidden
+        className="absolute left-1/2 top-[18px] h-[68px] w-[68px] -translate-x-1/2 rounded-full"
+        style={{ boxShadow: `0 0 0 6px ${ring}1f, 0 0 34px 6px ${ring}33` }}
+      />
+      <span
+        className="done-tick absolute left-1/2 top-[20px] grid h-16 w-16 -translate-x-1/2 place-items-center rounded-full"
+        style={{ background: ring, color: "#062b18" }}
+      >
+        <CheckIcon className="h-9 w-9" />
+      </span>
+    </span>
+  );
+}
+
 export function DoneSheet({
   done,
   onClose,
   onNext,
 }: {
   done: Done;
-  /** Dismiss the receipt only — the veil, Escape, and the auto-close. */
+  /** Dismiss the receipt only — the veil, Escape, the × and the auto-close. */
   onClose: () => void;
   /**
    * Finish with this customer and return the till to the keypad.
@@ -91,43 +142,69 @@ export function DoneSheet({
       */
       aria-live="polite"
       onClick={onClose}
-      className="done-veil fixed inset-0 z-50 flex items-end justify-center bg-black/72 px-3 pb-5 backdrop-blur-[2px]"
+      className="done-veil fixed inset-0 z-50 flex items-center justify-center bg-black/78 px-3 py-5 backdrop-blur-[3px]"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="done-sheet w-full max-w-[420px] rounded-3xl border border-white/12 bg-[#161029] p-5 text-center text-white shadow-[0_-10px_50px_-12px_rgba(0,0,0,.9)]"
+        className="done-sheet relative w-full max-w-[420px] rounded-[28px] border border-white/[0.09] bg-[#120d20] p-5 pt-4 text-center text-white shadow-[0_24px_70px_-20px_rgba(0,0,0,.95)]"
       >
-        <span className="done-tick mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#7ff0b0] text-[#062b18]">
-          <CheckIcon className="h-8 w-8" />
-        </span>
+        {/* an explicit way out, for the cashier who wants the till back NOW */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fermer"
+          className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/[0.08] text-white/60 transition active:scale-95"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="h-4 w-4">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+
+        <Celebration tone={filled ? "gold" : "green"} />
 
         {done.kind === "credit" ? (
           <>
-            <p className="mt-3.5 text-[40px] font-extrabold leading-none tabular-nums text-[#7ff0b0]">
-              +{done.earned}
-              <span className="ml-1.5 align-middle text-[15px] font-bold text-white/50">points</span>
+            <h2 className="text-[28px] font-extrabold leading-none">Bravo !</h2>
+            <p className="mt-2 text-[13.5px] text-white/55">
+              Des points ont été ajoutés à <b className="font-bold text-white/85">{done.who}</b>.
             </p>
-            {done.welcome > 0 && (
-              <p className="mt-1 text-[12.5px] font-bold text-[#ffd27a]">
-                dont +{done.welcome} de bienvenue
-              </p>
-            )}
-            <p className="mt-1.5 truncate text-[15px] font-bold">{done.who}</p>
 
-            {/* the two numbers a cashier is asked to repeat out loud */}
-            <div className="mt-4 grid grid-cols-2 gap-2 text-left">
-              <Fact label="Montant" value={`${fmt(done.amount)} TND`} />
-              <Fact label="Nouveau solde" value={`${done.balance} pts`} />
+            {/*
+              The hero. One framed block holding the only two numbers a cashier
+              reads out loud, so the eye lands once instead of hunting.
+            */}
+            <div className="mt-4 rounded-3xl border border-[#8b6bff]/25 bg-gradient-to-b from-[#2a1d55] to-[#1b1338] px-5 py-6">
+              <p className="text-[54px] font-extrabold leading-none tabular-nums text-[#7ff0b0]">
+                +{fmtPoints(done.earned)}
+              </p>
+              <p className="mt-1.5 text-[17px] font-bold text-white/85">points</p>
+              <p className="mt-3.5 inline-block rounded-full bg-[#7ff0b0]/12 px-3.5 py-1.5 text-[13px] font-bold text-[#7ff0b0]">
+                Nouveau solde : {fmtPoints(done.balance)} pts
+              </p>
+              {done.welcome > 0 && (
+                <p className="mt-2 text-[12.5px] font-bold text-[#ffd27a]">
+                  dont +{fmtPoints(done.welcome)} de bienvenue
+                </p>
+              )}
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
+              <Fact icon={<CardIcon className="h-[18px] w-[18px]" />} label="Montant" value={`${fmtDinars(done.amount)} TND`} />
+              <Fact icon={<Sparkle className="h-[18px] w-[18px]" />} label="Nouveau solde" value={`${fmtPoints(done.balance)} pts`} />
             </div>
 
             {done.unlocked.length > 0 ? (
-              <p className="mt-3 rounded-2xl bg-[#ffd27a]/15 px-4 py-3 text-[13.5px] font-bold leading-snug text-[#ffd27a]">
-                🎁 Peut prendre maintenant : {done.unlocked.join(", ")}
+              <p className="mt-3 flex items-center gap-3 rounded-2xl border border-[#ffd27a]/25 bg-[#ffd27a]/[0.08] px-4 py-3 text-left text-[13.5px] leading-snug text-white/60">
+                <span className="shrink-0 text-[22px]">🎁</span>
+                <span>
+                  Peut prendre maintenant :{" "}
+                  <b className="block font-extrabold text-[#ffd27a]">{done.unlocked.join(", ")}</b>
+                </span>
               </p>
             ) : (
               done.next && (
-                <p className="mt-3 text-[12.5px] text-white/50">
-                  Encore <b className="font-bold text-white/80">{done.next.needed}</b> pour{" "}
+                <p className="mt-3 text-[12.5px] text-white/45">
+                  Encore <b className="font-bold text-white/75">{fmtPoints(done.next.needed)}</b> pour{" "}
                   {done.next.label.toLowerCase()}
                 </p>
               )
@@ -135,46 +212,54 @@ export function DoneSheet({
           </>
         ) : (
           <>
-            <p className="mt-3.5 text-[40px] font-extrabold leading-none tabular-nums text-white">
-              {done.count}
-              <span className="text-[22px] text-white/40">/{done.required}</span>
+            <h2 className="text-[28px] font-extrabold leading-none">
+              {filled ? "Carte pleine !" : "Bravo !"}
+            </h2>
+            <p className="mt-2 text-[13.5px] text-white/55">
+              {filled ? "La carte de " : "Un tampon de plus pour "}
+              <b className="font-bold text-white/85">{done.who}</b>
+              {filled ? " est complète." : "."}
             </p>
-            <p className="mt-1.5 truncate text-[15px] font-bold">{done.who}</p>
 
-            {/* the punch card, drawn — a row of dots reads faster than "7/10" */}
-            <span className="mt-3.5 flex flex-wrap items-center justify-center gap-1.5">
-              {Array.from({ length: done.required }, (_, i) => (
-                <span
-                  key={i}
-                  className={`h-[11px] w-[11px] rounded-full ${
-                    i < done.count ? "bg-[#7ff0b0]" : "bg-white/15"
-                  }`}
-                />
-              ))}
-            </span>
+            <div className="mt-4 rounded-3xl border border-[#8b6bff]/25 bg-gradient-to-b from-[#2a1d55] to-[#1b1338] px-5 py-6">
+              <p className="text-[54px] font-extrabold leading-none tabular-nums text-white">
+                {done.count}
+                <span className="text-[26px] text-white/35">/{done.required}</span>
+              </p>
+              {/* the punch card, drawn — a row of dots reads faster than "7/10" */}
+              <span className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
+                {Array.from({ length: done.required }, (_, i) => (
+                  <span
+                    key={i}
+                    className={`h-[11px] w-[11px] rounded-full ${
+                      i < done.count ? "bg-[#7ff0b0]" : "bg-white/15"
+                    }`}
+                  />
+                ))}
+              </span>
+            </div>
 
             {filled ? (
-              <div className="mt-4 rounded-2xl bg-[#ffd27a]/15 px-4 py-3">
+              <div className="mt-3 rounded-2xl border border-[#ffd27a]/25 bg-[#ffd27a]/[0.08] px-4 py-3.5">
                 <p className="text-[13.5px] font-extrabold leading-snug text-[#ffd27a]">
-                  🎁 Carte pleine — {done.label}
+                  🎁 {done.label}
                 </p>
                 {done.code && (
-                  <p className="mt-1.5 font-mono text-[20px] font-bold tracking-[0.18em] text-white">
+                  <p className="mt-1.5 font-mono text-[22px] font-bold tracking-[0.18em] text-white">
                     {done.code}
                   </p>
                 )}
               </div>
             ) : (
-              <p className="mt-3 text-[12.5px] text-white/50">
-                Encore{" "}
-                <b className="font-bold text-white/80">{done.required - done.count}</b>{" "}
+              <p className="mt-3 text-[12.5px] text-white/45">
+                Encore <b className="font-bold text-white/75">{done.required - done.count}</b>{" "}
                 {done.required - done.count === 1 ? "visite" : "visites"}
               </p>
             )}
           </>
         )}
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex gap-2.5">
           {done.kind === "credit" && done.onUndo && (
             <button
               type="button"
@@ -182,7 +267,7 @@ export function DoneSheet({
                 done.onUndo?.();
                 onClose();
               }}
-              className="shrink-0 rounded-2xl border border-white/15 px-5 py-3 text-[13.5px] font-bold text-white/70 active:scale-[0.98]"
+              className="shrink-0 rounded-2xl border border-white/15 px-6 py-3.5 text-[13.5px] font-bold text-white/70 active:scale-[0.98]"
             >
               Annuler
             </button>
@@ -190,9 +275,12 @@ export function DoneSheet({
           <button
             type="button"
             onClick={onNext}
-            className="flex-1 rounded-2xl bg-[#7c3aed] py-3 text-[14px] font-bold text-white active:scale-[0.98]"
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#7c3aed] py-3.5 text-[14.5px] font-bold text-white shadow-[0_10px_26px_-10px_rgba(124,58,237,.9)] active:scale-[0.98]"
           >
             Client suivant
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
+              <path d="M5 12h14m-6-6 6 6-6 6" />
+            </svg>
           </button>
         </div>
       </div>
@@ -200,18 +288,19 @@ export function DoneSheet({
   );
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
+function Fact({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <span className="rounded-2xl bg-white/[0.06] px-3.5 py-2.5">
-      <span className="block text-[10.5px] font-bold uppercase tracking-[0.06em] text-white/45">
-        {label}
+    <span className="rounded-2xl bg-white/[0.05] px-3 py-3.5">
+      <span className="mx-auto grid h-9 w-9 place-items-center rounded-xl bg-[#8b6bff]/15 text-[#b9a3ff]">
+        {icon}
       </span>
-      <span className="mt-0.5 block truncate text-[15px] font-extrabold tabular-nums">{value}</span>
+      <span className="mt-2 block text-[11.5px] text-white/45">{label}</span>
+      <span className="mt-0.5 block truncate text-[15.5px] font-extrabold tabular-nums">{value}</span>
     </span>
   );
 }
 
 /** 12.5 → "12,5", 60 → "60". Dinars, read aloud, in French. */
-function fmt(n: number): string {
+function fmtDinars(n: number): string {
   return (Math.round(n * 100) / 100).toString().replace(".", ",");
 }

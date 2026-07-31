@@ -96,6 +96,7 @@ function Num({
   value,
   step = "1",
   suffix,
+  onValue,
 }: {
   name: string;
   label: string;
@@ -103,6 +104,8 @@ function Num({
   value: number;
   step?: string;
   suffix?: string;
+  /** Set to mirror the field's value out — for settings whose example moves live. */
+  onValue?: (n: number) => void;
 }) {
   return (
     <label className="block py-2.5">
@@ -115,6 +118,7 @@ function Num({
           defaultValue={value}
           step={step}
           inputMode="decimal"
+          onChange={onValue ? (e) => onValue(Number(e.target.value) || 0) : undefined}
           className="a-field font-mono"
         />
         {suffix && <span className="shrink-0 text-[12px] font-semibold text-white/55">{suffix}</span>}
@@ -125,9 +129,33 @@ function Num({
 
 /* Les points -------------------------------------------------------------- */
 
-export function EarnForm({ cafe, program }: { cafe: Cafe; program: LoyaltyProgram }) {
+/** A typical Tunisian café ticket — the yardstick the examples are drawn in. */
+const TICKET = 2.5;
+
+export function EarnForm({
+  cafe,
+  program,
+  rewards,
+}: {
+  cafe: Cafe;
+  program: LoyaltyProgram;
+  /** Cheapest-first, so the example can name the reward that is actually next. */
+  rewards: Reward[];
+}) {
   const [state, action, pending] = useActionState<SettingsState, FormData>(saveEarnAction, {});
-  const rate = program.pointsPerTnd;
+  /*
+    Controlled, because the point of the example is to move while you type.
+    Reading program.pointsPerTnd meant the owner set 1, read "un café rapporte
+    2 points" computed from the OLD value, saved, and only then found out.
+  */
+  const [rate, setRate] = useState(program.pointsPerTnd);
+  const [welcome, setWelcome] = useState(program.welcomePoints);
+  const cheapest = rewards.filter((r) => r.active).sort((a, b) => a.pointsCost - b.pointsCost)[0];
+  const perTicket = Math.floor(TICKET * rate);
+  const visitsToReward = cheapest && perTicket > 0
+    ? Math.max(1, Math.ceil((cheapest.pointsCost - welcome) / perTicket))
+    : null;
+
   return (
     <form action={action} className="px-4 py-3">
       <Num
@@ -137,9 +165,34 @@ export function EarnForm({ cafe, program }: { cafe: Cafe; program: LoyaltyProgra
         value={rate}
         step="0.1"
         suffix="points / dinar"
+        onValue={setRate}
       />
       <Example>
-        un café à 4 dinars rapporte <b className="text-white">{Math.round(4 * rate)} points</b> au client.
+        un café à {TICKET.toString().replace(".", ",")} dinars rapporte{" "}
+        <b className="text-white">{perTicket} points</b>.
+        {/*
+          THE line this screen was missing. The rate lives here and the reward
+          prices live one editor away, so the two numbers never met: this shop
+          shipped at 1 pt/DT with a 200-point espresso — 200 dinars of café —
+          and nothing on either screen said so.
+        */}
+        {cheapest && (
+          <>
+            {" "}
+            <b className="text-white">{cheapest.label}</b> coûte {cheapest.pointsCost} points, soit{" "}
+            <b className="text-white">
+              {Math.round(cheapest.pointsCost / (rate || 1))} dinars de dépense
+            </b>
+            {visitsToReward && (
+              <>
+                {" "}
+                — environ <b className="text-white">{visitsToReward} visites</b> après le cadeau de
+                bienvenue
+              </>
+            )}
+            .
+          </>
+        )}
       </Example>
       <Num
         name="welcomePoints"
@@ -147,6 +200,7 @@ export function EarnForm({ cafe, program }: { cafe: Cafe; program: LoyaltyProgra
         help="Offert une seule fois, dès la première carte — pour donner envie de revenir."
         value={program.welcomePoints}
         suffix="points"
+        onValue={setWelcome}
       />
 
       <Advanced>
@@ -485,9 +539,16 @@ function RewardImageUploader({ reward }: { reward: Reward }) {
 }
 
 /** One row per reward — the ladder is the main tuning lever for returns. */
-function RewardRow({ reward }: { reward: Reward | null }) {
+function RewardRow({ reward, rate }: { reward: Reward | null; rate: number }) {
   const [state, action, pending] = useActionState<SettingsState, FormData>(saveRewardAction, {});
   const [confirming, setConfirming] = useState(false);
+  /*
+    A points cost is an abstraction; dinars are not. Typed here in isolation,
+    "200" looks like a normal number — it is 200 dinars of café at 1 pt/DT, and
+    this editor never said so. Now it does, while you type.
+  */
+  const [cost, setCost] = useState(reward?.pointsCost ?? 0);
+  const dinars = rate > 0 ? Math.round(cost / rate) : 0;
   return (
     <div className="border-b border-white/10 px-4 py-3.5 last:border-b-0">
       {reward && <RewardImageUploader reward={reward} />}
@@ -507,7 +568,8 @@ function RewardRow({ reward }: { reward: Reward | null }) {
           inputMode="numeric"
           min={1}
           defaultValue={reward?.pointsCost ?? ""}
-          placeholder="40"
+          onChange={(e) => setCost(Number(e.target.value) || 0)}
+          placeholder="250"
           aria-label="Coût en points"
           /* !w-[84px]: .a-field is non-layered CSS (width:100%) and would beat a
              plain w-[84px] utility, stretching the cost box and collapsing the
@@ -515,6 +577,15 @@ function RewardRow({ reward }: { reward: Reward | null }) {
           className="a-field !w-[84px] shrink-0 text-center font-mono"
         />
       </div>
+      {cost > 0 && (
+        <p className="mt-1.5 text-right text-[11px] font-semibold text-white/45">
+          soit <b className="text-white/70">{dinars} dinars</b> de dépense
+          {rate > 0 && Math.floor(TICKET * rate) > 0 && (
+            <> · ~{Math.ceil(cost / Math.floor(TICKET * rate))} visites</>
+          )}
+        </p>
+      )}
+
       <div className="mt-2.5 flex items-center justify-between gap-3">
         <label className="flex cursor-pointer items-center gap-2">
           <input type="checkbox" name="active" defaultChecked={reward?.active ?? true} className="peer sr-only" />
@@ -576,17 +647,17 @@ function RewardRow({ reward }: { reward: Reward | null }) {
   );
 }
 
-export function RewardsEditor({ rewards }: { rewards: Reward[] }) {
+export function RewardsEditor({ rewards, rate }: { rewards: Reward[]; rate: number }) {
   return (
     <>
       {rewards.map((r) => (
-        <RewardRow key={r.id} reward={r} />
+        <RewardRow key={r.id} reward={r} rate={rate} />
       ))}
       <div className="border-t border-white/12 bg-white/[0.06]">
         <p className="px-4 pt-3 text-[10.5px] font-bold uppercase tracking-[0.05em] text-white/55">
           Ajouter une récompense
         </p>
-        <RewardRow reward={null} />
+        <RewardRow reward={null} rate={rate} />
       </div>
     </>
   );
