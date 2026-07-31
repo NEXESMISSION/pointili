@@ -777,6 +777,72 @@ body:has(.landing-dark) {
   to   { opacity: 1; transform: none; }
 }
 
+/* ══ the customer's reward moment ══════════════════════════════════════
+   components/RewardUnlocked — the one screen where the promise is kept.
+
+   Longer and softer than the till's receipt on purpose: the cashier is mid
+   queue and wants the till back, the customer is holding their own phone and
+   this is the payoff for a month of coffees. Rays turn, the medallion lands,
+   the words arrive in sequence. Still transform/opacity only. */
+.unlock-veil {
+  animation: unlock-in 0.28s ease-out both;
+}
+@keyframes unlock-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+/* a slow turn, not a spin — it should read as light, not as a loading spinner */
+.unlock-rays {
+  animation: unlock-turn 26s linear infinite, unlock-in 0.7s ease-out 0.15s both;
+  opacity: 0.55;
+}
+@keyframes unlock-turn {
+  to { rotate: 360deg; }
+}
+.unlock-glow {
+  animation: unlock-breathe 3.2s ease-in-out infinite;
+}
+@keyframes unlock-breathe {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.05); }
+}
+/* the reward itself lands with weight — overshoot, then settle */
+.unlock-medal {
+  animation: unlock-land 0.62s cubic-bezier(0.16, 1.4, 0.3, 1) 0.08s both;
+}
+@keyframes unlock-land {
+  from { opacity: 0; transform: scale(0.34) rotate(-14deg); }
+  to   { opacity: 1; transform: none; }
+}
+/* every line rises into place; each one sets its own delay inline */
+.unlock-line {
+  animation: unlock-rise 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+@keyframes unlock-rise {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+.unlock-bit {
+  animation: unlock-fly 1.15s cubic-bezier(0.12, 0.8, 0.3, 1) both;
+}
+@keyframes unlock-fly {
+  from { opacity: 0; transform: translate3d(0, 26px, 0) scale(0.3) rotate(0deg); }
+  40%  { opacity: 1; }
+  to   { opacity: 0; transform: translate3d(0, -30px, 0) scale(1) rotate(220deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unlock-rays,
+  .unlock-glow,
+  .unlock-medal,
+  .unlock-line {
+    animation: unlock-in 0.2s ease-out both;
+  }
+  .unlock-bit {
+    display: none;
+  }
+}
+
 /* Confetti — twelve fixed pieces, thrown outward from behind the tick.
    Fixed rather than random: this fires on every sale, and a celebration that
    lands somewhere new each time reads as a rendering glitch by the twentieth

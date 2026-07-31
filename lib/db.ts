@@ -327,6 +327,49 @@ export type WalletCafe = {
 };
 
 /** Mark that the diner just opened this card — powers the wallet's recency sort. */
+/**
+ * What this diner's balance was the last time they looked, and what it is now.
+ *
+ * The pair is the whole point: a reward is worth celebrating on the customer's
+ * screen only if it became affordable SINCE they last saw the card. Comparing
+ * against the current balance alone would congratulate them again on every
+ * refresh for something they claimed a week ago.
+ *
+ * Must be read BEFORE touchCardOpened, which is what moves the goalposts.
+ */
+export async function balanceSinceLastOpen(
+  businessId: string,
+  phone: string,
+): Promise<{ before: number; now: number }> {
+  const db = createAdminClient();
+  const { data: card } = await db
+    .from("diner_cafes")
+    .select("last_opened_at")
+    .eq("business_id", businessId)
+    .eq("phone", phone)
+    .maybeSingle();
+
+  const { data: rows } = await db
+    .from("points_ledger")
+    .select("delta, created_at")
+    .eq("business_id", businessId)
+    .eq("customer_phone", phone);
+
+  const all = (rows ?? []) as { delta: number; created_at: string }[];
+  const now = all.reduce((s, r) => s + Number(r.delta), 0);
+
+  // Never opened it? Then nothing has happened "since" — a brand-new card gets
+  // CardArrived, not this. Returning `now` for both makes the diff empty.
+  const seenAt = card?.last_opened_at ? new Date(card.last_opened_at).getTime() : null;
+  if (seenAt === null) return { before: now, now };
+
+  const before = all
+    .filter((r) => new Date(r.created_at).getTime() <= seenAt)
+    .reduce((s, r) => s + Number(r.delta), 0);
+
+  return { before: Math.round(before * 100) / 100, now: Math.round(now * 100) / 100 };
+}
+
 export async function touchCardOpened(businessId: string, phone: string): Promise<void> {
   const db = createAdminClient();
   await db

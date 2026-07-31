@@ -3,9 +3,10 @@ import { CafeClosed } from "@/components/CafeClosed";
 import { notFound, redirect } from "next/navigation";
 import { GiftIcon, ScanIcon, Sparkle } from "@/components/icons";
 import { getCafe, getLoyaltyProgram, getMember, getRewards, nextRewardNudge } from "@/lib/data";
-import { touchCardOpened } from "@/lib/db";
+import { balanceSinceLastOpen, touchCardOpened } from "@/lib/db";
 import type { LoyaltyProgram } from "@/lib/types";
 import { CardArrived } from "@/components/CardArrived";
+import { RewardUnlocked } from "@/components/RewardUnlocked";
 import { fmtPoints } from "@/lib/points";
 
 /**
@@ -39,10 +40,31 @@ export default async function Carte({
   const diner = await getMember(cafe.id);
   if (!diner) redirect(`/${slug}/rejoindre`);
 
+  /*
+    READ BEFORE TOUCHING. touchCardOpened is what moves the "last seen" mark, so
+    the two balances have to be taken first or the diff is always empty and the
+    customer is never told they have earned something.
+  */
+  const seen = await balanceSinceLastOpen(cafe.id, diner.phone);
+
   // Record the visit so the wallet can sort by "recently opened".
   await touchCardOpened(cafe.id, diner.phone);
 
   const [program, rewards] = await Promise.all([getLoyaltyProgram(cafe.id), getRewards(cafe.id)]);
+
+  /*
+    A reward is worth taking over the screen for only if it crossed the line
+    SINCE they last looked. Affordable-now-and-then is old news they have
+    already been congratulated for; affordable-now-but-not-then is the moment
+    this whole product exists to produce.
+
+    The dearest of the newly reachable, not the cheapest — "tu as gagné un
+    brunch complet" is the better sentence, and the cheaper ones are still
+    waiting for them on the boutique screen the button leads to.
+  */
+  const justUnlocked = rewards
+    .filter((r) => r.active && r.pointsCost <= seen.now && r.pointsCost > seen.before)
+    .sort((a, b) => b.pointsCost - a.pointsCost)[0];
   const offers = [...rewards].sort((a, b) => a.pointsCost - b.pointsCost).slice(0, 3);
 
   const stampView = stampCardView(diner.stamps, diner.stampsStartedAt, program);
@@ -51,6 +73,15 @@ export default async function Carte({
     <div className="flex flex-1 flex-col pb-6">
       {/* Plays once, over a card that is already rendered and already usable. */}
       {nouveau && <CardArrived cafeName={cafe.name} points={program.welcomePoints ?? 0} />}
+      {/* A brand-new card gets CardArrived, never both — balanceSinceLastOpen
+          returns an empty diff for a card that has never been opened. */}
+      {!nouveau && justUnlocked && (
+        <RewardUnlocked
+          label={justUnlocked.label}
+          imageUrl={justUnlocked.imageUrl}
+          href={`/${slug}/boutique`}
+        />
+      )}
       {/* greeting + points badge */}
       <section className="px-5 pb-5 pt-3">
         <div className="flex items-start justify-between gap-3">
