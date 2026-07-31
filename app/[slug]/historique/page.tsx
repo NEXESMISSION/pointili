@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { CafeClosed } from "@/components/CafeClosed";
+import { fmtPoints } from "@/lib/points";
 import { getCafe, getMember } from "@/lib/data";
 import { getActivity, type Activity } from "@/lib/db";
 
@@ -73,7 +74,7 @@ export default async function Historique({
                   }`}
                 >
                   {a.delta > 0 ? "+" : ""}
-                  {a.delta}
+                  {fmtPoints(a.delta)}
                 </span>
               )}
             </li>

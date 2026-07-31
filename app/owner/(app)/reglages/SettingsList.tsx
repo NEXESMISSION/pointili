@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { CardIcon, GiftIcon, Sparkle, StampIcon } from "@/components/icons";
+import { fmtPoints } from "@/lib/points";
 import type { Cafe, LoyaltyProgram, Reward } from "@/lib/types";
 import { CafeForm, EarnForm, RewardsEditor, StampsForm } from "./SettingsForms";
 
@@ -40,7 +42,7 @@ export function SettingsList({
     points: {
       title: "Les points",
       sub: "Ce que chaque dinar dépensé rapporte à vos clients.",
-      body: <EarnForm cafe={cafe} program={program} rewards={rewards} />,
+      body: <div className="mx-auto w-full max-w-[560px]"><EarnForm cafe={cafe} program={program} rewards={rewards} /></div>,
     },
     rewards: {
       title: "Les récompenses",
@@ -50,12 +52,12 @@ export function SettingsList({
     stamps: {
       title: "Carte à tampons",
       sub: "Une visite = un tampon. En plus des points, si vous voulez.",
-      body: <StampsForm program={program} />,
+      body: <div className="mx-auto w-full max-w-[560px]"><StampsForm program={program} /></div>,
     },
     shop: {
       title: "Ma vitrine",
       sub: "Le logo, le nom et le type que voient vos clients.",
-      body: <CafeForm cafe={cafe} />,
+      body: <div className="mx-auto w-full max-w-[560px]"><CafeForm cafe={cafe} /></div>,
     },
   };
 
@@ -65,7 +67,7 @@ export function SettingsList({
         <Row
           icon={<Sparkle className="h-[18px] w-[18px]" />}
           label="Les points"
-          value={`${program.pointsPerTnd} pt${program.pointsPerTnd > 1 ? "s" : ""} par dinar`}
+          value={`${fmtPoints(program.pointsPerTnd)} pt${program.pointsPerTnd > 1 ? "s" : ""} par dinar`}
           onClick={() => setOpen("points")}
         />
         <Row
@@ -73,7 +75,7 @@ export function SettingsList({
           label="Les récompenses"
           value={
             cheapest
-              ? `${visible} visible${visible > 1 ? "s" : ""} · dès ${cheapest.pointsCost} pts`
+              ? `${visible} visible${visible > 1 ? "s" : ""} · dès ${fmtPoints(cheapest.pointsCost)} pts`
               : "aucune"
           }
           warn={!cheapest}
@@ -190,28 +192,60 @@ function Sheet({
   onClose: () => void;
   children: ReactNode;
 }) {
-  return (
+  /*
+    PORTALLED to <body>, not rendered in place.
+
+    The owner tab bar carries backdrop-blur, and backdrop-filter creates its own
+    stacking context — so a z-50 sheet nested inside the layout still had
+    "Caisse · Analyses · QR · Réglages" bleeding through its own background at
+    the bottom of the screen. Out at body level there is nothing left to lose
+    to.
+
+    No mounted-guard: a Sheet only exists once someone has TAPPED a row, which
+    cannot happen on the server — and the usual useState+useEffect dance would
+    trip react-hooks/set-state-in-effect anyway.
+  */
+  return createPortal(
     <section
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-50 flex flex-col bg-[#0a0614]"
+      className="fixed inset-0 z-[70] flex flex-col bg-[#0a0614]"
     >
-      <header className="flex items-center gap-2 border-b border-white/10 px-3 py-3">
-        <button
-          type="button"
-          onClick={onClose}
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-[24px] leading-none text-white active:bg-white/10"
-          aria-label="Retour"
-        >
-          ‹
-        </button>
-        <span className="min-w-0">
-          <span className="block truncate text-[16px] font-extrabold text-white">{title}</span>
-          <span className="block truncate text-[11.5px] text-white/50">{sub}</span>
-        </span>
+      {/* safe-t, or the title sits under the notch in the installed app */}
+      <header className="safe-t border-b border-white/10 px-3 pb-3 [--safe-pt:0.75rem]">
+        <div className="mx-auto flex w-full max-w-[900px] items-center gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition active:bg-white/10"
+            aria-label="Retour"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M19 12H5M11 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <span className="min-w-0">
+            <span className="block truncate text-[19px] font-extrabold leading-tight text-white">
+              {title}
+            </span>
+            {/* wraps on a phone rather than truncating — the subtitle is the
+                one line telling an owner how to price this, and "…en 2–3 vi…"
+                tells them nothing */}
+            <span className="block text-[12px] leading-snug text-white/50">{sub}</span>
+          </span>
+        </div>
       </header>
-      <div className="mx-auto min-h-0 w-full max-w-[560px] flex-1 overflow-y-auto pb-8">{children}</div>
-    </section>
+      {/*
+        900px, not 560. The rewards catalogue is a table in all but name — photo,
+        name, state, cost, two actions — and at 560 those columns collapsed into
+        a stack that read as five unrelated controls. The other editors are
+        single-column forms and keep their own narrower cap inside.
+      */}
+      <div className="safe-b mx-auto min-h-0 w-full max-w-[900px] flex-1 overflow-y-auto [--safe-pb:2.5rem]">
+        {children}
+      </div>
+    </section>,
+    document.body,
   );
 }

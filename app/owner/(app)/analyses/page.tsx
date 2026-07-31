@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ownerCafe, ownerHome } from "@/lib/auth/owner";
 import { cafeCardCount } from "@/lib/db";
+import { fmtPoints } from "@/lib/points";
 import { getStats, MIN_SAMPLE, type Range, type Stats } from "@/lib/stats";
 import { BackLink } from "@/components/BackLink";
 
@@ -341,7 +342,7 @@ function Money({ s }: { s: Stats }) {
       <div className="mt-3.5 space-y-1.5 border-t border-white/12 pt-3">
         <Line label="Ticket moyen" value={`${s.avgTicketTnd.toFixed(2)} TND`} />
         <Line label="Récompenses servies" value={String(s.rewardsClaimed)} />
-        <Line label="Points échangés" value={String(s.pointsRedeemed)} />
+        <Line label="Points échangés" value={fmtPoints(s.pointsRedeemed)} />
       </div>
       <p className="mt-2.5 text-[11px] leading-snug text-white/40">
         Uniquement ce qui est passé par la caisse Pointili.
@@ -391,7 +392,7 @@ function Owed({ s }: { s: Stats }) {
         of the cheapest reward those points could buy.
       */}
       <div className="mt-2.5 space-y-1.5">
-        <Line label="Points en circulation" value={String(s.outstandingPoints)} />
+        <Line label="Points en circulation" value={fmtPoints(s.outstandingPoints)} />
         <Line label="Codes déjà émis, pas encore récupérés" value={String(s.pendingCodes)} />
       </div>
       <p className="mt-2.5 text-[11px] leading-snug text-white/40">

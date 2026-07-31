@@ -330,6 +330,63 @@ export async function saveRewardAction(
   return { saved: label };
 }
 
+/**
+ * The order the diner sees them in, set by dragging.
+ *
+ * `position` has existed since 0001 and nothing could ever change it — new
+ * rewards were inserted at 99 and the list was whatever order the database felt
+ * like returning. An owner who wants their cheapest reward first, or their
+ * seasonal one at the top, had no way to say so.
+ *
+ * Scoped to the café on every row: ids arrive from the browser, so a crafted
+ * list must not be able to renumber somebody else's catalogue.
+ */
+export async function reorderRewardsAction(ids: string[]): Promise<void> {
+  const cafe = await ownerCafe();
+  if (!cafe) return;
+  // a bounded list of plausible ids, not whatever was posted
+  const clean = ids.filter((id) => typeof id === "string" && id.length <= 64).slice(0, 100);
+  if (!clean.length) return;
+
+  const db = await createClient();
+  await Promise.all(
+    clean.map((id, position) =>
+      db
+        .from("loyalty_rewards")
+        .update({ position })
+        .eq("id", id)
+        .eq("business_id", cafe.id),
+    ),
+  );
+
+  revalidatePath("/owner/reglages");
+  revalidatePath(`/${cafe.slug}/boutique`);
+  revalidatePath(`/${cafe.slug}`);
+}
+
+/**
+ * Show or hide one reward, from the list itself.
+ *
+ * Hiding used to mean opening the editor, unticking a box and pressing save —
+ * three steps for the thing an owner does most often, when the pâtisserie runs
+ * out at 11am and has to come off the list until tomorrow.
+ */
+export async function toggleRewardActiveAction(id: string, active: boolean): Promise<void> {
+  const cafe = await ownerCafe();
+  if (!cafe) return;
+
+  const db = await createClient();
+  await db
+    .from("loyalty_rewards")
+    .update({ active })
+    .eq("id", id)
+    .eq("business_id", cafe.id);
+
+  revalidatePath("/owner/reglages");
+  revalidatePath(`/${cafe.slug}/boutique`);
+  revalidatePath(`/${cafe.slug}`);
+}
+
 export async function deleteRewardAction(id: string): Promise<void> {
   const cafe = await ownerCafe();
   if (!cafe) return;
