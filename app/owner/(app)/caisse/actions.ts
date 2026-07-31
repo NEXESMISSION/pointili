@@ -148,6 +148,18 @@ export type CreditState = {
     welcome: number;
     balance: number;
     multiplier: number;
+    /** The dinars the cashier keyed — so the receipt can restate them. */
+    amount: number;
+    /**
+     * Rewards this credit JUST put in reach — affordable now, not before.
+     *
+     * The one thing on the confirmation a cashier can act on. The customer is
+     * still standing there; "vous pouvez prendre un espresso maintenant" is the
+     * whole product working, and without this nobody would know to say it.
+     */
+    unlocked: string[];
+    /** How far the next one is, once there is nothing to claim yet. */
+    next: { label: string; needed: number } | null;
   };
 };
 
@@ -255,6 +267,23 @@ export async function creditAction(
   revalidatePath("/owner");
   revalidatePath("/owner/analyses");
   revalidatePath(`/${cafe.slug}`);
+
+  /*
+    What this credit just changed for the customer, worked out from the balance
+    BEFORE it (the new one minus everything this call added). Crossing a reward
+    threshold is the moment the loyalty scheme pays off, and it happens while
+    the person is still at the counter — so the till has to say it, or the
+    cashier never mentions it and the customer finds out days later.
+  */
+  const { getRewards, nextRewardNudge } = await import("@/lib/data");
+  const rewards = await getRewards(cafe.id);
+  const before = res.balance - res.earned - res.welcome;
+  const unlocked = rewards
+    .filter((r) => r.pointsCost <= res.balance && r.pointsCost > before)
+    .sort((a, b) => b.pointsCost - a.pointsCost)
+    .map((r) => r.label);
+  const nudge = nextRewardNudge(res.balance, rewards);
+
   return {
     ok: {
       label: customerLabel(who),
@@ -262,6 +291,9 @@ export async function creditAction(
       welcome: res.welcome,
       balance: res.balance,
       multiplier: res.multiplier,
+      amount,
+      unlocked,
+      next: nudge ? { label: nudge.target.label, needed: nudge.needed } : null,
     },
   };
 }

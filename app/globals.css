@@ -746,3 +746,41 @@ body:has(.landing-dark) {
   }
   .arrive-spark { display: none; }
 }
+
+/* ══ the till receipt ══════════════════════════════════════════════════
+   caisse/DoneSheet — the confirmation a cashier sees hundreds of times a week.
+
+   It rises rather than fades, because a sheet that slides up from the thumb
+   reads as "this just happened" while a fade reads as "this was already there".
+   Short, and transform/opacity only: this fires on every single sale, on a
+   mid-range Android, while somebody waits. */
+.done-veil {
+  animation: done-fade 0.16s ease-out both;
+}
+@keyframes done-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.done-sheet {
+  animation: done-rise 0.3s cubic-bezier(0.18, 0.9, 0.28, 1) both;
+}
+@keyframes done-rise {
+  from { opacity: 0; transform: translateY(26px); }
+  to   { opacity: 1; transform: none; }
+}
+/* the tick lands a beat after the sheet, so the eye follows it */
+.done-tick {
+  animation: done-pop 0.34s cubic-bezier(0.2, 1.6, 0.4, 1) 0.1s both;
+}
+@keyframes done-pop {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .done-veil,
+  .done-sheet,
+  .done-tick {
+    animation: done-fade 0.12s ease-out both;
+  }
+}

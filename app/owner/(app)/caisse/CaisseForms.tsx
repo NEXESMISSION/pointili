@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { QrScanner } from "@/components/QrScanner";
 import { CheckIcon, QrIcon, StampIcon } from "@/components/icons";
+import { DoneSheet, type Done } from "./DoneSheet";
 import type { Activity, OwnerCard } from "@/lib/db";
 import {
   addStampAction,
@@ -412,6 +413,13 @@ function CustomerSheet({
     sits in the sentence that caused the doubt.
   */
   const [lastCredit, setLastCredit] = useState<number | null>(null);
+  /*
+    The receipt. It is a SEPARATE state from `flash`, not a replacement: the
+    sheet is the loud confirmation the cashier sees at arm's length and it
+    auto-closes, while the flash line stays behind it as the quiet record — and
+    keeps the undo reachable after the sheet is gone.
+  */
+  const [done, setDone] = useState<Done | null>(null);
   const [newPin, setNewPin] = useState("");
   const [stampSet, setStampSet] = useState(String(customer.stamps));
 
@@ -436,11 +444,42 @@ function CustomerSheet({
         // only the earned points are reversible here — a one-time welcome bonus
         // is not part of the mistake and taking it back would be a second one
         setLastCredit(res.ok.earned > 0 ? res.ok.earned : null);
+        setDone({
+          kind: "credit",
+          who: res.ok.label,
+          earned: res.ok.earned,
+          welcome: res.ok.welcome,
+          balance: res.ok.balance,
+          amount: res.ok.amount,
+          unlocked: res.ok.unlocked,
+          next: res.ok.next,
+          onUndo: res.ok.earned > 0 ? () => undoCredit(res.ok!.earned) : undefined,
+        });
         setFlash(
           `+${res.ok.earned} points` +
             (res.ok.welcome > 0 ? ` · +${res.ok.welcome} de bienvenue` : "") +
             ` · nouveau solde ${res.ok.balance} points`,
         );
+      }
+    });
+  }
+
+  /*
+    One undo, two places to press it: the receipt sheet while it is up, and the
+    flash line after it closes. Extracted rather than duplicated — a reversal
+    that behaves differently depending on which button you found would be worse
+    than having only one button.
+  */
+  function undoCredit(back: number) {
+    setLastCredit(null);
+    start(async () => {
+      const r = await adjustByCodeAction(customer.ref, -back);
+      if (r.ok && typeof r.balance === "number") {
+        setBalance(r.balance);
+        setFlash(`Annulé : −${back} points · solde ${r.balance} points`);
+      } else {
+        setLastCredit(back);
+        setErr(r.error ?? "Échec.");
       }
     });
   }
@@ -457,6 +496,17 @@ function CustomerSheet({
         const next = res.ok.completed ? 0 : res.ok.count;
         setStamps(next);
         setStampSet(String(next));
+        setDone({
+          kind: "stamp",
+          who: customer.name ?? customer.code ?? "Client",
+          // the RPC resets the card to 0 on completion, so show it FULL here —
+          // "0/10" as the confirmation of filling it reads as a failure
+          count: res.ok.completed ? res.ok.required : res.ok.count,
+          required: res.ok.required,
+          completed: res.ok.completed,
+          code: res.ok.code,
+          label: res.ok.label,
+        });
         setFlash(
           res.ok.completed
             ? `Carte pleine 🎉 ${res.ok.label} — code ${res.ok.code}`
@@ -473,6 +523,8 @@ function CustomerSheet({
       aria-label="Le client"
       className="fixed inset-0 z-50 flex flex-col bg-[#0a0614]/97 backdrop-blur-sm"
     >
+      {/* The receipt, over the top of everything, closing itself after 4s. */}
+      {done && <DoneSheet done={done} onClose={() => setDone(null)} />}
       <header className="mx-auto flex w-full max-w-[520px] items-start justify-between gap-3 px-5 pb-3 pt-5">
         <div className="min-w-0">
           <p className="truncate text-[24px] font-extrabold leading-tight text-white">
@@ -529,20 +581,7 @@ function CustomerSheet({
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => {
-                  const back = lastCredit;
-                  setLastCredit(null);
-                  start(async () => {
-                    const r = await adjustByCodeAction(customer.ref, -back);
-                    if (r.ok && typeof r.balance === "number") {
-                      setBalance(r.balance);
-                      setFlash(`Annulé : −${back} points · solde ${r.balance} points`);
-                    } else {
-                      setLastCredit(back);
-                      setErr(r.error ?? "Échec.");
-                    }
-                  });
-                }}
+                onClick={() => undoCredit(lastCredit)}
                 className="shrink-0 rounded-full bg-white/12 px-3.5 py-1.5 text-[12.5px] font-bold text-white active:scale-95"
               >
                 Annuler
