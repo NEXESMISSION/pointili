@@ -105,7 +105,22 @@ export async function adjustByCodeAction(
   const who = await resolveCustomer(cafe.id, code);
   if ("error" in who) return { ok: false, error: who.error };
 
-  const res = await ownerAdjustPoints(cafe.id, who.phone, Math.round(delta), amountTnd ?? null);
+  /*
+    Two decimals, NOT Math.round.
+
+    Points went decimal in 0027 and this line did not: undoing a 1,5-point
+    credit called Math.round(-1.5) and took back 2, so the one control whose
+    entire job is to put a mistake right created a different one — in the exact
+    path the decimal change existed to protect. A manual "-1,25" became "-1"
+    the same way. The RPC rounds to 2dp as well; this is belt and braces
+    against a hand-typed "0,004".
+  */
+  const res = await ownerAdjustPoints(
+    cafe.id,
+    who.phone,
+    Math.round(delta * 100) / 100,
+    amountTnd ?? null,
+  );
   if (!res.ok) return { ok: false, error: "Échec." };
 
   revalidatePath("/owner");

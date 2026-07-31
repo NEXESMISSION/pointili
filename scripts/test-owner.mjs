@@ -174,7 +174,7 @@ const listTxt = await staff.locator("main").innerText();
 check("the till never shows the raw phone", !listTxt.includes(NORM));
 
 await staff.locator('button:has-text("Corriger / Historique")').click();
-await staff.locator('input[placeholder="+10 ou -5"]').fill("25");
+await staff.locator('input[name="adjust"]').fill("25");
 const apply = staff.locator('button:has-text("Appliquer")');
 await apply.waitFor({ state: "visible", timeout: 10000 });
 await apply.click({ timeout: 15000 });

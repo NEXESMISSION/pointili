@@ -588,10 +588,15 @@ function CustomerSheet({
             </p>
             <div className="mt-2 flex gap-2">
               <input
+                /* named, so the suites stop hanging off placeholder copy —
+                   renaming "+10 ou -5" to "+10 ou -2,5" broke test-owner */
+                name="adjust"
                 value={delta}
                 onChange={(e) => setDelta(e.target.value)}
-                inputMode="numeric"
-                placeholder="+10 ou -5"
+                /* decimal, not numeric: the numeric keypad has no "," key, and
+                   points have had fractions since 0027 */
+                inputMode="decimal"
+                placeholder="+10 ou -2,5"
                 className="a-field font-mono"
               />
               <button
@@ -717,7 +722,7 @@ function CustomerSheet({
                         }`}
                       >
                         {a.delta > 0 ? "+" : ""}
-                        {a.delta}
+                        {fmtPoints(a.delta)}
                       </span>
                     )}
                   </li>
