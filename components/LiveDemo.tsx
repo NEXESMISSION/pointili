@@ -215,6 +215,55 @@ export function LiveDemo() {
           </div>
         </div>
 
+        {/*
+          THE OTHER HAND.
+
+          The card above is the customer's. The person reading this page is the
+          one who PAYS, and watching a customer's screen leaves them asking "yes,
+          but what do I do?". So the counter's side of the very same step sits
+          under it, in the owner design system (.a-card, .a-btn) rather than the
+          diner one — the two surfaces really do look different, and pretending
+          otherwise would be the dishonest kind of demo.
+
+          It also makes the strongest point on the page without a sentence of
+          argument: on two of the four steps the answer is "nothing". The loop
+          mostly runs without them.
+        */}
+        <div className="a-card mt-3 p-3">
+          <p className="mb-2 text-[9.5px] font-bold uppercase tracking-[0.1em] text-white/40">
+            À la caisse
+          </p>
+
+          {i === 0 && (
+            <div className="flex items-center gap-2">
+              <span className="flex-1 rounded-xl border border-white/14 bg-white/[0.06] px-3 py-2 text-left font-mono text-[15px] font-bold tabular-nums text-white">
+                12,5
+                <span className="ml-1 text-[10px] font-semibold text-white/45">DT</span>
+              </span>
+              <span className="rounded-xl bg-[#6d4ae6] px-3.5 py-2.5 text-[12px] font-bold text-white">
+                Créditer
+              </span>
+            </div>
+          )}
+
+          {i === 3 && (
+            <div className="flex items-center gap-2">
+              <span className="flex-1 rounded-xl border border-white/14 bg-white/[0.06] px-3 py-2 text-left font-mono text-[15px] font-bold tracking-[0.1em] text-white">
+                T9BX52
+              </span>
+              <span className="rounded-xl bg-[#6d4ae6] px-3.5 py-2.5 text-[12px] font-bold text-white">
+                Valider
+              </span>
+            </div>
+          )}
+
+          {(i === 1 || i === 2) && (
+            <p className="py-2 text-center text-[12px] font-semibold text-white/35">
+              Rien à faire — ça se passe tout seul.
+            </p>
+          )}
+        </div>
+
         {/* honesty: this is a demonstration, nothing is being recorded */}
         <p className="mt-3 text-center text-[10.5px] text-white/35">
           Démonstration — aucun numéro demandé.

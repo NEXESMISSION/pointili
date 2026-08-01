@@ -30,7 +30,36 @@ export default function OwnerAuthLayout({
         Same tile as components/InstallPrompt.tsx and the same #f8f7fc as
         scripts/icons.mjs, so all three are one object.
       */}
-      <Link href="/" className="mb-7 mt-2 inline-flex">
+      {/*
+        A named way back to the site.
+
+        The mark above has always been a link, but a logo is not an exit — it is
+        decoration until you happen to try it. Somebody who arrives on this
+        screen and decides they want to read about the product first, or who
+        landed here by mistake, had nothing to press.
+
+        An explicit LINK, not the shared BackLink: that one calls router.back()
+        first, and the commonest way to arrive here is the (app) layout guard
+        bouncing you off /owner — so "back" lands on /owner, which bounces you
+        straight here again. A loop, from a button whose whole job is escape.
+
+        ?pro=1 because "/" returns a signed-in owner to their till and a
+        signed-in diner to their wallet; a stale cookie on this very screen is
+        the normal case, not the odd one.
+      */}
+      <div className="mb-4 w-full max-w-[400px]">
+        <Link
+          href="/?pro=1"
+          className="-ml-2 inline-flex items-center gap-1.5 rounded-full py-1.5 pl-2 pr-3 text-[13px] font-semibold text-white/55 transition hover:bg-white/[0.07] hover:text-white/85"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+          Retour au site
+        </Link>
+      </div>
+
+      <Link href="/?pro=1" className="mb-7 inline-flex">
         <BrandLockup size={40} />
       </Link>
       <div className="w-full max-w-[400px]">{children}</div>
