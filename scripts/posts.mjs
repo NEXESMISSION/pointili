@@ -344,6 +344,76 @@ const POSTS = [
       },
     ],
   },
+
+  /*
+    THE ANSWER TO "شنوّة نربح ؟", which is the first thing a stranger asks.
+
+    Deliberately the simplest of the four: one idea per slide, a headline and a
+    single line under it, no lists in the middle and no numbers to study. The
+    other three assume somebody already curious enough to follow a workflow;
+    this one has to work for a shop owner who has never heard the name and is
+    reading it in a Messenger thread.
+
+    No promised result and no price — the first is the dictionary's rule 18,
+    the second is unvalidated in docs/PRODUIT.md.
+  */
+  {
+    dir: "post 11 - les benefices",
+    tag: "شنوّة تربح ؟",
+    n: "",
+    slides: [
+      {
+        kind: "cover",
+        ar: "شنوّة تربح بـ Pointili ؟",
+        fr: "6 حاجات برك — بلا كلام تقني.",
+        note: "carte fidélité digitale لمحلك",
+      },
+      {
+        kind: "big",
+        ar: "بلا application",
+        fr: "لا إنت تنزّل شي و لا الحريف. كل شي في الـ navigateur.",
+        shot: "qrposter",
+      },
+      {
+        kind: "big",
+        ar: "الحريف يعمل Scan، و في دقيقة تولّي عندو Carte",
+        fr: "رقم تيليفون + Code secret. بلا email، بلا mot de passe.",
+        shot: "signup",
+      },
+      {
+        kind: "big",
+        ar: "كل مرة يخلّص، يجمع Points",
+        fr: "و يبدّلهم بـ Cadeau من عندك.",
+        shot: "card",
+      },
+      {
+        kind: "big",
+        badge: "⭐ حتى كان ما عندوش Compte",
+        ar: "ما يضيع حتى Point",
+        fr: "تزيدلو Points بالرقم متاعو، و يلقاهم الكل كي يعمل Compte.",
+        shot: "walkin",
+      },
+      {
+        kind: "big",
+        ar: "إنت تحدّد كل شي",
+        fr: "قداش Points في الدينار، شنوّة Cadeaux، و الـ Carte بالـ Stamps.",
+        shot: "reglages",
+      },
+      {
+        kind: "big",
+        ar: "تعرف شكون رجع — بالأرقام",
+        fr: "نسبة الرجوع، عدد الزيارات، و الـ ticket moyen. موش بالإحساس.",
+        shot: "retour",
+      },
+      {
+        kind: "fact",
+        big: "14",
+        unit: "يوم gratuit",
+        ar: "جرّب و وقتها تحكم",
+        list: ["بلا carte bancaire", "بلا matériel", "تيليفون برك"],
+      },
+    ],
+  },
 ];
 /* ── the look ────────────────────────────────────────────────────────── */
 
@@ -607,4 +677,4 @@ for (const post of POSTS) {
 }
 
 await browser.close();
-console.log("\nthree carousels built");
+console.log(`\n${POSTS.length} carousels built`);
