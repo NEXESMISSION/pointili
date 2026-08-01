@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BrandLockup } from "@/components/BrandMark";
 import { currentDiner } from "@/lib/auth/diner";
-import { LiveDemo } from "@/components/LiveDemo";
+import { Showcase } from "@/components/Showcase";
 import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
 import { ShopArt } from "./LandingArt";
@@ -108,10 +108,33 @@ export default async function Landing({
     anonymous hit of the busiest public page. Neither destination trusts it.
   */
   const { pro } = await searchParams;
+  const ownerHere = await hasOwnerCookie();
   if (!pro) {
-    if (await hasOwnerCookie()) redirect("/owner");
+    if (ownerHere) redirect("/owner");
     if (await currentDiner()) redirect("/cartes");
   }
+
+  /*
+    ?pro=1 is how a SIGNED-IN owner reaches this page — it is the escape hatch
+    the app links to from the sidebar, Réglages and the login screen. So this
+    page has to stop selling to somebody who already bought.
+
+    It used to offer them "Espace café → /owner/login" and five "Commencer
+    gratuitement → /owner/signup" buttons: a free trial they are already past,
+    and a sign-in form they are already through. Every one of them bounced
+    straight back to /owner, so nothing was broken exactly — it just made no
+    sense, which is worse on the one page meant to explain the product.
+
+    Cookie presence, not verification, same as the redirect above: this decides
+    WORDING, and both destinations re-check properly.
+  */
+  const cta = ownerHere
+    ? { href: "/owner", label: "Aller à ma caisse", note: "Vous êtes déjà connecté" }
+    : {
+        href: "/owner/signup",
+        label: "Commencer gratuitement",
+        note: "14 jours gratuits · Sans carte bancaire",
+      };
 
   return (
     <div className="landing-dark min-h-dvh bg-[#070510] text-white">
@@ -160,12 +183,20 @@ export default async function Landing({
             <p className="mt-1.5 border-t border-white/10 px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.08em] text-white/35">
               Je suis commerçant
             </p>
-            <Link href="/owner/login" className="block rounded-xl px-3 py-2.5 text-[14px] font-semibold text-white/85 hover:bg-white/[0.06]">
-              Espace café
-            </Link>
-            <Link href="/owner/signup" className="mt-1 block rounded-xl bg-[#7c3aed] px-3 py-2.5 text-center text-[14px] font-bold text-white">
-              Créer mon compte
-            </Link>
+            {ownerHere ? (
+              <Link href="/owner" className="mt-1 block rounded-xl bg-[#7c3aed] px-3 py-2.5 text-center text-[14px] font-bold text-white">
+                Ma caisse
+              </Link>
+            ) : (
+              <>
+                <Link href="/owner/login" className="block rounded-xl px-3 py-2.5 text-[14px] font-semibold text-white/85 hover:bg-white/[0.06]">
+                  Espace café
+                </Link>
+                <Link href="/owner/signup" className="mt-1 block rounded-xl bg-[#7c3aed] px-3 py-2.5 text-center text-[14px] font-bold text-white">
+                  Créer mon compte
+                </Link>
+              </>
+            )}
           </nav>
         </details>
       </header>
@@ -200,15 +231,13 @@ export default async function Landing({
 
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3">
               <Link
-                href="/owner/signup"
+                href={cta.href}
                 className="group inline-flex items-center gap-2.5 rounded-full bg-[#7c3aed] px-7 py-4 text-[15px] font-bold text-white shadow-[0_20px_50px_-18px_rgba(124,58,237,1)] transition hover:bg-[#8b5cf6] active:scale-[0.98]"
               >
-                Commencer gratuitement
+                {cta.label}
                 <span className="transition-transform group-hover:translate-x-0.5"><Arrow /></span>
               </Link>
-              <p className="text-[12.5px] text-white/35">
-                14 jours gratuits <span className="text-white/20">•</span> Sans carte bancaire
-              </p>
+              <p className="text-[12.5px] text-white/35">{cta.note}</p>
             </div>
           </div>
 
@@ -248,13 +277,13 @@ export default async function Landing({
           Comment <span className="text-[#8b5cf6]">ça marche</span>
         </h2>
 
-        <p className="mt-3 max-w-[52ch] text-[15px] leading-relaxed text-white/55">
-          Pas une description — la carte ci-dessous est construite avec le CSS du
-          vrai produit. Regardez-la tourner, ou pilotez-la vous-même.
+        <p className="mt-3 max-w-[54ch] text-[15px] leading-relaxed text-white/55">
+          Rien n&apos;est dessiné ici. Chaque écran ci-dessous est le vrai produit,
+          filmé en train de faire ce qu&apos;il dit.
         </p>
 
-        <div className="rise mt-10">
-          <LiveDemo />
+        <div className="mt-14">
+          <Showcase />
         </div>
       </section>
 
@@ -412,15 +441,13 @@ export default async function Landing({
             </div>
 
             <Link
-              href="/owner/signup"
+              href={cta.href}
               className="mt-7 flex flex-col items-center rounded-2xl bg-[#7c3aed] px-6 py-4 text-center shadow-[0_16px_38px_-16px_rgba(124,58,237,.9)] transition active:scale-[0.99]"
             >
               <span className="flex items-center gap-2 text-[15px] font-bold text-white">
-                Commencer gratuitement <Arrow />
+                {cta.label} <Arrow />
               </span>
-              <span className="mt-1 text-[11.5px] text-white/65">
-                14 jours gratuits • Sans carte bancaire
-              </span>
+              <span className="mt-1 text-[11.5px] text-white/65">{cta.note}</span>
             </Link>
           </div>
 
@@ -436,10 +463,10 @@ export default async function Landing({
               Parfait pour commencer.
             </p>
             <Link
-              href="/owner/signup"
+              href={cta.href}
               className="mt-auto rounded-2xl border border-white/15 px-5 py-3.5 text-center text-[14px] font-bold text-white transition hover:bg-white/[0.05] active:scale-[0.99]"
             >
-              Choisir cette offre
+              {ownerHere ? "Ma caisse" : "Choisir cette offre"}
             </Link>
           </div>
         </div>
@@ -466,15 +493,21 @@ export default async function Landing({
 
             <div className="text-center">
               <Link
-                href="/owner/signup"
+                href={cta.href}
                 className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-4 text-[15px] font-bold text-[#2a1263] transition active:scale-[0.98]"
               >
-                Créer ma boutique <Arrow />
+                {ownerHere ? "Ma caisse" : "Créer ma boutique"} <Arrow />
               </Link>
               <p className="mt-2.5 text-[11.5px] leading-relaxed text-white/55">
-                14 jours gratuits
-                <br />
-                Sans carte bancaire
+                {ownerHere ? (
+                  "Vous êtes déjà connecté"
+                ) : (
+                  <>
+                    14 jours gratuits
+                    <br />
+                    Sans carte bancaire
+                  </>
+                )}
               </p>
             </div>
           </div>
