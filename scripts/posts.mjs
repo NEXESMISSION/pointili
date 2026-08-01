@@ -163,7 +163,7 @@ const POSTS = [
         star: true,
         badge: "حتى كان ما عندوش Compte",
         ar: "ما عندوش Compte ؟ موش مشكل.",
-        fr: "دخّل رقم تليفونو عادي. الـ Points تستنّاه. كي يعمل Compte من بعد، يلقاهم الكل في الـ Carte متاعو — ما يضيع حتى Point.",
+        fr: "دخّل رقم تيليفونو عادي. الـ Points تستنّاه. كي يعمل Compte من بعد، يلقاهم الكل في الـ Carte متاعو — ما يضيع حتى Point.",
         /* deliberately one sentence, not a list: it is an argument, not an
            inventory, and it has to be read as a sentence to land. */
         shot: "walkin",
@@ -224,8 +224,8 @@ const POSTS = [
       {
         kind: "honest",
         badge: "⭐ موش لازم Application",
-        ar: "ما ينزّل حتى شي",
-        fr: "لا هو ولا إنت. و حتى كان ما عندوش Compte، الكاشيي ينجم يزيدلو Points بالرقم متاعو، و هو يعمل Compte وقت ما يحب.",
+        ar: "حتى حد ما ينزّل شي",
+        fr: "لا الحريف ولا إنت. و حتى كان ما عندوش Compte، الكاشيي ينجم يزيدلو Points بالرقم متاعو، و هو يعمل Compte وقت ما يحب.",
       },
       {
         step: "2",
@@ -236,13 +236,13 @@ const POSTS = [
       {
         step: "3",
         ar: "الـ Carte جاهزة",
-        fr: "كل مرة يخلّص، تزيدلو Points. و كل زيارة Stamp، كان الـ Carte بالـ Stamps.",
+        fr: "كل مرة يخلّص، تزيدلو Points. و كل زيارة يزيدلو Stamp، كان الـ Carte بالـ Stamps.",
         shot: "card",
       },
       {
         step: "4",
         ar: "Compte واحد لكل المحلات",
-        fr: "نفس الـ Code في كل commerce يخدم بـ Pointili. ما يعاودش Compte كل مرة.",
+        fr: "نفس الـ Code في كل commerce يخدم بـ Pointili. ما يعاودش يعمل Compte كل مرة.",
         shot: "wallet",
       },
       {
@@ -285,7 +285,7 @@ const POSTS = [
       {
         kind: "big",
         ar: "الحرفاء يرجعولك ؟",
-        fr: "تشوف نسبة الرجوع بالأرقام — موش بالإحساس. على 7 أيام، 30 يوم، ولا من البداية، مع الفرق مع الفترة اللي قبل.",
+        fr: "تشوف نسبة الرجوع بالأرقام — موش بالإحساس. على 7 أيام، 30 يوم، ولا من البداية، و الفرق مع الفترة اللي قبل.",
         shot: "retour",
       },
       /*
@@ -299,15 +299,15 @@ const POSTS = [
       {
         kind: "big",
         ar: "قداش من مرة يرجعو ؟ و شنوّة يحبو ؟",
-        fr: "هكا تعرف شنوّة تحط في الـ catalogue.",
+        fr: "باش تعرف شنوّة تحط في الـ catalogue.",
         list: ["Visites par client", "Entre deux visites", "أكثر Cadeau يتاخذ"],
         shot: "reste",
       },
       {
         kind: "big",
-        ar: "قداش دازت فلوس من الكاس ؟",
+        ar: "قداش من فلوس دازت من الكاس ؟",
         fr: "كل شي في écran واحد.",
-        list: ["Ticket moyen", "عدد الزيارات", "Points الموزّعين", "Cadeaux اللي تعطاو"],
+        list: ["Ticket moyen", "عدد الزيارات", "الـ Points الموزّعين", "الـ Cadeaux اللي تعطاو"],
         shot: "argent",
       },
       {
@@ -324,9 +324,9 @@ const POSTS = [
       },
       {
         kind: "honest",
-        badge: "⭐ وقت ما تحب",
+        badge: "⭐ بلا engagement",
         ar: "تبدّل ولا توقّف وقت ما تحب",
-        fr: "يتبدّل في ثواني، و بلا engagement.",
+        fr: "كل شي يتبدّل في ثواني.",
         list: ["بدّل قيمة الـ Points", "بدّل الـ Cadeaux", "ولا زيد جداد"],
       },
       {
