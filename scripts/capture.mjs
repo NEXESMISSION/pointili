@@ -448,6 +448,49 @@ await clip(owner, "correction", async (page) => {
   console.log(`  ✓ ${OUT}/till.png`);
   await page.close();
 }
+
+/*
+  THE WALK-IN SHEET — a customer who has no account at all.
+
+  No clip passes through this state, because the shoot signs its own customer up
+  before it films anything. But it is the single best thing the till does: type
+  a number nobody has registered and it opens them anyway, saying "ses points
+  l'attendent", so a cashier never has to turn someone away for not being a
+  member yet. scripts/posts.mjs builds a carousel slide out of it.
+
+  Nothing is created here. The walk-in path mints no account until the person
+  signs up themselves (see scripts/test-walkin.mjs), and this only searches.
+*/
+{
+  const page = await owner.newPage();
+  const unknown = `2${String(Date.now()).slice(-7)}`;
+  await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await page.locator('input[name="customer"]').waitFor({ timeout: 20000 });
+  await page.fill('input[name="customer"]', unknown);
+  await page.locator('button:has-text("Chercher")').click();
+  await page.locator('[role="dialog"]').waitFor({ timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(1100);
+
+  /* Remove the dev overlay rather than style it away: the round "N" button
+     renders in a shadow root that a document stylesheet cannot reach, and it
+     sat in the corner of a finished marketing slide. */
+  await page.evaluate(() => {
+    document
+      .querySelectorAll(
+        "nextjs-portal, #__next-build-watcher, [data-nextjs-toast], [data-nextjs-dev-tools-button], #__next-dev-tools-indicator",
+      )
+      .forEach((el) => el.remove());
+  });
+
+  const txt = await page.locator('[role="dialog"]').innerText().catch(() => "");
+  if (/première visite/i.test(txt)) {
+    await page.screenshot({ path: `${OUT}/walkin.png` });
+    console.log(`  ✓ ${OUT}/walkin.png`);
+  } else {
+    console.log("  ! walkin.png skipped — the till did not show the walk-in state");
+  }
+  await page.close();
+}
 await owner.close();
 
 /* ══════════════════════════════════════════════════════════════════════ */

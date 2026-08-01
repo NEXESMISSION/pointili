@@ -720,6 +720,29 @@ body:has(.landing-dark) {
 }
 
 /*
+  The chevron that answers a tap. See components/GoChevron.tsx.
+
+  Both paths live in the same 24×24 box and only one is drawn at a time, so the
+  swap costs no layout. The arc appears after 120ms: a prefetched route lands
+  before that and never shows a spinner at all, which is the point — the hint is
+  for the navigations that actually make someone wait.
+*/
+.go-spin .go-arc { opacity: 0; transform-origin: 12px 12px; }
+.go-spin.is-pending .go-arrow { opacity: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .go-spin.is-pending .go-arc {
+    animation: go-appear 160ms ease-out 120ms forwards, go-turn 720ms linear 120ms infinite;
+  }
+}
+/* Still say something when motion is off — it just does not spin. */
+@media (prefers-reduced-motion: reduce) {
+  .go-spin.is-pending .go-arc { animation: go-appear 160ms ease-out 120ms forwards; }
+}
+@keyframes go-appear { to { opacity: 1; } }
+@keyframes go-turn { to { transform: rotate(360deg); } }
+
+/*
   The till's customer sheet, arriving.
 
   It used to appear between one frame and the next: keypad, then a full-screen

@@ -87,7 +87,20 @@ const FRAMES = {
   reglages: ["reglages", 120], // points par dinar, cadeau de bienvenue
 };
 
+/*
+  Stills that are not frames of a clip.
+
+  The walk-in sheet — the till holding somebody who has no account, saying
+  "ses points l'attendent" — is the strongest slide in the first carousel and no
+  clip passes through that state, because the shoot creates its own customer
+  before it films. capture.mjs photographs it separately, next to till.png.
+*/
+const STILLS = { walkin: "public/demo/walkin.png" };
+
 const shots = {};
+for (const [key, file] of Object.entries(STILLS)) {
+  shots[key] = `data:image/png;base64,${(await readFile(file)).toString("base64")}`;
+}
 {
   await mkdir("scratch/postshots", { recursive: true });
   for (const [key, [clip, frame]] of Object.entries(FRAMES)) {
@@ -108,6 +121,18 @@ const shots = {};
 
 /* ── the slides ──────────────────────────────────────────────────────── */
 
+/*
+  Three stories, not three feature lists:
+
+    1 · الكاس    "كيفاش نزيد Points ؟"   — the cashier's thirty seconds
+    2 · الحريف   "كيفاش ناخذ Cadeau ؟"   — the customer's journey
+    3 · بالحق    "شنوّة باش نربح ؟"       — why an owner should care
+
+  ONE VOCABULARY THROUGHOUT, so the brand reads as one product:
+  الحريف · Points · QR · Compte · Code · Carte · Cadeau · Scan · Stamp ·
+  Historique · Pointili. Cadeau always, never هدية — the dictionary bans the
+  Arabic in marketing and a single word everywhere is the whole point.
+*/
 const POSTS = [
   {
     dir: "post 8 - la caisse etape par etape",
@@ -116,61 +141,60 @@ const POSTS = [
     slides: [
       {
         kind: "cover",
-        ar: "كيفاش تعطي points لحريفك ؟",
-        fr: "La caisse Pointili — خطوة بخطوة",
-        note: "كل شي من التيليفون متاعك",
+        ar: "كيفاش تزيد Points للحريف ؟",
+        fr: "في أقل من 5 ثواني.",
+        note: "من التيليفون متاعك — بلا matériel",
       },
       {
         step: "1",
-        ar: "احلّ Caisse",
-        fr: "أول écran كي تدخل. فما زوز onglets : « Ajouter des points » و « Valider une récompense ».",
-        shot: "till",
+        ar: "دخّل رقم الحريف",
+        fr: "ولا اعمل Scan للـ QR متاعو إذا عندو. الزوز يخدمو كيف كيف.",
+        shot: "number",
       },
+      /*
+        THE SLIDE THAT SELLS IT, and it is true — scripts/test-walkin.mjs
+        covers exactly this: the till opens a customer with no account, says
+        "Première visite ici — ses points l'attendent", credit works before
+        signup, no ghost account is minted, and the points are on the card when
+        they join later. The screenshot is that real screen.
+      */
       {
         step: "2",
-        ar: "لقى الحريف",
-        fr: "ثلاثة طرق : تعمل Scan للـ QR متاعو، ولا تكتب نمرة التيليفون، ولا الـ code متاعو (4 حروف).",
-        shot: "number",
+        star: true,
+        badge: "حتى كان ما عندوش Compte",
+        ar: "ما عندوش Compte ؟ موش مشكل.",
+        fr: "دخّل رقم تليفونو عادي. الـ Points تستنّاه. كي يعمل Compte من بعد، يلقاهم الكل في الـ Carte متاعو — ما يضيع حتى Point.",
+        shot: "walkin",
       },
       {
         step: "3",
-        ar: "الـ fiche متاعو تتحلّ",
-        fr: "اسمو، الـ code متاعو، قداش عندو points، و الـ tampons. كل شي قدامك في écran واحد.",
-        shot: "fiche",
+        ar: "اكتب قداش خلّص",
+        fr: "بالدينار برك. Pointili يحسب الـ Points وحدو، على حساب الـ taux متاعك.",
+        shot: "montant",
       },
       {
         step: "4",
-        ar: "اكتب الدينار — موش الـ points",
-        fr: "تكتب قداش خلّص برك. Pointili يحسب الـ points وحدو على حساب الـ taux متاعك. لا إنت ولا الكاشيي تنجمو تغلطو في الحساب.",
-        shot: "montant",
-        star: true,
-      },
-      {
-        step: "5",
-        ar: "اضغط Créditer",
-        fr: "« +12 points · nouveau solde 217 ». و يوري للحريف قداش باقيلو للـ cadeau اللي جاي.",
+        ar: "أكّد العملية",
+        fr: "« Créditer » — و الحريف يلقى الـ Points متاعو على طول.",
         shot: "bravo",
       },
       {
-        step: "6",
-        ar: "عندك carte à tampons ؟",
-        fr: "« +1 tampon » — زيارة بزيارة. كي تعمر الكارت، الـ code متاع الـ cadeau يخرج وحدو.",
+        step: "5",
+        ar: "عندو Carte بالـ Stamps ؟",
+        fr: "« +1 tampon » بنفس الطريقة. كي تعمر الـ Carte، الـ Code متاع الـ Cadeau يخرج وحدو.",
         shot: "tampon",
       },
       {
-        step: "7",
-        ar: "غلطت ؟ ما يقلقكش",
-        fr: "« Corriger / Historique » : تزيد ولا تنقص، تسيّر الـ tampons، و حتى تعاود الـ code secret للحريف اللي نساه. ما يتمسح حتى شي — الـ correction تتكتب في الـ historique.",
+        step: "6",
+        ar: "غلطت ؟",
+        fr: "تنجم تصلّحها من « Corriger / Historique ». ما يتمسح حتى شي — التصليح روحو يتكتب.",
         shot: "corriger",
       },
       {
-        kind: "fact",
-        big: "5",
-        unit: "ثواني",
-        ar: "قد ما تحتاج باش تعطي points",
-        fr: "قد ما تحتاج باش ترد الصرف. بلا caisse جديدة، بلا matériel، بلا formation.",
+        kind: "cta",
+        ar: "كل عملية ما تاخذش أكثر من 5 ثواني",
+        fr: "بلا caisse جديدة · بلا matériel · بلا formation",
       },
-      { kind: "cta" },
     ],
   },
 
@@ -181,59 +205,67 @@ const POSTS = [
     slides: [
       {
         kind: "cover",
-        ar: "الحريف : من الـ QR للـ cadeau",
-        fr: "و كيفاش الـ code متاعو يوصل للكاشيي",
+        ar: "الحريف : من الـ QR للـ Cadeau 🎁",
+        fr: "كل شي يصير في أقل من دقيقة.",
         note: "بلا application — لا ليه لا ليك",
       },
       {
         step: "1",
         ar: "يعمل Scan للـ QR",
-        fr: "الـ QR على الطاولة ولا على الـ comptoir. يتحلّ في الـ navigateur — ما ينزّل حتى شي.",
+        fr: "من الكاميرا متاع التيليفون. يتحلّ في الـ navigateur.",
         shot: "qrposter",
+      },
+      /*
+        No screenshot here on purpose. The claim is about what is ABSENT — no
+        download — and a phone in the frame would be arguing the opposite.
+      */
+      {
+        kind: "honest",
+        badge: "⭐ موش لازم Application",
+        ar: "ما ينزّل حتى شي",
+        fr: "لا هو ولا إنت. و حتى كان ما عندوش Compte، الكاشيي ينجم يزيدلو Points بالرقم متاعو، و هو يعمل Compte وقت ما يحب.",
       },
       {
         step: "2",
-        ar: "يعمل compte في دقيقة",
-        fr: "نمرة التيليفون + code secret + الاسم (optionnel). بلا email، بلا mot de passe.",
+        ar: "أول مرة ؟ يعمل Compte في دقيقة",
+        fr: "بالتيليفون برك : رقم + Code secret.",
         shot: "signup",
       },
       {
         step: "3",
-        ar: "الكارت متاعو جاهزة",
-        fr: "الـ cadeau متاع الترحيب يجي على طول. يشوف قداش عندو points و قداش باقيلو.",
+        ar: "الـ Carte جاهزة",
+        fr: "كل مرة يخلّص، تزيدلو Points. و كل زيارة Stamp، كان الـ Carte بالـ Stamps.",
         shot: "card",
       },
       {
         step: "4",
-        ar: "compte واحد لكل الـ commerces",
-        fr: "« MON CODE CLIENT : JMD7 » — نفس الـ code في كل commerce يخدم بـ Pointili. عمرو ما يعاود compte جديد.",
+        ar: "Compte واحد لكل المحلات",
+        fr: "نفس الـ Code في كل commerce يخدم بـ Pointili. ما يعاودش Compte كل مرة.",
         shot: "wallet",
       },
       {
-        kind: "link",
-        ar: "هنا وين يتلاقاو",
-        fr: "الحريف يقولّك الـ code متاعو (4 حروف) ولا نمرتو. إنت تكتبها في الكاس ← نفس الـ compte، نفس الـ solde.",
-        shot: "fiche",
-      },
-      {
         step: "5",
-        ar: "كي يحب cadeau",
-        fr: "يمشي للـ boutique متاعك، يشوف قداش عندو points، و يختار.",
+        ar: "يحب Cadeau ؟",
+        fr: "يضغط على اللي يحبو. وخلاص.",
         shot: "boutique",
       },
       {
         step: "6",
-        ar: "يخرجلو code",
-        fr: "« Voici ton code : QLPYEU ». يوريهولك في الـ comptoir. code وحيد، يتستعمل مرة برك، و عندو expiration.",
+        ar: "يخرجلو Code",
+        fr: "يورّيه للكاشيي.",
         shot: "code",
       },
       {
         step: "7",
-        ar: "إنت : Vérifier ثم Collecter",
-        fr: "في الكاس، onglet « Valider une récompense ». تشوف شنوة هو الـ cadeau قبل ما تأكّد — زوز خطوات مانعرفينش، باش ما تعطيش cadeau بالغلط.",
+        ar: "الكاشيي يأكّد الـ Code",
+        fr: "يشوفو قبل، يأكّد بعد — باش ما يتعطاش Cadeau بالغلط. و الـ Code يتستعمل مرة برك.",
         shot: "till",
       },
-      { kind: "cta" },
+      {
+        kind: "cta",
+        ar: "كل العملية أقل من دقيقة",
+        fr: "بلا application · بلا email · بلا mot de passe",
+      },
     ],
   },
 
@@ -244,63 +276,69 @@ const POSTS = [
     slides: [
       {
         kind: "cover",
-        ar: "بلا كلام زايد — شنوة يعمل بالحق ؟",
-        fr: "ما نوعدوك بحتى رقم. هاو برك شنوة يعمل.",
+        ar: "بلا كلام زايد… شنوّة يعمل Pointili بالحق ؟",
+        fr: "كل شي قدّامك بالأرقام.",
         note: "الأرقام في التصاور متاع commerce démo",
       },
       {
         kind: "big",
-        ar: "الرقم اللي عمرك ما عندك : شكون رجع",
-        fr: "« Est-ce que vos clients reviennent ? » — على 7 أيام، 30 يوم، ولا من البداية، مع الفرق مع الفترة اللي قبل.",
+        ar: "الحرفاء يرجعولك ؟",
+        fr: "تشوف نسبة الرجوع بالأرقام — موش بالإحساس. على 7 أيام، 30 يوم، ولا من البداية، مع الفرق مع الفترة اللي قبل.",
         shot: "retour",
       },
+      /*
+        NOT "شكون أكثر الحرفاء نشاط". There is no per-customer ranking in the
+        product — the browsable client list was removed from the till (see
+        scripts/test-walkin.mjs) and Analyses reports aggregates only. Nothing
+        can tell an owner who "deserves a Cadeau", so the slide says the true
+        thing the same screen does answer: how often they come back, and which
+        Cadeau they actually take.
+      */
       {
         kind: "big",
-        ar: "و الفلوس اللي دازت من الكاس",
-        fr: "Ticket moyen · visites par client · entre deux visites · récompenses servies. و مكتوب بالواضح : « Uniquement ce qui est passé par la caisse Pointili ».",
-        shot: "argent",
-      },
-      {
-        kind: "honest",
-        ar: "و كي الـ données ما تكفيش، نقولوهالك",
-        fr: "أقل من 5 حرفاء ؟ Pointili يكتب « Trop tôt pour conclure ». ما نخترعولكش رقم باش يعجبك.",
-      },
-      {
-        kind: "big",
-        ar: "الـ points اللي باقية موش دين عليك",
-        fr: "« Des points que vos clients peuvent encore dépenser — pas une dette. » تعرف قداش باقي، و قداش من code تعطى و ما جاش حد يحلّو.",
+        ar: "قداش من مرة يرجعو ؟ و شنوّة يحبو ؟",
+        fr: "Visites par client · Entre deux visites · و أكثر Cadeau يتاخذ. هكا تعرف شنوّة تحط في الـ catalogue.",
         shot: "reste",
       },
       {
         kind: "big",
-        ar: "إنت اللي تحكم في كل شي",
-        fr: "Points par dinar · cadeau de bienvenue · الـ catalogue متاع الـ récompenses · الـ carte à tampons. تبدّل وقت ما تحب.",
-        shot: "reglages",
-      },
-      {
-        kind: "big",
-        ar: "و الـ kit متاع الـ QR جاهز",
-        fr: "Chevalet للطاولة · autocollant · affiche · story. تطبعهم من عندك، بلا ما تكوموندي شي.",
-        shot: "qrwhere",
+        ar: "قداش دازت فلوس من الكاس ؟",
+        fr: "Ticket moyen · عدد الزيارات · Points الموزّعين · Cadeaux اللي تعطاو. كل شي في écran واحد.",
+        shot: "argent",
       },
       {
         kind: "honest",
-        ar: "و شنوة ما يعملوش ؟",
-        fr: "ما يجيبلكش حرفاء جداد وحدو. ما نضمنولك حتى رقم. Pointili يجمع الـ points، يوري شكون رجع، و يخلّي الكارت ما تتنساش. الباقي خدمتك إنت.",
-        hard: true,
+        ar: "الـ Données تبدا من أول نهار",
+        fr: "كل زيارة… كل Point… كل Cadeau… يتسجّل وحدو. ما فماش شي تكتبو بيدك.",
+      },
+      {
+        kind: "big",
+        ar: "إنت تحدّد القوانين",
+        fr: "قداش Points في الدينار ؟ شنوّة Cadeaux ؟ و قداش Stamp ؟ كل شي من عندك.",
+        shot: "reglages",
+      },
+      {
+        kind: "honest",
+        badge: "⭐ وقت ما تحب",
+        ar: "تبدّل ولا توقّف وقت ما تحب",
+        fr: "بدّل قيمة الـ Points، بدّل الـ Cadeaux، ولا زيد جداد. يتبدّل في ثواني، و بلا engagement.",
+      },
+      {
+        kind: "big",
+        ar: "الـ QR ديما حاضر",
+        fr: "اطبعو و حطّو على الطاولة، على الكونتوار، ولا في الـ vitrine. الحريف يعمل Scan وخلاص.",
+        shot: "qrwhere",
       },
       {
         kind: "fact",
         big: "14",
         unit: "يوم gratuit",
-        ar: "جرّبو قبل ما تحكم",
-        fr: "بلا carte bancaire. تيليفون برك — ما فماش matériel تشريه.",
+        ar: "جرّب Pointili",
+        fr: "بلا carte bancaire · بلا terminal · بلا matériel",
       },
-      { kind: "cta" },
     ],
   },
 ];
-
 /* ── the look ────────────────────────────────────────────────────────── */
 
 const CSS = `
@@ -400,10 +438,23 @@ const CSS = `
   }
   .honest.hard .rule { background: #ff3b5c; }
 
+  /* the ⭐ badge — a claim that needs naming before the sentence lands */
+  .badge {
+    display: inline-block; margin-bottom: 22px;
+    background: rgba(124,58,237,.28); color: #ddd0ff;
+    border: 2px solid rgba(167,139,250,.45); border-radius: 999px;
+    padding: 12px 26px; font-size: 24px; font-weight: 800;
+  }
+  .honest .badge { margin-bottom: 30px; }
+
   .cta { text-align: center; }
   .cta .mark { font-size: 92px; font-weight: 800; letter-spacing: -.02em; direction: ltr; }
   .cta .ar { font-size: 52px; margin-top: 40px; }
   .cta .fr { font-size: 29px; margin-top: 24px; }
+  .cta .cta-line {
+    display: inline-block; margin-top: 34px;
+    font-size: 34px; font-weight: 800; color: #c4b5fd;
+  }
   .cta .site {
     margin-top: 54px; display: inline-block; direction: ltr;
     background: #7c3aed; border-radius: 999px;
@@ -428,11 +479,13 @@ function render(post, s, i) {
       <div class="ar">${esc(s.ar)}</div><div class="fr">${esc(s.fr)}</div></div>`;
   } else if (s.kind === "honest") {
     body = `<div class="body honest ${s.hard ? "hard" : ""}"><div class="rule"></div>
+      ${s.badge ? `<div><span class="badge">${esc(s.badge)}</span></div>` : ""}
       <div class="ar">${esc(s.ar)}</div><div class="fr">${esc(s.fr)}</div></div>`;
   } else if (s.kind === "cta") {
     body = `<div class="body cta"><div class="mark">Pointili</div>
-      <div class="ar">جرّبو و وقتها تحكم</div>
-      <div class="fr">14 يوم gratuit · بلا carte bancaire · تيليفون برك</div>
+      <div class="ar">${esc(s.ar ?? "جرّبو و وقتها تحكم")}</div>
+      <div class="fr">${esc(s.fr ?? "14 يوم gratuit · بلا carte bancaire · تيليفون برك")}</div>
+      <div><span class="cta-line">جرّبها اليوم</span></div>
       <div><span class="site">pointili.online</span></div></div>`;
   } else {
     /* everything with a screenshot beside it */
@@ -444,7 +497,9 @@ function render(post, s, i) {
         : "";
     body = `<div class="body ${cls}"><div class="row">
       <div class="phone"><img src="${shots[s.shot]}"></div>
-      <div class="words">${badge}<div class="ar">${esc(s.ar)}</div>
+      <div class="words">${badge}
+      ${s.badge ? `<div><span class="badge">${esc(s.badge)}</span></div>` : ""}
+      <div class="ar">${esc(s.ar)}</div>
       <div class="fr">${esc(s.fr)}</div></div>
     </div></div>`;
   }

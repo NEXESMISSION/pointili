@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { businessType } from "@/lib/businessTypes";
 import type { WalletCafe } from "@/lib/db";
 import { fmtPoints } from "@/lib/points";
+import { GoChevron } from "@/components/GoChevron";
 
 /**
  * The wallet — every shop the diner holds a card at.
@@ -179,10 +180,14 @@ export function WalletView({
  * promise is "une seule carte", the screen is called Mes cartes, and what it
  * showed was a settings list. A wallet has to hold things that look like things.
  *
- * So: a real card ratio (16/9, so two land on a phone screen), a printed face
- * rather than a flat tint, the balance as the hero rather than a right-aligned
+ * So: a card-shaped block roughly two to a phone screen, a printed face rather
+ * than a flat tint, the balance as the hero rather than a right-aligned
  * afterthought, and the shop's own identity where a loyalty card actually carries
  * it — top left, logo then name.
+ *
+ * The shape comes from a min-height, NOT from aspect-ratio. A ratio cannot lose
+ * to its own content — see the note on the className below, which is the second
+ * time this card was cut in half.
  *
  * EVERY CARD WEARS THE SAME FACE, on purpose. Telling shops apart by colour is
  * tempting and it is a decision already taken against (lib/brand.ts: owners used
@@ -210,38 +215,33 @@ function CardRow({
       <Link
         href={`/${card.slug}`}
         /*
-          A card SHAPE, not a card CAGE.
+          NO aspect-ratio. It cannot lose, and it was still cutting the card.
 
-          aspect-[16/9] plus overflow-hidden looked right and cut its own content
-          off. A card carrying the header, the next-reward line and bar, a 38px
-          balance, a stamp row AND a pending badge needs about 192px; at 350px
-          wide the box is 197 and at 320px it is only 180, so the bottom of a busy
-          card was simply sliced away — on exactly the phones most likely to be
-          used.
+          The previous attempt kept `aspect-[16/9]` and added `h-auto` plus
+          `min-h-[196px]`, on the theory that a busy card would grow past the
+          ratio. It does not. With aspect-ratio set and height auto, the used
+          height IS width ÷ ratio; min-height only raises a floor, and content
+          taller than the result overflows rather than pushing the box. Measured
+          in the browser, 348px wide with 292px of content:
 
-          min-height keeps the proportion as a floor: an ordinary card is still
-          16/9, a full one grows a few pixels rather than hiding what it holds.
-          The aspect-ratio property stays so the shape survives when there is
-          little content, and `h-auto` lets it lose.
+            aspect-ratio 16/9  → box 196px, content 292px   (96px sliced off)
+            aspect-ratio auto  → box 292px, content 292px   (fits)
+
+          So a card carrying the header, the reward line and bar, a 38px balance
+          AND a stamp row lost its bottom — the last of the digits, the tampons
+          line, and the bottom of the chevron, which is the only interactive
+          thing on the card and the reason it kept being reported as "cropped".
+
+          min-height alone gives the shape: a sparse card still reads as a card,
+          a full one is as tall as what it holds. Flexbox moves here from the
+          inner wrapper so justify-between still distributes across that minimum.
         */
         /*
-          w-full is load-bearing, not tidiness.
-
-          aspect-ratio and a definite min-height together produce a TRANSFERRED
-          MINIMUM in the other axis: 196px × 16/9 = 348px of minimum WIDTH. On a
-          360px phone the column is 320px wide, so the card was 28px wider than
-          the screen and the page scrolled sideways; at 320px it was 68px over.
-          What you actually see is the right rim gone and the chevron — the only
-          interactive thing on the card — sitting half off the edge or past it
-          entirely. That is the "arrow is cropped" report, and it is invisible at
-          390px, which is the width every screenshot in this repo was taken at.
-
-          width:100% overrides the transferred minimum and keeps both properties
-          doing their real jobs: the ratio still sets the shape, min-height still
-          stops a busy card being sliced. (max-width:100% also works; min-width:0
-          does NOT — measured, all three.)
+          w-full stays. With the ratio gone it no longer has a transferred
+          minimum width to fight, but a block-level anchor is not full-width by
+          default and the card must fill its column.
         */
-        className={`group relative block aspect-[16/9] h-auto min-h-[196px] w-full overflow-hidden rounded-[22px] p-4 transition active:scale-[0.985] ${
+        className={`group relative flex min-h-[196px] w-full flex-col rounded-[22px] p-4 transition active:scale-[0.985] ${
           current ? "ring-2 ring-white/45" : "ring-1 ring-white/[0.16]"
         }`}
         style={{
@@ -285,7 +285,9 @@ function CardRow({
           interactive element on the card read as a smudge behind glass rather
           than as a button. Texture is not worth breaking an affordance for.
         */}
-        <div className="relative flex h-full flex-col justify-between">
+        {/* flex-1, not h-full: the card's height is now its own content plus a
+            minimum, and a percentage height against that resolves to auto. */}
+        <div className="relative flex flex-1 flex-col justify-between gap-3">
           {/* ── the shop ── */}
           <div className="flex items-start gap-2.5">
             {card.logoUrl ? (
@@ -382,11 +384,7 @@ function CardRow({
               )}
             </span>
 
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/[0.18] text-white ring-1 ring-white/25 transition group-active:bg-white/30">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]" aria-hidden>
-                <path d="m9 18 6-6-6-6" />
-              </svg>
-            </span>
+            <GoChevron />
           </div>
         </div>
       </Link>
