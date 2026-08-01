@@ -30,7 +30,7 @@
  * and every slide showing one says so.
  */
 import { chromium } from "playwright-core";
-import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
