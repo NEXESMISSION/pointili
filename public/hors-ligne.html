@@ -2,60 +2,109 @@
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#5b3fd1" />
     <title>Hors ligne · Pointili</title>
+    <link rel="icon" href="/icon-192.png" />
     <!--
-      Static and dependency-free on purpose: this is the page the service worker
-      serves when there is no network, so it cannot fetch a font, a stylesheet or
-      an icon at the moment it is needed. Everything is inline.
+      Static and dependency-free ON PURPOSE. The service worker serves this when
+      there is no network at all, so it cannot fetch a font, a stylesheet or an
+      image at the moment it is needed. The logo is a data URI for the same
+      reason: referencing /icon-192.png would work only while that file is still
+      in the cache, and "the logo is missing" is exactly the failure this screen
+      exists to avoid.
 
       It does not pretend to work offline. Pointili is a live points ledger — a
       cached balance is worse than no balance, because a cashier would credit
-      against a number that is no longer true. So this says the honest thing and
-      offers the one useful action.
+      against a number that is no longer true. So it says the honest thing,
+      keeps the brand, and gets out of the way the moment the signal returns.
     -->
     <style>
       :root { color-scheme: dark }
       * { box-sizing: border-box }
+      html, body { height: 100% }
       body {
         margin: 0;
         min-height: 100dvh;
         display: grid;
         place-items: center;
-        padding: 24px;
+        padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
         text-align: center;
-        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
         color: #fff;
-        background:
-          radial-gradient(90% 40% at 50% -6%, #6b4bd8 0%, transparent 60%),
-          linear-gradient(180deg, #2b1c66 0%, #150c33 40%, #07030f 100%);
+        background-color: #07030f;
+        background-image:
+          radial-gradient(95% 42% at 50% -4%, #6a4dd6 0%, transparent 58%),
+          linear-gradient(180deg, #3b2a86 0%, #221862 42%, #120c2c 72%, #07030f 100%);
+        background-attachment: fixed;
+      }
+      main { animation: rise .5s cubic-bezier(.2,.9,.3,1) both }
+      @keyframes rise {
+        from { opacity: 0; transform: translate3d(0, 12px, 0) }
+        to   { opacity: 1; transform: none }
       }
       .mark {
-        width: 62px; height: 62px; margin: 0 auto 20px;
-        border-radius: 18px; background: #f8f7fc;
-        display: grid; place-items: center;
+        width: 76px; height: 76px; margin: 0 auto 22px;
+        border-radius: 22px; overflow: hidden;
+        background: #f8f7fc;
+        box-shadow: 0 18px 44px -14px rgba(0,0,0,.75);
       }
-      .mark span { font-size: 28px; line-height: 1 }
-      h1 { margin: 0 0 10px; font-size: 22px; font-weight: 800; letter-spacing: -0.02em }
-      p { margin: 0 auto; max-width: 30ch; font-size: 14px; line-height: 1.65; color: rgba(255,255,255,.6) }
-      a {
-        display: inline-block; margin-top: 22px; padding: 13px 26px;
+      .mark img { width: 100%; height: 100%; display: block }
+      h1 { margin: 0 0 10px; font-size: 23px; font-weight: 800; letter-spacing: -.02em }
+      p { margin: 0 auto; max-width: 30ch; font-size: 14px; line-height: 1.65; color: rgba(255,255,255,.62) }
+      button {
+        margin-top: 24px; padding: 14px 30px; border: 0;
         border-radius: 999px; background: #7c3aed;
-        font-size: 14px; font-weight: 700; color: #fff; text-decoration: none;
+        font: inherit; font-size: 14px; font-weight: 700; color: #fff;
+        cursor: pointer; transition: transform .12s;
       }
+      button:active { transform: scale(.97) }
       .note { margin-top: 26px; font-size: 12px; color: rgba(255,255,255,.35) }
+      /* the live signal, so nobody sits here tapping a button that cannot work */
+      .dot {
+        display: inline-block; width: 7px; height: 7px; margin-right: 6px;
+        border-radius: 50%; background: #ff8a8a; vertical-align: middle;
+        animation: pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+      @media (prefers-reduced-motion: reduce) {
+        main, .dot { animation: none }
+      }
     </style>
   </head>
   <body>
     <main>
-      <div class="mark"><span>✦</span></div>
+      <div class="mark">
+        <img src="data:image/png;base64,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" alt="Pointili" width="76" height="76" />
+      </div>
       <h1>Pas de connexion</h1>
       <p>
         Tes points sont en sécurité — ils sont enregistrés chez Pointili, pas sur
         ton téléphone. Reconnecte-toi et tout sera là.
       </p>
-      <a href="/">Réessayer</a>
+      <button type="button" id="retry"><span class="dot" id="dot"></span>Réessayer</button>
       <p class="note">pointili.online</p>
     </main>
+    <script>
+      /*
+        Inline, because an external script is one more thing that cannot load.
+        Two jobs: retry on demand, and retry BY ITSELF the moment the phone has
+        signal again — somebody who walks back into wifi should not have to
+        discover that this screen has a button on it.
+      */
+      var retry = document.getElementById("retry");
+      var dot = document.getElementById("dot");
+      function go() { location.replace("/"); }
+      retry.addEventListener("click", go);
+      window.addEventListener("online", go);
+      function paint() {
+        var on = navigator.onLine;
+        dot.style.background = on ? "#7ff0b0" : "#ff8a8a";
+        retry.lastChild.textContent = on ? "Recharger" : "Réessayer";
+      }
+      window.addEventListener("online", paint);
+      window.addEventListener("offline", paint);
+      paint();
+    </script>
   </body>
 </html>

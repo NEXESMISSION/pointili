@@ -151,25 +151,44 @@ async function ready(page, url) {
   lead.set(page, (Date.now() - born.get(page)) / 1000);
 }
 
+/** Clips whose flow threw. Their footage is discarded, not published. */
+const failed = [];
+
+/*
+  A FAILED FLOW MUST NOT REPLACE A GOOD CLIP.
+
+  This used to log the error and carry on writing the video anyway, so a flow
+  that died waiting for a dialog still produced a plausible file — 25 seconds of
+  a till stuck on "Non autorisé", 565 KB, indistinguishable from a good clip in
+  a directory listing. It reached the point of being committed. Twice now the
+  only thing standing between a broken asset and the landing page was somebody
+  happening to open it.
+
+  Now a thrown flow drops the footage on the floor, the previous clip survives
+  untouched, and the shoot exits non-zero naming what broke.
+*/
 async function clip(ctx, name, flow) {
   console.log(`filming: ${name}`);
   const page = await ctx.newPage();
   born.set(page, Date.now());
+  let ok = true;
   try {
     await flow(page);
-    await page.screenshot({ path: `${OUT}/${name}.png` });
   } catch (e) {
-    console.log(`  ! ${name}: ${String(e.message).split("\n")[0].slice(0, 90)}`);
+    ok = false;
+    failed.push(`${name}: ${String(e.message).split("\n")[0].slice(0, 90)}`);
+    console.log(`  ! ${name} FAILED — keeping the previous clip`);
   }
   const video = page.video();
   const cut = Math.max(0, (lead.get(page) ?? 1.2) - 0.15);
   await page.close();
-  if (video) pending.push({ from: await video.path(), name, cut });
+  if (video && ok) pending.push({ from: await video.path(), name, cut });
 }
 
 /** Type like a person, so the clip does not look like a script. */
 async function human(page, selector, text, delay = 140) {
-  await page.click(selector);
+  /* through tap(), because focusing a field below the fold teleports too */
+  await tap(page, page.locator(selector).first());
   for (const ch of text) {
     await page.type(selector, ch, { delay: 0 });
     await page.waitForTimeout(delay);
@@ -178,6 +197,55 @@ async function human(page, selector, text, delay = 140) {
 
 const beat = (page, ms = 900) => page.waitForTimeout(ms);
 
+/**
+ * Scroll the way a thumb does, not the way a script does.
+ *
+ * page.mouse.wheel(0, 380) dispatches ONE wheel event carrying the whole
+ * distance, and the browser applies it in a single compositor frame. On a 25fps
+ * recording that is a full-page teleport between two frames — the header is
+ * there, then it is gone — which is exactly what reads as "glitching" when the
+ * clip plays. Nothing is corrupt; the camera faithfully recorded a jump.
+ *
+ * This walks the same distance in ~40ms steps, eased in and out so it starts
+ * and settles like a flick rather than a machine, giving the recorder a frame
+ * for every few pixels of travel.
+ */
+async function glide(page, distance, ms = 1200) {
+  const steps = Math.max(14, Math.round(ms / 40));
+  const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+  let done = 0;
+  for (let i = 1; i <= steps; i++) {
+    const target = Math.round(distance * ease(i / steps));
+    const step = target - done;
+    done = target;
+    if (step) await page.mouse.wheel(0, step);
+    await page.waitForTimeout(ms / steps);
+  }
+}
+
+/**
+ * Click something, having first travelled to it.
+ *
+ * Playwright's own .click() scrolls the target into view when it is below the
+ * fold — instantly, in one compositor frame, exactly the teleport that glide()
+ * exists to avoid. Reaching the element under our own power first means the
+ * click itself has nothing left to scroll, so the picture stays continuous.
+ *
+ * The element is parked around 45% down the screen rather than at the very
+ * edge, so the viewer sees what was pressed and what it sits among.
+ */
+async function tap(page, locator, ms = 850) {
+  const box = await locator.boundingBox().catch(() => null);
+  if (box) {
+    const travel = Math.round(box.y + box.height / 2 - PHONE_SIZE.height * 0.45);
+    if (Math.abs(travel) > 24) {
+      await glide(page, travel, ms);
+      await beat(page, 320);
+    }
+  }
+  await locator.click();
+}
+
 /** Open the till and find our customer BY PHONE — the walk-in path. */
 async function findByPhone(page) {
   await ready(page, `${BASE}/owner`);
@@ -185,7 +253,7 @@ async function findByPhone(page) {
   await beat(page, 600);
   await human(page, 'input[name="customer"]', NUM, 130);
   await beat(page, 400);
-  await page.locator('button:has-text("Chercher")').click();
+  await tap(page, page.locator('button:has-text("Chercher")'));
   await page.locator('[role="dialog"]').waitFor({ timeout: 20000 });
   await beat(page, 700);
 }
@@ -247,6 +315,21 @@ const owner = await context();
     console.error("If the password changed: DEMO_PASSWORD=… node scripts/capture.mjs");
     process.exit(1);
   }
+  /*
+    PROVE THE SESSION BEFORE FILMING, not during.
+
+    Landing off /login means the page renders, which is a weaker claim than it
+    looks: the layout reads the session server-side, but a SERVER ACTION posted
+    a moment later can still arrive with the cookie Supabase just rotated away.
+    That is not hypothetical — the till rendered perfectly, complete with the
+    café name, and then answered the very first search with "Non autorisé",
+    producing 25 seconds of unusable footage.
+
+    So: load the till, wait for it to settle, and only then let the clips run.
+  */
+  await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await page.locator('input[name="customer"]').waitFor({ timeout: 20000 });
+  await page.waitForTimeout(1800);
   console.log("signed in — every owner clip shares this session\n");
   await page.close();
 }
@@ -255,7 +338,7 @@ await clip(owner, "credit", async (page) => {
   await findByPhone(page);
   await human(page, 'input[name="amount"]', "12", 190);
   await beat(page, 450);
-  await page.locator('button:has-text("Créditer")').click();
+  await tap(page, page.locator('button:has-text("Créditer")'));
   await beat(page, 3400);
 });
 
@@ -263,39 +346,39 @@ await clip(owner, "stamp", async (page) => {
   await findByPhone(page);
   const stamp = page.locator('button:has-text("tampon")').first();
   if (!(await stamp.count())) throw new Error("stamps are off for this café");
-  await stamp.click();
+  await tap(page, stamp);
   await beat(page, 3200);
 });
 
 await clip(owner, "analyses", async (page) => {
   await ready(page, `${BASE}/owner/analyses`);
   await beat(page, 1400);
-  for (let i = 0; i < 3; i++) { await page.mouse.wheel(0, 380); await beat(page, 1200); }
+  for (let i = 0; i < 3; i++) { await glide(page, 380, 1300); await beat(page, 900); }
 });
 
 await clip(owner, "reglages", async (page) => {
   await ready(page, `${BASE}/owner/reglages`);
   await beat(page, 1100);
   const row = page.locator('button:has-text("Les points")').first();
-  if (await row.count()) { await row.click(); await beat(page, 2400); }
-  else { await page.mouse.wheel(0, 480); await beat(page, 1700); }
+  if (await row.count()) { await tap(page, row); await beat(page, 2400); }
+  else { await glide(page, 480, 1500); await beat(page, 1200); }
 });
 
 await clip(owner, "qr", async (page) => {
   await ready(page, `${BASE}/owner/qr`);
   await beat(page, 1400);
-  await page.mouse.wheel(0, 420);
-  await beat(page, 1600);
+  await glide(page, 420, 1400);
+  await beat(page, 1200);
 });
 
 await clip(owner, "correction", async (page) => {
   await findByPhone(page);
   const more = page.locator('button:has-text("Corriger")').first();
   if (!(await more.count())) throw new Error("no correction control on the sheet");
-  await more.click();
+  await tap(page, more);
   await beat(page, 1900);
-  await page.mouse.wheel(0, 240);
-  await beat(page, 1900);
+  await glide(page, 240, 1100);
+  await beat(page, 1600);
 });
 
 /* one retina still, in the same live session */
@@ -327,8 +410,8 @@ const diner = await context();
 await clip(diner, "carte", async (page) => {
   await ready(page, `${BASE}/${SHOP}`);
   await beat(page, 1500);
-  await page.mouse.wheel(0, 420);
-  await beat(page, 1600);
+  await glide(page, 420, 1400);
+  await beat(page, 1200);
 });
 
 await clip(diner, "redeem", async (page) => {
@@ -336,15 +419,15 @@ await clip(diner, "redeem", async (page) => {
   await beat(page, 1300);
   const buy = page.locator('form button[type="submit"]').first();
   if (!(await buy.count()) || !(await buy.isEnabled())) throw new Error("nothing affordable to buy");
-  await buy.click();
+  await tap(page, buy);
   await beat(page, 3400);
 });
 
 await clip(diner, "wallet", async (page) => {
   await ready(page, `${BASE}/cartes`);
   await beat(page, 1800);
-  await page.mouse.wheel(0, 300);
-  await beat(page, 1500);
+  await glide(page, 300, 1200);
+  await beat(page, 1200);
 });
 
 await diner.close();
@@ -420,3 +503,17 @@ export const DEMO_VERSION = "${stamp}";
   await svc.from("accounts").delete().eq("phone", norm);
   console.log("cleaned up the shoot's customer");
 }
+
+/*
+  Say so, loudly, and fail.
+
+  The cleanup above always runs — a half-finished shoot must still not leave a
+  customer behind in the real database — but a shoot that could not film
+  everything is not a shoot you should push.
+*/
+if (failed.length) {
+  console.error(`\n${failed.length} clip(s) did not film. The previous versions are untouched:`);
+  for (const f of failed) console.error(`  ! ${f}`);
+  process.exit(1);
+}
+console.log("\nall clips filmed");

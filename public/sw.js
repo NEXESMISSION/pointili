@@ -21,12 +21,32 @@
   the network genuinely is not there.
 */
 
-const VERSION = "pointili-v1";
+/*
+  Bump this whenever /hors-ligne.html changes.
+
+  The cache key IS the version: activate deletes every key that is not this one,
+  so a rename is a real reset. Leaving it alone would have left every phone that
+  already installed the app serving the OLD offline screen forever — the new one
+  would exist on the server and never be seen by the only people who can reach
+  it.
+*/
+const VERSION = "pointili-v2";
 const OFFLINE_URL = "/hors-ligne.html";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(VERSION).then((cache) => cache.addAll([OFFLINE_URL, "/icon-192.png"])),
+    caches.open(VERSION).then((cache) =>
+      /*
+        cache: "reload" so the precache goes to the NETWORK, not to the HTTP
+        cache. Without it a phone can dutifully build a fresh v2 cache out of
+        the stale v1 copy sitting in its browser cache, and the version bump
+        achieves nothing.
+      */
+      cache.addAll([
+        new Request(OFFLINE_URL, { cache: "reload" }),
+        new Request("/icon-192.png", { cache: "reload" }),
+      ]),
+    ),
   );
   // Take over immediately rather than waiting for every tab to close — there is
   // no cached app shell here, so there is no old version to conflict with.

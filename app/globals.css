@@ -814,6 +814,36 @@ body:has(.landing-dark) {
    queue and wants the till back, the customer is holding their own phone and
    this is the payoff for a month of coffees. Rays turn, the medallion lands,
    the words arrive in sequence. Still transform/opacity only. */
+/* ══ the launch screen ═════════════════════════════════════════════════
+   components/Splash — the gap between tapping the installed icon and the app
+   being there. Two animations, both transform/opacity only, because this runs
+   on the slowest moment of the slowest device. */
+.splash-mark {
+  animation: splash-breathe 2.4s ease-in-out infinite;
+}
+@keyframes splash-breathe {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.045); }
+}
+/* travels the rail and back — indeterminate on purpose, see Splash.tsx */
+.splash-bar {
+  animation: splash-slide 1.25s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes splash-slide {
+  0%   { transform: translate3d(-110%, 0, 0); }
+  100% { transform: translate3d(320%, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash-mark,
+  .splash-bar {
+    animation: none;
+  }
+  .splash-bar {
+    width: 100%;
+    opacity: 0.5;
+  }
+}
+
 .unlock-veil {
   animation: unlock-in 0.28s ease-out both;
 }
