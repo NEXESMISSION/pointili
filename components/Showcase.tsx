@@ -1,4 +1,5 @@
 import { CheckIcon } from "@/components/icons";
+import { DEMO_VERSION } from "@/components/demoVersion";
 
 /*
   THE PRODUCT, FILMED, EXPLAINED ONE CAPABILITY AT A TIME.
@@ -37,11 +38,11 @@ const SHOTS: Shot[] = [
   {
     eyebrow: "Encaisser",
     title: "Cinq secondes, pendant que vous rendez la monnaie",
-    lede: "Le client annonce ses quatre caractères. Vous tapez le montant en dinars. C'est fini.",
+    lede: "Le client donne son numéro de téléphone. Vous tapez le montant en dinars. C'est fini.",
     facts: [
+      "Le numéro suffit — le client n'a rien à sortir",
       "Vous tapez des DINARS, jamais des points",
-      "Le calcul se fait sur le serveur, à votre taux",
-      "Ni le caissier ni le client ne peuvent inventer un solde",
+      "Le calcul se fait sur le serveur : personne n'invente un solde",
     ],
     clip: "/demo/credit.webm",
     poster: "/demo/credit.png",
@@ -166,8 +167,8 @@ function Row({ shot, flip }: { shot: Shot; flip: boolean }) {
               preload="none" keeps eight clips off the wire until they are wanted.
             */}
             <video
-              src={shot.clip}
-              poster={shot.poster}
+              src={`${shot.clip}?v=${DEMO_VERSION}`}
+              poster={shot.poster && `${shot.poster}?v=${DEMO_VERSION}`}
               autoPlay
               muted
               loop
