@@ -6,6 +6,7 @@ import { getCafe, getLoyaltyProgram, getMember, getRewards, nextRewardNudge } fr
 import { balanceSinceLastOpen, touchCardOpened } from "@/lib/db";
 import type { LoyaltyProgram } from "@/lib/types";
 import { CardArrived } from "@/components/CardArrived";
+import { CountUp } from "@/components/CountUp";
 import { RewardUnlocked } from "@/components/RewardUnlocked";
 import { fmtPoints } from "@/lib/points";
 
@@ -99,7 +100,17 @@ export default async function Carte({
               <Sparkle className="h-4 w-4" />
             </span>
             <span className="leading-none">
-              <span className="block text-[18px] font-extrabold tabular-nums">{fmtPoints(diner.balance)}</span>
+              {/*
+                Counts up from the balance at the last visit, so the points
+                earned since then are something the customer WATCHES arrive
+                rather than something they have to work out. seen.before was
+                already being computed and thrown away.
+              */}
+              <CountUp
+                from={seen.before}
+                to={diner.balance}
+                className="block text-[18px] font-extrabold tabular-nums"
+              />
               <span className="block text-[10px] font-semibold text-white/60">points</span>
             </span>
           </div>
@@ -157,10 +168,10 @@ export default async function Carte({
           <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-white/55">
             Récompenses à récupérer
           </p>
-          <ul className="space-y-2">
-            {diner.codes.map((c) => (
+          <ul className="stagger space-y-2">
+            {diner.codes.map((c, i) => (
               <li
-                key={c.code}
+                key={c.code} style={{ ["--i" as string]: i }}
                 className="flex items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/[0.07] px-4 py-3"
               >
                 <span className="min-w-0">
@@ -187,9 +198,9 @@ export default async function Carte({
               Voir tout
             </Link>
           </div>
-          <ul className="mt-2.5 space-y-2">
-            {offers.map((r) => (
-              <li key={r.id}>
+          <ul className="stagger mt-2.5 space-y-2">
+            {offers.map((r, i) => (
+              <li key={r.id} style={{ ["--i" as string]: i }}>
                 <Link
                   href={`/${slug}/boutique`}
                   className="flex items-center gap-3.5 rounded-2xl border border-white/12 bg-white/[0.06] px-3.5 py-3 active:scale-[0.99]"

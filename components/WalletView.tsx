@@ -146,10 +146,11 @@ export function WalletView({
             : "Scanne le QR d'un commerce pour ajouter ta première carte."}
         </p>
       ) : (
-        <ul className="space-y-3">
-          {shown.map((c) => (
+        <ul className="stagger space-y-3">
+          {shown.map((c, i) => (
             <CardRow
               key={c.businessId}
+              index={i}
               card={c}
               current={c.slug === backSlug}
               nudge={nudges[c.businessId] ?? null}
@@ -189,12 +190,23 @@ export function WalletView({
  * cards from one issuer look alike too; the logo and the name identify the shop,
  * and one house style is what makes a wallet of six of them look like a wallet.
  */
-function CardRow({ card, current, nudge }: { card: WalletCafe; current: boolean; nudge: Nudge }) {
+function CardRow({
+  card,
+  current,
+  nudge,
+  index,
+}: {
+  card: WalletCafe;
+  current: boolean;
+  nudge: Nudge;
+  /** Position in the list — only used to stagger the arrival. */
+  index: number;
+}) {
   const t = businessType(card.businessType);
   const pending = card.pendingWins + card.pendingRewards;
 
   return (
-    <li>
+    <li style={{ ["--i" as string]: index }}>
       <Link
         href={`/${card.slug}`}
         /*

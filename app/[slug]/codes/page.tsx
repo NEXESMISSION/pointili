@@ -54,9 +54,9 @@ export default async function Codes({
           </p>
         </div>
       ) : (
-        <ul className="space-y-2.5">
-          {codes.map((c) => (
-            <li key={c.code} className="d-card flex items-center justify-between gap-3 px-4 py-3.5">
+        <ul className="stagger space-y-2.5">
+          {codes.map((c, i) => (
+            <li key={c.code} style={{ ["--i" as string]: i }} className="d-card flex items-center justify-between gap-3 px-4 py-3.5">
               <span className="min-w-0">
                 <span className="block text-[10.5px] font-bold uppercase tracking-[0.06em] text-white/50">
                   {KIND_LABEL[c.kind] ?? "Récompense"}

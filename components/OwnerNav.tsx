@@ -123,8 +123,30 @@ export function OwnerSidebar({
         </ul>
       </nav>
 
+      {/*
+        The way back to the public site.
+
+        "/" redirects a signed-in owner to their till — which is right, they
+        open this app to serve a queue, not to read their own sales page. But
+        there was no way OUT: the only link leaving the owner app anywhere was
+        /conditions, so an owner who wanted to look at their own landing page,
+        or show it to somebody across a table, was locked out of it by being a
+        customer. ?pro=1 already existed as the escape hatch and nothing in the
+        product ever said so.
+      */}
+      <Link
+        href="/?pro=1"
+        className="mt-auto flex items-center gap-2 rounded-xl px-3 py-2.5 text-[12.5px] font-semibold text-white/40 transition hover:bg-white/[0.06] hover:text-white/70"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+          <path d="M15 3h6v6M10 14 21 3" />
+        </svg>
+        Voir le site public
+      </Link>
+
       {plan && (
-        <span className={`mt-auto self-start rounded-full px-2.5 py-1 text-[10px] font-bold ${plan.cls}`}>
+        <span className={`self-start rounded-full px-2.5 py-1 text-[10px] font-bold ${plan.cls}`}>
           {plan.text}
         </span>
       )}

@@ -689,6 +689,36 @@ body:has(.landing-dark) {
    With prefers-reduced-motion the panel still appears and still says the same
    words; only the movement is dropped. A congratulation nobody asked for is not
    worth making somebody nauseous. */
+/*
+  A LIST THAT ARRIVES INSTEAD OF APPEARING.
+
+  Every list on the diner side — the wallet, the rewards, the pending codes —
+  painted all at once, which is what a document does. A phone app deals its rows
+  in, and the eye follows the sequence instead of re-scanning a block that was
+  suddenly there.
+
+  Usage: `.stagger` on the <ul>, `style={{ "--i": index }}` on each <li>. The
+  index only delays the start, so row 8 is not still waiting a second later —
+  the cap keeps a long list from turning into a queue.
+
+  Transform and opacity only: both are compositor-only properties, so this stays
+  smooth on the cheap Android the customer is actually holding. Anything that
+  animated height or margin would relayout the page on every frame.
+
+  `both` matters — it holds the from-state before the delay elapses. Without it
+  a row flashes at full opacity, then jumps back to start.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  .stagger > * {
+    animation: stagger-in 0.4s cubic-bezier(0.16, 0.9, 0.3, 1) both;
+    animation-delay: calc(min(var(--i, 0), 7) * 55ms);
+  }
+}
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
 .arrive-veil {
   background: rgba(7, 3, 15, 0.88);
   backdrop-filter: blur(3px);

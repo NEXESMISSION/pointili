@@ -109,6 +109,25 @@ export default async function Reglages() {
               {owner?.email ?? "—"}
             </span>
           </div>
+
+          {/*
+            ?pro=1, because "/" sends a signed-in owner to their till. The
+            sidebar carries this too, but the sidebar is laptop-only and most
+            owners never see one — on a phone Réglages is the only screen with
+            room for a link that is not part of serving a customer.
+          */}
+          <Link
+            href="/?pro=1"
+            className="flex items-center justify-between gap-3 px-4 py-3.5 transition active:bg-white/[0.05]"
+          >
+            <span className="shrink-0 text-[14.5px] font-semibold text-white">Site public</span>
+            <span className="flex min-w-0 items-center gap-1.5 truncate text-right text-[13px] font-bold text-white/60">
+              pointili.online
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0">
+                <path d="M15 3h6v6M10 14 21 3" />
+              </svg>
+            </span>
+          </Link>
         </div>
       </section>
 

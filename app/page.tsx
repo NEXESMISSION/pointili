@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BrandLockup } from "@/components/BrandMark";
 import { currentDiner } from "@/lib/auth/diner";
+import { LiveDemo } from "@/components/LiveDemo";
 import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
 import { ShopArt } from "./LandingArt";
@@ -39,9 +40,7 @@ const Scissors = ({ className = "h-6 w-6" }: I) => <S className={className}><cir
 const Bag = ({ className = "h-6 w-6" }: I) => <S className={className}><path d="M5 8h14l-1 12H6Z" /><path d="M9 8V6a3 3 0 0 1 6 0v2" /></S>;
 const Lipstick = ({ className = "h-6 w-6" }: I) => <S className={className}><path d="M9.5 10V6.5a2 2 0 0 1 2-2l3 1.2v4.3" /><rect x="8.5" y="10" width="7" height="10" rx="1.5" /></S>;
 const Phone = ({ className = "h-6 w-6" }: I) => <S className={className}><rect x="6" y="2.5" width="12" height="19" rx="3" /><path d="M11 18.5h2" /></S>;
-const CardIco = ({ className = "h-6 w-6" }: I) => <S className={className}><rect x="2.5" y="5.5" width="19" height="13" rx="2.5" /><path d="M2.5 10h19" /></S>;
 const Star = ({ className = "h-6 w-6" }: I) => <S className={className}><path d="m12 3.5 2.6 5.6 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.9l6-.8Z" /></S>;
-const Gift = ({ className = "h-6 w-6" }: I) => <S className={className}><path d="M3.5 11h17v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z" /><path d="M2.5 7.5h19V11h-19zM12 7.5V22" /><path d="M12 7.5S10.9 3.5 8.7 3.5a2.1 2.1 0 0 0 0 4.2H12Zm0 0s1.1-4 3.3-4a2.1 2.1 0 0 1 0 4.2H12Z" /></S>;
 const Chart = ({ className = "h-6 w-6" }: I) => <S className={className}><path d="M5 20V11M10 20V4M15 20v-6M20 20V8" /></S>;
 const Arrow = ({ className = "h-4 w-4" }: I) => <S className={className} strokeWidth="2.2"><path d="M5 12h13M12 6l6 6-6 6" /></S>;
 const Check = ({ className = "h-3.5 w-3.5" }: I) => <S className={className} strokeWidth="3"><path d="m5 12.5 4.5 4.5L19 7" /></S>;
@@ -52,13 +51,6 @@ const TRADES = [
   { Icon: Scissors, label: "Barbiers" },
   { Icon: Bag, label: "Boutiques" },
   { Icon: Lipstick, label: "Salons" },
-];
-
-const STEPS = [
-  { n: "01", Icon: Phone, a: "Le client scanne", b: "le QR code" },
-  { n: "02", Icon: CardIco, a: "Il reçoit sa", b: "carte fidélité" },
-  { n: "03", Icon: Star, a: "Il cumule", b: "des points" },
-  { n: "04", Icon: Gift, a: "Il récupère", b: "sa récompense" },
 ];
 
 const FEATURES = [
@@ -256,32 +248,14 @@ export default async function Landing({
           Comment <span className="text-[#8b5cf6]">ça marche</span>
         </h2>
 
-        <ol className="rise relative mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
-          {/* the thread the steps hang from — one line, behind everything */}
-          <span
-            aria-hidden
-            className="absolute left-0 right-0 top-[37px] hidden h-px md:block"
-            style={{ background: "linear-gradient(90deg,transparent,rgba(167,139,250,.28) 12%,rgba(167,139,250,.28) 88%,transparent)" }}
-          />
-          {STEPS.map(({ n, Icon, a, b }) => (
-            <li key={n} className="relative flex flex-col items-center text-center">
-              <span className="relative z-10">
-                {/* solid fill, so the thread passes behind and not through */}
-                <span className="grid h-[74px] w-[74px] place-items-center rounded-full border border-white/[0.09] bg-[#0d0919] transition group-hover:border-white/20">
-                  <Icon className="h-7 w-7 text-white/90" />
-                </span>
-                <span className="absolute -left-3 -top-1 grid h-[26px] w-[26px] place-items-center rounded-full bg-[#7c3aed] font-mono text-[10px] font-bold text-white tabular-nums">
-                  {n}
-                </span>
-              </span>
-              <p className="mt-5 text-[13.5px] font-semibold leading-snug text-white/75">
-                {a}
-                <br />
-                {b}
-              </p>
-            </li>
-          ))}
-        </ol>
+        <p className="mt-3 max-w-[52ch] text-[15px] leading-relaxed text-white/55">
+          Pas une description — la carte ci-dessous est construite avec le CSS du
+          vrai produit. Regardez-la tourner, ou pilotez-la vous-même.
+        </p>
+
+        <div className="rise mt-10">
+          <LiveDemo />
+        </div>
       </section>
 
       {/* ── three features ───────────────────────────────────────── */}
