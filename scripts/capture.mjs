@@ -290,6 +290,41 @@ const svc = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE
 const { data: biz } = await svc.from("businesses").select("id").eq("slug", SHOP).single();
 await svc.rpc("credit_points", { p_business_id: biz.id, p_phone: `+216${NUM}`, p_amount_tnd: 195 });
 
+/*
+  FROM HERE ON, A CUSTOMER EXISTS IN THE REAL DATABASE.
+
+  The teardown at the bottom of this file only runs if the script reaches it,
+  and it does not: a failed sign-in calls process.exit(1) fifteen lines below,
+  which skipped the cleanup entirely and left the account, its points and its
+  card sitting in production — quietly inflating the very analytics the landing
+  page then films. Three of them accumulated before anyone looked.
+
+  Registering it here means the customer is removed however this script ends:
+  cleanly, by throw, or by exit.
+*/
+let cleaned = false;
+async function removeShootCustomer() {
+  if (cleaned) return;
+  cleaned = true;
+  const norm = `+216${NUM}`;
+  for (const t of ["loyalty_redemptions", "stamp_rewards", "loyalty_stamps"]) {
+    await svc.from(t).delete().eq("phone", norm);
+  }
+  await svc.from("points_ledger").delete().eq("customer_phone", norm);
+  await svc.from("diner_cafes").delete().eq("phone", norm);
+  await svc.from("pin_attempts").delete().eq("phone", norm);
+  await svc.from("accounts").delete().eq("phone", norm);
+  console.log("cleaned up the shoot's customer");
+}
+
+/* process.exit() does not await, so bail out through here instead. */
+async function die(code, ...lines) {
+  for (const l of lines) console.error(l);
+  await removeShootCustomer().catch((e) => console.error(`cleanup failed: ${e.message}`));
+  await browser.close().catch(() => {});
+  process.exit(code);
+}
+
 /* ══════════════════════════════════════════════════════════════════════ */
 /*  2 · THE OWNER — one signed-in context, one page per clip              */
 /* ══════════════════════════════════════════════════════════════════════ */
@@ -303,17 +338,40 @@ const owner = await context();
     presses a button wired to nothing — the click "succeeds", the page never
     navigates, and the shoot runs on with no session.
   */
-  await page.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
-  if (page.url().includes("/login")) {
+  /*
+    Twice, because a single attempt is not evidence of anything.
+
+    Signing in repeatedly while iterating on the shoot runs into Supabase's own
+    auth rate limit, and a cold dev server can take longer than the timeout to
+    compile the route — both transient, both indistinguishable from a wrong
+    password when every error is swallowed with .catch(() => {}). A second go
+    after a pause separates "try again" from "the password changed", and the
+    form's own message is read back rather than guessed at.
+  */
+  let why = "";
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    await page.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
+    if (!page.url().includes("/login")) break;
+
     await page.fill('input[name="email"]', OWNER.email);
     await page.fill('input[name="password"]', OWNER.password);
     await page.locator('button[type="submit"]').click({ timeout: 25000 }).catch(() => {});
     await page.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 30000 }).catch(() => {});
+    if (!page.url().includes("/login")) break;
+
+    why = (await page.locator("body").innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 160);
+    if (attempt === 1) {
+      console.log(`  sign-in did not take — retrying once in 6s`);
+      await page.waitForTimeout(6000);
+    }
   }
   if (page.url().includes("/login")) {
-    console.error(`could not sign in as ${OWNER.email} — nothing to film.`);
-    console.error("If the password changed: DEMO_PASSWORD=… node scripts/capture.mjs");
-    process.exit(1);
+    await die(
+      1,
+      `could not sign in as ${OWNER.email} — nothing to film.`,
+      why ? `the page said: ${why}` : "the page gave no reason.",
+      "If the password changed: DEMO_PASSWORD=… node scripts/capture.mjs",
+    );
   }
   /*
     PROVE THE SESSION BEFORE FILMING, not during.
@@ -492,17 +550,7 @@ export const DEMO_VERSION = "${stamp}";
   database — leaving them and their points behind would quietly inflate the demo
   café's own analytics, which are the numbers the landing page then shows.
 */
-{
-  const norm = `+216${NUM}`;
-  for (const t of ["loyalty_redemptions", "stamp_rewards", "loyalty_stamps"]) {
-    await svc.from(t).delete().eq("phone", norm);
-  }
-  await svc.from("points_ledger").delete().eq("customer_phone", norm);
-  await svc.from("diner_cafes").delete().eq("phone", norm);
-  await svc.from("pin_attempts").delete().eq("phone", norm);
-  await svc.from("accounts").delete().eq("phone", norm);
-  console.log("cleaned up the shoot's customer");
-}
+await removeShootCustomer();
 
 /*
   Say so, loudly, and fail.

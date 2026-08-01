@@ -432,7 +432,7 @@ function CustomerSheet({
       role="dialog"
       aria-modal="true"
       aria-label="Le client"
-      className="fixed inset-0 z-50 flex flex-col bg-[#0a0614]/97 backdrop-blur-sm"
+      className="sheet-in fixed inset-0 z-50 flex flex-col bg-[#0a0614]/97 backdrop-blur-sm"
     >
       {/* The receipt, over the top of everything, closing itself after 4s. */}
       {/*

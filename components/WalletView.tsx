@@ -224,7 +224,24 @@ function CardRow({
           The aspect-ratio property stays so the shape survives when there is
           little content, and `h-auto` lets it lose.
         */
-        className={`group relative block aspect-[16/9] h-auto min-h-[196px] overflow-hidden rounded-[22px] p-4 transition active:scale-[0.985] ${
+        /*
+          w-full is load-bearing, not tidiness.
+
+          aspect-ratio and a definite min-height together produce a TRANSFERRED
+          MINIMUM in the other axis: 196px × 16/9 = 348px of minimum WIDTH. On a
+          360px phone the column is 320px wide, so the card was 28px wider than
+          the screen and the page scrolled sideways; at 320px it was 68px over.
+          What you actually see is the right rim gone and the chevron — the only
+          interactive thing on the card — sitting half off the edge or past it
+          entirely. That is the "arrow is cropped" report, and it is invisible at
+          390px, which is the width every screenshot in this repo was taken at.
+
+          width:100% overrides the transferred minimum and keeps both properties
+          doing their real jobs: the ratio still sets the shape, min-height still
+          stops a busy card being sliced. (max-width:100% also works; min-width:0
+          does NOT — measured, all three.)
+        */
+        className={`group relative block aspect-[16/9] h-auto min-h-[196px] w-full overflow-hidden rounded-[22px] p-4 transition active:scale-[0.985] ${
           current ? "ring-2 ring-white/45" : "ring-1 ring-white/[0.16]"
         }`}
         style={{

@@ -210,7 +210,7 @@ function Sheet({
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-[70] flex flex-col bg-[#0a0614]"
+      className="sheet-in fixed inset-0 z-[70] flex flex-col bg-[#0a0614]"
     >
       {/* safe-t, or the title sits under the notch in the installed app */}
       <header className="safe-t border-b border-white/10 px-3 pb-3 [--safe-pt:0.75rem]">
