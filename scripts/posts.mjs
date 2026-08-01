@@ -164,6 +164,8 @@ const POSTS = [
         badge: "حتى كان ما عندوش Compte",
         ar: "ما عندوش Compte ؟ موش مشكل.",
         fr: "دخّل رقم تليفونو عادي. الـ Points تستنّاه. كي يعمل Compte من بعد، يلقاهم الكل في الـ Carte متاعو — ما يضيع حتى Point.",
+        /* deliberately one sentence, not a list: it is an argument, not an
+           inventory, and it has to be read as a sentence to land. */
         shot: "walkin",
       },
       {
@@ -193,7 +195,7 @@ const POSTS = [
       {
         kind: "cta",
         ar: "كل عملية ما تاخذش أكثر من 5 ثواني",
-        fr: "بلا caisse جديدة · بلا matériel · بلا formation",
+        list: ["بلا caisse جديدة", "بلا matériel", "بلا formation"],
       },
     ],
   },
@@ -264,7 +266,7 @@ const POSTS = [
       {
         kind: "cta",
         ar: "كل العملية أقل من دقيقة",
-        fr: "بلا application · بلا email · بلا mot de passe",
+        list: ["بلا application", "بلا email", "بلا mot de passe"],
       },
     ],
   },
@@ -297,13 +299,15 @@ const POSTS = [
       {
         kind: "big",
         ar: "قداش من مرة يرجعو ؟ و شنوّة يحبو ؟",
-        fr: "Visites par client · Entre deux visites · و أكثر Cadeau يتاخذ. هكا تعرف شنوّة تحط في الـ catalogue.",
+        fr: "هكا تعرف شنوّة تحط في الـ catalogue.",
+        list: ["Visites par client", "Entre deux visites", "أكثر Cadeau يتاخذ"],
         shot: "reste",
       },
       {
         kind: "big",
         ar: "قداش دازت فلوس من الكاس ؟",
-        fr: "Ticket moyen · عدد الزيارات · Points الموزّعين · Cadeaux اللي تعطاو. كل شي في écran واحد.",
+        fr: "كل شي في écran واحد.",
+        list: ["Ticket moyen", "عدد الزيارات", "Points الموزّعين", "Cadeaux اللي تعطاو"],
         shot: "argent",
       },
       {
@@ -314,14 +318,16 @@ const POSTS = [
       {
         kind: "big",
         ar: "إنت تحدّد القوانين",
-        fr: "قداش Points في الدينار ؟ شنوّة Cadeaux ؟ و قداش Stamp ؟ كل شي من عندك.",
+        fr: "كل شي من عندك.",
+        list: ["قداش Points في الدينار ؟", "شنوّة Cadeaux ؟", "قداش Stamp ؟"],
         shot: "reglages",
       },
       {
         kind: "honest",
         badge: "⭐ وقت ما تحب",
         ar: "تبدّل ولا توقّف وقت ما تحب",
-        fr: "بدّل قيمة الـ Points، بدّل الـ Cadeaux، ولا زيد جداد. يتبدّل في ثواني، و بلا engagement.",
+        fr: "يتبدّل في ثواني، و بلا engagement.",
+        list: ["بدّل قيمة الـ Points", "بدّل الـ Cadeaux", "ولا زيد جداد"],
       },
       {
         kind: "big",
@@ -334,7 +340,7 @@ const POSTS = [
         big: "14",
         unit: "يوم gratuit",
         ar: "جرّب Pointili",
-        fr: "بلا carte bancaire · بلا terminal · بلا matériel",
+        list: ["بلا carte bancaire", "بلا terminal", "بلا matériel"],
       },
     ],
   },
@@ -438,6 +444,30 @@ const CSS = `
   }
   .honest.hard .rule { background: #ff3b5c; }
 
+  /*
+    A term list. Each item is its own line and its own bidi context, so a
+    French term never has to be found inside a right-to-left sentence.
+    The dot is drawn as a real element rather than typed as "·", because a
+    typed separator is a neutral character and neutrals are the whole problem.
+  */
+  .terms { list-style: none; margin-top: 26px; }
+  .terms li {
+    display: flex; align-items: baseline; gap: 16px;
+    font-size: 27px; font-weight: 600; color: rgba(255,255,255,.78);
+    line-height: 1.5; padding: 7px 0;
+  }
+  .terms li::before {
+    content: ""; flex: none;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: #a78bfa; transform: translateY(-4px);
+  }
+  /* On a centred slide the list is centred as a BLOCK while its lines stay
+     right-aligned — right-aligning the whole thing pins it to the slide edge,
+     away from the heading it belongs to. */
+  .fact .terms,
+  .cta .terms { display: inline-block; text-align: right; margin-top: 30px; }
+  .honest .terms li { font-size: 29px; }
+
   /* the ⭐ badge — a claim that needs naming before the sentence lands */
   .badge {
     display: inline-block; margin-bottom: 22px;
@@ -464,27 +494,80 @@ const CSS = `
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
+/**
+ * Arabic carrying French words, laid out so it can actually be read.
+ *
+ * A sentence like «‎Ticket moyen · عدد الزيارات · Points الموزّعين‎» renders
+ * wrong without help, and wrong in a way that is easy to miss: the "·" between
+ * an Arabic word and a French one is a NEUTRAL character, and the bidi
+ * algorithm resolves neutrals toward the paragraph direction. So the separator
+ * jumps to the far side of the Latin run and the eye groups "· Cadeaux" when
+ * what was written is "الموزّعين ·". Every list of French terms inside an
+ * Arabic sentence came out subtly mis-grouped.
+ *
+ * Two things fix it:
+ *
+ *   · Each Latin run goes in a <bdi>, which is an independent bidirectional
+ *     context. Neutrals on either side can no longer be pulled across the
+ *     boundary, so the run sits exactly where it was written.
+ *
+ *   · «الـ» is joined to the word it introduces with a NO-BREAK SPACE, so a
+ *     line can never end on the article and start the next line with its noun
+ *     — which is how «في الـ / Carte متاعو» happened.
+ *
+ * The wrapping is done against the RAW string and each piece escaped as it is
+ * emitted, rather than escaping first: escaping first turns "&" into "&amp;",
+ * whose "amp" is a Latin run, and the tag would land inside the entity.
+ */
+function txt(s) {
+  const glued = String(s).replace(/(الـ)[  ]+/g, "$1 ");
+  const RUN = /[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9'’.‑-]*(?:[  ]+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9'’.‑-]*)*/g;
+  let out = "";
+  let last = 0;
+  let m;
+  while ((m = RUN.exec(glued)) !== null) {
+    out += esc(glued.slice(last, m.index)) + `<bdi>${esc(m[0])}</bdi>`;
+    last = m.index + m[0].length;
+  }
+  return out + esc(glued.slice(last));
+}
+
 function render(post, s, i) {
   const top = `<div class="top"><span class="tag">${esc(post.tag)}</span><span class="pill">${esc(post.n)}</span></div>`;
   const foot = `<div class="foot"><span class="site">pointili.online</span><span class="pill">${i + 1}/${post.slides.length}</span></div>`;
   let body = "";
 
+  /*
+    A run of French terms goes on its OWN LINES, never inline in an Arabic
+    sentence. Isolation puts each term where it belongs, but four of them
+    threaded through one right-to-left paragraph still makes the reader change
+    direction four times mid-sentence. One term per line, and the reading order
+    is the line order.
+  */
+  const list = (items) =>
+    items?.length
+      ? `<ul class="terms">${items.map((x) => `<li>${txt(x)}</li>`).join("")}</ul>`
+      : "";
+
   if (s.kind === "cover") {
-    body = `<div class="body cover"><div class="ar">${esc(s.ar)}</div>
-      <div class="fr">${esc(s.fr)}</div>
-      ${s.note ? `<div><span class="note">${esc(s.note)}</span></div>` : ""}</div>`;
+    body = `<div class="body cover"><div class="ar">${txt(s.ar)}</div>
+      <div class="fr">${txt(s.fr)}</div>
+      ${s.note ? `<div><span class="note">${txt(s.note)}</span></div>` : ""}</div>`;
   } else if (s.kind === "fact") {
     body = `<div class="body fact"><div class="big">${esc(s.big)}</div>
-      <div class="unit">${esc(s.unit)}</div>
-      <div class="ar">${esc(s.ar)}</div><div class="fr">${esc(s.fr)}</div></div>`;
+      <div class="unit">${txt(s.unit)}</div>
+      <div class="ar">${txt(s.ar)}</div><div class="fr">${txt(s.fr)}</div>
+      ${list(s.list)}</div>`;
   } else if (s.kind === "honest") {
     body = `<div class="body honest ${s.hard ? "hard" : ""}"><div class="rule"></div>
-      ${s.badge ? `<div><span class="badge">${esc(s.badge)}</span></div>` : ""}
-      <div class="ar">${esc(s.ar)}</div><div class="fr">${esc(s.fr)}</div></div>`;
+      ${s.badge ? `<div><span class="badge">${txt(s.badge)}</span></div>` : ""}
+      <div class="ar">${txt(s.ar)}</div><div class="fr">${txt(s.fr)}</div>
+      ${list(s.list)}</div>`;
   } else if (s.kind === "cta") {
     body = `<div class="body cta"><div class="mark">Pointili</div>
-      <div class="ar">${esc(s.ar ?? "جرّبو و وقتها تحكم")}</div>
-      <div class="fr">${esc(s.fr ?? "14 يوم gratuit · بلا carte bancaire · تيليفون برك")}</div>
+      <div class="ar">${txt(s.ar ?? "جرّبو و وقتها تحكم")}</div>
+      ${s.fr ? `<div class="fr">${txt(s.fr)}</div>` : ""}
+      ${list(s.list)}
       <div><span class="cta-line">جرّبها اليوم</span></div>
       <div><span class="site">pointili.online</span></div></div>`;
   } else {
@@ -498,9 +581,10 @@ function render(post, s, i) {
     body = `<div class="body ${cls}"><div class="row">
       <div class="phone"><img src="${shots[s.shot]}"></div>
       <div class="words">${badge}
-      ${s.badge ? `<div><span class="badge">${esc(s.badge)}</span></div>` : ""}
-      <div class="ar">${esc(s.ar)}</div>
-      <div class="fr">${esc(s.fr)}</div></div>
+      ${s.badge ? `<div><span class="badge">${txt(s.badge)}</span></div>` : ""}
+      <div class="ar">${txt(s.ar)}</div>
+      ${s.fr ? `<div class="fr">${txt(s.fr)}</div>` : ""}
+      ${list(s.list)}</div>
     </div></div>`;
   }
   return `<style>${CSS}</style><div class="frame">${top}${body}${foot}</div>`;
