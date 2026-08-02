@@ -431,45 +431,48 @@ const POSTS = [
     landing page, one of the two is lying.
   */
   /*
-    THE LANDING PAGE, AS A CAROUSEL — but opening on the pain, not the product.
+    THE ONE THAT SOUNDS LIKE A SHOP OWNER.
 
-    components/Showcase.tsx explains eight capabilities against real footage,
-    with three checkable facts each. That is the most detailed honest
-    description of Pointili there is, and it lives somewhere a Facebook reader
-    never goes.
+    Same eleven slides, rewritten line by line against the founder's list. The
+    corrections were never about vocabulary — they were about verbs a Tunisian
+    would actually reach for:
 
-    It opens differently here on purpose. A shop owner does not wake up wanting
-    analytics; he wakes up having noticed that somebody came once and never came
-    back. So the first two slides are that, and the eight capabilities are the
-    answer rather than the pitch.
+      دخل → جاك          "دخل" is walking into a room, not becoming a customer
+      يعطيك → يمدّلك      what a hand does
+      تضيف → تحطلو        nobody "adds" points, you put them on
+      تتجمع → يزيد يجمع   the reflexive is written Arabic, not spoken
+      يبدّلهم → يصرفهم    you SPEND points
+      نجمو نصلحو → تتصلّح shorter, and it is the thing that repairs itself
+      الهاتف → التاليفون · بطاقة → Carte · عميل → Client · رمز QR → QR Code
 
-    Written the way one Tunisian shop owner talks to another: النمرة متاعو ·
-    ما تتفسّخش · تنجم · واجد · ببلاش. Not SaaS translated into Arabic.
+    And the code-switching is deliberate: Client, Carte, Scan, QR Code, Compte,
+    Numéro, Cadeau, Points. A shop owner in Tunis mixes French into every second
+    sentence — writing around it is what makes copy sound translated.
   */
   {
-    dir: "post 12 - tout ce qu-il fait",
+    dir: "post 1 update",
     tag: "بالتفصيل",
     n: "",
     slides: [
       {
         kind: "cover",
-        ar: "الحريف دخل مرة… وبعد ما عادش شفتو؟",
+        ar: "الحريف جاك مرة… ومن بعد ما عادش رجع؟",
         fr: "هذا أكثر شي يخسّر في المحلات الصغيرة.",
-        note: "شنوّة يعمل Pointili؟ و كيفاش تستعملو؟",
+        note: "شنوّة يعمل Pointili، و كيفاش تستعملو",
       },
       {
         kind: "big",
-        ar: "Pointili تعطيه سبب يرجع",
-        fr: "كل مرة يخلّص، يجمع Points. وكي يلمّ، يبدّلهم بـ Cadeau من عندك.",
+        ar: "Pointili يخلّي الحريف يرجع",
+        fr: "كل مرة يخلّص، يزيد يجمع Points. وكي يلمّ، يصرفهم في Cadeau من عندك.",
         shot: "card",
       },
       {
         kind: "big",
         badge: "الكاس متاعك",
-        ar: "في 5 ثواني، تضيف الـ Points",
+        ar: "في 5 ثواني برك، تحطلو الـ Points",
         list: [
-          "الحريف يعطيك النمرة متاعو",
-          "تدخل المبلغ بالدينار",
+          "الحريف يمدّلك الـ Numéro متاعو",
+          "إنت تدخّل المبلغ بالدينار",
           "و Pointili يحسب وحدو",
         ],
         shot: "montant",
@@ -477,28 +480,19 @@ const POSTS = [
       {
         kind: "big",
         badge: "الكاس متاعك",
-        ar: "بلا كارتون، بلا ضياع",
-        fr: "الحريف ما عادش يستعمل carte ورقية.",
+        ar: "لا Carte كارتون، لا ضياع",
+        fr: "ما عادش تستحق Carte ورقية.",
         list: ["لا تضيع", "لا تتنسى", "لا تتفسّخ"],
         shot: "tampon",
       },
-      /*
-        NOT "شكون يجي برشا" / "شكون نقص رجوعو".
-
-        Both need a per-customer view and there is none: the browsable client
-        list was removed from the till (scripts/test-walkin.mjs) and Analyses
-        reports aggregates only. "شنوّة أكثر حاجة تتباع" would need Pointili to
-        know the products — it knows which CADEAU gets taken, not what you sell.
-        Same framing, pointed at what the screen actually answers.
-      */
       {
         kind: "big",
         badge: "الكاس متاعك",
-        ar: "أول مرة تولّي تعرف قدّاش يرجعولك",
+        ar: "أول مرة تنجم تعرف شكون رجع",
         list: [
-          "قدّاش من حريف رجع",
-          "قدّاش مرة يجي في الشهر",
-          "شنوّة أكثر Cadeau يتاخذ",
+          "قدّاش من Client رجعلك",
+          "قدّاش مرة يعاود يجي في الشهر",
+          "و شنوّة أكثر Cadeau يتاخذ",
         ],
         shot: "retour",
       },
@@ -506,22 +500,19 @@ const POSTS = [
         kind: "big",
         badge: "الكاس متاعك",
         ar: "إنت تقرّر كل شي",
+        fr: "إنت ركّز كان على خدمتك — الباقي Pointili يعملو.",
         list: [
           "قدّاش يعطي Points",
           "شنوّة الـ Cadeau",
-          "وقتاش الحريف يربح",
+          "و وقتاش الحريف يربح",
         ],
         shot: "reglages",
       },
       {
         kind: "big",
         badge: "الكاس متاعك",
-        ar: "كل شي واجد باش تبدأ",
-        list: [
-          "QR Code جاهز",
-          "تحطّو في بلاصتو",
-          "وتبدأ تخدم",
-        ],
+        ar: "كل شي في بلاصة وحدة باش تبدأ",
+        list: ["QR Code جاهز", "تحطّو في بلاصتو", "و تبدأ تخدم"],
         shot: "qrposter",
       },
       {
@@ -529,9 +520,9 @@ const POSTS = [
         badge: "تاليفون الحريف",
         ar: "10 ثواني، بلا app وبلا email",
         list: [
-          "الحريف يعمل Scan",
-          "يدخل نمرة تليفونو",
-          "وهاو عندو carte fidélité",
+          "يعمل Scan للـ QR Code",
+          "يدخّل الـ Numéro متاعو",
+          "و هاو عندو carte fidélité",
         ],
         shot: "signup",
       },
@@ -540,10 +531,7 @@ const POSTS = [
         badge: "تاليفون الحريف",
         ar: "الـ Points تولّي عندها قيمة",
         fr: "يخرجلو Code، يورّيه للكاشيي، وياخو الـ Cadeau متاعو.",
-        list: [
-          "الحريف يجمع Points",
-          "وبعد يبدّلهم بـ Cadeau",
-        ],
+        list: ["الحريف يجمع Points", "و يصرفهم في Cadeau"],
         shot: "code",
       },
       {
@@ -552,22 +540,21 @@ const POSTS = [
         ar: "غلطت؟ ما فما حتى مشكل",
         fr: "و التصليح روحو يتكتب في الـ historique — ما يتمسح حتى شي.",
         list: [
-          "تنجم تصلّح الـ Points",
-          "تنجم تصلّح الـ Stamps",
-          "تنجم تعاود الـ Code secret اللي نساه",
+          "الـ Points تتصلّح",
+          "الـ Stamps تتصلّح",
+          "و الـ Code secret اللي نساه يتعاود",
         ],
         shot: "corriger",
       },
       {
         kind: "fact",
         big: "14",
-        unit: "نهار ببلاش",
+        unit: "نهار تجربة",
         ar: "جرّب Pointili",
         list: ["بلا carte bancaire", "بلا matériel", "بالتاليفون برك"],
       },
     ],
-  },
-];
+  },];
 /* ── the look ────────────────────────────────────────────────────────── */
 
 const CSS = `
@@ -779,7 +766,8 @@ function render(post, s, i) {
   } else if (s.kind === "fact") {
     body = `<div class="body fact"><div class="big">${esc(s.big)}</div>
       <div class="unit">${txt(s.unit)}</div>
-      <div class="ar">${txt(s.ar)}</div><div class="fr">${txt(s.fr)}</div>
+      <div class="ar">${txt(s.ar)}</div>
+      ${s.fr ? `<div class="fr">${txt(s.fr)}</div>` : ""}
       ${list(s.list)}</div>`;
   } else if (s.kind === "honest") {
     body = `<div class="body honest ${s.hard ? "hard" : ""}"><div class="rule"></div>
