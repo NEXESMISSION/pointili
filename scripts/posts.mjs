@@ -414,6 +414,138 @@ const POSTS = [
       },
     ],
   },
+
+  /*
+    THE LANDING PAGE, AS A CAROUSEL.
+
+    components/Showcase.tsx already explains the product one capability at a
+    time, against real footage, with three checkable facts under each. That is
+    the most detailed honest description of Pointili that exists — it just lives
+    somewhere a Facebook reader never goes.
+
+    So this is the same eight sections, same facts, same order, in Derja. It is
+    the LONG one on purpose: the other carousels answer "what is it"; this one
+    is for somebody who already wants to know exactly what he is getting.
+
+    The facts are translated, not rewritten. If a line here stops matching the
+    landing page, one of the two is lying.
+  */
+  {
+    dir: "post 12 - tout ce qu-il fait",
+    tag: "بالتفصيل",
+    n: "",
+    slides: [
+      {
+        kind: "cover",
+        ar: "Pointili — كل شي بالتفصيل",
+        fr: "8 حاجات يعملهم، وكيفاش يعملهم.",
+        note: "كل التصاور من الـ app روحها",
+      },
+      {
+        kind: "big",
+        badge: "الكاس متاعك",
+        ar: "5 ثواني، وإنت ترجّع الصرف",
+        fr: "الحريف يعطيك نمرتو. إنت تكتب المبلغ بالدينار. وخلاص.",
+        list: [
+          "النمرة تكفي — الحريف ما يخرّج حتى شي",
+          "تكتب دينار، عمرك ما تكتب Points",
+          "الحساب يصير في الـ serveur، موش في الكاس",
+        ],
+        shot: "montant",
+      },
+      {
+        kind: "big",
+        badge: "الكاس متاعك",
+        ar: "الكارت بالكرتون، أما ما تضيعش",
+        fr: "زيارة = tampon. مع الـ Points، ولا في بلاصتهم.",
+        list: [
+          "إنت تحدّد قدّاش زيارة",
+          "كي تعمر الكارت، الـ Code يخرج وحدو",
+          "ما فما شي ترتّبو، وما فما شي تلوّج عليه",
+        ],
+        shot: "tampon",
+      },
+      {
+        kind: "big",
+        badge: "الكاس متاعك",
+        ar: "الرقم اللي عمرك ما عندك",
+        fr: "قدّاش من حريف رجع؟ على 7 أيام، 30 يوم، ولا من البداية — مع الفرق مع الفترة اللي قبل.",
+        list: [
+          "نسبة الرجوع، الزيارات، الحرفاء، والجداد",
+          "أقل من 5 حرفاء : « Trop tôt pour conclure »",
+          "الـ marge متاعك ما تخصّناش — ما نخترعو حتى رقم",
+        ],
+        shot: "retour",
+      },
+      {
+        kind: "big",
+        badge: "الكاس متاعك",
+        ar: "برنامجك، قوانينك",
+        fr: "كل réglage يوري القيمة متاعو تو. ضغطة تبدّلها، وزر تسجّل.",
+        list: [
+          "Points في الدينار · Cadeau الترحيب · صلاحية الـ Codes",
+          "سلّم الـ Cadeaux، بالتصويرة",
+          "الاسم، الـ logo، ونوع المحل",
+        ],
+        shot: "reglages",
+      },
+      {
+        kind: "big",
+        badge: "الكاس متاعك",
+        ar: "الـ kit، جاهز الليلة",
+        fr: "Chevalet للطاولة، affiche A5، autocollant، story. الـ QR متاعك، بألوانك.",
+        list: [
+          "4 formats، يتصنعو من الـ espace متاعك",
+          "الـ QR يقعد على أبيض — باش يتقرا ديما",
+          "تطبعو من عندك، بلا ما تكوموندي شي",
+        ],
+        shot: "qrposter",
+      },
+      {
+        kind: "big",
+        badge: "تاليفون الحريف",
+        ar: "10 ثواني، بلا application وبلا email",
+        fr: "الحريف يعمل Scan للـ QR اللي على الطاولة. نمرة، Code secret، والكارت موجودة.",
+        list: [
+          "ما ينزّل حتى شي — الكارت تتحلّ في الـ navigateur",
+          "بلا email، وبلا mot de passe يتفكّرو",
+          "Cadeau الترحيب يجي على طول",
+        ],
+        shot: "signup",
+      },
+      {
+        kind: "big",
+        badge: "تاليفون الحريف",
+        ar: "Points تولّي حاجة بالحق",
+        fr: "الحريف يختار الـ Cadeau متاعو، ويخرجلو Code من 6 حروف. إنت تشوفو، ثم تأكّدو.",
+        list: [
+          "Vérifier قبل، Collecter بعد — زوز حركات",
+          "يتستعمل مرة وحدة، وعندو expiration",
+          "الـ Code يبان كبير — يتقرا من وراء الـ comptoir",
+        ],
+        shot: "code",
+      },
+      {
+        kind: "big",
+        badge: "الكاس متاعك",
+        ar: "الغلطة تتصلّح، ما تتمسحش",
+        fr: "الكاشيي غلط في المبلغ؟ صلّحو. والتصليح روحو يتكتب في الـ historique.",
+        list: [
+          "كل سطر يقعد : achat، ترحيب، échange، تصليح",
+          "ما يتمسح حتى شي — يعني ما ينجم حتى شي يتغطّى",
+          "الـ historique الكامل متاع الحريف، من الكاس",
+        ],
+        shot: "corriger",
+      },
+      {
+        kind: "fact",
+        big: "14",
+        unit: "يوم gratuit",
+        ar: "جرّب و وقتها تحكم",
+        list: ["بلا carte bancaire", "بلا matériel", "بالتاليفون برك"],
+      },
+    ],
+  },
 ];
 /* ── the look ────────────────────────────────────────────────────────── */
 
