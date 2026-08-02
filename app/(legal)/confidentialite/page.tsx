@@ -97,6 +97,30 @@ export default function Confidentialite() {
         chaque visite. Aucun cookie publicitaire, donc aucune bannière à cliquer.
       </P>
 
+      <H2>Compter les visites</H2>
+      <P>
+        Nous faisons de la publicité, et nous avons besoin de savoir si elle sert
+        à quelque chose. Pour chaque visite nous enregistrons : un identifiant
+        tiré au hasard par votre navigateur, la page d&apos;arrivée, le{" "}
+        <b>nom de domaine</b> du site qui vous a envoyé —{" "}
+        <span className="font-mono text-[13.5px] text-white/80">facebook.com</span>,
+        pas l&apos;adresse complète — les étiquettes de campagne présentes dans le
+        lien, une catégorie d&apos;appareil (mobile, tablette, ordinateur) déduite
+        de la taille de l&apos;écran, et l&apos;heure d&apos;arrivée et de départ.
+      </P>
+      <P>
+        Cet identifiant vit dans la mémoire de l&apos;onglet et disparaît quand
+        vous le fermez. Il ne peut donc pas vous reconnaître demain, ni relier
+        deux visites entre elles.
+      </P>
+      <UL>
+        <LI>Aucune adresse IP.</LI>
+        <LI>Aucune empreinte de navigateur, aucun identifiant d&apos;appareil.</LI>
+        <LI>Aucune trace des pages visitées ensuite — une ligne par visite, pas par page.</LI>
+        <LI>Aucun lien avec votre compte ni votre numéro.</LI>
+        <LI>Ni Google Analytics, ni pixel publicitaire, ni cookie de suivi.</LI>
+      </UL>
+
       <H2>Où c&apos;est stocké</H2>
       <P>
         Sur Supabase, dans un centre de données en Suisse (Zurich). Les

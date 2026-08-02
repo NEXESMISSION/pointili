@@ -1,4 +1,5 @@
-import { activeNotices, adminOverview, platformStats, recentActions, remaining } from "@/lib/platform";
+import { activeNotices, adminOverview, platformStats, recentActions, remaining, traffic } from "@/lib/platform";
+import { Traffic } from "./Traffic";
 import type { AdminCafe } from "@/lib/platform";
 import { dismissNoticeAction, quickRenewAction, quickUnsuspendAction } from "./actions";
 import { BroadcastForm } from "./CafeControls";
@@ -30,11 +31,12 @@ export const metadata = { title: "Console" };
  * console working correctly.
  */
 export default async function AdminPage() {
-  const [stats, cafes, actions, notices] = await Promise.all([
+  const [stats, cafes, actions, notices, trafficData] = await Promise.all([
     platformStats(),
     adminOverview(),
     recentActions(12),
     activeNotices(),
+    traffic(30),
   ]);
 
   const cafeName = new Map(cafes.map((c) => [c.id, c.name]));
@@ -96,7 +98,11 @@ export default async function AdminPage() {
         </section>
       )}
 
-      {/* ── 3. occasional tools, folded away ─────────────────────────── */}
+      {/* ── 3. the trafic — the only part of the console about people who
+              have NOT signed up yet, which is exactly what ad money buys ── */}
+      <Traffic data={trafficData} />
+
+      {/* ── 4. occasional tools, folded away ─────────────────────────── */}
       <Drawer label="Message à tous les cafés">
         <BroadcastForm />
       </Drawer>

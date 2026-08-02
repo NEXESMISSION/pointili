@@ -168,3 +168,41 @@ export async function activeNotices(): Promise<ActiveNotice[]> {
       businessId: n.business_id,
     }));
 }
+
+/* -------------------------------------------------------------------------- */
+/* Traffic — did the ads bring anybody                                         */
+/* -------------------------------------------------------------------------- */
+
+export type TrafficRow = { visits: number; signups: number };
+export type Traffic = {
+  days: number;
+  totals: TrafficRow & { median_seconds: number };
+  sources: (TrafficRow & { source: string })[];
+  campaigns: (TrafficRow & { campaign: string })[];
+  devices: (TrafficRow & { device: string })[];
+  daily: (TrafficRow & { day: string })[];
+};
+
+const NO_TRAFFIC: Traffic = {
+  days: 30,
+  totals: { visits: 0, signups: 0, median_seconds: 0 },
+  sources: [], campaigns: [], devices: [], daily: [],
+};
+
+/**
+ * Visits, sources, devices and dwell time — see supabase/migrations/0028.
+ *
+ * One RPC rather than five queries: the console draws all of it in one pass,
+ * and the numbers have to agree with each other, which they cannot if they are
+ * read at five different moments.
+ */
+export async function traffic(days = 30): Promise<Traffic> {
+  const me = await requireElevatedSuperAdmin();
+  const db = createAdminClient();
+  const { data } = await db.rpc("admin_traffic", { p_actor: me.id, p_days: days });
+  const d = data as (Traffic & { ok?: boolean }) | null;
+  /* ok:false is the RPC's own "not a super-admin" — treat it as no data rather
+     than rendering `undefined` into the page */
+  if (!d || d.ok === false) return NO_TRAFFIC;
+  return { ...NO_TRAFFIC, ...d };
+}

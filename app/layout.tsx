@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DESCRIPTION, KEYWORDS, SITE_NAME, SITE_URL, TAGLINE } from "@/lib/seo";
 import { Fraunces, Space_Mono, Inter, Poppins } from "next/font/google";
 import { ServiceWorker } from "@/components/ServiceWorker";
+import { Track } from "@/components/Track";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -161,6 +162,10 @@ export default function RootLayout({
         {/* Registers the service worker for the whole origin, which is what
             makes the site installable. Renders nothing. */}
         <ServiceWorker />
+        {/* One anonymous beacon per visit, so the console can tell whether an
+            ad brought anybody. No id, no account, no page trail — see
+            components/Track.tsx. Renders nothing. */}
+        <Track />
       </body>
     </html>
   );
