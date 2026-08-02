@@ -52,3 +52,15 @@ postes/
 
 # throwaway screenshot/debug scripts
 scripts/_*.mjs
+
+# Real people's data. Never.
+#
+# Leads carry the names of strangers who messaged the Page and what they asked.
+# They live in `Desktop/pointili postes/crm/`, outside this repo, because this
+# repo is pushed to GitHub. These rules are the second line of defence: if a
+# lead file is ever copied in here by accident, git will not pick it up.
+crm/
+leads.json
+*.leads.json
+*-leads.json
+contacts.json
