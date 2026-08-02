@@ -430,6 +430,22 @@ const POSTS = [
     The facts are translated, not rewritten. If a line here stops matching the
     landing page, one of the two is lying.
   */
+  /*
+    THE LANDING PAGE, AS A CAROUSEL — but opening on the pain, not the product.
+
+    components/Showcase.tsx explains eight capabilities against real footage,
+    with three checkable facts each. That is the most detailed honest
+    description of Pointili there is, and it lives somewhere a Facebook reader
+    never goes.
+
+    It opens differently here on purpose. A shop owner does not wake up wanting
+    analytics; he wakes up having noticed that somebody came once and never came
+    back. So the first two slides are that, and the eight capabilities are the
+    answer rather than the pitch.
+
+    Written the way one Tunisian shop owner talks to another: النمرة متاعو ·
+    ما تتفسّخش · تنجم · واجد · ببلاش. Not SaaS translated into Arabic.
+  */
   {
     dir: "post 12 - tout ce qu-il fait",
     tag: "بالتفصيل",
@@ -437,111 +453,116 @@ const POSTS = [
     slides: [
       {
         kind: "cover",
-        ar: "Pointili — كل شي بالتفصيل",
-        fr: "8 حاجات يعملهم، وكيفاش يعملهم.",
-        note: "كل التصاور من الـ app روحها",
+        ar: "الحريف دخل مرة… وبعد ما عادش شفتو؟",
+        fr: "هذا أكثر شي يخسّر في المحلات الصغيرة.",
+        note: "شنوّة يعمل Pointili؟ و كيفاش تستعملو؟",
+      },
+      {
+        kind: "big",
+        ar: "Pointili تعطيه سبب يرجع",
+        fr: "كل مرة يخلّص، يجمع Points. وكي يلمّ، يبدّلهم بـ Cadeau من عندك.",
+        shot: "card",
       },
       {
         kind: "big",
         badge: "الكاس متاعك",
-        ar: "5 ثواني، وإنت ترجّع الصرف",
-        fr: "الحريف يعطيك نمرتو. إنت تكتب المبلغ بالدينار. وخلاص.",
+        ar: "في 5 ثواني، تضيف الـ Points",
         list: [
-          "النمرة تكفي — الحريف ما يخرّج حتى شي",
-          "تكتب دينار، عمرك ما تكتب Points",
-          "الحساب يصير في الـ serveur، موش في الكاس",
+          "الحريف يعطيك النمرة متاعو",
+          "تدخل المبلغ بالدينار",
+          "و Pointili يحسب وحدو",
         ],
         shot: "montant",
       },
       {
         kind: "big",
         badge: "الكاس متاعك",
-        ar: "الكارت بالكرتون، أما ما تضيعش",
-        fr: "زيارة = tampon. مع الـ Points، ولا في بلاصتهم.",
-        list: [
-          "إنت تحدّد قدّاش زيارة",
-          "كي تعمر الكارت، الـ Code يخرج وحدو",
-          "ما فما شي ترتّبو، وما فما شي تلوّج عليه",
-        ],
+        ar: "بلا كارتون، بلا ضياع",
+        fr: "الحريف ما عادش يستعمل carte ورقية.",
+        list: ["لا تضيع", "لا تتنسى", "لا تتفسّخ"],
         shot: "tampon",
       },
+      /*
+        NOT "شكون يجي برشا" / "شكون نقص رجوعو".
+
+        Both need a per-customer view and there is none: the browsable client
+        list was removed from the till (scripts/test-walkin.mjs) and Analyses
+        reports aggregates only. "شنوّة أكثر حاجة تتباع" would need Pointili to
+        know the products — it knows which CADEAU gets taken, not what you sell.
+        Same framing, pointed at what the screen actually answers.
+      */
       {
         kind: "big",
         badge: "الكاس متاعك",
-        ar: "الرقم اللي عمرك ما عندك",
-        fr: "قدّاش من حريف رجع؟ على 7 أيام، 30 يوم، ولا من البداية — مع الفرق مع الفترة اللي قبل.",
+        ar: "أول مرة تولّي تعرف قدّاش يرجعولك",
         list: [
-          "نسبة الرجوع، الزيارات، الحرفاء، والجداد",
-          "أقل من 5 حرفاء : « Trop tôt pour conclure »",
-          "الـ marge متاعك ما تخصّناش — ما نخترعو حتى رقم",
+          "قدّاش من حريف رجع",
+          "قدّاش مرة يجي في الشهر",
+          "شنوّة أكثر Cadeau يتاخذ",
         ],
         shot: "retour",
       },
       {
         kind: "big",
         badge: "الكاس متاعك",
-        ar: "برنامجك، قوانينك",
-        fr: "كل réglage يوري القيمة متاعو تو. ضغطة تبدّلها، وزر تسجّل.",
+        ar: "إنت تقرّر كل شي",
         list: [
-          "Points في الدينار · Cadeau الترحيب · صلاحية الـ Codes",
-          "سلّم الـ Cadeaux، بالتصويرة",
-          "الاسم، الـ logo، ونوع المحل",
+          "قدّاش يعطي Points",
+          "شنوّة الـ Cadeau",
+          "وقتاش الحريف يربح",
         ],
         shot: "reglages",
       },
       {
         kind: "big",
         badge: "الكاس متاعك",
-        ar: "الـ kit، جاهز الليلة",
-        fr: "Chevalet للطاولة، affiche A5، autocollant، story. الـ QR متاعك، بألوانك.",
+        ar: "كل شي واجد باش تبدأ",
         list: [
-          "4 formats، يتصنعو من الـ espace متاعك",
-          "الـ QR يقعد على أبيض — باش يتقرا ديما",
-          "تطبعو من عندك، بلا ما تكوموندي شي",
+          "QR Code جاهز",
+          "تحطّو في بلاصتو",
+          "وتبدأ تخدم",
         ],
         shot: "qrposter",
       },
       {
         kind: "big",
         badge: "تاليفون الحريف",
-        ar: "10 ثواني، بلا application وبلا email",
-        fr: "الحريف يعمل Scan للـ QR اللي على الطاولة. نمرة، Code secret، والكارت موجودة.",
+        ar: "10 ثواني، بلا app وبلا email",
         list: [
-          "ما ينزّل حتى شي — الكارت تتحلّ في الـ navigateur",
-          "بلا email، وبلا mot de passe يتفكّرو",
-          "Cadeau الترحيب يجي على طول",
+          "الحريف يعمل Scan",
+          "يدخل نمرة تليفونو",
+          "وهاو عندو carte fidélité",
         ],
         shot: "signup",
       },
       {
         kind: "big",
         badge: "تاليفون الحريف",
-        ar: "Points تولّي حاجة بالحق",
-        fr: "الحريف يختار الـ Cadeau متاعو، ويخرجلو Code من 6 حروف. إنت تشوفو، ثم تأكّدو.",
+        ar: "الـ Points تولّي عندها قيمة",
+        fr: "يخرجلو Code، يورّيه للكاشيي، وياخو الـ Cadeau متاعو.",
         list: [
-          "Vérifier قبل، Collecter بعد — زوز حركات",
-          "يتستعمل مرة وحدة، وعندو expiration",
-          "الـ Code يبان كبير — يتقرا من وراء الـ comptoir",
+          "الحريف يجمع Points",
+          "وبعد يبدّلهم بـ Cadeau",
         ],
         shot: "code",
       },
       {
         kind: "big",
         badge: "الكاس متاعك",
-        ar: "الغلطة تتصلّح، ما تتمسحش",
-        fr: "الكاشيي غلط في المبلغ؟ صلّحو. والتصليح روحو يتكتب في الـ historique.",
+        ar: "غلطت؟ ما فما حتى مشكل",
+        fr: "و التصليح روحو يتكتب في الـ historique — ما يتمسح حتى شي.",
         list: [
-          "كل سطر يقعد : achat، ترحيب، échange، تصليح",
-          "ما يتمسح حتى شي — يعني ما ينجم حتى شي يتغطّى",
-          "الـ historique الكامل متاع الحريف، من الكاس",
+          "تنجم تصلّح الـ Points",
+          "تنجم تصلّح الـ Stamps",
+          "تنجم تعاود الـ Code secret اللي نساه",
         ],
         shot: "corriger",
       },
       {
         kind: "fact",
         big: "14",
-        unit: "يوم gratuit",
-        ar: "جرّب و وقتها تحكم",
+        unit: "نهار ببلاش",
+        ar: "جرّب Pointili",
         list: ["بلا carte bancaire", "بلا matériel", "بالتاليفون برك"],
       },
     ],
