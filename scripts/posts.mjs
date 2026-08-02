@@ -346,75 +346,84 @@ const POSTS = [
   },
 
   /*
-    THE ANSWER TO "شنوّة نربح ؟", which is the first thing a stranger asks.
+    THE SHORT ONE, IN SPOKEN TUNISIAN.
 
-    Deliberately the simplest of the four: one idea per slide, a headline and a
-    single line under it, no lists in the middle and no numbers to study. The
-    other three assume somebody already curious enough to follow a workflow;
-    this one has to work for a shop owner who has never heard the name and is
-    reading it in a Messenger thread.
+    Rewritten against the founder's second pass. The pattern behind every
+    correction was the same: the copy was in "formal Tunisian" — the register
+    of a press release written in Derja — instead of how a shop owner in Tunis
+    or Sfax actually talks.
 
-    No promised result and no price — the first is the dictionary's rule 18,
-    the second is unvalidated in docs/PRODUIT.md.
+      تحدّد → تتحكّم        you don't "determine" your settings, you control them
+      تحكم → قرّر           "تحكم" is MSA; you decide
+      بلا كلام تقني → بلا تعقيد   naming jargon is itself jargon
+      يعمل كل شي → يخدم     what work does
+      Cadeau → cadeaux      the plural is what people say
+      تليفون برك → numéro de téléphone   what a merchant says out loud
+
+    Reach for: كي · كان · برك · على كيفك · الكل · يخدم · يلقى · ما تستحقش ·
+    تولّي · شوف · كمّل · قرّر. Avoid: تحدد · تحكم · يربحك · يقوم بـ.
   */
   {
-    dir: "post 11 - les benefices",
+    dir: "post 2 update",
     tag: "شنوّة تربح ؟",
     n: "",
     slides: [
       {
         kind: "cover",
-        ar: "شنوّة تربح بـ Pointili ؟",
-        fr: "6 حاجات برك — بلا كلام تقني.",
-        note: "carte fidélité digitale لمحلك",
+        ar: "شنوّة تربح مع Pointili؟",
+        fr: "6 حاجات باش تسهّل خدمتك… بلا تعقيد.",
+        note: "carte fidélité digitale لمحلّك",
       },
       {
         kind: "big",
-        ar: "بلا application",
-        fr: "لا إنت تنزّل شي و لا الحريف. كل شي في الـ navigateur.",
+        ar: "بلا Application",
+        fr: "لا téléchargement لا والو. الحريف يخدم كل شي من الـ navigateur.",
         shot: "qrposter",
       },
       {
         kind: "big",
         ar: "الحريف يعمل Scan، و في دقيقة تولّي عندو Carte",
-        fr: "رقم تيليفون + Code secret. بلا email، بلا mot de passe.",
+        fr: "Numéro de téléphone برك. بعد يستعمل Code secret — بلا email وبلا mot de passe.",
         shot: "signup",
       },
       {
         kind: "big",
         ar: "كل مرة يخلّص، يجمع Points",
-        fr: "و يبدّلهم بـ Cadeau من عندك.",
+        fr: "ويبدّلهم بـ cadeaux من عندك.",
         shot: "card",
       },
       {
         kind: "big",
         badge: "⭐ حتى كان ما عندوش Compte",
-        ar: "ما يضيع حتى Point",
-        fr: "تزيدلو Points بالرقم متاعو، و يلقاهم الكل كي يعمل Compte.",
+        ar: "حتى Point ما يضيع",
+        fr: "زيدلو الـ Points بالرقم متاعو، و كي يعمل Compte يلقاهم الكل يستنّاو فيه.",
         shot: "walkin",
       },
       {
         kind: "big",
-        ar: "إنت تحدّد كل شي",
-        fr: "قداش Points في الدينار، شنوّة Cadeaux، و الـ Carte بالـ Stamps.",
+        ar: "إنت اللي تتحكّم في كل شي",
+        fr: "Points، Stamps، cadeaux… الكل على كيفك.",
         shot: "reglages",
       },
       {
         kind: "big",
-        ar: "تعرف شكون رجع — بالأرقام",
-        fr: "نسبة الرجوع، عدد الزيارات، و الـ ticket moyen. موش بالإحساس.",
+        ar: "شوف بالأرقام شكون رجع",
+        fr: "تشوف الـ ticket moyen، نسبة الرجوع، وعدد الزيارات… الكل بالأرقام.",
         shot: "retour",
       },
       {
         kind: "fact",
         big: "14",
-        unit: "يوم gratuit",
-        ar: "جرّب و وقتها تحكم",
-        list: ["بلا carte bancaire", "بلا matériel", "تيليفون برك"],
+        unit: "نهار Gratuit",
+        ar: "جرّب، وبعد قرّر",
+        list: [
+          "ما تستحقش carte bancaire",
+          "ما تستحقش matériel",
+          "كان numéro de téléphone",
+        ],
       },
     ],
   },
-
   /*
     THE LANDING PAGE, AS A CAROUSEL.
 
