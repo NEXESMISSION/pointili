@@ -19,7 +19,7 @@
  *
  *   حريف        never  زبون / عميل
  *   points, cadeau, récompense, fidélité, compte, code   never their Arabic
- *   يخلص · يعمل Scan · يجمع points · ياخو                never MSA equivalents
+ *   يخلص · يعمل Scan · يلمد des points · ياخو           never MSA equivalents
  *   برشا · تو · هكا · قداش · كيفاش · فما · موش · باهي    the fixed spellings
  *   Latin digits — 65 DT, never ٦٥
  *   A space before ? ! : as in French — « شنوة ؟ »
@@ -163,7 +163,7 @@ const POSTS = [
         star: true,
         badge: "حتى كان ما عندوش Compte",
         ar: "ما عندوش Compte ؟ موش مشكل.",
-        fr: "دخّل رقم تيليفونو عادي. الـ Points تستنّاه. كي يعمل Compte من بعد، يلقاهم الكل في الـ Carte متاعو — ما يضيع حتى Point.",
+        fr: "دخّل رقم تيليفونو عادي. الـ Points تستنّاه. كي يعمل Compte من بعد، يلقاهم الكل في الـ Carte متاعو — ما تضيع حتى point.",
         /* deliberately one sentence, not a list: it is an argument, not an
            inventory, and it has to be read as a sentence to land. */
         shot: "walkin",
@@ -388,14 +388,14 @@ const POSTS = [
       },
       {
         kind: "big",
-        ar: "كل مرة يخلّص، يجمع Points",
+        ar: "كل مرة يخلّص، يلمد des points",
         fr: "ويبدّلهم بـ cadeaux من عندك.",
         shot: "card",
       },
       {
         kind: "big",
         badge: "⭐ حتى كان ما عندوش Compte",
-        ar: "حتى Point ما يضيع",
+        ar: "حتى point ما تضيع",
         fr: "زيدلو الـ Points بالرقم متاعو، و كي يعمل Compte يلقاهم الكل يستنّاو فيه.",
         shot: "walkin",
       },
@@ -449,7 +449,7 @@ const POSTS = [
       دخل → جاك          "دخل" is walking into a room, not becoming a customer
       يعطيك → يمدّلك      what a hand does
       تضيف → تحطلو        nobody "adds" points, you put them on
-      تتجمع → يزيد يجمع   the reflexive is written Arabic, not spoken
+      تتجمع → يلمد        nobody "accumulates" — you gather them up
       يبدّلهم → يصرفهم    you SPEND points
       نجمو نصلحو → تتصلّح shorter, and it is the thing that repairs itself
       الهاتف → التاليفون · بطاقة → Carte · عميل → Client · رمز QR → QR Code
@@ -472,7 +472,7 @@ const POSTS = [
       {
         kind: "big",
         ar: "Pointili يخلّي الحريف يرجع",
-        fr: "كل مرة يخلّص، يزيد يجمع Points. وكي يلمّ، يصرفهم في Cadeau من عندك.",
+        fr: "كل مرة يخلّص، يلمد des points. وكي يلمّ، يصرفهم في cadeaux من عندك.",
         shot: "card",
       },
       {
@@ -540,7 +540,7 @@ const POSTS = [
         badge: "تاليفون الحريف",
         ar: "الـ Points تولّي عندها قيمة",
         fr: "يخرجلو Code، يورّيه للكاشيي، وياخو الـ Cadeau متاعو.",
-        list: ["الحريف يجمع Points", "و يصرفهم في Cadeau"],
+        list: ["الحريف يلمد des points", "و يصرفهم في cadeaux"],
         shot: "code",
       },
       {
