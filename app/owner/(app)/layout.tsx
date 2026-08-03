@@ -61,28 +61,27 @@ export default async function OwnerLayout({
       />
 
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
-      <header className="safe-t sticky top-0 z-30 flex items-center gap-3 border-b border-white/12 bg-[#0d0819]/80 px-4 pb-3 backdrop-blur md:hidden [--safe-pt:0.75rem]">
-        <span
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[15px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(40,18,59,.5)]"
-          style={{ background: cafe.primaryColor }}
-        >
-          {cafe.name.charAt(0).toUpperCase()}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[15px] font-extrabold leading-tight text-white">
-            {cafe.name}
-          </span>
-          <span className="block text-[10.5px] font-semibold text-white/55">
-            Espace café
-          </span>
-        </span>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${planChip.cls}`}>
-          {planChip.text}
-        </span>
-      </header>
+      {/*
+        THE MOBILE HEADER IS GONE.
+
+        It was a sticky bar carrying the shop logo, its name, the words
+        "Espace café" and the plan chip — about 64px of every phone screen,
+        permanently, to tell a cashier which shop they are in. They know. They
+        work there, and it is the only shop this login can reach.
+
+        The plan chip went with it and is not lost: the two states that
+        actually need attention already have their own banners directly below
+        (expired/suspended, and "se termine dans N jours"), and the exact
+        formula and dates live in Réglages → Votre compte. A permanent chip
+        reading "Pro" is a fact nobody needs during service.
+
+        safe-t moves onto <main>: the header was what kept content clear of
+        the notch, so dropping it without moving the inset would put the till
+        under the status bar in the installed app.
+      */}
 
       {owner.dev && (
-        <p className="border-b border-white/12 bg-[#ffd27a]/12 px-5 py-2 font-mono text-[9.5px] uppercase leading-relaxed tracking-[0.08em] text-[#ffd27a]">
+        <p className="border-b border-white/12 bg-[#ffd27a]/12 px-5 py-2 font-mono text-[10px] uppercase leading-relaxed tracking-[0.08em] text-[#ffd27a]">
           ⚠ Mode développement — aucune authentification
         </p>
       )}
@@ -94,7 +93,7 @@ export default async function OwnerLayout({
       */}
       {!cafe.live && (
         <div className="border-b border-[#ff6b6b]/35 bg-[#ff6b6b]/12 px-5 py-2.5">
-          <p className="text-[9.5px] font-semibold uppercase tracking-[0.06em] text-[#ff9a9a]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#ff9a9a]">
             ◆ Café hors ligne
           </p>
           {/*
@@ -113,7 +112,7 @@ export default async function OwnerLayout({
               ? `Suspendu : ${cafe.suspendedReason ?? "contactez-nous"}`
               : "Votre abonnement a expiré — vos clients ne peuvent plus scanner."}
           </p>
-          <p className="mt-1 text-[11.5px] leading-snug text-white/55">
+          <p className="mt-1 text-[12px] leading-snug text-white/55">
             Rien n&apos;est effacé : vos clients et leurs points vous attendent,
             intacts, le jour où vous rallumez.
           </p>
@@ -128,7 +127,7 @@ export default async function OwnerLayout({
       )}
 
       {cafe.live && left.soon && !left.unlimited && (
-        <p className="border-b border-[#ffd27a]/30 bg-[#ffd27a]/12 px-5 py-2 text-[11.5px] leading-snug text-[#ffd27a]">
+        <p className="border-b border-[#ffd27a]/30 bg-[#ffd27a]/12 px-5 py-2 text-[12px] leading-snug text-[#ffd27a]">
           Votre {cafe.plan === "trial" ? "essai" : "abonnement"} se termine dans{" "}
           <b>{left.label}</b>. Vos clients et leurs points sont conservés.{" "}
           <Link href="/owner/reglages" className="font-bold underline underline-offset-2">
@@ -148,7 +147,7 @@ export default async function OwnerLayout({
                 : "border-white/12 bg-white/[0.06] text-white/70"
           }`}
         >
-          <p className="text-[9px] font-semibold uppercase tracking-[0.06em] opacity-70">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.06em] opacity-70">
             {n.kind === "urgent" ? "◆ Urgent" : n.kind === "warning" ? "◆ Important" : "◆ Info"}
           </p>
           <p className="mt-0.5 text-[12px] leading-snug">{n.message}</p>
@@ -169,7 +168,7 @@ export default async function OwnerLayout({
         inherit DOWNWARD, and this cap is on the page's own parent, so the
         variable would never have reached it.
       */}
-      <main className="owner-main flex-1 px-5 py-5 md:px-8 md:py-8">
+      <main className="owner-main safe-t flex-1 px-5 pb-5 md:px-8 md:py-8 md:[--safe-pt:2rem] [--safe-pt:1.25rem]">
         <div className="mx-auto w-full max-w-[680px]">{children}</div>
       </main>
 
