@@ -536,10 +536,28 @@ function CustomerSheet({
             className="w-full rounded-2xl bg-white/[0.06] px-4 py-4 text-center text-[34px] font-extrabold tabular-nums text-white outline-none placeholder:text-white/25"
           />
           <p className="mt-1.5 text-center text-[12px] font-semibold text-white/45">
-            {/* "+N points", not "→ N": beside "Solde 25 points" one line above,
-                an arrow read as the NEW BALANCE. It is what this sale earns. */}
+            {/*
+              THE UNIT NEVER LEAVES THE SCREEN.
+
+              This used to swap: "Montant en dinars · 3 pt/DT" while the field was
+              empty, then "+174 points" the moment anything was typed. So the one
+              line telling a cashier they are entering DINARS vanished at exactly
+              the keystroke where it matters, leaving a big "58" above a bigger
+              "+174 points" and nothing at all saying which was which.
+
+              At any rate above 1 pt/DT the preview is LARGER than the amount,
+              which quietly suggests the typed figure is not the points — true,
+              but only to someone who stops to reason about it. Nobody reasons at
+              a counter with a queue.
+
+              So the amount is echoed with its unit and the preview follows it:
+              «58 dinars · +174 points». Two facts, in the order they happen.
+
+              "+N points", not "→ N": beside "Solde 25 points" one line above, an
+              arrow read as the NEW BALANCE rather than what this sale earns.
+            */}
             {amount
-              ? `+${fmtPoints(earned)} points` +
+              ? `${amount} dinars · +${fmtPoints(earned)} points` +
                 (customer.multiplier > 1 ? ` · ×${customer.multiplier} en cours` : "")
               : `Montant en dinars · ${pointsPerTnd} pt/DT`}
           </p>
