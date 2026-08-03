@@ -4,12 +4,17 @@ import { revalidatePath } from "next/cache";
 import { currentDiner } from "@/lib/auth/diner";
 import { getCafe, getLoyaltyProgram } from "@/lib/data";
 import { redeemAtCounter, spinWheel } from "@/lib/db";
+import { codeQr } from "@/lib/qr";
 
 export type RedeemState = {
   error?: string;
   /* No expiryHours any more: a code does not expire (0031), so there is no
      deadline to carry to the screen that spends the points. */
-  ok?: { code: string; label: string; balance: number };
+  /* `qr` is the code's picture, drawn HERE rather than in the browser: the
+     screen that reveals a code is a client component, and shipping a QR
+     encoder to every phone to draw six characters it was already given by the
+     server is a bundle for nothing. */
+  ok?: { code: string; label: string; balance: number; qr: string };
 };
 
 /**
@@ -63,6 +68,7 @@ export async function redeemAction(
       code: res.code,
       label: res.label,
       balance: res.balance,
+      qr: await codeQr(res.code),
     },
   };
 }
@@ -75,6 +81,8 @@ export type SpinState = {
     prizeId: string;
     balance: number;
     cost: number;
+    /** The won code's picture — same reasoning as RedeemState.qr. */
+    qr: string;
   };
 };
 
@@ -127,6 +135,7 @@ export async function spinAction(
       prizeId: res.prizeId,
       balance: res.balance,
       cost: res.cost,
+      qr: await codeQr(res.code),
     },
   };
 }

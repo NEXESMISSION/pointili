@@ -88,10 +88,18 @@ async function openCustomer(page, who) {
   await page.locator(DESK).waitFor({ timeout: 20000 });
 }
 
-/** Switch the terminal to its "a code" mode. */
+/**
+ * Bring up the voucher field.
+ *
+ * There is nothing to switch any more: the till stopped being tabbed ("the till
+ * fits one screen"), so both jobs are on the page at once and this only has to
+ * wait for the field. It still clicked the old "Valider une récompense" TAB —
+ * a control that no longer exists — and timed out 30s later on a till that
+ * works perfectly, which is the stale-selector failure this file warns about
+ * twice elsewhere.
+ */
 async function openCodeMode(page) {
   await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await page.locator('button:has-text("Valider une récompense")').click();
   await page.locator('input[name="code"]').waitFor({ timeout: 15000 });
 }
 
@@ -100,9 +108,18 @@ async function openSetting(page, row) {
   await page.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
   await page.locator(`button:has-text("${row}")`).click();
 }
+/**
+ * The points editor.
+ *
+ * It is keyed on `welcomePoints`, not on `pointsPerTnd`: the RATE STOPPED BEING
+ * A CONTROL (0027 — a point is a dinar). The editor states it, "1 dinar dépensé
+ * = 1 point", and offers no field, so waiting for that input waited forever on
+ * a panel that had opened correctly. The welcome bonus is the knob this screen
+ * still owns, and it is what the assertions below now exercise.
+ */
 async function openPointsEditor(page) {
   await openSetting(page, "Les points");
-  await page.locator('form:has(input[name="pointsPerTnd"]) input[name="pointsPerTnd"]').waitFor({ timeout: 15000 });
+  await page.locator('form:has(input[name="welcomePoints"]) input[name="welcomePoints"]').waitFor({ timeout: 15000 });
 }
 
 async function credit(amount, expectBalance) {
@@ -276,8 +293,7 @@ if (redeemCode) {
 
   // Réglages is a settings list — the points knob lives one tap deep.
   await openPointsEditor(staff);
-  const earn = staff.locator('form:has(input[name="pointsPerTnd"])');
-  await earn.locator('input[name="pointsPerTnd"]').fill("3");
+  const earn = staff.locator('form:has(input[name="welcomePoints"])');
   await earn.locator('input[name="welcomePoints"]').fill("25");
   await earn.locator('button[type="submit"]').click();
   await earn.locator('[role="status"], [role="alert"]').first().waitFor({ timeout: 20000 }).catch(() => {});
@@ -287,9 +303,12 @@ if (redeemCode) {
     .select("points_per_tnd, welcome_points")
     .eq("business_id", biz.id)
     .single();
+  /* The rate is asserted to be UNCHANGED, not to be settable: it is fixed at 1
+     (0027) and the editor no longer offers it. A save that quietly moved it
+     would be the regression now. */
   check(
     "réglages persist to the database",
-    Number(prog.points_per_tnd) === 3 && prog.welcome_points === 25,
+    Number(prog.points_per_tnd) === 1 && prog.welcome_points === 25,
     `${prog.points_per_tnd} pt/TND · ${prog.welcome_points} welcome`,
   );
 
@@ -315,15 +334,15 @@ if (redeemCode) {
   await staff.waitForSelector('[role="status"]', { timeout: 20000 }).catch(() => {});
   const rateTxt = await staff.locator('[role="status"]').innerText();
   check(
-    "caisse uses the owner's new rate (10 TND x 3 = 30)",
-    /\+30/.test(rateTxt) && /25 de bienvenue/i.test(rateTxt),
+    "caisse obeys the saved settings (10 TND x 1 = 10, +25 welcome)",
+    /\+10/.test(rateTxt) && /25 de bienvenue/i.test(rateTxt),
     rateTxt.replace(/\n+/g, " · "),
   );
 
   // nonsense must be refused, not stored
   await openPointsEditor(staff);
-  const earnForm = 'form:has(input[name="pointsPerTnd"])';
-  await staff.locator(`${earnForm} input[name="pointsPerTnd"]`).fill("-5");
+  const earnForm = 'form:has(input[name="welcomePoints"])';
+  await staff.locator(`${earnForm} input[name="welcomePoints"]`).fill("-5");
   await staff.locator(`${earnForm} button[type="submit"]`).click();
   // Wait for the verdict, don't sleep and hope: the action round-trips to
   // Zurich, so any fixed timeout is a flake waiting to happen.
@@ -331,7 +350,7 @@ if (redeemCode) {
     .waitForSelector(`${earnForm} [role="alert"]`, { timeout: 20000 })
     .then((el) => el.innerText())
     .catch(() => "");
-  check("réglages reject an invalid rate", /entre 0,1 et 100/.test(rejected), rejected);
+  check("réglages reject an invalid welcome bonus", /entre 0 et 10 ?000/.test(rejected), rejected);
 
   check(
     "owner can sign out from the app",
@@ -425,6 +444,11 @@ if (redeemCode) {
   const stamp = async () => {
     await openCustomer(staff, PHONE);
     await staff.locator('button:has-text("+1 tampon")').click();
+    /* A STAMP ASKS FIRST. The button opens a confirmation now — one tap used to
+       write straight to the card, and at 9/10 that hands out the free coffee.
+       Without this second click the suite stamped nothing and then reported the
+       card had failed to fill. */
+    await staff.locator('button:has-text("Oui, ajouter")').click();
     await staff.locator('[role="status"]').waitFor({ timeout: 20000 }).catch(() => {});
     return staff.locator(DESK).innerText().catch(() => "");
   };
@@ -519,7 +543,12 @@ if (redeemCode) {
 
   await fresh.fill('input[name="name"]', "Café de l'Étoile & Co");
   await fresh.locator('form:has(input[name="name"]) button[type="submit"]').click();
-  await fresh.waitForURL((u) => u.pathname === "/owner", { timeout: 25000 }).catch(() => {});
+  /* Creating a shop is TWO questions: the name, then the rewards it will give
+     out. So the owner lands on /owner/nouveau/recompenses, not on the app —
+     this waited for /owner and gave up 25s later on a signup that worked. */
+  await fresh
+    .waitForURL((u) => u.pathname.startsWith("/owner/nouveau/recompenses"), { timeout: 25000 })
+    .catch(() => {});
 
   const { data: biz } = await admin
     .from("businesses")
@@ -528,9 +557,9 @@ if (redeemCode) {
     .maybeSingle();
 
   check(
-    "café is created and the owner lands on Analyses",
-    new URL(fresh.url()).pathname === "/owner" && !!biz,
-    biz ? `/${biz.slug}` : "no café row",
+    "café is created and the owner is asked for its rewards",
+    new URL(fresh.url()).pathname.startsWith("/owner/nouveau/recompenses") && !!biz,
+    `${new URL(fresh.url()).pathname} · ${biz ? `/${biz.slug}` : "no café row"}`,
   );
 
   // accents and punctuation must produce a clean, routable slug

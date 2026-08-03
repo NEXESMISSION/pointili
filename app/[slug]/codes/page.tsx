@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { CafeClosed } from "@/components/CafeClosed";
 import { GiftIcon } from "@/components/icons";
 import { getCafe, getMember } from "@/lib/data";
+import { codeQr } from "@/lib/qr";
 
 export const metadata = { title: "Mes codes" };
 
@@ -32,14 +33,25 @@ export default async function Codes({
   const diner = await getMember(cafe.id);
   if (!diner) redirect(`/${slug}/rejoindre`);
 
-  const codes = diner.codes;
+  /*
+    Every code gets its PICTURE, drawn here on the server.
+
+    Reading six characters out loud across a counter is the slowest part of
+    collecting a reward, and the part that goes wrong: "B" and "8", "0" and "O",
+    in a queue, over a coffee machine. The till already has a camera on this
+    exact screen — it just had nothing to point at. Now it does, and the printed
+    code stays underneath for when a lens will not focus.
+  */
+  const codes = await Promise.all(
+    diner.codes.map(async (c) => ({ ...c, qr: await codeQr(c.code) })),
+  );
 
   return (
     <div className="flex flex-1 flex-col px-5 pb-6">
       <section className="pb-4 pt-3">
         <h1 className="text-[21px] font-extrabold">Mes codes</h1>
         <p className="mt-0.5 text-[13px] text-white/60">
-          Montre-les au comptoir pour récupérer tes récompenses.
+          Fais scanner le QR au comptoir — rien à dicter.
         </p>
       </section>
 
@@ -54,14 +66,29 @@ export default async function Codes({
           </p>
         </div>
       ) : (
-        <ul className="stagger space-y-2.5">
+        /*
+          ONE TICKET PER CODE, in the same shape as the card screen's ticket:
+          what it is on top, a perforation, and the pass zone underneath.
+
+          The row used to be a name beside a small white chip holding the code —
+          which said "here is a reference number", so people read it out. A pass
+          zone with a QR in it says "hold this up", which is the faster thing
+          and the thing the till is built for.
+        */
+        <ul className="stagger space-y-3">
           {codes.map((c, i) => (
-            <li key={c.code} style={{ ["--i" as string]: i }} className="d-card flex items-center justify-between gap-3 px-4 py-3.5">
-              <span className="min-w-0">
+            <li
+              key={c.code}
+              style={{ ["--i" as string]: i }}
+              className="overflow-hidden rounded-[24px] border border-white/[0.08] bg-white/[0.05]"
+            >
+              <div className="px-4 pb-3 pt-3.5">
                 <span className="block text-[10.5px] font-bold uppercase tracking-[0.06em] text-white/50">
                   {KIND_LABEL[c.kind] ?? "Récompense"}
                 </span>
-                <span className="block truncate text-[14px] font-bold text-white">{c.label}</span>
+                <span className="mt-0.5 block truncate text-[15px] font-bold text-white">
+                  {c.label}
+                </span>
                 {/*
                   No countdown, because there is nothing to count down to
                   (0031). This line used to read "expire dans 5 h" and, once
@@ -70,12 +97,31 @@ export default async function Codes({
                   needs now is that it does NOT run out, and the quietest way
                   to say that is to stop mentioning time at all.
                 */}
-              </span>
-              <span className="shrink-0 rounded-xl bg-white px-3 py-2 text-center">
-                <span className="block font-mono text-[16.5px] font-bold tracking-[0.14em] text-charcoal">
-                  {c.code}
-                </span>
-              </span>
+              </div>
+
+              <div aria-hidden className="mx-4 border-t-2 border-dashed border-white/15" />
+
+              {/* the pass zone — white, because that is the polarity every
+                  decoder is promised, and because it reads as "detachable" */}
+              <div className="flex items-center gap-4 bg-white px-4 py-4">
+                <div
+                  className="w-[86px] shrink-0 [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+                  dangerouslySetInnerHTML={{ __html: c.qr }}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#17121f]/45">
+                    À scanner au comptoir
+                  </p>
+                  {/* kept, and kept BIG: a scratched lens, a dead battery, a
+                      shop whose only phone is in someone's pocket */}
+                  <p className="mt-1 font-mono text-[26px] font-extrabold leading-none tracking-[0.14em] text-[#4c2fd6]">
+                    {c.code}
+                  </p>
+                  <p className="mt-1.5 text-[11.5px] leading-snug text-[#17121f]/55">
+                    Ou dicte le code — les deux marchent.
+                  </p>
+                </div>
+              </div>
             </li>
           ))}
         </ul>

@@ -126,6 +126,9 @@ await admin
 const stampOnce = async () => {
   await openCustomer(card.code);
   await staff.locator('button:has-text("+1 tampon")').click();
+  /* The tap asks before it writes — a stamp has no undo and at 9/10 it hands
+     out the reward. Without this confirmation the card never filled. */
+  await staff.locator('button:has-text("Oui, ajouter")').click();
   await staff.locator('[role="status"]').waitFor({ timeout: 20000 }).catch(() => {});
   return staff.locator(DESK).innerText();
 };

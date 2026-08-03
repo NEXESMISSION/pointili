@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { GiftIcon } from "@/components/icons";
 import type { Reward } from "@/lib/types";
 import { redeemAction, type RedeemState } from "./actions";
@@ -52,10 +52,10 @@ export function RewardPicker({
   /* The issued code must OUTLIVE the next run of useActionState, which replaces
      its whole value — a later rejection would otherwise erase a code the diner
      genuinely paid for. */
-  const [issued, setIssued] = useState<{ code: string; label: string } | null>(null);
+  const [issued, setIssued] = useState<{ code: string; label: string; qr: string } | null>(null);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (state.ok) setIssued({ code: state.ok.code, label: state.ok.label });
+    if (state.ok) setIssued({ code: state.ok.code, label: state.ok.label, qr: state.ok.qr });
   }, [state.ok]);
 
   // A buy changed the balance — re-read so every row's affordability is honest.
@@ -177,11 +177,27 @@ function CodeReveal({
   issued,
   onAgain,
 }: {
-  issued: { code: string; label: string };
+  issued: { code: string; label: string; qr: string };
   onAgain: () => void;
 }) {
+  /*
+    The code the diner just paid for goes ON SCREEN, not somewhere below it.
+
+    This panel replaces the picker in place — and when the shop runs the wheel,
+    the picker starts a wheel's height down the page, so the reward you have
+    just bought can open entirely below the fold. Mounting is the only moment
+    this is needed, hence the empty deps.
+  */
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.scrollIntoView({
+      block: "center",
+      behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  }, []);
+
   return (
-    <div className="text-center">
+    <div ref={ref} className="text-center">
       <p className="inline-flex items-center gap-2 rounded-full bg-[#7ff0b0]/12 px-3.5 py-1.5 text-[12.5px] font-bold text-[#7ff0b0]">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden>
           <path d="m5 12.5 4.5 4.5L19 7" />
@@ -189,22 +205,37 @@ function CodeReveal({
         Récompense réservée
       </p>
 
-      <p className="mt-5 text-[14px] text-white/60">Voici ton code :</p>
+      <p className="mt-5 text-[14px] text-white/60">Fais scanner ça :</p>
 
       {/*
-        Deliberately the largest thing on the screen. This is read aloud across a
-        counter, often in a queue, sometimes by someone holding a coffee — the
-        old version printed it at 15px in a chip.
+        THE PICTURE FIRST, THE CHARACTERS UNDER IT.
+
+        This panel used to be six glowing characters and nothing else, because
+        reading them aloud was the only way to spend the code. It is not any
+        more — the till has a camera pointed at this exact screen — and a
+        counter goes faster when nobody has to spell "B, not 8" over a grinder.
+
+        The QR sits on white inside the neon frame rather than on the purple:
+        dark-on-light is the polarity every decoder is promised, and this is the
+        one screen where a failed read costs a queue.
       */}
-      <div className="mt-3 rounded-2xl border-2 border-[#8b6bff] bg-[#6d4ae6]/12 px-4 py-6 shadow-[0_0_28px_-6px_rgba(139,107,255,.8),inset_0_0_22px_-10px_rgba(139,107,255,.9)]">
-        <p className="font-mono text-[34px] font-bold leading-none tracking-[0.18em] text-white [text-shadow:0_0_18px_rgba(185,163,255,.9)]">
+      <div className="mt-3 rounded-2xl border-2 border-[#8b6bff] bg-[#6d4ae6]/12 px-4 py-5 shadow-[0_0_28px_-6px_rgba(139,107,255,.8),inset_0_0_22px_-10px_rgba(139,107,255,.9)]">
+        <div className="mx-auto w-[168px] rounded-2xl bg-white p-3.5">
+          <div
+            className="[&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+            dangerouslySetInnerHTML={{ __html: issued.qr }}
+          />
+        </div>
+        {/* Still large: the fallback for a lens that will not focus, and the
+            thing a cashier types when the shop's phone is in a pocket. */}
+        <p className="mt-4 font-mono text-[30px] font-bold leading-none tracking-[0.18em] text-white [text-shadow:0_0_18px_rgba(185,163,255,.9)]">
           {issued.code}
         </p>
       </div>
 
       <p className="mt-3 text-[14px] font-bold text-white">{issued.label}</p>
       <p className="mt-1 text-[13px] leading-relaxed text-white/55">
-        Montre-le au comptoir pour en profiter.
+        Le serveur scanne le QR — ou tape le code.
       </p>
       {/* The clock belongs HERE, where the points were actually spent. */}
       <p className="mt-1.5 text-[12.5px] font-bold text-[#ffd27a]">

@@ -17,6 +17,7 @@ import {
   peekAction,
   resolveCustomerAction,
   setStampsByCodeAction,
+  type PeekState,
   type ResolveState,
 } from "./actions";
 
@@ -42,6 +43,17 @@ import {
 type Customer = NonNullable<ResolveState["customer"]>;
 type Stage = "scan" | "keypad";
 
+/**
+ * A voucher that arrived already read — from the camera, or from the client
+ * field somebody typed it into — together with the lookup the till did for it.
+ *
+ * The LOOKUP TRAVELS WITH THE CODE on purpose. The alternative was handing the
+ * validate panel a bare code and letting it peek itself on mount, which is the
+ * same request one render later and puts a setState in an effect for no gain.
+ * Scanning is what triggers the lookup, so the lookup belongs at the scan.
+ */
+type Scanned = { code: string; n: number; peek: PeekState["peek"] | null; error: string };
+
 /** Accept a raw code or a URL that carries it (?c= or last path segment). */
 function extractCode(text: string): string {
   const t = text.trim();
@@ -51,6 +63,24 @@ function extractCode(text: string): string {
   } catch {
     return t;
   }
+}
+
+/**
+ * Is this a REWARD VOUCHER rather than a customer?
+ *
+ * Length is the whole distinction and it is not a guess: account codes are 4
+ * characters (0019_resolve_by_account_code.sql) and vouchers are 6
+ * (pointili_gen_code, 0003_rpcs.sql), drawn from the same alphabet. A phone
+ * number is 8 digits here and never reaches this shape.
+ *
+ * The server says the same thing from the other side — resolveCustomer answers
+ * a 6-character lookup with "c'est un code de récompense" — which is exactly
+ * the sentence this replaces. Naming the mistake was the best a text field
+ * could do; a scanner can simply DO THE RIGHT THING instead, and now does,
+ * whether the code arrived through the lens or through the wrong field.
+ */
+function isVoucher(code: string): boolean {
+  return /^[A-Z0-9]{6}$/.test(code.toUpperCase());
 }
 
 function ago(iso: string | null): string {
@@ -126,11 +156,47 @@ export function CaisseDesk({
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [error, setError] = useState("");
   const [busy, start] = useTransition();
+  /*
+    A voucher handed to the validate panel, with its own nonce.
+
+    The nonce REMOUNTS that panel. Without it, scanning a second voucher while
+    the first one's result is still on screen would change a prop the panel had
+    already consumed, and the cashier would be looking at the previous
+    customer's reward with a live Collecter button under it.
+  */
+  const [voucher, setVoucher] = useState<Scanned | null>(null);
 
   function find(raw: string) {
     const code = extractCode(raw);
     if (!code) return;
     setError("");
+
+    /*
+      A REWARD CODE GOES TO THE REWARD PANEL. It does not matter which door it
+      came through — the camera, or the client field somebody typed it into by
+      mistake. Six characters is a voucher, and the only thing anyone ever
+      wants to do with a voucher is collect it.
+    */
+    if (isVoucher(code)) {
+      const c = code.toUpperCase();
+      setTyped("");
+      setStage("keypad"); // the panel lives on the till screen, not the viewfinder
+      start(async () => {
+        // Read-only: peek says WHAT the code is. Nothing is claimed until the
+        // cashier presses Collecter, exactly as when they type it by hand.
+        const fd = new FormData();
+        fd.set("code", c);
+        const res = await peekAction({}, fd);
+        setVoucher((v) => ({
+          code: c,
+          n: (v?.n ?? 0) + 1,
+          peek: res.peek ?? null,
+          error: res.error ?? "",
+        }));
+      });
+      return;
+    }
+
     start(async () => {
       const res = await resolveCustomerAction(code);
       if (res.error) {
@@ -174,8 +240,10 @@ export function CaisseDesk({
               onUnavailable={() => setStage("keypad")}
             />
           </div>
+          {/* ONE lens, TWO jobs — say so, or half the shop never points it at a
+              reward and keeps typing six characters by hand. */}
           <p className="mt-3 text-center text-[13px] text-white/55">
-            {busy ? "Recherche…" : "Pointez le QR du client"}
+            {busy ? "Recherche…" : "Pointez le QR — carte client ou récompense"}
           </p>
           <button type="button" onClick={() => setStage("keypad")} className="a-btn a-btn--ghost mt-3">
             Fermer la caméra
@@ -183,18 +251,31 @@ export function CaisseDesk({
         </section>
       ) : (
         <>
+          {/*
+            THE SCANNER SITS ABOVE BOTH JOBS, because it now does both.
+
+            It used to live inside the "Ajouter des points" card, which was true
+            when the only scannable thing was a customer's card. A reward code
+            is scannable too — so a button buried under that heading was a
+            button the cashier collecting a reward had no reason to read, and
+            they went on typing six characters while the queue waited.
+
+            One lens, at the top, before the two things you might reach for when
+            the camera is not the answer.
+          */}
+          <button
+            type="button"
+            onClick={() => setStage("scan")}
+            className="a-btn flex !min-h-[56px] items-center justify-center gap-2 !text-[16px]"
+          >
+            <QrIcon className="h-5 w-5" /> Scanner le QR
+          </button>
+
           {/* ── this person is paying ─────────────────────────────── */}
           <section className="a-card p-4">
             <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white/45">
               Ajouter des points
             </p>
-            <button
-              type="button"
-              onClick={() => setStage("scan")}
-              className="a-btn mb-2.5 flex items-center justify-center gap-2"
-            >
-              <QrIcon className="h-5 w-5" /> Scanner le QR
-            </button>
             {/* field + button on ONE row — the height the keypad used to eat
                 is what lets both jobs fit one screen */}
             <div className="flex gap-2">
@@ -226,7 +307,7 @@ export function CaisseDesk({
           )}
 
           {/* ── this person is collecting ─────────────────────────── */}
-          <ValidateForm />
+          <ValidateForm scanned={voucher} />
         </>
       )}
 
@@ -828,16 +909,33 @@ const STATUS_MSG: Record<"expired" | "claimed", string> = {
   claimed: "Ce code a déjà été utilisé.",
 };
 
-export function ValidateForm() {
+/**
+ * `scanned` is a code that arrived from the camera (or from the client field,
+ * mistyped there) — already read, so this panel looks it up on its own instead
+ * of asking the cashier to key in six characters they are holding a picture of.
+ *
+ * Its nonce is part of the remount key: a second scan has to reset the panel
+ * even when the FIRST one is still showing a result, or the new voucher lands
+ * under the previous voucher's Collecter button.
+ */
+export function ValidateForm({ scanned }: { scanned?: Scanned | null }) {
   const [k, setK] = useState(0);
-  return <ValidateInner key={k} onReset={() => setK((n) => n + 1)} />;
+  return (
+    <ValidateInner
+      key={`${k}:${scanned?.n ?? 0}`}
+      scanned={scanned}
+      onReset={() => setK((n) => n + 1)}
+    />
+  );
 }
 
-function ValidateInner({ onReset }: { onReset: () => void }) {
-  const [code, setCode] = useState("");
-  const [peek, setPeek] = useState<NonNullable<Awaited<ReturnType<typeof peekAction>>>["peek"] | null>(null);
+function ValidateInner({ scanned, onReset }: { scanned?: Scanned | null; onReset: () => void }) {
+  const [code, setCode] = useState(scanned?.code ?? "");
+  /* Seeded from the scan, so a scanned voucher lands on the confirm-and-collect
+     view directly — no second lookup, no six characters to retype. */
+  const [peek, setPeek] = useState<PeekState["peek"] | null>(scanned?.peek ?? null);
   const [done, setDone] = useState<{ label: string; code: string } | null>(null);
-  const [err, setErr] = useState("");
+  const [err, setErr] = useState(scanned?.error ?? "");
   const [busy, start] = useTransition();
 
   function check() {
@@ -943,8 +1041,10 @@ function ValidateInner({ onReset }: { onReset: () => void }) {
               {busy ? "· · ·" : "Vérifier"}
             </button>
           </div>
+          {/* The camera is the fast path and it is one block up, so this line
+              points at it instead of only describing the field it sits under. */}
           <p className="mt-2 text-[12px] text-white/45">
-            Le code à 6 caractères d&apos;une récompense échangée.
+            Scannez le QR du client — ou tapez ses 6 caractères ici.
           </p>
         </>
       )}

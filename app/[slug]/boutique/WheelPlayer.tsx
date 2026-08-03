@@ -70,6 +70,24 @@ export function WheelPlayer({
   const [revealed, setRevealed] = useState<SpinState["ok"] | null>(null);
   const rafRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
+  const wonRef = useRef<HTMLDivElement>(null);
+
+  /*
+    BRING THE PRIZE INTO VIEW.
+
+    The wheel is tall, so the result lands at the bottom of the screen — and the
+    bottom of this screen is where the tab bar is. Measured: the win's QR came
+    out half-covered by it, on a phone, in the one second the diner turns the
+    screen round to be scanned. A page you have to scroll before you can be
+    served is not the fast path this exists to build.
+  */
+  useEffect(() => {
+    if (!revealed) return;
+    wonRef.current?.scrollIntoView({
+      block: "center",
+      behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  }, [revealed]);
 
   const seg = 360 / Math.max(1, prizes.length);
   const affordable = balance >= spinCost;
@@ -189,13 +207,22 @@ export function WheelPlayer({
       </div>
 
       {revealed ? (
-        <div className="mt-5">
+        <div ref={wonRef} className="mt-5">
           <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-white/45">
             Tu as gagné
           </p>
           <p className="mt-1 text-[17px] font-extrabold text-white">{revealed.label}</p>
-          <p className="mt-3 text-[12.5px] text-white/55">Montre ce code au comptoir</p>
-          <p className="mt-1 font-mono text-[23px] font-extrabold tracking-[0.14em] text-[#b9a3ff]">
+          <p className="mt-3 text-[12.5px] text-white/55">Fais scanner ça au comptoir</p>
+          {/* Same pass zone as a bought reward — a win is collected by the same
+              cashier pressing the same button, so it must not look like a
+              different kind of object. */}
+          <div className="mx-auto mt-2 w-[138px] rounded-2xl bg-white p-3">
+            <div
+              className="[&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+              dangerouslySetInnerHTML={{ __html: revealed.qr }}
+            />
+          </div>
+          <p className="mt-2.5 font-mono text-[23px] font-extrabold tracking-[0.14em] text-[#b9a3ff]">
             {revealed.code}
           </p>
           <p className="mt-2 text-[12px] text-white/40">
