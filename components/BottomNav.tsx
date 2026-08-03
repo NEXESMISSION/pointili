@@ -2,7 +2,7 @@
 
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { CardIcon, HistoryIcon, UserIcon } from "./icons";
+import { CardIcon, GiftIcon, HistoryIcon } from "./icons";
 
 /**
  * The diner's bottom nav — three flat tabs on the deep-purple card, per the
@@ -12,7 +12,16 @@ import { CardIcon, HistoryIcon, UserIcon } from "./icons";
 const tabs = [
   { key: "carte", label: "Carte", Icon: CardIcon, href: "" },
   { key: "historique", label: "Historique", Icon: HistoryIcon, href: "/historique" },
-  { key: "profil", label: "Profil", Icon: UserIcon, href: "/profil" },
+  /*
+    The store, not the profile.
+
+    A tab bar has three slots and the profile was spending one of them on
+    something a customer opens perhaps twice ever — to change their name. The
+    rewards are what they came for, and they were two taps away behind "Voir
+    tout". The profile moved to the person icon in the header, which is where
+    every app on the phone already keeps it.
+  */
+  { key: "boutique", label: "Récompenses", Icon: GiftIcon, href: "/boutique" },
 ];
 
 /**

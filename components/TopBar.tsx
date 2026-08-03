@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BackLink } from "./BackLink";
-import { UserIcon } from "./icons";
+import { ChevronDownIcon, UserIcon } from "./icons";
 
 /**
  * The diner app's top bar: who you are, where you are, what is waiting.
@@ -68,7 +68,27 @@ export function TopBar({
         )}
       </span>
 
-      <h1 className="min-w-0 truncate text-[17px] font-extrabold text-white">{title}</h1>
+      {/*
+        The centre is a CONTROL, not a caption.
+
+        It read "Ma carte" — a title, on the one screen where the thing people
+        most often want is the OTHER card. Switching used to live in a café chip
+        that this bar dropped, and the replacement was "tap the card", which is
+        invisible if nobody tells you. A pill with a chevron is a switcher on
+        sight, and it says what it opens rather than where you are: the card
+        below already announces that at 29px.
+      */}
+      {onCard ? (
+        <Link
+          href={`/cartes?from=${slug}`}
+          className="flex min-w-0 items-center gap-1.5 rounded-full bg-white/[0.10] py-1.5 pl-4 pr-3 ring-1 ring-white/15 transition active:scale-[0.97]"
+        >
+          <span className="truncate text-[16px] font-extrabold text-white">Mes cartes</span>
+          <ChevronDownIcon className="h-4 w-4 shrink-0 text-white/70" />
+        </Link>
+      ) : (
+        <h1 className="min-w-0 truncate text-[18px] font-extrabold text-white">{title}</h1>
+      )}
 
       {/*
         A real bell, not a decorative one.

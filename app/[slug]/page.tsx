@@ -127,10 +127,10 @@ export default async function Carte({
                 src={cafe.logoUrl}
                 alt=""
                 data-shop-logo
-                className="h-[92px] w-[92px] shrink-0 rounded-full bg-white/15 object-cover ring-1 ring-white/20"
+                className="h-[78px] w-[78px] shrink-0 rounded-full bg-white/15 object-cover ring-1 ring-white/20"
               />
             ) : (
-              <span className="grid h-[92px] w-[92px] shrink-0 place-items-center rounded-full bg-white/15 text-[42px] ring-1 ring-white/20">
+              <span className="grid h-[78px] w-[78px] shrink-0 place-items-center rounded-full bg-white/15 text-[36px] ring-1 ring-white/20">
                 {type.emoji}
               </span>
             )}
@@ -138,10 +138,10 @@ export default async function Carte({
             <span className="min-w-0 flex-1">
               {/* two lines by design, like the mockup — a shop name is a name,
                   not a label to be squeezed onto one row and truncated */}
-              <span className="block text-[27px] font-extrabold leading-[1.05] tracking-[-0.02em] line-clamp-2">
+              <span className="block text-[29px] font-extrabold leading-[1.04] tracking-[-0.02em] line-clamp-2">
                 {cafe.name}
               </span>
-              <span className="mt-2 inline-block rounded-full bg-white/20 px-3 py-[3px] text-[12.5px] font-bold text-white">
+              <span className="mt-2 inline-block rounded-full bg-[#7c56e8] px-3.5 py-[4px] text-[13.5px] font-bold text-white">
                 {type.label}
               </span>
             </span>
@@ -152,9 +152,9 @@ export default async function Carte({
               <CountUp
                 from={seen.before}
                 to={diner.balance}
-                className="block text-[42px] font-extrabold leading-none tabular-nums tracking-[-0.03em]"
+                className="block text-[48px] font-extrabold leading-none tabular-nums tracking-[-0.03em]"
               />
-              <span className="mt-1 block text-[13px] font-bold text-[#c9b8ff]">points</span>
+              <span className="mt-1.5 block text-[14px] font-bold text-[#a78bfa]">points</span>
             </span>
           </div>
 
@@ -179,10 +179,10 @@ export default async function Carte({
                 ))}
               </div>
               <div className="mt-4 flex items-end justify-between gap-4">
-                <span className="shrink-0 whitespace-nowrap text-[11.5px] leading-snug text-white/50">
+                <span className="shrink-0 whitespace-nowrap text-[12.5px] leading-snug text-white/50">
                   {rateLabel(program.pointsPerTnd)}
                 </span>
-                <span className="min-w-0 text-right text-[12px] leading-snug text-white/70">
+                <span className="min-w-0 text-right text-[12.5px] leading-snug text-white/70">
                   {stampsLeft <= 0 ? (
                     <b className="font-extrabold text-white">
                       {program.stampReward} t&apos;attend 🎉
@@ -238,8 +238,8 @@ export default async function Carte({
         >
           <ScanIcon className="h-8 w-8 shrink-0" />
           <span className="text-left">
-            <span className="block text-[18px] font-extrabold leading-tight">Montrer mon code</span>
-            <span className="block text-[13px] font-medium text-[#150d2b]/50">
+            <span className="block text-[20px] font-extrabold leading-tight">Montrer mon code</span>
+            <span className="block text-[13.5px] font-medium text-[#150d2b]/50">
               Scannez en caisse
             </span>
           </span>
@@ -287,8 +287,8 @@ export default async function Carte({
       {offers.length > 0 && (
         <section className="px-4 pt-6">
           <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="text-[17px] font-extrabold text-white">Mes récompenses</h2>
-            <Link href={`/${slug}/boutique`} className="text-[13.5px] font-bold text-[#a78bfa]">
+            <h2 className="text-[18px] font-extrabold text-white">Mes récompenses</h2>
+            <Link href={`/${slug}/boutique`} className="text-[14.5px] font-bold text-[#a78bfa]">
               Voir tout
             </Link>
           </div>
@@ -316,7 +316,7 @@ export default async function Carte({
                     )}
 
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[16px] font-extrabold text-white">
+                      <span className="block truncate text-[17px] font-extrabold text-white">
                         {r.label}
                       </span>
                       <span className="mt-0.5 block text-[12.5px] font-medium text-white/45">
@@ -330,7 +330,7 @@ export default async function Carte({
                       }`}
                     >
                       <span
-                        className={`block text-[20px] font-extrabold leading-none tabular-nums ${
+                        className={`block text-[21px] font-extrabold leading-none tabular-nums ${
                           ready ? "text-[#7ff0b0]" : "text-white"
                         }`}
                       >

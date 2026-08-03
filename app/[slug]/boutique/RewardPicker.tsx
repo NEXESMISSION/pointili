@@ -72,7 +72,10 @@ export function RewardPicker({
   }
 
   return (
-    <form action={formAction}>
+    /* data-redeem so a suite can name THIS form. The store page grew a second
+       one (WheelPlayer) and `form button[type="submit"]` silently started
+       matching the spin button instead of the redeem button. */
+    <form action={formAction} data-redeem>
       <input type="hidden" name="rewardId" value={picked ?? ""} />
 
       <ul className="space-y-2.5">
