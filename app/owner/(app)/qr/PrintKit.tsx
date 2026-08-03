@@ -17,7 +17,7 @@ import { useState } from "react";
   phone preview and on the printed page without a second set of styles.
 */
 
-export type Format = "tent" | "poster" | "sticker" | "story";
+export type Format = "tent";
 
 /**
  * Four objects, named by WHERE THEY GO and sized in centimetres a Tunisian print
@@ -32,27 +32,25 @@ export type Format = "tent" | "poster" | "sticker" | "story";
  * on a wall across the room, and 20×30 is what the owner asked for and what
  * every print shop stocks as a standard cut.
  */
+/*
+  ONE format. There were four — Chevalet, Autocollant, Affiche, Story — as a
+  four-tile picker above the artwork, and choosing between them was the first
+  decision this screen asked of somebody who had come to print a sticker for
+  their table. A café prints the table tent. The other three were options for a
+  choice nobody had come to make.
+
+  Kept as a one-entry list rather than inlined, so adding a size back is a line
+  here and not a rewrite of everything that reads `fmt`.
+*/
 const FORMATS: {
   id: Format;
   label: string;
   hint: string;
-  /** width / height */
   ratio: number;
-  /** what @page gets during print — story is screen-only */
   page: string | null;
-  /**
-   * Export width in pixels: the physical width at 300 dpi, which is what a print
-   * shop asks for. A single fixed width for every format meant the 20×30 poster
-   * came out at ~178 dpi — the QR still scans at that, but the type goes soft,
-   * and soft type on a wall is the one place it shows. Story is screen-only, so
-   * it gets Instagram's 1080 instead.
-   */
   px: number;
 }[] = [
   { id: "tent", label: "Chevalet", hint: "Table · 10×15", ratio: 3 / 4, page: "A6 portrait", px: 1240 },
-  { id: "sticker", label: "Autocollant", hint: "Table · 8×8", ratio: 1, page: "80mm 80mm", px: 945 },
-  { id: "poster", label: "Affiche", hint: "Mur, vitrine · 20×30", ratio: 20 / 30, page: "200mm 300mm", px: 2362 },
-  { id: "story", label: "Story", hint: "Instagram", ratio: 9 / 16, page: null, px: 1080 },
 ];
 
 export function PrintKit({
@@ -70,29 +68,10 @@ export function PrintKit({
   emoji: string;
   promise: string;
 }) {
-  const [id, setId] = useState<Format>("tent");
-  const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
-  const fmt = FORMATS.find((f) => f.id === id) ?? FORMATS[0];
+  const fmt = FORMATS[0];
 
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
-    } catch {
-      /* clipboard blocked — the link is printed on the artwork anyway */
-    }
-  };
 
-  const share = async () => {
-    try {
-      if (navigator.share) await navigator.share({ title: name, text: `Ma carte de fidélité ${name}`, url });
-      else await copy();
-    } catch {
-      /* cancelled */
-    }
-  };
 
   /**
    * Rasterise the artwork at the chosen ratio. Composed on a canvas rather than
@@ -122,8 +101,8 @@ export function PrintKit({
       };
 
       // QR on white so it always scans, whatever the background is
-      const qrSide = u(fmt.id === "sticker" ? 58 : 46);
-      const qrTop = H * (fmt.id === "story" ? 0.36 : 0.4);
+      const qrSide = u(46);
+      const qrTop = H * 0.4;
       const pad = qrSide * 0.09;
       ctx.fillStyle = "#fff";
       const box = qrSide + pad * 2;
@@ -142,10 +121,8 @@ export function PrintKit({
       URL.revokeObjectURL(src);
 
       centre(name, H * 0.14, u(6.5));
-      if (fmt.id !== "sticker") {
-        centre("CARTE DE FIDÉLITÉ", H * 0.2, u(2.8), "700", "rgba(255,255,255,.55)");
-        wrapped(ctx, promise, W / 2, H * 0.27, W * 0.8, u(6), u(7.2));
-      }
+      centre("CARTE DE FIDÉLITÉ", H * 0.2, u(2.8), "700", "rgba(255,255,255,.55)");
+      wrapped(ctx, promise, W / 2, H * 0.27, W * 0.8, u(6), u(7.2));
       centre("Scannez pour commencer", qrTop + qrSide + u(9), u(4));
       centre("Sans application · en 10 secondes", qrTop + qrSide + u(14), u(2.9), "600", "rgba(255,255,255,.6)");
       centre(url.replace(/^https?:\/\//, ""), H - u(6), u(2.6), "500", "rgba(255,255,255,.45)");
@@ -168,25 +145,6 @@ export function PrintKit({
         <style>{`@media print { @page { size: ${fmt.page}; margin: 0 } }`}</style>
       )}
 
-      <div className="grid grid-cols-4 gap-1 rounded-2xl bg-white/[0.07] p-1 print:hidden">
-        {FORMATS.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() => setId(f.id)}
-            className={`rounded-xl px-1 py-2 transition ${
-              f.id === id ? "bg-[#6d4ae6] shadow-lg" : ""
-            }`}
-          >
-            <span className={`block text-[12px] font-bold ${f.id === id ? "text-white" : "text-white/60"}`}>
-              {f.label}
-            </span>
-            <span className={`block text-[9.5px] ${f.id === id ? "text-white/70" : "text-white/35"}`}>
-              {f.hint}
-            </span>
-          </button>
-        ))}
-      </div>
 
       {/*
         The artwork, at its real proportions — this IS what prints.
@@ -236,22 +194,16 @@ export function PrintKit({
             <span className="text-[6cqw] font-extrabold leading-none">{name}</span>
           </div>
 
-          {fmt.id !== "sticker" && (
-            <>
-              <p className="mt-[6cqw] text-[2.8cqw] font-bold uppercase tracking-[0.14em] text-white/55">
-                Carte de fidélité
-              </p>
-              <p className="mt-[1.5cqw] max-w-[20ch] text-[6.4cqw] font-extrabold leading-tight">
-                {promise}
-              </p>
-            </>
-          )}
+          <p className="mt-[6cqw] text-[2.8cqw] font-bold uppercase tracking-[0.14em] text-white/55">
+            Carte de fidélité
+          </p>
+          <p className="mt-[1.5cqw] max-w-[20ch] text-[6.4cqw] font-extrabold leading-tight">
+            {promise}
+          </p>
 
           {/* always on white — a code on a dark tile does not scan reliably */}
           <div
-            className={`mt-[6cqw] rounded-[3cqw] bg-white p-[2.5cqw] ${
-              fmt.id === "sticker" ? "w-[62cqw]" : "w-[48cqw]"
-            }`}
+            className="mt-[6cqw] w-[48cqw] rounded-[3cqw] bg-white p-[2.5cqw]"
           >
             <div className="[&>svg]:h-auto [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
           </div>
@@ -279,22 +231,12 @@ export function PrintKit({
             {saving ? "· · ·" : "Télécharger"}
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-2.5">
-          <button type="button" onClick={share} className="a-btn a-btn--ghost !text-[13px]">
-            Partager
-          </button>
-          <button type="button" onClick={copy} className="a-btn a-btn--ghost !text-[13px]">
-            {copied ? "Copié ✓" : "Copier le lien"}
-          </button>
-        </div>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block py-1 text-center text-[12.5px] font-bold text-[#b9a3ff] underline underline-offset-2"
-        >
-          Voir ce que voit un client →
-        </a>
+        {/*
+          Partager, Copier le lien and "Voir ce que voit un client" all lived
+          here too. The QR screen above this panel already carries the last two
+          as its only two buttons, and Partager is the OS sheet that the browser
+          offers anyway. What is left is the pair you cannot get anywhere else.
+        */}
       </div>
     </>
   );
