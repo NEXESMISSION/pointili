@@ -7,6 +7,7 @@ import { businessType } from "@/lib/businessTypes";
 import type { WalletCafe } from "@/lib/db";
 import { fmtPoints } from "@/lib/points";
 import { GoChevron } from "@/components/GoChevron";
+import { StampIcon } from "@/components/icons";
 
 /**
  * The wallet — every shop the diner holds a card at.
@@ -85,8 +86,14 @@ export function WalletView({
     // full height so the merchant link sits at the BOTTOM instead of floating
     // halfway up a short list
     <div className="flex min-h-[calc(100dvh-2.5rem)] flex-col">
-      {/* header */}
-      <header className="flex items-center gap-3 pb-6">
+      {/*
+        ── HEADER, to the mockup ──────────────────────────────────────────
+        A filled circular back button, the title with the shop count beneath
+        it, and the account code in its own panel on the right — labelled, and
+        copyable, because the one thing anyone does with that code is read it
+        out or hand the phone over.
+      */}
+      <header className="flex items-start gap-3 pb-5">
         <button
           type="button"
           /* No validated card to go back to (e.g. "/" → /cartes, which leaves no
@@ -98,28 +105,21 @@ export function WalletView({
             else router.back();
           }}
           aria-label="Retour"
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/70 transition hover:bg-white/10 active:scale-[0.95]"
+          className="mt-1 grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/[0.07] text-white/80 ring-1 ring-white/10 transition active:scale-[0.95]"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
             <path d="m15 18-6-6 6-6" />
           </svg>
         </button>
+
         <div className="min-w-0 flex-1">
-          <h1 className="text-[22px] font-extrabold leading-tight">Mes cartes</h1>
-          <p className="text-[12.5px] text-white/50">
+          <h1 className="text-[27px] font-extrabold leading-tight tracking-[-0.02em]">Mes cartes</h1>
+          <p className="mt-0.5 text-[14px] text-white/50">
             {cards.length} boutique{cards.length === 1 ? "" : "s"}
           </p>
         </div>
-        {code && (
-          <span className="shrink-0 rounded-2xl bg-white/12 px-3 py-1.5 text-center">
-            <span className="block text-[9px] font-bold uppercase tracking-[0.08em] text-white/55">
-              Mon code client
-            </span>
-            <span className="block font-mono text-[15px] font-bold tracking-[0.14em]">
-              {code}
-            </span>
-          </span>
-        )}
+
+        {code && <CodePanel code={code} />}
       </header>
 
       {cards.length >= SEARCH_FROM && (
@@ -195,6 +195,53 @@ export function WalletView({
  * cards from one issuer look alike too; the logo and the name identify the shop,
  * and one house style is what makes a wallet of six of them look like a wallet.
  */
+/**
+ * The account code, labelled and copyable.
+ *
+ * It used to be a bare chip: four characters and no explanation. The one thing
+ * anyone does with this code is READ IT OUT at a counter or paste it, and the
+ * label is what tells a first-timer which of the several codes in this product
+ * it is — this one is theirs and permanent, the six-character ones are reward
+ * vouchers that expire.
+ */
+function CodePanel({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard?.writeText(code).then(
+          () => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1600);
+          },
+          () => {},
+        );
+      }}
+      aria-label={`Copier mon code client ${code}`}
+      className="shrink-0 rounded-2xl bg-white/[0.07] px-3.5 py-2 text-center ring-1 ring-white/10 transition active:scale-[0.97]"
+    >
+      <span className="block text-[9.5px] font-bold uppercase tracking-[0.09em] text-white/45">
+        Mon code client
+      </span>
+      <span className="mt-0.5 flex items-center justify-center gap-1.5">
+        <span className="font-mono text-[17px] font-bold tracking-[0.12em] text-white">{code}</span>
+        {copied ? (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-[#7ff0b0]">
+            <path d="m5 13 4 4L19 7" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-white/45">
+            <rect x="9" y="9" width="11" height="11" rx="2.5" />
+            <path d="M5 15V5.5A1.5 1.5 0 0 1 6.5 4H15" />
+          </svg>
+        )}
+      </span>
+    </button>
+  );
+}
+
 function CardRow({
   card,
   current,
@@ -215,177 +262,122 @@ function CardRow({
       <Link
         href={`/${card.slug}`}
         /*
-          NO aspect-ratio. It cannot lose, and it was still cutting the card.
-
-          The previous attempt kept `aspect-[16/9]` and added `h-auto` plus
-          `min-h-[196px]`, on the theory that a busy card would grow past the
-          ratio. It does not. With aspect-ratio set and height auto, the used
-          height IS width ÷ ratio; min-height only raises a floor, and content
-          taller than the result overflows rather than pushing the box. Measured
-          in the browser, 348px wide with 292px of content:
-
-            aspect-ratio 16/9  → box 196px, content 292px   (96px sliced off)
-            aspect-ratio auto  → box 292px, content 292px   (fits)
-
-          So a card carrying the header, the reward line and bar, a 38px balance
-          AND a stamp row lost its bottom — the last of the digits, the tampons
-          line, and the bottom of the chevron, which is the only interactive
-          thing on the card and the reason it kept being reported as "cropped".
-
-          min-height alone gives the shape: a sparse card still reads as a card,
-          a full one is as tall as what it holds. Flexbox moves here from the
-          inner wrapper so justify-between still distributes across that minimum.
+          w-full is load-bearing: aspect-ratio plus a definite min-height used to
+          produce a TRANSFERRED MINIMUM width (196 × 16/9 = 348px) that beat the
+          column on any phone under ~390px, pushing the chevron off the screen.
+          There is no aspect-ratio here any more — the card is as tall as it
+          needs to be — but the width stays explicit so it cannot come back.
         */
-        /*
-          w-full stays. With the ratio gone it no longer has a transferred
-          minimum width to fight, but a block-level anchor is not full-width by
-          default and the card must fill its column.
-        */
-        className={`group relative flex min-h-[196px] w-full flex-col rounded-[22px] p-4 transition active:scale-[0.985] ${
-          current ? "ring-2 ring-white/45" : "ring-1 ring-white/[0.16]"
+        className={`group relative block w-full overflow-hidden rounded-[26px] p-5 transition active:scale-[0.985] ${
+          current ? "ring-1 ring-white/25" : "ring-1 ring-white/[0.10]"
         }`}
-        style={{
-          /*
-            A face, not a fill. The first attempt was a 148° gradient with a 20%
-            white wash over nearly half the card, and it rendered as one flat
-            lilac slab — lighter than the page it sat on, with no sense of a
-            surface. Three things fix that and all three are needed:
-
-            160° so the ramp actually crosses a 16/9 box corner to corner rather
-            than running almost horizontally; a small tight highlight instead of
-            a broad wash, because a light source has a position; and a floor that
-            stops ABOVE the page.
-
-            That last one is the one that is easy to get wrong twice. The first
-            face was too light and read as a flat lilac slab. The obvious
-            correction — make the far end properly dark — was worse in a way that
-            is invisible in isolation: at #180f3d the bottom-right corner was
-            darker than DINER_BG behind it, so the card dissolved into the page
-            exactly where its edge should be. A card is an object because you can
-            see where it ends. So the ramp stays inside the card and the RIM does
-            the separating: a bright inset top edge and a real shadow underneath.
-          */
-          backgroundImage: [
-            "radial-gradient(78% 62% at 6% -6%, rgba(255,255,255,.26) 0%, rgba(255,255,255,.06) 38%, transparent 62%)",
-            "linear-gradient(160deg, #6543d6 0%, #4b2fa9 34%, #33206f 70%, #281a58 100%)",
-          ].join(","),
-          boxShadow: current
-            ? "0 22px 46px -18px rgba(101,67,214,.95), inset 0 1px 0 rgba(255,255,255,.28)"
-            : "0 20px 40px -18px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.18)",
-        }}
+        style={
+          current
+            ? {
+                backgroundImage:
+                  "linear-gradient(150deg, #7c56e8 0%, #6039cf 30%, #4a2ca6 68%, #3a2288 100%)",
+                boxShadow: "0 24px 48px -20px rgba(101,67,214,.9), inset 0 1px 0 rgba(255,255,255,.22)",
+              }
+            : {
+                backgroundImage: "linear-gradient(150deg, #1c1533 0%, #171129 60%, #140f24 100%)",
+                boxShadow: "0 18px 38px -22px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.07)",
+              }
+        }
       >
-        {/*
-          THE WATERMARK IS GONE, and it should be.
-
-          It was a 110px ✦ tucked into the bottom-right corner, added to give a
-          half-empty card some texture. Two things happened since: the middle of
-          the card filled up with the reward progress, so there is no void left
-          to decorate — and the corner it occupied is exactly where the chevron
-          lives. Its diagonal edge cut straight through the circle, so the one
-          interactive element on the card read as a smudge behind glass rather
-          than as a button. Texture is not worth breaking an affordance for.
-        */}
-        {/* flex-1, not h-full: the card's height is now its own content plus a
-            minimum, and a percentage height against that resolves to auto. */}
-        <div className="relative flex flex-1 flex-col justify-between gap-3">
-          {/* ── the shop ── */}
-          <div className="flex items-start gap-2.5">
-            {card.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-              <img src={card.logoUrl} alt="" className="h-10 w-10 shrink-0 rounded-xl object-cover ring-1 ring-white/25" />
-            ) : (
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15 text-[20px] ring-1 ring-white/20">
-                {t.emoji}
-              </span>
-            )}
-            <span className="min-w-0 flex-1 pt-0.5">
-              <span className="block truncate text-[16px] font-extrabold leading-tight">{card.name}</span>
-              <span className="block truncate text-[11px] font-medium text-white/55">{t.label}</span>
+        {/* ── the shop ── */}
+        <div className="flex items-start gap-3.5">
+          {card.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
+            <img
+              src={card.logoUrl}
+              alt=""
+              className="h-[58px] w-[58px] shrink-0 rounded-full bg-white/15 object-cover ring-1 ring-white/20"
+            />
+          ) : (
+            <span className="grid h-[58px] w-[58px] shrink-0 place-items-center rounded-full bg-white/15 text-[26px] ring-1 ring-white/20">
+              {t.emoji}
             </span>
-            {current && (
-              <span className="shrink-0 rounded-full bg-white/95 px-2 py-[3px] text-[9px] font-extrabold uppercase tracking-[0.05em] text-charcoal">
+          )}
+
+          <span className="min-w-0 flex-1 pt-0.5">
+            {/* wraps rather than truncating: the ACTUELLE pill takes the room a
+                shop name needs, and "Café El M…" identifies nothing — which is
+                the one job this screen has */}
+            <span className="block text-[21px] font-extrabold leading-tight line-clamp-2">
+              {card.name}
+            </span>
+            <span className="block truncate text-[14px] font-medium text-white/50">{t.label}</span>
+          </span>
+
+          {current && (
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3 py-1.5">
+              <span className="h-[7px] w-[7px] rounded-full bg-[#7c3aed]" />
+              <span className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-[#1a1030]">
                 Actuelle
               </span>
-            )}
+            </span>
+          )}
+        </div>
+
+        {/*
+          How close they are, then the bar. Named prize, not "ta récompense" —
+          the whole reason to open this card is the thing at the end of it.
+        */}
+        {nudge && (
+          <div className="mt-5">
+            <p className="truncate text-[14px] text-white/70">
+              Encore <b className="font-extrabold text-white">{fmtPoints(nudge.needed)}</b> pour{" "}
+              {nudge.label.toLowerCase()}
+            </p>
+            <span className="mt-2.5 block h-[7px] overflow-hidden rounded-full bg-black/30">
+              <span
+                className="block h-full rounded-full bg-[#a78bfa]"
+                style={{
+                  width: `${Math.min(100, Math.round((card.balance / nudge.cost) * 100))}%`,
+                }}
+              />
+            </span>
           </div>
+        )}
 
-          {/*
-            THE MIDDLE OF THE CARD.
-
-            It was a void — a 16/9 face with two rows of content and nothing
-            between them — and the first attempt filled it with the shop's URL,
-            which looked tidy and told the holder nothing. This is the line that
-            makes someone open the card: how close they are.
-
-            The bar is what a paper punch card does with holes. Where there is no
-            next tier left (they can already afford the best reward), it says so
-            instead of drawing an empty rail — a full bar with no target reads as
-            a bug.
-          */}
-          <div className="min-h-[26px]">
-            {nudge ? (
-              <>
-                <p className="truncate text-[11.5px] font-semibold text-white/70">
-                  Encore <b className="font-extrabold text-white">{nudge.needed}</b> pour{" "}
-                  {nudge.label.toLowerCase()}
-                </p>
-                <span className="mt-1.5 block h-[5px] overflow-hidden rounded-full bg-black/25">
-                  <span
-                    className="block h-full rounded-full bg-white/90"
-                    style={{
-                      width: `${Math.min(100, Math.round((card.balance / nudge.cost) * 100))}%`,
-                    }}
-                  />
-                </span>
-              </>
-            ) : (
-              card.balance > 0 && (
-                <p className="text-[11.5px] font-bold text-[#ffd27a]">
-                  ✦ Tu peux déjà t&apos;offrir une récompense
-                </p>
-              )
-            )}
-          </div>
-
-          {/* ── the balance, which is the only reason to open this card ── */}
-          <div className="flex items-end justify-between gap-3">
-            <span className="min-w-0">
-              <span className="flex items-baseline gap-1.5">
-                <span className="text-[38px] font-extrabold leading-none tabular-nums tracking-[-0.02em]">
-                  {fmtPoints(card.balance)}
-                </span>
-                <span className="text-[12px] font-bold text-white/55">points</span>
+        {/* ── the balance, which is the only reason to open this card ── */}
+        <div className="mt-5 flex items-end justify-between gap-3">
+          <span className="min-w-0">
+            <span className="flex items-baseline gap-2">
+              <span className="text-[40px] font-extrabold leading-none tabular-nums tracking-[-0.03em]">
+                {fmtPoints(card.balance)}
               </span>
-
-              {/* Stamps get the row of dots a paper punch card has — the one place
-                  where drawing the mechanic beats naming it. Capped at 10 so a
-                  long card cannot overflow the face. */}
-              {/* Only when there is something to show. A single empty dot beside
-                  the word "tampons" was noise on every card whose shop runs
-                  stamps but whose holder has not earned one yet. */}
-              {card.stampsEnabled && card.stamps > 0 && (
-                <span className="mt-2 flex items-center gap-1">
-                  {Array.from({ length: Math.min(10, card.stamps) }, (_, i) => (
-                    <span
-                      key={i}
-                      className="h-[7px] w-[7px] rounded-full bg-white"
-                    />
-                  ))}
-                  <span className="ml-1 text-[10.5px] font-semibold text-white/50">
-                    {card.stamps} tampon{card.stamps === 1 ? "" : "s"}
-                  </span>
-                </span>
-              )}
-
-              {pending > 0 && (
-                <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#ffd27a] px-2.5 py-[3px] text-[10.5px] font-extrabold text-[#3a2a06]">
-                  🎁 {pending} à récupérer
-                </span>
-              )}
+              <span className="text-[15px] font-bold text-[#c9b8ff]">points</span>
             </span>
 
-            <GoChevron />
-          </div>
+            {/*
+              The stamp count as ONE line, not a row of dots.
+
+              Ten dots belong on the card screen where they are the mechanic you
+              are watching fill. Here they were ten more objects on a list that
+              already has three shops competing for attention, and the wallet
+              only has to answer "how am I doing here" — a number does that.
+            */}
+            {card.stampsEnabled && card.stamps > 0 && (
+              <span className="mt-2 flex items-center gap-1.5 text-[14px] text-white/60">
+                <StampIcon className="h-[17px] w-[17px] text-white/70" />
+                <b className="font-extrabold text-white">{card.stamps}</b> tampon
+                {card.stamps > 1 ? "s" : ""}
+              </span>
+            )}
+
+            {pending > 0 && (
+              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#ffd27a] px-2.5 py-[3px] text-[10.5px] font-extrabold text-[#3a2a06]">
+                🎁 {pending} à récupérer
+              </span>
+            )}
+          </span>
+
+          {/* GoChevron, not a plain arrow: it turns into a spinner while the
+              card is loading. There is no loading.tsx under /[slug] — every page
+              there redirects, and a redirect inside a streamed Suspense boundary
+              stops being an HTTP one — so this is the only tap feedback. */}
+          <GoChevron size={48} />
         </div>
       </Link>
     </li>

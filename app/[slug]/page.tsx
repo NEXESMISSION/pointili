@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CafeClosed } from "@/components/CafeClosed";
 import { businessType } from "@/lib/businessTypes";
 import { notFound, redirect } from "next/navigation";
-import { GiftIcon, ScanIcon } from "@/components/icons";
+import { GiftIcon, ScanIcon, Sparkle } from "@/components/icons";
 import { getCafe, getLoyaltyProgram, getMember, getRewards, nextRewardNudge } from "@/lib/data";
 import { balanceSinceLastOpen, touchCardOpened } from "@/lib/db";
 import type { LoyaltyProgram } from "@/lib/types";
@@ -168,15 +168,35 @@ export default async function Carte({
           */}
           {program.stampsEnabled ? (
             <>
-              <div className="mt-6 flex gap-2">
-                {Array.from({ length: program.stampsRequired }).map((_, i) => (
-                  <span
-                    key={i}
-                    className={`h-[13px] flex-1 rounded-full ${
-                      i < stampView.shown ? "bg-[#a78bfa]" : "bg-white/[0.13]"
-                    }`}
-                  />
-                ))}
+              {/*
+                Circles, not bars. A punch card is round holes in card stock and
+                that is the whole reason the mechanic reads without a caption —
+                the bar version was tidier and said "progress", which is what
+                every bar says. The gift in the last slot is the prize sitting
+                at the end of the row where you can see it coming.
+              */}
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
+                {Array.from({ length: program.stampsRequired }).map((_, i) => {
+                  const filled = i < stampView.shown;
+                  const isReward = i === program.stampsRequired - 1;
+                  const size = program.stampsRequired > 10 ? "h-8 w-8" : "h-9 w-9";
+                  return (
+                    <span
+                      key={i}
+                      className={`grid ${size} place-items-center rounded-full ${
+                        filled
+                          ? "bg-white text-[#5b3fd1]"
+                          : "border border-dashed border-white/30 text-white/35"
+                      }`}
+                    >
+                      {filled ? (
+                        <Sparkle className="h-4 w-4" />
+                      ) : isReward ? (
+                        <GiftIcon className="h-4 w-4" />
+                      ) : null}
+                    </span>
+                  );
+                })}
               </div>
               <div className="mt-4 flex items-end justify-between gap-4">
                 <span className="shrink-0 whitespace-nowrap text-[12.5px] leading-snug text-white/50">

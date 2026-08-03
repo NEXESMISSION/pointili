@@ -27,11 +27,17 @@ import { useLinkStatus } from "next/link";
  * It must stay a descendant of <Link> — the hook reads the nearest one, and
  * returns a permanent { pending: false } anywhere else.
  */
-export function GoChevron() {
+export function GoChevron({
+  /** Diameter in px. The wallet's cards want a bigger target than a list row. */
+  size = 36,
+}: {
+  size?: number;
+} = {}) {
   const { pending } = useLinkStatus();
   return (
     <span
-      className={`grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/[0.18] text-white ring-1 ring-white/25 transition group-active:bg-white/30 ${
+      style={{ width: size, height: size }}
+      className={`grid shrink-0 place-items-center rounded-full bg-white/[0.14] text-white ring-1 ring-white/20 transition group-active:bg-white/25 ${
         pending ? "bg-white/30" : ""
       }`}
       aria-hidden
@@ -44,7 +50,7 @@ export function GoChevron() {
           strokeWidth="2.4"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="h-[18px] w-[18px]"
+          style={{ width: Math.round(size * 0.46), height: Math.round(size * 0.46) }}
         >
           {/* the arrow, and the arc it becomes — same box, so nothing moves */}
           <path className="go-arrow" d="m9 18 6-6-6-6" />
