@@ -296,6 +296,8 @@ function CustomerSheet({
   const [err, setErr] = useState("");
   const [busy, start] = useTransition();
 
+  /* The stamp button asks before it writes — see where it is rendered. */
+  const [confirmStamp, setConfirmStamp] = useState(false);
   const [more, setMore] = useState(false);
   const [history, setHistory] = useState<Activity[] | null>(null);
   const [delta, setDelta] = useState("");
@@ -591,15 +593,64 @@ function CustomerSheet({
           </button>
         </div>
 
+        {/*
+          A STAMP ASKS FIRST.
+
+          Crediting points is typed — an amount, then Créditer — so a slip is
+          visible before it lands. A stamp is one tap that writes straight to a
+          card, and a card is closer to its reward than points ever are: at 9/10
+          an accidental tap hands out the free coffee. There is no undo for it
+          either (the ledger has a reversal; a stamp does not).
+
+          So the tap asks. Not a browser confirm() — that is a system dialog a
+          cashier will learn to dismiss without reading — but the same two
+          buttons in the app's own voice, naming what is about to happen and
+          where the card stands.
+        */}
         {stampsEnabled && (
-          <button
-            type="button"
-            onClick={stamp}
-            disabled={busy}
-            className="a-btn a-btn--dark mt-2.5 flex !min-h-[52px] items-center justify-center gap-2"
-          >
-            <StampIcon className="h-5 w-5" /> +1 tampon
-          </button>
+          confirmStamp ? (
+            <div className="mt-2.5 rounded-2xl border border-[#ffd27a]/30 bg-[#ffd27a]/10 p-3.5">
+              <p className="text-[14px] font-bold leading-snug text-white">
+                Ajouter un tampon ?
+              </p>
+              <p className="mt-0.5 text-[12px] leading-snug text-white/60">
+                {customer.name ?? customer.code ?? "Ce client"} passera à{" "}
+                <b className="font-extrabold text-white">
+                  {Math.min(stamps + 1, stampsRequired)} / {stampsRequired}
+                </b>
+                {stamps + 1 >= stampsRequired && " — la carte sera pleine"}.
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmStamp(false)}
+                  className="a-btn a-btn--ghost !min-h-[46px]"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    setConfirmStamp(false);
+                    stamp();
+                  }}
+                  className="a-btn !min-h-[46px]"
+                >
+                  {busy ? "· · ·" : "Oui, ajouter"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmStamp(true)}
+              disabled={busy}
+              className="a-btn a-btn--dark mt-2.5 flex !min-h-[52px] items-center justify-center gap-2"
+            >
+              <StampIcon className="h-5 w-5" /> +1 tampon
+            </button>
+          )
         )}
 
         <button

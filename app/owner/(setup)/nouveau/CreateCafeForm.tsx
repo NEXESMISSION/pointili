@@ -72,7 +72,7 @@ export function CreateCafeForm() {
   }
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form action={formAction} className="space-y-4">
       {/* the logo travels with the create: the café does not exist yet, so there
           is nothing to attach it to afterwards */}
       <input type="hidden" name="logo" value={logo ?? ""} />
@@ -80,36 +80,57 @@ export function CreateCafeForm() {
       {/*
         THE CARD, WHILE IT IS BEING MADE.
 
-        Signup used to be three text fields and a button, and the first time an
-        owner saw their own card was after it existed. Showing it here is not
+        Signup used to be text fields and a button, and the first time an owner
+        saw their own card was after it existed. Showing it here is not
         decoration — it is what makes "nom", "logo" and "type" read as parts of
         one object instead of three unrelated questions.
+
+        The subtitle is the ADDRESS, always. It used to flip to the phone number
+        the moment one was typed, so the same line meant two different things
+        depending on a field further down the page.
       */}
-      <div className="mb-4 rounded-2xl border border-white/10 bg-gradient-to-br from-[#2a1263] to-[#150a33] p-4">
+      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#2a1263] to-[#150a33] p-4">
         <div className="flex items-center gap-3">
-          <span
-            className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-white/12 text-[20px]"
-          >
+          <label className="group relative grid h-14 w-14 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-2xl bg-white/12 text-[22px]">
+            <input type="file" accept="image/*" onChange={pickLogo} className="hidden" />
             {logo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={logo} alt="" className="h-full w-full object-cover" />
             ) : (
-              "☕"
+              <span className="text-white/70">+</span>
             )}
-          </span>
+            <span className="pointer-events-none absolute inset-0 grid place-items-center bg-black/45 text-[10px] font-bold uppercase tracking-[0.06em] text-white opacity-0 transition group-hover:opacity-100">
+              logo
+            </span>
+          </label>
           <span className="min-w-0">
-            <span className="block truncate text-[15px] font-extrabold text-white">
+            <span className="block truncate text-[16px] font-extrabold text-white">
               {name.trim() || "Votre commerce"}
             </span>
-            <span className="block truncate text-[12px] text-white/55">
-              {phone.trim() || "pointili.online/" + (effective || "…")}
+            <span className="block truncate font-mono text-[12px] text-white/50">
+              pointili.online/{effective || "…"}
             </span>
           </span>
         </div>
       </div>
 
+      {/*
+        TWO QUESTIONS, NOT FIVE.
+
+        This asked for a name, a type, a URL slug, a logo and a phone number
+        before anything could be created — and the slug is the worst of them: a
+        technical idea, in a monospace box, with two sentences explaining it, on
+        the first screen a café owner ever sees. It is derived from the name and
+        the server re-derives it anyway.
+
+        So the form asks the two things it cannot guess, and everything
+        optional or derivable folds away. The logo moved onto the card preview,
+        where tapping the square that shows it is the obvious way to change it.
+      */}
       <label className="block">
-        <span className="block text-[10px] font-bold uppercase tracking-[0.1em] text-white/45 mb-1.5">Nom du café</span>
+        <span className="mb-1.5 block text-[13px] font-semibold text-white">
+          Le nom de votre commerce
+        </span>
         <input
           name="name"
           required
@@ -123,75 +144,74 @@ export function CreateCafeForm() {
       </label>
 
       <div>
-        <span className="block text-[10px] font-bold uppercase tracking-[0.1em] text-white/45 mb-1.5">Type de commerce</span>
-        <BusinessTypePicker defaultValue="cafe" />
-        <span className="mt-1.5 block text-[12px] leading-snug text-white/50">
-          Vos clients le verront sur leur carte pour la reconnaître.
+        <span className="mb-1.5 block text-[13px] font-semibold text-white">
+          Ce que vous vendez
         </span>
+        <BusinessTypePicker defaultValue="cafe" />
       </div>
 
-      <label className="block">
-        <span className="block text-[10px] font-bold uppercase tracking-[0.1em] text-white/45 mb-1.5">Adresse de votre carte</span>
-        <input
-          name="slug"
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-          placeholder={preview(name) || "chez-karim"}
-          maxLength={40}
-          /* no shrinking below 16px: iOS zooms the page on any smaller field */
-          className={`${field} font-mono`}
-        />
-        <span className="mt-1.5 block break-all font-mono text-[12px] text-white/50">
-          pointili.online/
-          <b className="text-[#b9a3ff]">{effective || "…"}</b>
-        </span>
-        <span className="mt-1 block text-[12px] leading-snug text-white/50">
-          C&apos;est ce que vos clients ouvrent en scannant. Laissez vide pour
-          reprendre le nom.
-        </span>
-      </label>
+      {/*
+        <details>, so it costs no JavaScript and no state — and so the form is
+        two fields tall until somebody asks for more.
+      */}
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center gap-2 py-1.5 text-[13px] font-semibold text-white/50 transition hover:text-white/80 [&::-webkit-details-marker]:hidden">
+          <span className="text-[15px] leading-none transition group-open:rotate-90">›</span>
+          Adresse et téléphone
+          <span className="text-white/30">· facultatif</span>
+        </summary>
 
-      {/* ── the two optional ones, plainly marked ─────────────────── */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <span className="block text-[10px] font-bold uppercase tracking-[0.1em] text-white/45 mb-1.5">
-            Logo <span className="text-white/30">· optionnel</span>
-          </span>
-          <label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-white/20 px-3 py-3 text-[12px] font-semibold text-white/70 transition hover:border-white/35 hover:text-white">
-            <input type="file" accept="image/*" onChange={pickLogo} className="hidden" />
-            {logo ? "Changer le logo" : "Choisir une image"}
+        <div className="mt-2 space-y-3">
+          <label className="block">
+            <span className="mb-1.5 block text-[13px] font-semibold text-white">
+              Adresse de la carte
+            </span>
+            <input
+              name="slug"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder={preview(name) || "chez-karim"}
+              maxLength={40}
+              /* no shrinking below 16px: iOS zooms the page on any smaller field */
+              className={`${field} font-mono`}
+            />
+            <span className="mt-1.5 block text-[12px] leading-snug text-white/45">
+              Laissez vide pour reprendre le nom.
+            </span>
           </label>
+
+          <label className="block">
+            <span className="mb-1.5 block text-[13px] font-semibold text-white">
+              Téléphone
+            </span>
+            <input
+              name="phone"
+              type="tel"
+              inputMode="tel"
+              maxLength={24}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="25 123 456"
+              className={field}
+            />
+            <span className="mt-1.5 block text-[12px] leading-snug text-white/45">
+              Affiché sur la carte de vos clients.
+            </span>
+          </label>
+
           {logo && (
             <button
               type="button"
               onClick={() => setLogo(null)}
-              className="mt-1.5 text-[12px] font-semibold text-white/45 hover:text-white/75"
+              className="text-[12.5px] font-semibold text-white/45 hover:text-white/75"
             >
-              Retirer
+              Retirer le logo
             </button>
           )}
-          {logoErr && <p className="mt-1.5 text-[12px] text-[#ff9a9a]">{logoErr}</p>}
         </div>
+      </details>
 
-        <label className="block">
-          <span className="block text-[10px] font-bold uppercase tracking-[0.1em] text-white/45 mb-1.5">
-            Téléphone <span className="text-white/30">· optionnel</span>
-          </span>
-          <input
-            name="phone"
-            type="tel"
-            inputMode="tel"
-            maxLength={24}
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="25 123 456"
-            className={field}
-          />
-          <span className="mt-1.5 block text-[12px] leading-snug text-white/50">
-            Affiché sur la carte de vos clients.
-          </span>
-        </label>
-      </div>
+      {logoErr && <p className="text-[12.5px] text-[#ff9a9a]">{logoErr}</p>}
 
       {state.error && (
         <p
@@ -202,12 +222,14 @@ export function CreateCafeForm() {
         </p>
       )}
 
+      {/* 16px, not 12: the primary action on the page was set smaller than the
+          body text explaining the fields above it */}
       <button
         type="submit"
         disabled={pending || !name.trim()}
-        className="!mt-4 w-full rounded-xl bg-[#6d4ae6] py-4 text-[12px] font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
+        className="!mt-5 w-full rounded-2xl bg-[#6d4ae6] py-4 text-[16px] font-bold text-white shadow-[0_16px_36px_-16px_rgba(109,74,230,1)] transition active:scale-[0.98] disabled:opacity-50 disabled:shadow-none"
       >
-        {pending ? "· · ·" : "Créer mon café ✦"}
+        {pending ? "· · ·" : "Créer ma carte"}
       </button>
     </form>
   );
