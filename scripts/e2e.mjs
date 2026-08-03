@@ -197,13 +197,22 @@ if (await redeemBtn.count()) {
   redeemCode = boutiqueTxt.match(/\b[A-Z2-9]{6}\b/)?.[0] ?? "";
   check("redeem debits points and issues a code", gotCode && !!redeemCode, redeemCode || "no code");
 
-  await diner.goto(`${BASE}/${SLUG}`, { waitUntil: "networkidle" });
-  const cardTxt = await diner.locator("main").innerText();
-  // "Récompenses à récupérer", not "À montrer au comptoir": that older wording now
-  // collides with the account-code CTA higher up the same page.
+  /*
+    The card screen is a card and a button now — the pending-code list came off
+    it, and the header's bell is what points at anything waiting.
+
+    The property guarded here is the one that survives a redesign: a customer
+    who bought something can still FIND it. Deliberately not asserted on the
+    bell itself, whose destination is being changed from /codes to
+    /notifications in another branch as this is written; a test that pins a
+    href is a test that breaks on somebody else's refactor rather than on a
+    real regression.
+  */
+  await diner.goto(`${BASE}/${SLUG}/codes`, { waitUntil: "networkidle" });
+  const codesTxt = await diner.locator("main").innerText();
   check(
-    "redeemed reward appears on Accueil (Récompenses à récupérer)",
-    /RÉCOMPENSES À RÉCUPÉRER/i.test(cardTxt) && cardTxt.includes(redeemCode),
+    "the bought reward is waiting on Mes codes",
+    codesTxt.includes(redeemCode),
     redeemCode,
   );
 } else {

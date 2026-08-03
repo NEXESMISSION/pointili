@@ -10,6 +10,7 @@ import { CardArrived } from "@/components/CardArrived";
 import { CountUp } from "@/components/CountUp";
 import { RewardUnlocked } from "@/components/RewardUnlocked";
 import { fmtPoints } from "@/lib/points";
+import QRCode from "qrcode";
 
 /**
  * Carte — the diner's loyalty card, in the deep-purple mockup:
@@ -67,7 +68,6 @@ export default async function Carte({
   const justUnlocked = rewards
     .filter((r) => r.active && r.pointsCost <= seen.now && r.pointsCost > seen.before)
     .sort((a, b) => b.pointsCost - a.pointsCost)[0];
-  const offers = [...rewards].sort((a, b) => a.pointsCost - b.pointsCost).slice(0, 3);
 
   const stampView = stampCardView(diner.stamps, diner.stampsStartedAt, program);
 
@@ -75,6 +75,15 @@ export default async function Carte({
   const type = businessType(cafe.businessType);
   const stampsLeft = Math.max(0, program.stampsRequired - stampView.shown);
   const nudge = nextRewardNudge(diner.balance, rewards);
+
+  /* The code the cashier scans, drawn HERE rather than one tap away. Encodes the
+     ACCOUNT code, never the phone number — same as /scanner did. */
+  const qr = await QRCode.toString(diner.code, {
+    type: "svg",
+    errorCorrectionLevel: "M",
+    margin: 0,
+    color: { dark: "#ffffff", light: "#00000000" },
+  });
 
   return (
     /*
@@ -85,12 +94,40 @@ export default async function Carte({
       wording improves. (Second time this session: test-owner was selecting a
       field by its placeholder.)
     */
-    <div data-carte className="flex flex-1 flex-col pb-6">
-      {/* Plays once, over a card that is already rendered and already usable. */}
-      {nouveau && <CardArrived cafeName={cafe.name} points={program.welcomePoints ?? 0} />}
+    /*
+      justify-center, now that the page is a card and a button.
+
+      With the rewards list gone the content stops about a third of the way
+      down, and everything crammed against the top over 400px of nothing reads
+      as a screen that failed to finish loading. Centred, the same two elements
+      read as all there is — which is the point.
+    */
+    <div data-carte className="flex flex-1 flex-col justify-center pb-6">
+      {/*
+        Plays once, over a card that is already rendered and already usable.
+
+        THE TRIGGER IS THE CARD, NOT THE URL. This used to be `nouveau` alone —
+        a ?nouveau=1 flag set by the join action — which meant the arrival was
+        tied to the act of joining rather than to a card actually being new:
+
+          · signed up here            → played  ✓
+          · joined a second shop      → played  ✓
+          · a cashier credited you as a walk-in and made your card FOR you,
+            and you opened it later   → NEVER played  ✗
+          · re-joined a shop you were already in → played anyway, with nothing
+            added                                 ✗
+
+        seen.firstOpen is diner_cafes.last_opened_at being null, which is true
+        exactly once per card no matter how the card came to exist. `nouveau` is
+        kept as well: on the join path the row is stamped in the same request,
+        so the flag is what covers that one race.
+      */}
+      {(nouveau || seen.firstOpen) && (
+        <CardArrived cafeName={cafe.name} points={program.welcomePoints ?? 0} />
+      )}
       {/* A brand-new card gets CardArrived, never both — balanceSinceLastOpen
           returns an empty diff for a card that has never been opened. */}
-      {!nouveau && justUnlocked && (
+      {!nouveau && !seen.firstOpen && justUnlocked && (
         <RewardUnlocked
           label={justUnlocked.label}
           imageUrl={justUnlocked.imageUrl}
@@ -120,41 +157,49 @@ export default async function Carte({
             boxShadow: "0 24px 50px -20px rgba(101,67,214,.9), inset 0 1px 0 rgba(255,255,255,.22)",
           }}
         >
-          <div className="flex items-center gap-4">
+          {/*
+            SIZED DOWN, HARD.
+
+            This row used to be a 78px logo beside a 29px name allowed to run to
+            two lines, beside a 48px number — three things all shouting, and on a
+            390px screen the name wrapped, the divider stretched, and the whole
+            card became a wall. The wallet's own card row says the same four
+            facts in a third of the height, which is why it reads better; this
+            now follows it. Nothing was removed — it just stopped competing.
+          */}
+          <div className="flex items-center gap-3.5">
             {cafe.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
               <img
                 src={cafe.logoUrl}
                 alt=""
                 data-shop-logo
-                className="h-[78px] w-[78px] shrink-0 rounded-full bg-white/15 object-cover ring-1 ring-white/20"
+                className="h-[52px] w-[52px] shrink-0 rounded-full bg-white/15 object-cover ring-1 ring-white/20"
               />
             ) : (
-              <span className="grid h-[78px] w-[78px] shrink-0 place-items-center rounded-full bg-white/15 text-[36px] ring-1 ring-white/20">
+              <span className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full bg-white/15 text-[21px] ring-1 ring-white/20">
                 {type.emoji}
               </span>
             )}
 
             <span className="min-w-0 flex-1">
-              {/* two lines by design, like the mockup — a shop name is a name,
-                  not a label to be squeezed onto one row and truncated */}
-              <span className="block text-[29px] font-extrabold leading-[1.04] tracking-[-0.02em] line-clamp-2">
+              {/* ONE line now. A name that needs two lines gets an ellipsis —
+                  better than a card whose height depends on the shop's name. */}
+              <span className="block truncate text-[17px] font-extrabold leading-tight tracking-[-0.015em]">
                 {cafe.name}
               </span>
-              <span className="mt-2 inline-block rounded-full bg-[#7c56e8] px-3.5 py-[4px] text-[13.5px] font-bold text-white">
+              <span className="mt-1 inline-block rounded-full bg-white/20 px-2.5 py-[2px] text-[11px] font-bold text-white">
                 {type.label}
               </span>
             </span>
 
-            <span className="h-[74px] w-px shrink-0 bg-white/20" />
-
-            <span className="shrink-0 pl-1 text-center">
+            <span className="shrink-0 text-right">
               <CountUp
                 from={seen.before}
                 to={diner.balance}
-                className="block text-[48px] font-extrabold leading-none tabular-nums tracking-[-0.03em]"
+                className="block text-[28px] font-extrabold leading-none tabular-nums tracking-[-0.03em]"
               />
-              <span className="mt-1.5 block text-[14px] font-bold text-[#a78bfa]">points</span>
+              <span className="mt-0.5 block text-[11.5px] font-bold text-[#c9b8ff]">points</span>
             </span>
           </div>
 
@@ -175,54 +220,73 @@ export default async function Carte({
                 every bar says. The gift in the last slot is the prize sitting
                 at the end of the row where you can see it coming.
               */}
-              <div className="mt-6 flex flex-wrap justify-center gap-2">
+              {/*
+                A GRID, NOT A WRAP.
+
+                `flex-wrap justify-center` left the last row centred under a full
+                one — ten stamps came out as seven and three, floating, which is
+                the ragged block in the screenshot. A grid with a fixed column
+                count fills evenly: ten becomes two rows of five, twelve becomes
+                two of six. Same dots, no raggedness.
+              */}
+              <div
+                className="mt-5 grid justify-items-center gap-2"
+                style={{
+                  gridTemplateColumns: `repeat(${
+                    program.stampsRequired > 6
+                      ? Math.ceil(program.stampsRequired / 2)
+                      : program.stampsRequired
+                  }, minmax(0, 1fr))`,
+                }}
+              >
                 {Array.from({ length: program.stampsRequired }).map((_, i) => {
                   const filled = i < stampView.shown;
                   const isReward = i === program.stampsRequired - 1;
-                  const size = program.stampsRequired > 10 ? "h-8 w-8" : "h-9 w-9";
                   return (
                     <span
                       key={i}
-                      className={`grid ${size} place-items-center rounded-full ${
+                      /* FIXED size, centred in its cell. `aspect-square w-full`
+                         made each dot as wide as its column — five columns on a
+                         390px card gave 64px circles that swallowed the card. */
+                      className={`grid h-8 w-8 place-items-center rounded-full ${
                         filled
                           ? "bg-white text-[#5b3fd1]"
                           : "border border-dashed border-white/30 text-white/35"
                       }`}
                     >
                       {filled ? (
-                        <Sparkle className="h-4 w-4" />
+                        <Sparkle className="h-3.5 w-3.5" />
                       ) : isReward ? (
-                        <GiftIcon className="h-4 w-4" />
+                        <GiftIcon className="h-3.5 w-3.5" />
                       ) : null}
                     </span>
                   );
                 })}
               </div>
-              <div className="mt-4 flex items-end justify-between gap-4">
-                <span className="shrink-0 whitespace-nowrap text-[12.5px] leading-snug text-white/50">
-                  {rateLabel(program.pointsPerTnd)}
-                </span>
-                <span className="min-w-0 text-right text-[12.5px] leading-snug text-white/70">
-                  {stampsLeft <= 0 ? (
+
+              {/* One line, and it wraps as prose instead of as two columns
+                  fighting over a 390px row — which is what produced the three
+                  ragged right-aligned lines. */}
+              <p className="mt-3.5 text-[12.5px] leading-snug text-white/60">
+                {stampsLeft <= 0 ? (
+                  <b className="font-extrabold text-white">
+                    {program.stampReward} t&apos;attend 🎉
+                  </b>
+                ) : (
+                  <>
+                    Encore{" "}
                     <b className="font-extrabold text-white">
-                      {program.stampReward} t&apos;attend 🎉
-                    </b>
-                  ) : (
-                    <>
-                      Encore{" "}
-                      <b className="font-extrabold text-white">
-                        {stampsLeft} visite{stampsLeft > 1 ? "s" : ""}
-                      </b>{" "}
-                      pour <b className="font-extrabold text-[#c9b8ff]">{program.stampReward}</b>
-                    </>
-                  )}
-                </span>
-              </div>
+                      {stampsLeft} visite{stampsLeft > 1 ? "s" : ""}
+                    </b>{" "}
+                    pour <b className="font-extrabold text-[#c9b8ff]">{program.stampReward}</b>
+                  </>
+                )}
+              </p>
             </>
           ) : (
             <>
               {nudge && (
-                <span className="mt-6 block h-[13px] overflow-hidden rounded-full bg-white/[0.13]">
+                <span className="mt-5 block h-[9px] overflow-hidden rounded-full bg-white/[0.13]">
                   <span
                     className="block h-full rounded-full bg-[#a78bfa]"
                     style={{
@@ -231,146 +295,67 @@ export default async function Carte({
                   />
                 </span>
               )}
-              <div className="mt-4 flex items-end justify-between gap-4">
-                <span className="shrink-0 whitespace-nowrap text-[11.5px] leading-snug text-white/50">
-                  {rateLabel(program.pointsPerTnd)}
-                </span>
-                {nudge && (
-                  <span className="min-w-0 text-right text-[12px] leading-snug text-white/70">
-                    Encore{" "}
-                    <b className="font-extrabold text-white">
-                      {fmtPoints(nudge.needed)} point{nudge.needed >= 2 ? "s" : ""}
-                    </b>{" "}
-                    pour <b className="font-extrabold text-[#c9b8ff]">{nudge.target.label}</b>
-                  </span>
-                )}
-              </div>
+              {nudge && (
+                <p className="mt-3 text-[12.5px] leading-snug text-white/60">
+                  Encore{" "}
+                  <b className="font-extrabold text-white">
+                    {fmtPoints(nudge.needed)} point{nudge.needed >= 2 ? "s" : ""}
+                  </b>{" "}
+                  pour <b className="font-extrabold text-[#c9b8ff]">{nudge.target.label}</b>
+                </p>
+              )}
             </>
           )}
+
+          {/* The rate, once, quietly, at the foot of the card — where it is a
+              footnote rather than one half of a two-column row that wrapped. */}
+          <p className="mt-3 border-t border-white/12 pt-2.5 text-[11px] font-medium text-white/40">
+            {rateLabel(program.pointsPerTnd)}
+          </p>
         </Link>
       </section>
 
       {/* the one thing you do here, and what it is for */}
       <div className="px-4">
-        <Link
-          href={`/${slug}/scanner`}
-          className="flex items-center justify-center gap-3.5 rounded-[24px] bg-white px-5 py-4 text-[#150d2b] shadow-[0_16px_38px_-16px_rgba(0,0,0,.85)] transition active:scale-[0.99]"
-        >
-          <ScanIcon className="h-8 w-8 shrink-0" />
-          <span className="text-left">
-            <span className="block text-[20px] font-extrabold leading-tight">Montrer mon code</span>
-            <span className="block text-[13.5px] font-medium text-[#150d2b]/50">
-              Scannez en caisse
-            </span>
-          </span>
-        </Link>
+        {/*
+          THE CODE ITSELF, not a button to go and get it.
+
+          This was a white "Montrer mon code" bar that opened /scanner. But the
+          card screen IS the screen someone has open when they reach the till,
+          and making them tap once more — while a queue waits and a cashier
+          holds out a phone — was a tap for nothing. /scanner still exists for
+          the deep link and the bottom nav; this is the same code, in the place
+          it is actually needed.
+        */}
+        <div className="rounded-[24px] border border-white/[0.10] bg-white/[0.04] px-5 pb-4 pt-5 text-center">
+          <div className="mx-auto w-[150px] [&>svg]:h-auto [&>svg]:w-full">
+            <div dangerouslySetInnerHTML={{ __html: qr }} />
+          </div>
+          <p className="mt-4 text-[10.5px] font-bold uppercase tracking-[0.10em] text-white/45">
+            Mon code client
+          </p>
+          {/* Readable ACROSS a counter, for when a camera will not focus. */}
+          <p className="mt-1 font-mono text-[26px] font-extrabold leading-none tracking-[0.16em] text-[#a78bfa]">
+            {diner.code}
+          </p>
+          <p className="mt-2 text-[11.5px] text-white/45">
+            Le serveur le scanne — pas besoin de ton numéro.
+          </p>
+        </div>
       </div>
 
-      {/* codes to show at the counter */}
-      {diner.codes.length > 0 && (
-        <section className="px-4 pt-5">
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-white/55">
-            Récompenses à récupérer
-          </p>
-          <ul className="stagger space-y-2">
-            {diner.codes.map((c, i) => (
-              <li
-                key={c.code} style={{ ["--i" as string]: i }}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/[0.07] px-4 py-3"
-              >
-                <span className="min-w-0">
-                  <span className="block truncate text-[14px] font-bold text-white">{c.label}</span>
-                  <span className="mt-0.5 block text-[11px] font-medium text-white/55">
-                    {expiresIn(c.expiresAt)}
-                  </span>
-                </span>
-                <span className="shrink-0 rounded-lg bg-white px-2.5 py-1.5 font-mono text-[14px] font-bold tracking-[0.14em] text-charcoal">
-                  {c.code}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       {/*
-        ── MES RÉCOMPENSES ────────────────────────────────────────────────
-        The mockup's row: a white tile carrying the shop's own artwork, the
-        name, and the cost in a tinted box on the right.
+        THE REWARDS LIST IS GONE FROM THIS SCREEN.
 
-        The cost box also carries the ANSWER, which the mockup could not know:
-        it goes green when the balance already covers it. A customer holding 219
-        points was being shown "60 points · 70 points · 90 points" — three
-        things they could have had that morning — and left to do the subtraction
-        themselves. Colour is doing work here, not decoration.
+        It sat under the code button showing three of them, with a "Voir
+        tout" leading exactly where the RÉCOMPENSES tab now leads — a whole
+        section duplicating a tab two centimetres below it.
+
+        This screen answers one question, "how am I doing here", and offers
+        the one action anyone takes at a counter. Choosing a reward belongs on
+        the screen named after them.
       */}
-      {offers.length > 0 && (
-        <section className="px-4 pt-6">
-          <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="text-[18px] font-extrabold text-white">Mes récompenses</h2>
-            <Link href={`/${slug}/boutique`} className="text-[14.5px] font-bold text-[#a78bfa]">
-              Voir tout
-            </Link>
-          </div>
-
-          <ul className="stagger space-y-3">
-            {offers.map((r, i) => {
-              const ready = diner.balance >= r.pointsCost;
-              return (
-                <li key={r.id} style={{ ["--i" as string]: i }}>
-                  <Link
-                    href={`/${slug}/boutique`}
-                    className="flex items-center gap-4 rounded-[22px] border border-white/[0.08] bg-white/[0.035] p-3 transition active:scale-[0.99]"
-                  >
-                    {r.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-                      <img
-                        src={r.imageUrl}
-                        alt=""
-                        className="h-[62px] w-[62px] shrink-0 rounded-2xl bg-white object-cover"
-                      />
-                    ) : (
-                      <span className="grid h-[62px] w-[62px] shrink-0 place-items-center rounded-2xl bg-white">
-                        <GiftIcon className="h-7 w-7 text-[#5b3fd1]" />
-                      </span>
-                    )}
-
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[17px] font-extrabold text-white">
-                        {r.label}
-                      </span>
-                      <span className="mt-0.5 block text-[12.5px] font-medium text-white/45">
-                        {ready ? "Tu peux la prendre" : `Encore ${fmtPoints(r.pointsCost - diner.balance)}`}
-                      </span>
-                    </span>
-
-                    <span
-                      className={`grid shrink-0 place-items-center rounded-2xl px-3.5 py-2.5 text-center ${
-                        ready ? "bg-[#7ff0b0]/15 ring-1 ring-[#7ff0b0]/40" : "bg-[#7c56e8]/22"
-                      }`}
-                    >
-                      <span
-                        className={`block text-[21px] font-extrabold leading-none tabular-nums ${
-                          ready ? "text-[#7ff0b0]" : "text-white"
-                        }`}
-                      >
-                        {fmtPoints(r.pointsCost)}
-                      </span>
-                      <span
-                        className={`mt-0.5 block text-[11px] font-bold ${
-                          ready ? "text-[#7ff0b0]/75" : "text-[#c9b8ff]"
-                        }`}
-                      >
-                        points
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
     </div>
   );
 }
@@ -441,14 +426,8 @@ function stampCardView(
   };
 }
 
-/** "expire dans 5 h" — the countdown a diner needs before a code lapses. */
-function expiresIn(iso: string): string {
-  const ms = new Date(iso).getTime() - Date.now();
-  if (ms <= 0) return "expiré";
-  const mins = Math.floor(ms / 60_000);
-  if (mins < 60) return `expire dans ${mins} min`;
-  const h = Math.floor(mins / 60);
-  if (h < 24) return `expire dans ${h} h`;
-  const d = Math.floor(h / 24);
-  return d === 1 ? "expire demain" : `expire dans ${d} j`;
-}
+/*
+  expiresIn() lived here and counted a code down to its deadline. Codes have no
+  deadline any more (0031), so it had nothing left to count and every string it
+  returned would have been a lie. Deleted rather than left dark.
+*/
