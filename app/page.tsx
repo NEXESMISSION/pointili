@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { BrandLockup } from "@/components/BrandMark";
 import { currentDiner } from "@/lib/auth/diner";
 import { Showcase } from "@/components/Showcase";
+import { Compare } from "@/components/Compare";
 import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
 import { ShopArt } from "./LandingArt";
@@ -513,6 +514,9 @@ export default async function Landing({
           </div>
         </div>
       </section>
+
+      {/* ── pourquoi nous, et les questions du comptoir ──────────── */}
+      <Compare />
 
       {/* ── footer ───────────────────────────────────────────────── */}
       <footer className="mx-auto flex max-w-6xl flex-col gap-4 border-t border-white/[0.07] px-5 py-7 md:flex-row md:items-center md:justify-between md:px-8">
