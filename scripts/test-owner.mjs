@@ -229,8 +229,14 @@ check("Analyses renders (no crash, no NaN)", /Analyses/.test(stats) && !/NaN|Inf
 
 /* ── 10. QR page shows the shop's own link ─────────────────────────── */
 await staff.goto(`${BASE}/owner/qr`, { waitUntil: "networkidle" });
-const qrTxt = await staff.locator("main").innerText();
-check("QR page shows this shop's URL", qrTxt.includes(TEST_SLUG), TEST_SLUG);
+/*
+  The href, not the page text. The QR screen is deliberately wordless now — the
+  address lives in the code itself and in the "Voir la carte client" link, so
+  reading innerText proved nothing about which café this page belongs to. This
+  asserts the same property where it is actually true.
+*/
+const qrHref = await staff.locator('main a[href*="/"]').first().getAttribute("href");
+check("QR page points at this shop's card", (qrHref ?? "").includes(TEST_SLUG), qrHref ?? "none");
 
 await browser.close();
 

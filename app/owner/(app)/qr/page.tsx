@@ -5,7 +5,7 @@ import { businessType } from "@/lib/businessTypes";
 import { getLoyaltyProgram } from "@/lib/data";
 import { SITE_URL } from "@/lib/seo";
 import { PrintKit } from "./PrintKit";
-import { BackLink } from "@/components/BackLink";
+import { QrScreen } from "./QrScreen";
 
 export const metadata = { title: "Mon QR" };
 
@@ -38,7 +38,7 @@ export default async function QrPage() {
     type: "svg",
     errorCorrectionLevel: "M",
     margin: 0,
-    color: { dark: "#1a1330", light: "#00000000" },
+    color: { dark: "#14101f", light: "#00000000" },
   });
 
   // What the customer gets — read from the shop's real settings, never invented.
@@ -49,15 +49,13 @@ export default async function QrPage() {
       : "Cumulez des points à chaque visite";
 
   return (
-    <div className="space-y-3.5">
-      <div className="px-1 print:hidden">
-        <BackLink fallback="/owner" className="md:hidden print:hidden" />
-        <h1 className="text-[24px] font-extrabold text-white">Mon QR</h1>
-        <p className="mt-0.5 text-[13px] text-white/55">
-          Posez-le sur vos tables. C&apos;est par là que tout commence.
-        </p>
-      </div>
-
+    <QrScreen
+      url={url}
+      svg={svg}
+      logoUrl={cafe.logoUrl}
+      emoji={type.emoji}
+      cafeName={cafe.name}
+    >
       <PrintKit
         url={url}
         svg={svg}
@@ -66,31 +64,6 @@ export default async function QrPage() {
         emoji={type.emoji}
         promise={promise}
       />
-
-      {/* ── where to put it ────────────────────────────────────────── */}
-      <section className="a-card p-5 print:hidden">
-        <h2 className="text-[13.5px] font-extrabold text-white">Où le mettre</h2>
-        <ul className="mt-2.5 space-y-2.5">
-          {[
-            ["Sur chaque table", "C'est là qu'ils ont le temps de scanner."],
-            ["Au comptoir", "Juste à côté de la caisse, visible en payant."],
-            ["Sur la vitrine", "Les passants voient que vous avez une carte."],
-            ["En story / bio", "Utilisez « Télécharger », puis publiez l'image."],
-          ].map(([t, d]) => (
-            <li key={t} className="flex items-start gap-2.5">
-              <span className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full bg-royal" />
-              <span>
-                <span className="block text-[13.5px] font-bold text-white">{t}</span>
-                <span className="block text-[12px] leading-snug text-white/55">{d}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 rounded-xl bg-[#ffd27a]/12 px-3.5 py-2.5 text-[12px] leading-relaxed text-[#ffd27a]">
-          Plus il est visible, plus vos clients s&apos;inscrivent. Imprimez-en
-          plusieurs — un par table.
-        </p>
-      </section>
-    </div>
+    </QrScreen>
   );
 }
