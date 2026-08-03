@@ -123,11 +123,11 @@ export function RewardsSetup({
                 >
                   −
                 </Step>
-                <span className="w-[74px] text-center text-[15px] font-extrabold tabular-nums text-white">
+                {/* The number alone — the label beside it already says
+                    "visites", and repeating it here stole enough width to wrap
+                    that label and orphan its question mark on its own line. */}
+                <span className="w-[38px] text-center text-[17px] font-extrabold tabular-nums text-white">
                   {row.visits}
-                  <span className="ml-1 text-[12px] font-semibold text-white/45">
-                    visite{row.visits > 1 ? "s" : ""}
-                  </span>
                 </span>
                 <Step
                   label="Plus"

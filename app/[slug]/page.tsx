@@ -4,11 +4,12 @@ import { businessType } from "@/lib/businessTypes";
 import { notFound, redirect } from "next/navigation";
 import { GiftIcon, ScanIcon, Sparkle } from "@/components/icons";
 import { getCafe, getLoyaltyProgram, getMember, getRewards, nextRewardNudge } from "@/lib/data";
-import { balanceSinceLastOpen, dinerWallet, touchCardOpened } from "@/lib/db";
+import { balanceSinceLastOpen, dinerWallet } from "@/lib/db";
 import type { LoyaltyProgram } from "@/lib/types";
 import { CardArrived } from "@/components/CardArrived";
 import { CountUp } from "@/components/CountUp";
 import { RewardUnlocked } from "@/components/RewardUnlocked";
+import { MarkOpened } from "@/components/MarkOpened";
 import { fmtPoints } from "@/lib/points";
 import QRCode from "qrcode";
 
@@ -50,8 +51,12 @@ export default async function Carte({
   */
   const seen = await balanceSinceLastOpen(cafe.id, diner.phone);
 
-  // Record the visit so the wallet can sort by "recently opened".
-  await touchCardOpened(cafe.id, diner.phone);
+  /*
+    The mark is NOT moved here any more — <MarkOpened> does it from the browser,
+    after paint. A write during render runs however many times Next decides to
+    render, and an invisible pass was spending the unlock window before the
+    diner ever saw the page. See markCardOpenedAction.
+  */
 
   const [program, rewards] = await Promise.all([getLoyaltyProgram(cafe.id), getRewards(cafe.id)]);
 
@@ -116,6 +121,7 @@ export default async function Carte({
        to mid-screen with a dead band above it the moment the page got short.
        The ticket is the object of this screen — it sits where the eye starts. */
     <div data-carte className="flex flex-1 flex-col pb-6">
+      <MarkOpened slug={slug} />
       {/*
         Plays once, over a card that is already rendered and already usable.
 
