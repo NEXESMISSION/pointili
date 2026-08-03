@@ -4,7 +4,7 @@ import { businessType } from "@/lib/businessTypes";
 import { notFound, redirect } from "next/navigation";
 import { GiftIcon, ScanIcon, Sparkle } from "@/components/icons";
 import { getCafe, getLoyaltyProgram, getMember, getRewards, nextRewardNudge } from "@/lib/data";
-import { balanceSinceLastOpen, touchCardOpened } from "@/lib/db";
+import { balanceSinceLastOpen, dinerWallet, touchCardOpened } from "@/lib/db";
 import type { LoyaltyProgram } from "@/lib/types";
 import { CardArrived } from "@/components/CardArrived";
 import { CountUp } from "@/components/CountUp";
@@ -75,6 +75,12 @@ export default async function Carte({
   const type = businessType(cafe.businessType);
   const stampsLeft = Math.max(0, program.stampsRequired - stampView.shown);
   const nudge = nextRewardNudge(diner.balance, rewards);
+  /* Rewards this balance already covers — the number the boutique tab
+     cannot show, and the only reason to look at that tile. */
+  const readyCount = rewards.filter((r) => r.active && r.pointsCost <= diner.balance).length;
+  /* How many shops this person carries — the wallet tile's whole point, and a
+     number the header pill cannot show. One query, already indexed by phone. */
+  const cardCount = (await dinerWallet(diner.phone)).length;
 
   /* The code the cashier scans, drawn HERE rather than one tap away. Encodes the
      ACCOUNT code, never the phone number — same as /scanner did. */
@@ -82,7 +88,10 @@ export default async function Carte({
     type: "svg",
     errorCorrectionLevel: "M",
     margin: 0,
-    color: { dark: "#ffffff", light: "#00000000" },
+    /* Dark modules now, not white: the code sits on the ticket's white pass
+       zone, which is also the polarity the QR spec actually promises decoders
+       will read. The old white-on-dark worked, but this one cannot not-work. */
+    color: { dark: "#1a1128", light: "#00000000" },
   });
 
   return (
@@ -102,7 +111,11 @@ export default async function Carte({
       as a screen that failed to finish loading. Centred, the same two elements
       read as all there is — which is the point.
     */
-    <div data-carte className="flex flex-1 flex-col justify-center pb-6">
+    /* Top-anchored, not justify-center: centring was invisible while this
+       screen held three stacked blocks, but the single compact ticket floated
+       to mid-screen with a dead band above it the moment the page got short.
+       The ticket is the object of this screen — it sits where the eye starts. */
+    <div data-carte className="flex flex-1 flex-col pb-6">
       {/*
         Plays once, over a card that is already rendered and already usable.
 
@@ -147,15 +160,34 @@ export default async function Carte({
         repeating a name printed 130px below it at four times the size.
       */}
       <section className="px-4 pb-4 pt-1">
-        <Link
-          href={`/cartes?from=${slug}`}
-          aria-label={`${cafe.name} — voir toutes mes cartes`}
-          className="block overflow-hidden rounded-[28px] p-5 transition active:scale-[0.99]"
+        {/*
+          ONE TICKET, NOT TWO CARDS.
+
+          The QR used to sit under the card as a second bordered block of almost
+          equal weight — two surfaces stacked, neither winning, nothing shared.
+          Now the whole thing is one boarding pass: the loyalty card on top, a
+          perforated line with two notches punched out of the sides, and the
+          code in a white pass zone at the bottom of the SAME container.
+
+          The notches are a CSS mask (.ticket-notch), not painted circles — the
+          page behind is a gradient, so a painted "hole" would be the wrong
+          colour at every scroll position except one.
+        */}
+        <div
+          className="ticket-notch relative overflow-hidden rounded-[28px]"
           style={{
             backgroundImage:
               "linear-gradient(150deg, #7c56e8 0%, #6039cf 26%, #3d2483 62%, #241748 100%)",
             boxShadow: "0 24px 50px -20px rgba(101,67,214,.9), inset 0 1px 0 rgba(255,255,255,.22)",
           }}
+        >
+          {/* one diagonal light pass when the card mounts — see .card-sheen */}
+          <span aria-hidden className="card-sheen" />
+
+        <Link
+          href={`/cartes?from=${slug}`}
+          aria-label={`${cafe.name} — voir toutes mes cartes`}
+          className="block p-5 pb-4 transition active:opacity-90"
         >
           {/*
             SIZED DOWN, HARD.
@@ -229,39 +261,45 @@ export default async function Carte({
                 count fills evenly: ten becomes two rows of five, twelve becomes
                 two of six. Same dots, no raggedness.
               */}
-              <div
-                className="mt-5 grid justify-items-center gap-2"
-                style={{
-                  gridTemplateColumns: `repeat(${
-                    program.stampsRequired > 6
-                      ? Math.ceil(program.stampsRequired / 2)
-                      : program.stampsRequired
-                  }, minmax(0, 1fr))`,
-                }}
-              >
-                {Array.from({ length: program.stampsRequired }).map((_, i) => {
-                  const filled = i < stampView.shown;
-                  const isReward = i === program.stampsRequired - 1;
-                  return (
-                    <span
-                      key={i}
-                      /* FIXED size, centred in its cell. `aspect-square w-full`
-                         made each dot as wide as its column — five columns on a
-                         390px card gave 64px circles that swallowed the card. */
-                      className={`grid h-8 w-8 place-items-center rounded-full ${
-                        filled
-                          ? "bg-white text-[#5b3fd1]"
-                          : "border border-dashed border-white/30 text-white/35"
-                      }`}
-                    >
-                      {filled ? (
-                        <Sparkle className="h-3.5 w-3.5" />
-                      ) : isReward ? (
-                        <GiftIcon className="h-3.5 w-3.5" />
-                      ) : null}
-                    </span>
-                  );
-                })}
+              {/*
+                A WELL, NOT LOOSE DOTS. The grid alone spread its columns across
+                the full card width, so the dots floated in empty purple — the
+                "scattered" look. w-fit makes the grid hug its dots, the darker
+                inset ties them together as one object, and mx-auto centres that
+                object. The dots stopped floating because they are IN something.
+              */}
+              <div className="mx-auto mt-4 w-fit rounded-2xl bg-black/[0.18] px-3.5 py-2.5">
+                <div
+                  className="grid gap-1.5"
+                  style={{
+                    gridTemplateColumns: `repeat(${
+                      program.stampsRequired > 6
+                        ? Math.ceil(program.stampsRequired / 2)
+                        : program.stampsRequired
+                    }, minmax(0, 1fr))`,
+                  }}
+                >
+                  {Array.from({ length: program.stampsRequired }).map((_, i) => {
+                    const filled = i < stampView.shown;
+                    const isReward = i === program.stampsRequired - 1;
+                    return (
+                      <span
+                        key={i}
+                        className={`grid h-7 w-7 place-items-center rounded-full ${
+                          filled
+                            ? "bg-white text-[#5b3fd1]"
+                            : "border border-dashed border-white/30 text-white/35"
+                        }`}
+                      >
+                        {filled ? (
+                          <Sparkle className="h-3.5 w-3.5" />
+                        ) : isReward ? (
+                          <GiftIcon className="h-3.5 w-3.5" />
+                        ) : null}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* One line, and it wraps as prose instead of as two columns
@@ -307,56 +345,185 @@ export default async function Carte({
             </>
           )}
 
-          {/* The rate, once, quietly, at the foot of the card — where it is a
-              footnote rather than one half of a two-column row that wrapped. */}
-          <p className="mt-3 border-t border-white/12 pt-2.5 text-[11px] font-medium text-white/40">
+          {/* The rate, a footnote — the perforation below is the separator now,
+              so the border-t this line used to carry is gone. */}
+          <p className="mt-2.5 text-[10.5px] font-medium text-white/35">
             {rateLabel(program.pointsPerTnd)}
           </p>
         </Link>
-      </section>
 
-      {/* the one thing you do here, and what it is for */}
-      <div className="px-4">
+        {/* ── the perforation ─────────────────────────────────────────
+            The dashed line sits exactly on the notch centres (--pass-h in
+            .ticket-notch). Above it: the card. Below it: the pass. */}
+        <div aria-hidden className="mx-4 border-t-2 border-dashed border-white/20" />
+
         {/*
-          THE CODE ITSELF, not a button to go and get it.
+          ── THE PASS ZONE ────────────────────────────────────────────
+          The code itself, not a button to go and get it: the card screen IS
+          the screen someone has open when they reach the till, and one more
+          tap while a queue waits was a tap for nothing. /scanner still exists
+          for the bottom nav and deep links.
 
-          This was a white "Montrer mon code" bar that opened /scanner. But the
-          card screen IS the screen someone has open when they reach the till,
-          and making them tap once more — while a queue waits and a cashier
-          holds out a phone — was a tap for nothing. /scanner still exists for
-          the deep link and the bottom nav; this is the same code, in the place
-          it is actually needed.
+          White, inside the same ticket — the QR small on the left, the code
+          readable ACROSS a counter on the right for when a camera won't focus.
+          h-[128px] is load-bearing: it is what .ticket-notch's --pass-h aligns
+          the notches to. Change one, change both.
         */}
-        <div className="rounded-[24px] border border-white/[0.10] bg-white/[0.04] px-5 pb-4 pt-5 text-center">
-          <div className="mx-auto w-[150px] [&>svg]:h-auto [&>svg]:w-full">
-            <div dangerouslySetInnerHTML={{ __html: qr }} />
+        <div className="flex h-[128px] items-center gap-4 bg-white px-5">
+          <div
+            className="w-[92px] shrink-0 [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+            dangerouslySetInnerHTML={{ __html: qr }}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#17121f]/45">
+              Mon code client
+            </p>
+            <p className="mt-1 font-mono text-[30px] font-extrabold leading-none tracking-[0.14em] text-[#4c2fd6]">
+              {diner.code}
+            </p>
+            <p className="mt-1.5 text-[11.5px] leading-snug text-[#17121f]/55">
+              Le serveur le scanne — pas besoin de ton numéro.
+            </p>
           </div>
-          <p className="mt-4 text-[10.5px] font-bold uppercase tracking-[0.10em] text-white/45">
-            Mon code client
-          </p>
-          {/* Readable ACROSS a counter, for when a camera will not focus. */}
-          <p className="mt-1 font-mono text-[26px] font-extrabold leading-none tracking-[0.16em] text-[#a78bfa]">
-            {diner.code}
-          </p>
-          <p className="mt-2 text-[11.5px] text-white/45">
-            Le serveur le scanne — pas besoin de ton numéro.
-          </p>
         </div>
-      </div>
+        </div>
+      </section>
 
 
       {/*
-        THE REWARDS LIST IS GONE FROM THIS SCREEN.
+        ── FOUR SHORTCUTS, UNDER THE TICKET ───────────────────────────────
+        The ticket ends a third of the way down and left a dead band above the
+        tab bar. Filling it with links to the tabs would be the clutter this
+        screen just had removed, so each tile carries a LIVE NUMBER the tab bar
+        cannot: how many rewards are within reach right now, how many codes are
+        waiting, how many visits are on record. That is the difference between
+        a shortcut and a second navigation.
 
-        It sat under the code button showing three of them, with a "Voir
-        tout" leading exactly where the RÉCOMPENSES tab now leads — a whole
-        section duplicating a tab two centimetres below it.
-
-        This screen answers one question, "how am I doing here", and offers
-        the one action anyone takes at a counter. Choosing a reward belongs on
-        the screen named after them.
+        Sized to leave the page exactly one screen — measured at 390×844, no
+        scroll. Two columns, because four in a row puts a 9px label under a
+        20px icon and nobody reads it.
       */}
+      <section className="mt-4 grid grid-cols-2 gap-2.5 px-4">
+        <Tile
+          href={`/${slug}/boutique`}
+          label="Récompenses"
+          value={
+            readyCount > 0
+              ? `${readyCount} à prendre`
+              : nudge
+                ? `encore ${fmtPoints(nudge.needed)}`
+                : "à découvrir"
+          }
+          accent={readyCount > 0}
+          icon={<GiftIcon className="h-[19px] w-[19px]" />}
+        />
+        <Tile
+          href={`/${slug}/codes`}
+          label="Mes codes"
+          value={
+            diner.codes.length > 0
+              ? `${diner.codes.length} à récupérer`
+              : "aucun"
+          }
+          accent={diner.codes.length > 0}
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]">
+              <rect x="3" y="7" width="18" height="12" rx="2.5" />
+              <path d="M7 11h4M7 15h2" />
+            </svg>
+          }
+        />
+        <Tile
+          href={`/${slug}/historique`}
+          label="Historique"
+          value="mes points"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v5l3 2" />
+            </svg>
+          }
+        />
+        <Tile
+          href={`/${slug}/profil`}
+          label="Mon profil"
+          value={diner.name ?? "mon compte"}
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]">
+              <circle cx="12" cy="8" r="3.4" />
+              <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
+            </svg>
+          }
+        />
+      </section>
+
+      {/* Full width, because it leaves this shop rather than going deeper into
+          it — and because the wallet otherwise exists only as a pill in the
+          header, which is the one place a first-timer does not look. */}
+      <div className="mt-2.5 px-4">
+        <Tile
+          href={`/cartes?from=${slug}`}
+          label="Mes cartes"
+          value={`${cardCount} boutique${cardCount > 1 ? "s" : ""}`}
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]">
+              <rect x="2.5" y="7.5" width="15" height="11" rx="2.5" />
+              <path d="M6.5 5.5h13a2 2 0 0 1 2 2v9" />
+            </svg>
+          }
+        />
+      </div>
     </div>
+  );
+}
+
+/**
+ * One shortcut.
+ *
+ * `accent` is not decoration — it lights only when the tile has something
+ * waiting behind it (a reward you can take today, a code to collect), so the
+ * grid reads at a glance instead of being four identical boxes.
+ */
+function Tile({
+  href,
+  label,
+  value,
+  icon,
+  accent = false,
+}: {
+  href: string;
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  accent?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`flex items-center gap-3 rounded-[20px] border px-3.5 py-3 transition active:scale-[0.98] ${
+        accent
+          ? "border-[#7ff0b0]/30 bg-[#7ff0b0]/[0.07]"
+          : "border-white/[0.08] bg-white/[0.035]"
+      }`}
+    >
+      <span
+        className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${
+          accent ? "bg-[#7ff0b0]/15 text-[#7ff0b0]" : "bg-white/[0.07] text-[#a78bfa]"
+        }`}
+      >
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-[12.5px] font-extrabold text-white">{label}</span>
+        <span
+          className={`block truncate text-[11px] font-medium ${
+            accent ? "text-[#7ff0b0]/80" : "text-white/45"
+          }`}
+        >
+          {value}
+        </span>
+      </span>
+    </Link>
   );
 }
 
