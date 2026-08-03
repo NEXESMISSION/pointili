@@ -93,7 +93,7 @@ export function WalletView({
         copyable, because the one thing anyone does with that code is read it
         out or hand the phone over.
       */}
-      <header className="flex items-start gap-3 pb-5">
+      <header className="flex items-center gap-2.5 pb-4">
         <button
           type="button"
           /* No validated card to go back to (e.g. "/" → /cartes, which leaves no
@@ -105,7 +105,7 @@ export function WalletView({
             else router.back();
           }}
           aria-label="Retour"
-          className="mt-1 grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/[0.07] text-white/80 ring-1 ring-white/10 transition active:scale-[0.95]"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/[0.07] text-white/80 ring-1 ring-white/10 transition active:scale-[0.95]"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
             <path d="m15 18-6-6 6-6" />
@@ -113,8 +113,16 @@ export function WalletView({
         </button>
 
         <div className="min-w-0 flex-1">
-          <h1 className="text-[27px] font-extrabold leading-tight tracking-[-0.02em]">Mes cartes</h1>
-          <p className="mt-0.5 text-[14px] text-white/50">
+          {/*
+            nowrap and 21px, not 27. At 27 "Mes cartes" needed more row than a
+            390px phone has left after a back button and the code panel, so it
+            broke across two lines — and a two-line title beside a one-line
+            panel is what made this header look unfinished rather than big.
+          */}
+          <h1 className="truncate whitespace-nowrap text-[21px] font-extrabold leading-tight tracking-[-0.02em]">
+            Mes cartes
+          </h1>
+          <p className="text-[12.5px] text-white/45">
             {cards.length} boutique{cards.length === 1 ? "" : "s"}
           </p>
         </div>
@@ -129,7 +137,7 @@ export function WalletView({
             onChange={(e) => setQ(e.target.value)}
             placeholder="Rechercher…"
             inputMode="search"
-            className="w-full rounded-2xl bg-white/[0.07] py-2.5 pl-9 pr-4 text-[14px] font-medium text-white outline-none ring-1 ring-white/10 transition placeholder:text-white/40 focus:ring-white/25"
+            className="w-full rounded-2xl bg-white/[0.07] py-2.5 pl-9 pr-4 text-[16px] font-medium text-white outline-none ring-1 ring-white/10 transition placeholder:text-white/40 focus:ring-white/25"
           />
           <span className="pointer-events-none absolute inset-y-0 left-0 grid place-items-center pl-3 text-white/40">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
@@ -147,7 +155,7 @@ export function WalletView({
             : "Scanne le QR d'un commerce pour ajouter ta première carte."}
         </p>
       ) : (
-        <ul className="stagger space-y-3">
+        <ul className="stagger space-y-2.5">
           {shown.map((c, i) => (
             <CardRow
               key={c.businessId}
@@ -220,13 +228,13 @@ function CodePanel({ code }: { code: string }) {
         );
       }}
       aria-label={`Copier mon code client ${code}`}
-      className="shrink-0 rounded-2xl bg-white/[0.07] px-3.5 py-2 text-center ring-1 ring-white/10 transition active:scale-[0.97]"
+      className="shrink-0 rounded-xl bg-white/[0.07] px-3 py-1.5 text-center ring-1 ring-white/10 transition active:scale-[0.97]"
     >
-      <span className="block text-[9.5px] font-bold uppercase tracking-[0.09em] text-white/45">
+      <span className="block text-[8.5px] font-bold uppercase tracking-[0.08em] text-white/40">
         Mon code client
       </span>
       <span className="mt-0.5 flex items-center justify-center gap-1.5">
-        <span className="font-mono text-[17px] font-bold tracking-[0.12em] text-white">{code}</span>
+        <span className="font-mono text-[15.5px] font-bold tracking-[0.12em] text-white">{code}</span>
         {copied ? (
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-[#7ff0b0]">
             <path d="m5 13 4 4L19 7" />
@@ -268,7 +276,7 @@ function CardRow({
           There is no aspect-ratio here any more — the card is as tall as it
           needs to be — but the width stays explicit so it cannot come back.
         */
-        className={`group relative block w-full overflow-hidden rounded-[26px] p-5 transition active:scale-[0.985] ${
+        className={`group relative block w-full overflow-hidden rounded-[22px] p-4 transition active:scale-[0.985] ${
           current ? "ring-1 ring-white/25" : "ring-1 ring-white/[0.10]"
         }`}
         style={
@@ -291,10 +299,10 @@ function CardRow({
             <img
               src={card.logoUrl}
               alt=""
-              className="h-[58px] w-[58px] shrink-0 rounded-full bg-white/15 object-cover ring-1 ring-white/20"
+              className="h-[46px] w-[46px] shrink-0 rounded-full bg-white/15 object-cover ring-1 ring-white/20"
             />
           ) : (
-            <span className="grid h-[58px] w-[58px] shrink-0 place-items-center rounded-full bg-white/15 text-[26px] ring-1 ring-white/20">
+            <span className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-full bg-white/15 text-[20px] ring-1 ring-white/20">
               {t.emoji}
             </span>
           )}
@@ -303,16 +311,16 @@ function CardRow({
             {/* wraps rather than truncating: the ACTUELLE pill takes the room a
                 shop name needs, and "Café El M…" identifies nothing — which is
                 the one job this screen has */}
-            <span className="block text-[21px] font-extrabold leading-tight line-clamp-2">
+            <span className="block text-[16.5px] font-extrabold leading-tight line-clamp-2">
               {card.name}
             </span>
-            <span className="block truncate text-[14px] font-medium text-white/50">{t.label}</span>
+            <span className="block truncate text-[11.5px] font-medium text-white/45">{t.label}</span>
           </span>
 
           {current && (
-            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3 py-1.5">
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-white px-2.5 py-1">
               <span className="h-[7px] w-[7px] rounded-full bg-[#7c3aed]" />
-              <span className="text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-[#1a1030]">
+              <span className="text-[9.5px] font-extrabold uppercase tracking-[0.05em] text-[#1a1030]">
                 Actuelle
               </span>
             </span>
@@ -329,7 +337,7 @@ function CardRow({
               Encore <b className="font-extrabold text-white">{fmtPoints(nudge.needed)}</b> pour{" "}
               {nudge.label.toLowerCase()}
             </p>
-            <span className="mt-2.5 block h-[7px] overflow-hidden rounded-full bg-black/30">
+            <span className="mt-2 block h-[6px] overflow-hidden rounded-full bg-black/30">
               <span
                 className="block h-full rounded-full bg-[#a78bfa]"
                 style={{
@@ -341,13 +349,13 @@ function CardRow({
         )}
 
         {/* ── the balance, which is the only reason to open this card ── */}
-        <div className="mt-5 flex items-end justify-between gap-3">
+        <div className="mt-3 flex items-end justify-between gap-3">
           <span className="min-w-0">
             <span className="flex items-baseline gap-2">
-              <span className="text-[40px] font-extrabold leading-none tabular-nums tracking-[-0.03em]">
+              <span className="text-[30px] font-extrabold leading-none tabular-nums tracking-[-0.03em]">
                 {fmtPoints(card.balance)}
               </span>
-              <span className="text-[15px] font-bold text-[#c9b8ff]">points</span>
+              <span className="text-[12px] font-bold text-[#c9b8ff]">points</span>
             </span>
 
             {/*
@@ -359,8 +367,8 @@ function CardRow({
               only has to answer "how am I doing here" — a number does that.
             */}
             {card.stampsEnabled && card.stamps > 0 && (
-              <span className="mt-2 flex items-center gap-1.5 text-[14px] text-white/60">
-                <StampIcon className="h-[17px] w-[17px] text-white/70" />
+              <span className="mt-1.5 flex items-center gap-1.5 text-[11.5px] text-white/55">
+                <StampIcon className="h-[14px] w-[14px] text-white/60" />
                 <b className="font-extrabold text-white">{card.stamps}</b> tampon
                 {card.stamps > 1 ? "s" : ""}
               </span>
@@ -377,7 +385,7 @@ function CardRow({
               card is loading. There is no loading.tsx under /[slug] — every page
               there redirects, and a redirect inside a streamed Suspense boundary
               stops being an HTTP one — so this is the only tap feedback. */}
-          <GoChevron size={48} />
+          <GoChevron size={36} />
         </div>
       </Link>
     </li>
