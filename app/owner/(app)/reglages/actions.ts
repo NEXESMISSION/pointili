@@ -52,21 +52,23 @@ export async function saveEarnAction(
   const cafe = await ownerCafe();
   if (!cafe) return { error: "Non autorisé." };
 
-  const pointsPerTnd = num(formData.get("pointsPerTnd"), 0.1, 100);
-  const welcomePoints = num(formData.get("welcomePoints"), 0, 10_000);
-  const expiryHours = num(formData.get("redeemExpiryHours"), 1, 8760);
+  /*
+    NEITHER THE RATE NOR THE CODE DEADLINE IS READ FROM THE FORM ANY MORE.
 
-  if (pointsPerTnd === null) return { error: "Points par dinar : entre 0,1 et 100." };
+    Both fields are gone from the screen (0031), and this is the half that
+    matters: a server action that still trusted `pointsPerTnd` from the body
+    would let anyone who can post a form set their own rate, whatever the UI
+    stopped offering. Removing the input is cosmetic; removing the read is the
+    fix. The database now also carries a CHECK that the rate is 1.
+  */
+  const welcomePoints = num(formData.get("welcomePoints"), 0, 10_000);
   if (welcomePoints === null) return { error: "Bonus de bienvenue : entre 0 et 10 000." };
-  if (expiryHours === null) return { error: "Validité des codes : entre 1 h et 1 an." };
 
   const db = await createClient();
   const { data, error } = await db
     .from("loyalty_programs")
     .update({
-      points_per_tnd: pointsPerTnd,
       welcome_points: Math.round(welcomePoints),
-      redeem_expiry_hours: Math.round(expiryHours),
       active: formData.get("loyaltyActive") === "on",
     })
     .eq("business_id", cafe.id)
@@ -412,4 +414,101 @@ export async function deleteRewardAction(id: string): Promise<void> {
   revalidatePath(`/${cafe.slug}/boutique`);
   // Ma carte's "almost there" nudge depends on the reward set too.
   revalidatePath(`/${cafe.slug}`);
+}
+
+/* ── La roue ─────────────────────────────────────────────────────────────── */
+
+/**
+ * The wheel's switch and its price.
+ *
+ * games.active is the on/off the customer feels; spin_cost is what a turn
+ * costs. Both live on the games row, and spin_wheel() reads the price from
+ * there rather than from the client — so this action is the ONLY way the price
+ * can move, and it goes through the owner's session and RLS like everything
+ * else on this screen.
+ */
+export async function saveWheelAction(
+  _prev: SettingsState,
+  formData: FormData,
+): Promise<SettingsState> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { error: "Non autorisé." };
+
+  const cost = num(formData.get("spinCost"), 0, 1_000_000);
+  if (cost === null) return { error: "Coût d'un tour : entre 0 et 1 000 000 points." };
+
+  const db = await createClient();
+  const { data, error } = await db
+    .from("games")
+    .update({ active: formData.get("wheelActive") === "on", spin_cost: Math.round(cost) })
+    .eq("business_id", cafe.id)
+    .select("id");
+
+  const failed = assertWrote(data, error);
+  if (failed) return failed;
+
+  revalidatePath("/owner/reglages");
+  revalidatePath(`/${cafe.slug}/boutique`);
+  return { saved: "La roue" };
+}
+
+/** One segment. A blank label deletes it. */
+export async function savePrizeAction(
+  _prev: SettingsState,
+  formData: FormData,
+): Promise<SettingsState> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { error: "Non autorisé." };
+
+  const db = await createClient();
+  const { data: game } = await db.from("games").select("id").eq("business_id", cafe.id).maybeSingle();
+  if (!game) return { error: "Roue introuvable." };
+
+  const id = String(formData.get("id") ?? "");
+  const label = String(formData.get("label") ?? "").trim().slice(0, 40);
+  if (!label) return { error: "Le nom du lot est requis." };
+
+  const { data, error } = id
+    ? await db.from("prizes").update({ label }).eq("id", id).eq("game_id", game.id).select("id")
+    : await db
+        .from("prizes")
+        .insert({ game_id: game.id, label, active: true, position: 99 })
+        .select("id");
+
+  const failed = assertWrote(data, error);
+  if (failed) return failed;
+
+  revalidatePath("/owner/reglages");
+  revalidatePath(`/${cafe.slug}/boutique`);
+  return { saved: label };
+}
+
+/**
+ * Retire a segment.
+ *
+ * Deactivated, never deleted: wins.prize_id is ON DELETE RESTRICT (0001), so a
+ * prize somebody has already won cannot be removed — and should not be, or the
+ * code in their hand would point at nothing.
+ */
+export async function deletePrizeAction(prizeId: string): Promise<SettingsState> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { error: "Non autorisé." };
+
+  const db = await createClient();
+  const { data: game } = await db.from("games").select("id").eq("business_id", cafe.id).maybeSingle();
+  if (!game) return { error: "Roue introuvable." };
+
+  const { data, error } = await db
+    .from("prizes")
+    .update({ active: false })
+    .eq("id", prizeId)
+    .eq("game_id", game.id)
+    .select("id");
+
+  const failed = assertWrote(data, error);
+  if (failed) return failed;
+
+  revalidatePath("/owner/reglages");
+  revalidatePath(`/${cafe.slug}/boutique`);
+  return { saved: "Lot retiré" };
 }

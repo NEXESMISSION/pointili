@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { QrScanner } from "@/components/QrScanner";
 import { CheckIcon, QrIcon, StampIcon } from "@/components/icons";
@@ -20,22 +21,25 @@ import {
 } from "./actions";
 
 /*
-  The till, as a terminal — not a web form.
+  The till, on one screen.
 
   Behind a counter you do one of two things: identify a customer, or validate a
-  code they show you. So the screen is those two modes and nothing else.
+  code they show you. Both are PRESENT at once now — a scanner button, the
+  client field, and the voucher field, with nothing to scroll and no tab to
+  guess. (They used to be two tabbed modes with a drawn keypad; the keypad is
+  gone because the phone's own keyboard is better and its height is exactly
+  what forced the scroll.)
 
-  The KEYPAD is the resting state and the camera opens only when asked. Lighting
-  the lens the moment someone opens the till drains the battery through a whole
-  shift, and on the very first visit it throws a permission prompt at a cashier
-  who was only trying to type a number.
+  The camera still opens only when asked. Lighting the lens the moment someone
+  opens the till drains the battery through a whole shift, and on the very
+  first visit it throws a permission prompt at a cashier who was only trying
+  to type a number.
 
   Once identified, the customer takes over the whole screen: at arm's length,
   mid-service, a small inline panel is not readable.
 */
 
 type Customer = NonNullable<ResolveState["customer"]>;
-type Mode = "client" | "code";
 type Stage = "scan" | "keypad";
 
 /** Accept a raw code or a URL that carries it (?c= or last path segment). */
@@ -65,6 +69,7 @@ const ACT: Record<Activity["reason"], string> = {
   redeem: "Échange",
   adjust: "Correction",
   expire: "Expiration",
+  spin: "Roue",
   collected: "Récupéré",
 };
 
@@ -106,7 +111,7 @@ export function CaisseDesk({
   stampsEnabled: boolean;
   stampsRequired: number;
 }) {
-  const [mode, setMode] = useState<Mode>("client");
+  /* No `mode` any more — see the note where the tabs used to be. */
   const [stage, setStage] = useState<Stage>("keypad");
   const [typed, setTyped] = useState("");
   /*
@@ -141,72 +146,58 @@ export function CaisseDesk({
   return (
     <div className="space-y-4">
       {/*
-        Two modes, named by the JOB, not by the input.
+        NO TABS AND NO KEYPAD — the whole till on one screen.
 
-        They used to read "Un client" / "Un code", and both sides then explained
-        themselves as "the code the customer shows on their phone" — because
-        that is literally true of both: the account code is 4 characters, the
-        reward voucher is 6, and they come from the same alphabet. So the tabs
-        described the same thing twice and the cashier had to know which code
-        was which to pick a tab. Guess wrong and the answer was "Client
-        introuvable — vérifiez le code", which blames the customer for a tab
-        mistake, in front of a queue.
+        The tabs made the cashier CHOOSE before they could act: "Ajouter des
+        points" or "Valider une récompense", two names for screens that each
+        held one field. Guess wrong and the error blamed the customer, in front
+        of a queue. With both fields simply present, there is nothing to guess
+        — the 4-character code goes in the top one, the 6-character voucher in
+        the bottom one, and each says which it is.
 
-        The cashier does not think "I have a code". They think "this person is
-        paying" or "this person is collecting". So that is what the tabs say.
+        The drawn keypad went with them. It existed to LOOK like a till, but
+        the phone already has a keyboard — a better one, with letters for the
+        codes that contain letters — and the fake pad cost the exact screen
+        height that forced this page to scroll. The field alone brings the
+        phone's own keyboard up, which is the tool the cashier already knows.
       */}
-      <div className="grid grid-cols-2 gap-1 rounded-2xl bg-white/[0.07] p-1">
-        {(["client", "code"] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => {
-              setMode(m);
-              setError("");
-            }}
-            className={`rounded-xl px-2 py-3 text-[13.5px] font-bold leading-tight transition ${
-              mode === m ? "bg-[#6d4ae6] text-white shadow-lg" : "text-white/55"
-            }`}
-          >
-            {m === "client" ? "Ajouter des points" : "Valider une récompense"}
+      {stage === "scan" ? (
+        <section>
+          <div className="overflow-hidden rounded-3xl border border-white/12">
+            {/* no camera on this device → drop straight back to the field */}
+            <QrScanner
+              key={scanNonce}
+              onScan={(text) => {
+                setScanNonce((n) => n + 1);
+                find(text);
+              }}
+              onUnavailable={() => setStage("keypad")}
+            />
+          </div>
+          <p className="mt-3 text-center text-[13px] text-white/55">
+            {busy ? "Recherche…" : "Pointez le QR du client"}
+          </p>
+          <button type="button" onClick={() => setStage("keypad")} className="a-btn a-btn--ghost mt-3">
+            Fermer la caméra
           </button>
-        ))}
-      </div>
-
-      {mode === "client" ? (
+        </section>
+      ) : (
         <>
-          {/* the camera replaces the pad rather than sitting beside it */}
-          {stage === "scan" ? (
-            <section>
-              <div className="overflow-hidden rounded-3xl border border-white/12">
-                {/* no camera on this device → drop straight back to the pad */}
-                <QrScanner
-                  key={scanNonce}
-                  onScan={(text) => {
-                    setScanNonce((n) => n + 1);
-                    find(text);
-                  }}
-                  onUnavailable={() => setStage("keypad")}
-                />
-              </div>
-              <p className="mt-3 text-center text-[13px] text-white/55">
-                {busy ? "Recherche…" : "Pointez le QR du client"}
-              </p>
-              <button type="button" onClick={() => setStage("keypad")} className="a-btn a-btn--ghost mt-3">
-                Fermer la caméra
-              </button>
-            </section>
-          ) : (
-            <section className="a-card p-4">
-              <button
-                type="button"
-                onClick={() => setStage("scan")}
-                className="a-btn mb-3 flex items-center justify-center gap-2"
-              >
-                <QrIcon className="h-5 w-5" /> Scanner le QR
-              </button>
-
-              {/* a real input, so a hardware keyboard — or a code with letters — works too */}
+          {/* ── this person is paying ─────────────────────────────── */}
+          <section className="a-card p-4">
+            <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white/45">
+              Ajouter des points
+            </p>
+            <button
+              type="button"
+              onClick={() => setStage("scan")}
+              className="a-btn mb-2.5 flex items-center justify-center gap-2"
+            >
+              <QrIcon className="h-5 w-5" /> Scanner le QR
+            </button>
+            {/* field + button on ONE row — the height the keypad used to eat
+                is what lets both jobs fit one screen */}
+            <div className="flex gap-2">
               <input
                 name="customer"
                 value={typed}
@@ -214,36 +205,59 @@ export function CaisseDesk({
                 onKeyDown={(e) => e.key === "Enter" && find(typed)}
                 placeholder="Code client ou numéro"
                 inputMode="text"
-                className="w-full rounded-2xl bg-white/[0.06] px-4 py-4 text-center text-[26px] font-extrabold tracking-[0.06em] text-white outline-none placeholder:text-[16px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-white/35"
+                autoCapitalize="characters"
+                className="min-w-0 flex-1 rounded-2xl bg-white/[0.06] px-4 py-3.5 text-[18px] font-extrabold tracking-[0.05em] text-white outline-none placeholder:text-[14px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-white/35"
               />
-              <div className="mt-3">
-                <Keypad
-                  onKey={(k) =>
-                    setTyped(k === "⌫" ? typed.slice(0, -1) : typed.length >= 20 ? typed : typed + k)
-                  }
-                />
-              </div>
               <button
                 type="button"
                 onClick={() => find(typed)}
                 disabled={busy || !typed.trim()}
-                className="a-btn mt-3"
+                className="a-btn !w-auto shrink-0 px-5"
               >
                 {busy ? "· · ·" : "Chercher"}
               </button>
-            </section>
-          )}
+            </div>
+          </section>
 
           {error && (
-            <p role="alert" className="rounded-2xl bg-[#ff6b6b]/12 px-4 py-3 text-[13.5px] font-semibold text-[#ff9a9a]">
+            <p role="alert" className="rounded-2xl bg-[#ff6b6b]/12 px-4 py-3 text-[13px] font-semibold text-[#ff9a9a]">
               {error}
             </p>
           )}
 
+          {/* ── this person is collecting ─────────────────────────── */}
+          <ValidateForm />
         </>
-      ) : (
-        <ValidateForm />
       )}
+
+      {/*
+        The shop's own QR, which used to be a fourth tab.
+
+        A tab is a place you go back to. Nobody goes back to their QR code —
+        they print it once, stick it on the tables, and then need it again only
+        to show somebody. Meanwhile it sat permanently in the thumb row of a
+        screen used dozens of times a shift, and the till had a hand's width of
+        empty page under the keypad.
+
+        So it is a line at the bottom of the till instead: still one tap on day
+        one, when putting the QR on the tables IS the job, and out of the way
+        every day after. /owner/qr is unchanged and still deep-linkable.
+      */}
+      <Link
+        href="/owner/qr"
+        className="flex items-center gap-3 rounded-2xl border border-white/[0.1] bg-white/[0.04] px-4 py-3.5 transition active:bg-white/[0.07]"
+      >
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/[0.08] text-white">
+          <QrIcon className="h-[18px] w-[18px]" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-bold text-white">Mon QR</span>
+          <span className="block text-[12px] text-white/45">
+            À poser sur les tables — c&apos;est lui qui crée les cartes.
+          </span>
+        </span>
+        <span className="shrink-0 text-[17px] leading-none text-white/30">›</span>
+      </Link>
 
       {customer && (
         <CustomerSheet
@@ -475,7 +489,7 @@ function CustomerSheet({
           type="button"
           onClick={onClose}
           aria-label="Fermer"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/[0.1] text-[22px] leading-none text-white active:scale-95"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/[0.1] text-[20px] leading-none text-white active:scale-95"
         >
           ×
         </button>
@@ -505,13 +519,13 @@ function CustomerSheet({
             role="status"
             className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-[#7ff0b0]/12 px-4 py-3"
           >
-            <p className="min-w-0 text-[13.5px] font-bold text-[#7ff0b0]">{flash.text}</p>
+            <p className="min-w-0 text-[13px] font-bold text-[#7ff0b0]">{flash.text}</p>
             {flash.undo !== undefined && (
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => undoCredit(flash.undo!, flash.amount)}
-                className="shrink-0 rounded-full bg-white/12 px-3.5 py-1.5 text-[12.5px] font-bold text-white active:scale-95"
+                className="shrink-0 rounded-full bg-white/12 px-3.5 py-1.5 text-[12px] font-bold text-white active:scale-95"
               >
                 Annuler
               </button>
@@ -519,7 +533,7 @@ function CustomerSheet({
           </div>
         )}
         {err && (
-          <p role="alert" className="mt-3 rounded-2xl bg-[#ff6b6b]/12 px-4 py-3 text-[13.5px] font-semibold text-[#ff9a9a]">
+          <p role="alert" className="mt-3 rounded-2xl bg-[#ff6b6b]/12 px-4 py-3 text-[13px] font-semibold text-[#ff9a9a]">
             {err}
           </p>
         )}
@@ -533,7 +547,7 @@ function CustomerSheet({
             onKeyDown={(e) => e.key === "Enter" && credit()}
             placeholder="0"
             inputMode="decimal"
-            className="w-full rounded-2xl bg-white/[0.06] px-4 py-4 text-center text-[34px] font-extrabold tabular-nums text-white outline-none placeholder:text-white/25"
+            className="w-full rounded-2xl bg-white/[0.06] px-4 py-4 text-center text-[30px] font-extrabold tabular-nums text-white outline-none placeholder:text-white/25"
           />
           <p className="mt-1.5 text-center text-[12px] font-semibold text-white/45">
             {/*
@@ -572,7 +586,7 @@ function CustomerSheet({
               }}
             />
           </div>
-          <button type="button" onClick={credit} disabled={busy || !amount} className="a-btn mt-3 !min-h-[56px] !text-[16px]">
+          <button type="button" onClick={credit} disabled={busy || !amount} className="a-btn mt-3 !min-h-[56px] !text-[17px]">
             {busy ? "· · ·" : "Créditer"}
           </button>
         </div>
@@ -594,14 +608,14 @@ function CustomerSheet({
             setMore((v) => !v);
             if (history === null) start(async () => setHistory(await historyByCodeAction(customer.ref)));
           }}
-          className="mt-4 w-full py-2 text-center text-[12.5px] font-bold text-white/50"
+          className="mt-4 w-full py-2 text-center text-[12px] font-bold text-white/50"
         >
           {more ? "Masquer" : "Corriger / Historique"}
         </button>
 
         {more && (
           <div className="border-t border-white/10 pt-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-white/45">
+            <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-white/45">
               Corriger les points
             </p>
             <div className="mt-2 flex gap-2">
@@ -632,7 +646,7 @@ function CustomerSheet({
                     } else setErr(r.error ?? "Échec.");
                   });
                 }}
-                className="a-btn a-btn--dark !w-auto shrink-0 px-4 !text-[12.5px]"
+                className="a-btn a-btn--dark !w-auto shrink-0 px-4 !text-[12px]"
               >
                 Appliquer
               </button>
@@ -640,7 +654,7 @@ function CustomerSheet({
 
             {stampsEnabled && (
               <>
-                <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.06em] text-white/45">
+                <p className="mt-3 text-[12px] font-bold uppercase tracking-[0.06em] text-white/45">
                   Tampons (0 à {Math.max(0, stampsRequired - 1)})
                 </p>
                 <div className="mt-2 flex gap-2">
@@ -664,7 +678,7 @@ function CustomerSheet({
                         } else setErr(r.error ?? "Échec.");
                       });
                     }}
-                    className="a-btn a-btn--dark !w-auto shrink-0 px-4 !text-[12.5px]"
+                    className="a-btn a-btn--dark !w-auto shrink-0 px-4 !text-[12px]"
                   >
                     Définir
                   </button>
@@ -683,10 +697,10 @@ function CustomerSheet({
             */}
             {customer.enrolled && (
               <>
-                <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.06em] text-white/45">
+                <p className="mt-4 text-[12px] font-bold uppercase tracking-[0.06em] text-white/45">
                   Code secret oublié
                 </p>
-                <p className="mt-1 text-[11.5px] leading-snug text-white/45">
+                <p className="mt-1 text-[12px] leading-snug text-white/45">
                   Le client choisit un nouveau code à 4 chiffres et vous le tapez ici.
                 </p>
                 <div className="mt-2 flex items-center gap-2">
@@ -712,7 +726,7 @@ function CustomerSheet({
                         } else setErr(r.error ?? "Échec.");
                       })
                     }
-                    className="a-btn a-btn--dark !w-auto shrink-0 px-4 !text-[12.5px]"
+                    className="a-btn a-btn--dark !w-auto shrink-0 px-4 !text-[12px]"
                   >
                     Réinitialiser
                   </button>
@@ -720,19 +734,19 @@ function CustomerSheet({
               </>
             )}
 
-            <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.06em] text-white/45">Activité</p>
+            <p className="mt-4 text-[12px] font-bold uppercase tracking-[0.06em] text-white/45">Activité</p>
             {history === null ? (
-              <p className="mt-1 text-[12.5px] text-white/45">Chargement…</p>
+              <p className="mt-1 text-[12px] text-white/45">Chargement…</p>
             ) : history.length === 0 ? (
-              <p className="mt-1 text-[12.5px] text-white/45">Aucune activité.</p>
+              <p className="mt-1 text-[12px] text-white/45">Aucune activité.</p>
             ) : (
               <ul className="mt-1 divide-y divide-white/10">
                 {history.slice(0, 8).map((a, i) => (
                   <li key={i} className="flex items-center justify-between gap-2 py-2">
-                    <span className="min-w-0 truncate text-[12.5px] text-white/90">
+                    <span className="min-w-0 truncate text-[12px] text-white/90">
                       {a.reason === "collected" ? `Récupéré · ${a.label ?? ""}` : ACT[a.reason]}
                     </span>
-                    <span className="shrink-0 text-[11px] text-white/40">{ago(a.at)}</span>
+                    <span className="shrink-0 text-[12px] text-white/40">{ago(a.at)}</span>
                     {a.reason !== "collected" && (
                       <span
                         className={`w-10 shrink-0 text-right text-[12px] font-bold tabular-nums ${
@@ -801,7 +815,11 @@ function ValidateInner({ onReset }: { onReset: () => void }) {
 
   return (
     <section className="a-card p-5">
-      <h2 className="text-[15px] font-extrabold text-white">Valider une récompense</h2>
+      {/* same label treatment as "Ajouter des points" above — the two blocks
+          are siblings on one screen and their headings must say so */}
+      <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-white/45">
+        Valider une récompense
+      </h2>
 
       {done ? (
         <>
@@ -823,11 +841,11 @@ function ValidateInner({ onReset }: { onReset: () => void }) {
               peek.status === "valid" ? "bg-white/[0.08]" : "bg-[#ff6b6b]/12"
             }`}
           >
-            <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-white/50">
+            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-white/50">
               {peek.kind === "stamp" ? "Carte pleine" : peek.kind === "win" ? "Gain" : "Récompense"}
             </p>
             <p
-              className={`mt-1.5 text-[21px] font-extrabold ${
+              className={`mt-1.5 text-[20px] font-extrabold ${
                 peek.status === "valid" ? "text-white" : "text-[#ff9a9a]"
               }`}
             >
@@ -842,7 +860,7 @@ function ValidateInner({ onReset }: { onReset: () => void }) {
           </div>
           {peek.status === "valid" ? (
             <div className="mt-3 space-y-2">
-              <button type="button" onClick={collect} disabled={busy} className="a-btn !min-h-[56px] !text-[16px]">
+              <button type="button" onClick={collect} disabled={busy} className="a-btn !min-h-[56px] !text-[17px]">
                 {busy ? "· · ·" : "Collecter ✦"}
               </button>
               <button type="button" onClick={onReset} className="a-btn a-btn--ghost">
@@ -857,27 +875,31 @@ function ValidateInner({ onReset }: { onReset: () => void }) {
         </>
       ) : (
         <>
-          <input
-            name="code"
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            onKeyDown={(e) => e.key === "Enter" && check()}
-            maxLength={6}
-            autoCapitalize="characters"
-            placeholder="A1B2C3"
-            className="mt-4 w-full rounded-2xl bg-white/[0.06] px-4 py-4 text-center text-[30px] font-extrabold uppercase tracking-[0.18em] text-white outline-none placeholder:text-white/25"
-          />
-          <p className="mt-2 text-center text-[12.5px] text-white/45">
-            Le code que le client montre sur son téléphone.
+          {/* same row shape as the search above — the two jobs are siblings on
+              one screen now, and matching shapes is what says so */}
+          <div className="mt-3 flex gap-2">
+            <input
+              name="code"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === "Enter" && check()}
+              maxLength={6}
+              autoCapitalize="characters"
+              placeholder="A1B2C3"
+              className="min-w-0 flex-1 rounded-2xl bg-white/[0.06] px-4 py-3.5 text-[18px] font-extrabold uppercase tracking-[0.16em] text-white outline-none placeholder:text-white/25"
+            />
+            <button type="button" onClick={check} disabled={busy} className="a-btn !w-auto shrink-0 px-5">
+              {busy ? "· · ·" : "Vérifier"}
+            </button>
+          </div>
+          <p className="mt-2 text-[12px] text-white/45">
+            Le code à 6 caractères d&apos;une récompense échangée.
           </p>
-          <button type="button" onClick={check} disabled={busy} className="a-btn mt-3 !min-h-[56px] !text-[16px]">
-            {busy ? "· · ·" : "Vérifier"}
-          </button>
         </>
       )}
 
       {err && (
-        <p role="alert" className="mt-3 rounded-2xl bg-[#ff6b6b]/12 px-4 py-3 text-[13.5px] font-semibold text-[#ff9a9a]">
+        <p role="alert" className="mt-3 rounded-2xl bg-[#ff6b6b]/12 px-4 py-3 text-[13px] font-semibold text-[#ff9a9a]">
           {err}
         </p>
       )}

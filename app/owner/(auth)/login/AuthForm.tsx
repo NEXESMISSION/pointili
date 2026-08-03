@@ -27,7 +27,7 @@ export function AuthForm({
   return (
     <form action={formAction} className="space-y-3">
       <label className="block">
-        <span className="mb-1.5 block text-[12.5px] font-bold text-white">E-mail</span>
+        <span className="mb-1.5 block text-[12px] font-bold text-white">E-mail</span>
         {/*
           autoCapitalize / autoCorrect / spellCheck are not optional here.
 
@@ -57,7 +57,7 @@ export function AuthForm({
       </label>
 
       <label className="block">
-        <span className="mb-1.5 block text-[12.5px] font-bold text-white">Mot de passe</span>
+        <span className="mb-1.5 block text-[12px] font-bold text-white">Mot de passe</span>
         <span className="relative block">
           <input
             name="password"
@@ -77,14 +77,14 @@ export function AuthForm({
           <button
             type="button"
             onClick={() => setShow((s) => !s)}
-            className="absolute inset-y-0 right-0 grid place-items-center px-4 text-[11.5px] font-bold uppercase tracking-[0.04em] text-[#b9a3ff]"
+            className="absolute inset-y-0 right-0 grid place-items-center px-4 text-[12px] font-bold uppercase tracking-[0.04em] text-[#b9a3ff]"
             aria-label={show ? "Masquer le mot de passe" : "Afficher le mot de passe"}
           >
             {show ? "Cacher" : "Voir"}
           </button>
         </span>
         {passwordHint && (
-          <span className="mt-1.5 block text-[11.5px] text-white/55">{passwordHint}</span>
+          <span className="mt-1.5 block text-[12px] text-white/55">{passwordHint}</span>
         )}
       </label>
 
@@ -105,7 +105,7 @@ export function AuthForm({
         </p>
       )}
 
-      <button type="submit" disabled={pending} className="a-btn !mt-4 text-[14px]">
+      <button type="submit" disabled={pending} className="a-btn !mt-4 text-[15px]">
         {pending ? "· · ·" : cta}
       </button>
     </form>

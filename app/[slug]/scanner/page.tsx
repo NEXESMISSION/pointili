@@ -147,7 +147,7 @@ export default async function Scanner({
         </span>
         <span className="min-w-0 flex-1 text-left">
           <span className="block text-[13px] font-medium text-white/55">Solde actuel</span>
-          <span className="block text-[19px] font-extrabold text-white">
+          <span className="block text-[17px] font-extrabold text-white">
             {fmtPoints(diner.balance)} points
           </span>
         </span>

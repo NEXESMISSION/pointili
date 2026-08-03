@@ -92,28 +92,31 @@ const PREFIXES = [
 /*
   Priced in VISITS, which is the only unit either side of the counter thinks in.
 
-  This shop used to run at 1 point per dinar against a 200-point espresso —
-  200 dinars of coffee, roughly eighty visits, for one free espresso. Nobody
-  would ever have got there, and the showcase was quietly demonstrating a
-  loyalty programme that does not work. Worse, at 1 pt/DT a 2,5 DT café earned
-  2 points and the half dinar was thrown away (see migration 0026).
+  ONE point per dinar, and no longer a choice: migration 0031_a fixed the rate
+  at 1 for every shop and added a CHECK constraint saying so, because the rate
+  stopped being an owner setting. This script asked for 10 and the insert was
+  refused outright — `loyalty_programs_rate_is_one_check` — so the demo could
+  not be provisioned at all.
 
-  At 10 pt/DT the arithmetic is legible: a ~6 DT ticket here is 60 points, the
-  mint tea at 400 is about seven visits, and the welcome bonus is already a
-  quarter of the way there. 10 also divides the half-dinar amounts this
-  generator produces exactly, so no fraction is invented that a real till
-  would have banked.
+  Everything below is therefore divided by ten, which changes no arithmetic that
+  matters: a ~6 DT ticket earns 6 points, the mint tea at 40 is still about
+  seven visits, and the welcome bonus is still a quarter of the way there.
+
+  Half dinars: at 1 pt/DT a 2,5 DT café credits 2,5 points, not 2. The rounding
+  that used to lose the half (migration 0026) is gone — points_ledger.delta is
+  numeric and the till records the dinars alongside it — so the old reason for
+  inflating the rate has gone with it.
 */
-const RATE = 10;
-const WELCOME = 100;
+const RATE = 1;
+const WELCOME = 10;
 
 const REWARDS = [
-  ["Thé à la menthe", 400, "/rewards/the-a-la-menthe.png"],
-  ["Espresso offert", 450, "/rewards/espresso-offert.png"],
-  ["Cappuccino offert", 550, "/rewards/cappuccino-offert.png"],
-  ["Croissant offert", 600, "/rewards/croissant-offert.png"],
-  ["Pâtisserie du jour", 850, "/rewards/patisserie-du-jour.png"],
-  ["Brunch complet", 1800, "/rewards/brunch-complet.png"],
+  ["Thé à la menthe", 40, "/rewards/the-a-la-menthe.png"],
+  ["Espresso offert", 45, "/rewards/espresso-offert.png"],
+  ["Cappuccino offert", 55, "/rewards/cappuccino-offert.png"],
+  ["Croissant offert", 60, "/rewards/croissant-offert.png"],
+  ["Pâtisserie du jour", 85, "/rewards/patisserie-du-jour.png"],
+  ["Brunch complet", 180, "/rewards/brunch-complet.png"],
 ];
 
 /*
@@ -256,10 +259,27 @@ const mintCode = () => {
   }
 };
 
+/*
+  `stopped` is the cohort this demo was missing, and it is the one the product
+  is sold on.
+
+  Every kind here ran right up to today — the visit loop's condition is
+  literally "while t < now" — so the shop had regulars, occasionals and
+  one-timers and NOBODY who used to come and doesn't any more. The owner screen
+  that asks "qui ne revient plus ?" therefore had nothing to show on the only
+  data set built for showing it, and read as if the feature did not work.
+
+  A one-timer is not the same thing and never was: somebody who bought once
+  never established a rhythm, so there is nothing to have broken. Churn means a
+  habit that stopped, which needs a customer with a real history and a `stopped`
+  date behind them.
+*/
 const KINDS = [
   { kind: "regular", n: 9, everyDays: [2.5, 4], joinedAgo: [70, 92] },
   { kind: "occasional", n: 12, everyDays: [9, 20], joinedAgo: [30, 88] },
   { kind: "onetimer", n: 13, everyDays: [999, 999], joinedAgo: [2, 60] },
+  // came every few days for a month or two, then went quiet 25–50 days ago
+  { kind: "stopped", n: 5, everyDays: [3, 7], joinedAgo: [64, 90], stoppedAgo: [25, 50] },
 ];
 
 const ledger = [];
@@ -271,7 +291,7 @@ const taken = new Set(
   (await sql.query("select phone from accounts")).rows.map((r) => r.phone),
 );
 
-for (const { kind, n: count, everyDays, joinedAgo } of KINDS) {
+for (const { kind, n: count, everyDays, joinedAgo, stoppedAgo } of KINDS) {
   for (let i = 0; i < count; i++) {
     const name = NAMES[n % NAMES.length];
     /*
@@ -302,8 +322,15 @@ for (const { kind, n: count, everyDays, joinedAgo } of KINDS) {
       continue;
     }
 
+    /*
+      Where this customer's history ENDS. Everyone else is still coming, so
+      their last visit is a day or two ago; a `stopped` customer's habit ran out
+      weeks back and the loop has to stop there rather than at today.
+    */
+    const until = stoppedAgo ? now - between(stoppedAgo[0], stoppedAgo[1]) * DAY : now - DAY;
+
     let t = joined + between(0, 3) * DAY;
-    while (t < now - DAY) {
+    while (t < until) {
       // a coffee is 3–8 TND; a table with friends or a brunch is more, rarely
       const amt = rnd() < 0.14
         ? Math.round(between(14, 34))

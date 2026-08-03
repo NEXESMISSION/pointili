@@ -1,5 +1,8 @@
+"use client";
+
 import { CheckIcon } from "@/components/icons";
 import { DEMO_VERSION } from "@/components/demoVersion";
+import { useSide } from "@/components/Audience";
 
 /*
   THE PRODUCT, FILMED, EXPLAINED ONE CAPABILITY AT A TIME.
@@ -114,6 +117,22 @@ const SHOTS: Shot[] = [
     side: "Le téléphone du client",
   },
   {
+    /* carte.webm was filmed and then never placed. It is the screen a customer
+       opens most — their own card — and it sat unused while the page showed
+       them the till instead. */
+    eyebrow: "Retrouver",
+    title: "Vos points vous attendent, dans chaque commerce",
+    lede: "Une carte par commerce, toutes dans le même téléphone. Votre code à quatre caractères marche partout.",
+    facts: [
+      "Un seul compte pour tous les commerces Pointili",
+      "Vos points n'expirent pas",
+      "Votre numéro n'est jamais affiché au comptoir",
+    ],
+    clip: "/demo/carte.webm",
+    poster: "/demo/carte.png",
+    side: "Le téléphone du client",
+  },
+  {
     eyebrow: "Échanger",
     title: "Des points contre du réel",
     lede: "Le client choisit sa récompense et reçoit un code à six caractères. Vous le vérifiez, puis vous le validez.",
@@ -141,10 +160,21 @@ const SHOTS: Shot[] = [
   },
 ];
 
+/**
+ * Only the clips for the audience that is being spoken to.
+ *
+ * All eight used to run down one column regardless, so an owner sat through two
+ * screens of the customer's phone before reaching their own analytics, and a
+ * customer scrolled past five till screens to find the one thing that concerned
+ * them. Filtering is not hiding: the other side is one tap away, at the top.
+ */
 export function Showcase() {
+  const side = useSide();
+  const want = side === "owner" ? "Votre caisse" : "Le téléphone du client";
+  const shots = SHOTS.filter((s) => s.side === want);
   return (
     <div className="space-y-16 md:space-y-24">
-      {SHOTS.map((s, i) => (
+      {shots.map((s, i) => (
         <Row key={s.clip} shot={s} flip={i % 2 === 1} />
       ))}
     </div>
@@ -152,7 +182,6 @@ export function Showcase() {
 }
 
 function Row({ shot, flip }: { shot: Shot; flip: boolean }) {
-  const owner = shot.side === "Votre caisse";
   return (
     <section className="grid items-center gap-8 md:grid-cols-2 md:gap-14">
       {/* the phone */}
@@ -183,19 +212,12 @@ function Row({ shot, flip }: { shot: Shot; flip: boolean }) {
 
       {/* what it is */}
       <div className={flip ? "md:order-1" : ""}>
-        <div className="flex items-center gap-2.5">
-          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#a78bfa]">
-            {shot.eyebrow}
-          </span>
-          {/* whose screen — the two audiences look alike and this page shows both */}
-          <span
-            className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.05em] ${
-              owner ? "bg-[#7c3aed] text-white" : "bg-white/10 text-white/65"
-            }`}
-          >
-            {shot.side}
-          </span>
-        </div>
+        {/* No "whose screen" badge any more. The switch at the top of the page
+            has already answered that, and repeating it here was the tell that
+            the page had not chosen an audience. */}
+        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#a78bfa]">
+          {shot.eyebrow}
+        </span>
 
         <h3 className="mt-3 text-[26px] font-extrabold leading-[1.12] tracking-[-0.02em] md:text-[32px]">
           {shot.title}

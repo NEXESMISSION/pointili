@@ -37,7 +37,7 @@ const grants = await c.query(`
          has_function_privilege('service_role', p.oid, 'execute') as service_role
   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public'
-    and p.proname in ('credit_points','play_game','redeem_at_counter',
+    and p.proname in ('credit_points','spin_wheel','redeem_at_counter',
                       'touch_diner_streak','diner_wallet','pointili_balance')
   order by p.proname`);
 

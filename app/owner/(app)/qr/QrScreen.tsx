@@ -4,35 +4,33 @@ import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 /**
- * Mon QR, reduced to the two things an owner does with it.
+ * Mon QR — the simplest version, kept simple on purpose.
  *
- * The page used to open with a title, a subtitle, the print kit's format
- * picker, three buttons, and a four-item list explaining where to put a sticker
- * — before the QR itself was fully on screen. All of it true, none of it what
- * somebody came for: they came to SHOW the code, or to send it somewhere.
+ * One code, two buttons. This page briefly became the printable sticker
+ * itself (name, offer, address, all of it) and the owner sent it back:
+ * when you open "Mon QR" you want the QR, not a poster. So: the code, big,
+ * on white; copy the link; open the card as a customer sees it.
  *
- * So the code is the page. Copy the link, or open the card the way a customer
- * sees it. Everything else — print, download, the sizes, the advice — is behind
- * the "…", which is where a thing you do once a month belongs.
+ * The print kit still exists — behind a row that SAYS "Imprimer ou
+ * télécharger", not behind a "…" icon. The dots were the first thing the
+ * owner asked to remove, and they were right: an unlabeled menu on a
+ * one-job screen is where features go to be forgotten.
  *
- * The glow is not decoration either: it is what stops a white slab on a dark
- * app reading as a broken image placeholder.
+ * No logo badge and no ✨ up top either — the fallback emoji for an
+ * untyped shop was a sparkle pretending to be branding.
+ *
+ * The glow is not decoration: it is what stops a white slab on a dark app
+ * reading as a broken image placeholder.
  */
 export function QrScreen({
   url,
   svg,
-  logoUrl,
-  emoji,
-  cafeName,
   children,
 }: {
   url: string;
   /** The QR as inline SVG — rendered server-side so there is no flash. */
   svg: string;
-  logoUrl: string | null;
-  emoji: string;
-  cafeName: string;
-  /** The print kit, revealed by the "…". */
+  /** The print kit, revealed by the labelled row. */
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -41,8 +39,7 @@ export function QrScreen({
 
   return (
     <div className="mx-auto w-full max-w-[430px] print:max-w-none">
-      {/* ── header: out, whose shop, everything else ── */}
-      <div className="flex items-center justify-between print:hidden">
+      <div className="flex items-center print:hidden">
         <button
           type="button"
           onClick={() => router.push("/owner")}
@@ -53,49 +50,18 @@ export function QrScreen({
             <path d="m15 18-6-6 6-6" />
           </svg>
         </button>
-
-        {/* the shop, so a cashier holding two phones knows which till this is */}
-        <span className="grid h-12 w-12 place-items-center overflow-hidden rounded-full bg-[#7c56e8]/25 ring-1 ring-white/15">
-          {logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-            <img src={logoUrl} alt={cafeName} className="h-full w-full object-cover" />
-          ) : (
-            <span className="text-[22px]">{emoji}</span>
-          )}
-        </span>
-
-        <button
-          type="button"
-          onClick={() => setMore((v) => !v)}
-          aria-expanded={more}
-          aria-label={more ? "Masquer les options" : "Imprimer, télécharger, formats"}
-          className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-95 ${
-            more ? "bg-white/[0.12] text-white" : "text-white/80"
-          }`}
-        >
-          <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-            <circle cx="5" cy="12" r="1.9" />
-            <circle cx="12" cy="12" r="1.9" />
-            <circle cx="19" cy="12" r="1.9" />
-          </svg>
-        </button>
       </div>
 
       {/* ── the code, which is the page ── */}
-      <div className="mt-4 rounded-[30px] border border-white/[0.08] bg-white/[0.03] px-6 py-10 print:border-0 print:bg-transparent print:p-0">
-        <div className="relative mx-auto w-full max-w-[300px]">
+      <div className="mt-1 rounded-[30px] border border-white/[0.08] bg-white/[0.03] px-5 py-5 print:hidden">
+        <div className="relative mx-auto w-full max-w-[min(300px,46vh)]">
           <span
             aria-hidden
-            className="absolute inset-[-9%] rounded-[36px] print:hidden"
+            className="absolute inset-[-9%] rounded-[36px]"
             style={{ background: "radial-gradient(closest-side, rgba(124,86,232,.85), transparent 78%)" }}
           />
-          {/*
-            White plate, dark modules — the polarity the QR spec assumes and
-            every scanner accepts. The DINER's screen can invert safely because
-            the only decoder that reads it is this product's own; a sticker on a
-            table is read by whatever camera a stranger happens to be holding.
-          */}
-          <div className="relative rounded-[26px] bg-white p-5 shadow-[0_20px_60px_-20px_rgba(124,86,232,.9)] print:shadow-none">
+          {/* White plate, dark modules — the polarity every scanner accepts. */}
+          <div className="relative rounded-[26px] bg-white p-4 shadow-[0_20px_60px_-20px_rgba(124,86,232,.9)]">
             <div className="[&>svg]:block [&>svg]:h-auto [&>svg]:w-full">
               <div dangerouslySetInnerHTML={{ __html: svg }} />
             </div>
@@ -104,7 +70,7 @@ export function QrScreen({
       </div>
 
       {/* ── the two things you do with it ── */}
-      <div className="mt-4 space-y-3 print:hidden">
+      <div className="mt-3 space-y-2.5 print:hidden">
         <button
           type="button"
           onClick={() => {
@@ -116,7 +82,7 @@ export function QrScreen({
               () => {},
             );
           }}
-          className="flex w-full items-center justify-center gap-2.5 rounded-[22px] border border-white/[0.12] bg-white/[0.05] py-4 text-[15px] font-bold text-white transition active:scale-[0.99]"
+          className="flex w-full items-center justify-center gap-2.5 rounded-[22px] border border-white/[0.12] bg-white/[0.05] py-3.5 text-[15px] font-bold text-white transition active:scale-[0.99]"
         >
           {copied ? (
             <>
@@ -140,7 +106,7 @@ export function QrScreen({
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex w-full items-center justify-center gap-2.5 rounded-[22px] bg-[#7c3aed] py-4 text-[15px] font-bold text-white shadow-[0_18px_40px_-16px_rgba(124,58,237,1)] transition active:scale-[0.99]"
+          className="flex w-full items-center justify-center gap-2.5 rounded-[22px] bg-[#7c3aed] py-3.5 text-[15px] font-bold text-white shadow-[0_18px_40px_-16px_rgba(124,58,237,1)] transition active:scale-[0.99]"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px]">
             <path d="M15 3h6v6M10 14 21 3" />
@@ -148,14 +114,19 @@ export function QrScreen({
           </svg>
           Voir la carte client
         </a>
+
+        {/* printing is a day-one job, then a once-a-month one — present, quiet */}
+        <button
+          type="button"
+          onClick={() => setMore((v) => !v)}
+          aria-expanded={more}
+          className="w-full py-2 text-center text-[13px] font-bold text-white/45 transition hover:text-white/75"
+        >
+          {more ? "Masquer" : "Imprimer ou télécharger l'affiche"}
+        </button>
       </div>
 
-      {/*
-        Kept, not deleted. Printing a sticker is the single most valuable thing
-        this page enables — it is just not a thing anyone does twice in a day,
-        so it does not get to sit between an owner and their own QR code.
-      */}
-      {more && <div className="mt-4 print:mt-0">{children}</div>}
+      {more && <div className="mt-1 print:mt-0">{children}</div>}
     </div>
   );
 }

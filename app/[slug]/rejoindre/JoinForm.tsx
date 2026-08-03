@@ -30,6 +30,8 @@ export function JoinForm({ slug }: { slug: string }) {
 
   const label = "mb-2 block text-[13px] font-semibold text-white/80";
   const box =
+    /* 16px is a FLOOR, not a taste: any input under 16px makes iOS zoom the
+       whole page the moment it is focused. Shrink everything else, never this. */
     "w-full rounded-2xl border border-white/14 bg-white/[0.06] px-4 py-3.5 text-[16px] font-medium text-white outline-none transition-colors placeholder:font-normal placeholder:text-white/30 focus:border-[#8b6bff] focus:bg-white/[0.09]";
 
   return (
@@ -64,7 +66,7 @@ export function JoinForm({ slug }: { slug: string }) {
             offer.
           */}
           <div className="flex items-stretch gap-2">
-            <span className="flex shrink-0 items-center gap-1.5 rounded-2xl border border-white/14 bg-white/[0.06] px-3 text-[15px] font-semibold text-white/80">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-2xl border border-white/14 bg-white/[0.06] px-3 text-[14px] font-semibold text-white/80">
               <span aria-hidden>🇹🇳</span>
               +216
             </span>
@@ -157,7 +159,7 @@ export function JoinForm({ slug }: { slug: string }) {
         <button
           type="submit"
           disabled={pending}
-          className="!mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#6d4ae6] py-4 text-[15.5px] font-bold text-white shadow-[0_16px_36px_-14px_rgba(109,74,230,.9)] transition active:scale-[0.98] disabled:opacity-60"
+          className="!mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#6d4ae6] py-4 text-[14.5px] font-bold text-white shadow-[0_16px_36px_-14px_rgba(109,74,230,.9)] transition active:scale-[0.98] disabled:opacity-60"
         >
           {pending ? "· · ·" : returning ? "Retrouver mes cartes" : "Créer mon compte"}
           {!pending && (

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartIcon, QrIcon, SlidersIcon, TillIcon } from "./icons";
+import { ChartIcon, SlidersIcon, TillIcon } from "./icons";
 
 /*
   Owner navigation, in two shapes for two machines.
@@ -16,17 +16,35 @@ import { ChartIcon, QrIcon, SlidersIcon, TillIcon } from "./icons";
   Both read from one list, so a tab can never exist in one and not the other.
 */
 
+/*
+  Three tabs, not four.
+
+  "QR" was a destination nobody returns to — you print the code once and stick
+  it on the tables — and it was taking a quarter of the thumb row on a screen
+  opened dozens of times a shift. It is a line at the bottom of the till now
+  (CaisseForms); /owner/qr still exists and still deep-links.
+
+  "Analyses" is called "Clients" because that is what the page became: two lists
+  of people, not a report. Nobody behind a counter opens something called
+  Analyses; everybody wonders who has stopped coming in.
+*/
+
 /* Real paths. The host split does not rewrite them — see proxy.ts. */
 const TABS = [
   { label: "Caisse", Icon: TillIcon, href: "/owner" },
-  { label: "Analyses", Icon: ChartIcon, href: "/owner/analyses" },
-  { label: "QR", Icon: QrIcon, href: "/owner/qr" },
+  { label: "Clients", Icon: ChartIcon, href: "/owner/analyses" },
   { label: "Réglages", Icon: SlidersIcon, href: "/owner/reglages" },
 ];
 
-/** /owner matches only itself; the rest match their whole subtree. */
+/**
+ * /owner matches itself and /owner/qr — the QR lost its tab but not its home,
+ * and a screen you reached from the till should not leave the till unlit. The
+ * rest match their whole subtree.
+ */
 function isActive(pathname: string, href: string) {
-  return href === "/owner" ? pathname === "/owner" : pathname.startsWith(href);
+  return href === "/owner"
+    ? pathname === "/owner" || pathname === "/owner/qr"
+    : pathname.startsWith(href);
 }
 
 /* ── phone: thumb-height tabs at the bottom ───────────────────────────── */
@@ -54,7 +72,7 @@ export function OwnerTabs() {
                   <Icon className="h-[17px] w-[17px]" />
                 </span>
                 <span
-                  className={`text-[10.5px] font-semibold transition-colors ${
+                  className={`text-[10px] font-semibold transition-colors ${
                     active ? "text-white" : "text-white/45"
                   }`}
                 >
@@ -94,10 +112,10 @@ export function OwnerSidebar({
           {initial}
         </span>
         <span className="min-w-0">
-          <span className="block truncate text-[14px] font-extrabold leading-tight text-white">
+          <span className="block truncate text-[15px] font-extrabold leading-tight text-white">
             {name ?? "pointili.online"}
           </span>
-          <span className="block text-[10.5px] font-semibold text-white/45">Espace café</span>
+          <span className="block text-[10px] font-semibold text-white/45">Espace café</span>
         </span>
       </div>
 
@@ -110,7 +128,7 @@ export function OwnerSidebar({
                 <Link
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-bold transition ${
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-bold transition ${
                     active ? "bg-[#6d4ae6] text-white" : "text-white/55 hover:bg-white/[0.06]"
                   }`}
                 >
@@ -136,7 +154,7 @@ export function OwnerSidebar({
       */}
       <Link
         href="/?pro=1"
-        className="mt-auto flex items-center gap-2 rounded-xl px-3 py-2.5 text-[12.5px] font-semibold text-white/40 transition hover:bg-white/[0.06] hover:text-white/70"
+        className="mt-auto flex items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-semibold text-white/40 transition hover:bg-white/[0.06] hover:text-white/70"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
           <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />

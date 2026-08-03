@@ -52,10 +52,10 @@ export function RewardPicker({
   /* The issued code must OUTLIVE the next run of useActionState, which replaces
      its whole value — a later rejection would otherwise erase a code the diner
      genuinely paid for. */
-  const [issued, setIssued] = useState<{ code: string; label: string; expiryHours: number } | null>(null);
+  const [issued, setIssued] = useState<{ code: string; label: string } | null>(null);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (state.ok) setIssued({ code: state.ok.code, label: state.ok.label, expiryHours: state.ok.expiryHours });
+    if (state.ok) setIssued({ code: state.ok.code, label: state.ok.label });
   }, [state.ok]);
 
   // A buy changed the balance — re-read so every row's affordability is honest.
@@ -104,7 +104,7 @@ export function RewardPicker({
                 )}
 
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-bold text-white">{r.label}</span>
+                  <span className="block truncate text-[14px] font-bold text-white">{r.label}</span>
                   <span
                     className={`mt-0.5 block text-[13px] font-extrabold ${
                       affordable ? "text-[#b9a3ff]" : "text-white/45"
@@ -157,7 +157,7 @@ export function RewardPicker({
       <button
         type="submit"
         disabled={busy || !canBuy}
-        className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#6d4ae6] py-4 text-[15.5px] font-bold text-white shadow-[0_16px_36px_-14px_rgba(109,74,230,.9)] transition active:scale-[0.98] disabled:opacity-40 disabled:shadow-none"
+        className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#6d4ae6] py-4 text-[14.5px] font-bold text-white shadow-[0_16px_36px_-14px_rgba(109,74,230,.9)] transition active:scale-[0.98] disabled:opacity-40 disabled:shadow-none"
       >
         {busy
           ? "· · ·"
@@ -177,7 +177,7 @@ function CodeReveal({
   issued,
   onAgain,
 }: {
-  issued: { code: string; label: string; expiryHours: number };
+  issued: { code: string; label: string };
   onAgain: () => void;
 }) {
   return (
@@ -202,13 +202,13 @@ function CodeReveal({
         </p>
       </div>
 
-      <p className="mt-3 text-[15px] font-bold text-white">{issued.label}</p>
+      <p className="mt-3 text-[14px] font-bold text-white">{issued.label}</p>
       <p className="mt-1 text-[13px] leading-relaxed text-white/55">
         Montre-le au comptoir pour en profiter.
       </p>
       {/* The clock belongs HERE, where the points were actually spent. */}
       <p className="mt-1.5 text-[12.5px] font-bold text-[#ffd27a]">
-        À utiliser sous {issued.expiryHours} h
+        Pas de date limite
       </p>
 
       <button

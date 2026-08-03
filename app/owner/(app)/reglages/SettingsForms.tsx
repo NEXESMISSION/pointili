@@ -4,13 +4,24 @@ import { useState, useTransition, useActionState, type ReactNode } from "react";
 import { BusinessTypePicker } from "@/components/BusinessTypePicker";
 import { GiftIcon } from "@/components/icons";
 import { fmtPoints } from "@/lib/points";
+import {
+  EASY_FIRST_VISITS,
+  VISIT_PRESETS,
+  pointsForVisits,
+  rewardIdeas,
+  visitsForPoints,
+  type Ticket,
+} from "@/lib/rewards";
 import { BRAND_COLOR } from "@/lib/brand";
-import type { Cafe, LoyaltyProgram, Reward } from "@/lib/types";
+import type { Cafe, Game, LoyaltyProgram, Reward } from "@/lib/types";
 import {
   deleteRewardAction,
   reorderRewardsAction,
   toggleRewardActiveAction,
   removeLogoAction,
+  saveWheelAction,
+  savePrizeAction,
+  deletePrizeAction,
   removeRewardImageAction,
   saveCafeAction,
   saveEarnAction,
@@ -24,19 +35,19 @@ import {
 /* Shared bits ------------------------------------------------------------- */
 
 const btn =
-  "w-full rounded-2xl bg-royal py-3 text-[13.5px] font-bold text-white transition active:scale-[0.99] disabled:opacity-55";
+  "w-full rounded-2xl bg-royal py-3 text-[13px] font-bold text-white transition active:scale-[0.99] disabled:opacity-55";
 
 function Feedback({ state }: { state: SettingsState }) {
   if (state.error) {
     return (
-      <p role="alert" className="mt-2 rounded-xl bg-[#ff6b6b]/12 px-3.5 py-2.5 text-[12.5px] font-semibold text-[#ff9a9a]">
+      <p role="alert" className="mt-2 rounded-xl bg-[#ff6b6b]/12 px-3.5 py-2.5 text-[12px] font-semibold text-[#ff9a9a]">
         {state.error}
       </p>
     );
   }
   if (state.saved) {
     return (
-      <p role="status" className="mt-2 rounded-xl bg-ok/10 px-3.5 py-2.5 text-[12.5px] font-semibold text-[#7ff0b0]">
+      <p role="status" className="mt-2 rounded-xl bg-ok/10 px-3.5 py-2.5 text-[12px] font-semibold text-[#7ff0b0]">
         Enregistré ✦
       </p>
     );
@@ -50,19 +61,28 @@ function Toggle({
   label,
   help,
   defaultChecked,
+  onChecked,
 }: {
   name: string;
   label: string;
   help: string;
   defaultChecked: boolean;
+  /** Mirror the switch out, for forms that dim the fields it governs. */
+  onChecked?: (on: boolean) => void;
 }) {
   return (
     <label className="flex cursor-pointer items-start justify-between gap-3 py-1">
       <span className="min-w-0">
-        <span className="block text-[13.5px] font-semibold text-white">{label}</span>
-        <span className="mt-0.5 block text-[11.5px] leading-snug text-white/55">{help}</span>
+        <span className="block text-[13px] font-semibold text-white">{label}</span>
+        <span className="mt-0.5 block text-[12px] leading-snug text-white/55">{help}</span>
       </span>
-      <input type="checkbox" name={name} defaultChecked={defaultChecked} className="peer sr-only" />
+      <input
+        type="checkbox"
+        name={name}
+        defaultChecked={defaultChecked}
+        onChange={onChecked ? (e) => onChecked(e.target.checked) : undefined}
+        className="peer sr-only"
+      />
       <span className="mt-0.5 h-[24px] w-[42px] shrink-0 rounded-full border border-white/12 bg-white/[0.08] p-[3px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
         <span className="block h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-[18px]" />
       </span>
@@ -83,8 +103,8 @@ function Example({ children }: { children: ReactNode }) {
 function Advanced({ children }: { children: ReactNode }) {
   return (
     <details className="group mt-2 border-t border-white/10 pt-1">
-      <summary className="flex cursor-pointer list-none items-center gap-1.5 py-2.5 text-[12.5px] font-bold text-white/55 [&::-webkit-details-marker]:hidden">
-        <span className="text-[14px] transition-transform group-open:rotate-90">›</span>
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 py-2.5 text-[12px] font-bold text-white/55 [&::-webkit-details-marker]:hidden">
+        <span className="text-[15px] transition-transform group-open:rotate-90">›</span>
         Réglages avancés
       </summary>
       <div className="pb-1">{children}</div>
@@ -112,8 +132,8 @@ function Num({
 }) {
   return (
     <label className="block py-2.5">
-      <span className="block text-[13.5px] font-semibold text-white">{label}</span>
-      <span className="mt-0.5 mb-2 block text-[11.5px] leading-snug text-white/55">{help}</span>
+      <span className="block text-[13px] font-semibold text-white">{label}</span>
+      <span className="mt-0.5 mb-2 block text-[12px] leading-snug text-white/55">{help}</span>
       <span className="flex items-center gap-2.5">
         <input
           type="number"
@@ -146,13 +166,18 @@ export function EarnForm({
   rewards: Reward[];
 }) {
   const [state, action, pending] = useActionState<SettingsState, FormData>(saveEarnAction, {});
-  /*
-    Controlled, because the point of the example is to move while you type.
-    Reading program.pointsPerTnd meant the owner set 1, read "un café rapporte
-    2 points" computed from the OLD value, saved, and only then found out.
-  */
-  const [rate, setRate] = useState(program.pointsPerTnd);
   const [welcome, setWelcome] = useState(program.welcomePoints);
+  /*
+    THE RATE IS NO LONGER A SETTING. One dinar is one point, in every shop on
+    the platform — see 0031, which also puts a CHECK on the column so this is
+    true of the database and not merely of this screen.
+
+    It was a field here, and it should not have been: it is the one number a
+    customer has to be able to carry from one counter to the next without doing
+    arithmetic. A card worth double at one café and half at another is not a
+    loyalty scheme, it is a currency exchange.
+  */
+  const rate = 1;
   const cheapest = rewards.filter((r) => r.active).sort((a, b) => a.pointsCost - b.pointsCost)[0];
   const perTicket = Math.floor(TICKET * rate);
   const visitsToReward = cheapest && perTicket > 0
@@ -161,15 +186,12 @@ export function EarnForm({
 
   return (
     <form action={action} className="px-4 py-3">
-      <Num
-        name="pointsPerTnd"
-        label="Points par dinar dépensé"
-        help="Le cœur de votre programme."
-        value={rate}
-        step="0.1"
-        suffix="points / dinar"
-        onValue={setRate}
-      />
+      {/* Stated, not offered. An owner still needs to know the rate to price a
+          reward — they simply do not get to change it. */}
+      <div className="flex items-baseline justify-between rounded-xl bg-white/[0.05] px-3.5 py-3">
+        <span className="text-[13px] font-semibold text-white">1 dinar dépensé</span>
+        <span className="text-[13px] font-extrabold text-[#b9a3ff]">= 1 point</span>
+      </div>
       <Example>
         un café à {TICKET.toString().replace(".", ",")} dinars rapporte{" "}
         <b className="text-white">{perTicket} points</b>.
@@ -207,13 +229,9 @@ export function EarnForm({
       />
 
       <Advanced>
-        <Num
-          name="redeemExpiryHours"
-          label="Validité d'un code"
-          help="Combien de temps un code échangé reste utilisable au comptoir."
-          value={program.redeemExpiryHours}
-          suffix="heures"
-        />
+        {/* "Validité d'un code" is gone. A customer earned the reward; giving
+            them a code that dies in 48 hours turns a thank-you into a chore,
+            and the clock ran while the shop was shut. Codes keep (0031). */}
         <Toggle
           name="loyaltyActive"
           label="Programme de points activé"
@@ -239,8 +257,8 @@ export function StampsForm({ program }: { program: LoyaltyProgram }) {
     <form action={action} className="px-4 py-3">
       <label className="flex cursor-pointer items-start justify-between gap-3 py-1">
         <span className="min-w-0">
-          <span className="block text-[13.5px] font-semibold text-white">Carte à tampons activée</span>
-          <span className="mt-0.5 block text-[11.5px] leading-snug text-white/55">
+          <span className="block text-[13px] font-semibold text-white">Carte à tampons activée</span>
+          <span className="mt-0.5 block text-[12px] leading-snug text-white/55">
             Un tampon par visite ; carte pleine = récompense. Fonctionne en plus des points.
           </span>
         </span>
@@ -266,8 +284,8 @@ export function StampsForm({ program }: { program: LoyaltyProgram }) {
           suffix="tampons"
         />
         <label className="block py-2.5">
-          <span className="block text-[13.5px] font-semibold text-white">Récompense de la carte</span>
-          <span className="mt-0.5 mb-2 block text-[11.5px] text-white/55">
+          <span className="block text-[13px] font-semibold text-white">Récompense de la carte</span>
+          <span className="mt-0.5 mb-2 block text-[12px] text-white/55">
             Ce que le client gagne en remplissant sa carte.
           </span>
           <input
@@ -367,8 +385,8 @@ function LogoUploader({ cafe }: { cafe: Cafe }) {
 
   return (
     <div className="py-2.5">
-      <span className="block text-[13.5px] font-semibold text-white">Logo de la boutique</span>
-      <span className="mt-0.5 mb-2.5 block text-[11.5px] leading-snug text-white/55">
+      <span className="block text-[13px] font-semibold text-white">Logo de la boutique</span>
+      <span className="mt-0.5 mb-2.5 block text-[12px] leading-snug text-white/55">
         Il s&apos;affiche en haut de la carte de vos clients.
       </span>
 
@@ -390,7 +408,7 @@ function LogoUploader({ cafe }: { cafe: Cafe }) {
 
         <div className="min-w-0 flex-1">
           <label
-            className={`flex cursor-pointer items-center justify-center rounded-xl border border-white/14 bg-white/[0.08] py-2.5 text-[12.5px] font-bold text-white transition active:scale-[0.99] ${
+            className={`flex cursor-pointer items-center justify-center rounded-xl border border-white/14 bg-white/[0.08] py-2.5 text-[12px] font-bold text-white transition active:scale-[0.99] ${
               pending ? "opacity-55" : ""
             }`}
           >
@@ -408,7 +426,7 @@ function LogoUploader({ cafe }: { cafe: Cafe }) {
               type="button"
               onClick={onRemove}
               disabled={pending}
-              className="mt-1.5 w-full text-[11px] font-bold uppercase tracking-[0.05em] text-[#ff9a9a] underline underline-offset-2 disabled:opacity-55"
+              className="mt-1.5 w-full text-[12px] font-bold uppercase tracking-[0.05em] text-[#ff9a9a] underline underline-offset-2 disabled:opacity-55"
             >
               Retirer
             </button>
@@ -429,16 +447,16 @@ export function CafeForm({ cafe }: { cafe: Cafe }) {
 
       <form action={action} className="border-t border-white/10 pt-1">
         <label className="block py-2.5">
-          <span className="block text-[13.5px] font-semibold text-white">Nom de la boutique</span>
-          <span className="mt-0.5 mb-2 block text-[11.5px] text-white/55">
+          <span className="block text-[13px] font-semibold text-white">Nom de la boutique</span>
+          <span className="mt-0.5 mb-2 block text-[12px] text-white/55">
             Ce que vos clients voient en haut de leur carte.
           </span>
           <input name="name" defaultValue={cafe.name} maxLength={60} className="a-field" />
         </label>
 
         <div className="py-2.5">
-          <span className="block text-[13.5px] font-semibold text-white">Type de commerce</span>
-          <span className="mt-0.5 mb-2.5 block text-[11.5px] text-white/55">
+          <span className="block text-[13px] font-semibold text-white">Type de commerce</span>
+          <span className="mt-0.5 mb-2.5 block text-[12px] text-white/55">
             Vos clients le voient pour reconnaître votre carte.
           </span>
           <BusinessTypePicker defaultValue={cafe.businessType} collapsible />
@@ -530,7 +548,7 @@ function RewardImageUploader({ reward }: { reward: Reward }) {
             type="button"
             onClick={onRemove}
             disabled={pending}
-            className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-[#ff9a9a] underline underline-offset-2 disabled:opacity-55"
+            className="text-[10px] font-bold uppercase tracking-[0.05em] text-[#ff9a9a] underline underline-offset-2 disabled:opacity-55"
           >
             Retirer
           </button>
@@ -556,12 +574,7 @@ function RewardImageUploader({ reward }: { reward: Reward }) {
   opens the editor for that reward alone; the rest of the list stays put.
 */
 
-const PencilIcon = ({ className = "" }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M12 20h9" />
-    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-  </svg>
-);
+/* PencilIcon went with the Modifier button — the whole row is the button now. */
 
 const TrashIcon = ({ className = "" }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -578,206 +591,318 @@ const GripIcon = ({ className = "" }: { className?: string }) => (
   </svg>
 );
 
-/** The reward as the owner reads it: photo, name, on the menu or not, cost. */
+/**
+ * One reward, as a LINE — not a card of controls.
+ *
+ * This used to carry four separate controls: a visibility toggle, a points
+ * column, Modifier, and Supprimer, laid out as a table that only resolved
+ * around 900px. On the 390px screen every owner actually uses, that table
+ * collapsed: the cost landed top-right, the name mid-left, the toggle under the
+ * name, and Modifier and Supprimer stacked in a floating column beside them.
+ * Four rewards filled the screen with twenty controls and not one straight
+ * edge.
+ *
+ * A reward has exactly two things an owner does to it. Every day: take it off
+ * the menu because the pâtisserie ran out at eleven — that is the toggle, and
+ * it stays on the line. Occasionally: change its name, photo or price — that is
+ * the whole row, tapped, exactly like every other row in Réglages.
+ *
+ * Supprimer moved inside the editor. It was sitting a thumb's width from
+ * Modifier on the destructive side of a two-step it could not explain, and
+ * deleting a reward is not something anyone does from a list.
+ */
 function RewardCard({
   reward,
-  rate,
+  ticket,
+  isFirst,
   dragging,
   editing,
   onEdit,
   onGrab,
 }: {
   reward: Reward;
-  rate: number;
+  ticket: Ticket;
+  /** The cheapest visible one — marked, because it carries the programme. */
+  isFirst: boolean;
   dragging: boolean;
   editing: boolean;
   onEdit: () => void;
   onGrab: (e: React.PointerEvent) => void;
 }) {
   const [active, setActive] = useState(reward.active);
-  const [confirming, setConfirming] = useState(false);
   const [pending, start] = useTransition();
-  const dinars = rate > 0 ? Math.round(reward.pointsCost / rate) : 0;
+  const visits = visitsForPoints(reward.pointsCost, ticket);
+  const tooHard = isFirst && visits > EASY_FIRST_VISITS;
 
   return (
     <div
       data-rid={reward.id}
-      className={`a-card flex items-center gap-3 px-3 py-3 transition ${
+      className={`a-card flex items-center gap-2.5 px-3 py-2.5 transition ${
         dragging ? "scale-[1.01] opacity-90 ring-1 ring-royal" : ""
-      } ${active ? "" : "opacity-60"}`}
+      } ${active ? "" : "opacity-55"}`}
     >
       {/*
-        The handle, and ONLY the handle, starts a drag. The card carries a
-        toggle and two buttons; making the whole thing draggable would mean
-        every tap on Modifier begins by looking like a drag.
-        Hidden on a phone: a one-column list of four is not worth reordering by
-        finger, and touch-drag inside a scrolling sheet fights the scroll.
+        The handle, and ONLY the handle, starts a drag — the line is tappable
+        and a draggable line means every tap begins by looking like a drag.
+        Hidden on a phone: touch-drag inside a scrolling sheet fights the scroll.
       */}
       <button
         type="button"
         onPointerDown={onGrab}
         aria-label={`Déplacer ${reward.label}`}
-        className="hidden shrink-0 cursor-grab touch-none px-1 py-2 text-white/25 transition hover:text-white/50 active:cursor-grabbing sm:block"
+        className="hidden shrink-0 cursor-grab touch-none px-0.5 py-2 text-white/25 transition hover:text-white/50 active:cursor-grabbing sm:block"
       >
         <GripIcon className="h-5 w-3" />
       </button>
 
-      <span className="grid h-[52px] w-[52px] shrink-0 place-items-center overflow-hidden rounded-2xl bg-white/[0.07]">
-        {reward.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded, not a build asset
-          <img src={reward.imageUrl} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <GiftIcon className="h-6 w-6 text-white/35" />
-        )}
-      </span>
-
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[15px] font-extrabold text-white">{reward.label}</span>
-        {/*
-          Saves on the spot. Hiding a reward used to mean opening the editor,
-          unticking a box and pressing save — three steps for the thing an owner
-          does most, when the pâtisserie runs out at eleven and has to come off
-          the list until tomorrow.
-        */}
-        <label className="mt-1.5 inline-flex cursor-pointer items-center gap-2">
-          <input
-            type="checkbox"
-            checked={active}
-            disabled={pending}
-            onChange={(e) => {
-              const next = e.target.checked;
-              setActive(next);
-              start(() => toggleRewardActiveAction(reward.id, next));
-            }}
-            className="peer sr-only"
-          />
-          <span className="h-[19px] w-[33px] rounded-full border border-white/12 bg-white/[0.08] p-[2px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
-            <span className="block h-[13px] w-[13px] rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-[14px]" />
-          </span>
-          <span className="text-[11px] font-bold text-white/50">
-            {active ? "Visible" : "Masquée"}
-          </span>
-        </label>
-      </span>
-
-      {/* the number that decides whether the programme works — with its price
-          in dinars right under it, because the two used to live on separate
-          screens and never met */}
-      <span className="hidden shrink-0 border-l border-white/[0.08] px-4 text-center sm:block">
-        <span className="block text-[10px] font-bold uppercase tracking-[0.06em] text-white/40">
-          Points requis
+      {/* the whole line opens the editor */}
+      <button
+        type="button"
+        onClick={onEdit}
+        aria-expanded={editing}
+        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+      >
+        <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white/[0.07]">
+          {reward.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded, not a build asset
+            <img src={reward.imageUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <GiftIcon className="h-5 w-5 text-white/35" />
+          )}
         </span>
-        <span className="block text-[22px] font-extrabold leading-tight text-[#b9a3ff]">
-          {fmtPoints(reward.pointsCost)}
-        </span>
-        <span className="block text-[10.5px] text-white/35">≈ {dinars} DT</span>
-      </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5">
+            {/*
+              The ladder's first rung, named. An owner scanning this list has no
+              other way to tell which of six rewards is the one almost every
+              customer is actually working towards.
 
-      <span className="flex shrink-0 flex-col items-stretch gap-1.5 sm:border-l sm:border-white/[0.08] sm:pl-4">
-        {/* the cost has to survive the narrow layout, where the column above is
-            dropped for width */}
-        <span className="text-right sm:hidden">
-          <span className="text-[14px] font-extrabold text-[#b9a3ff]">
+              Not uppercase: "1re" set in caps renders "1RE", which reads as an
+              acronym rather than an ordinal.
+            */}
+            {isFirst && (
+              <span className="shrink-0 rounded-full bg-[#b9a3ff]/15 px-2 py-0.5 text-[10px] font-extrabold text-[#b9a3ff]">
+                1<sup>re</sup>
+              </span>
+            )}
+            <span className="min-w-0 truncate text-[15px] font-bold text-white">
+              {reward.label}
+            </span>
+          </span>
+          {/* Stated in VISITS, the unit the editor now asks in — a row that
+              reads "45 pts" and an editor that asks "how many visits" are not
+              the same screen. Points stay, small, because the customer's card
+              counts in them. */}
+          <span className="block truncate text-[12px] font-semibold text-white/45">
+            <b className={`font-extrabold ${tooHard ? "text-[#ffd27a]" : "text-[#b9a3ff]"}`}>
+              {visits} visite{visits > 1 ? "s" : ""}
+            </b>
+            {" · "}
             {fmtPoints(reward.pointsCost)} pts
           </span>
-          <span className="block text-[10.5px] text-white/35">≈ {dinars} DT</span>
         </span>
-        <button
-          type="button"
-          onClick={onEdit}
-          className="flex items-center justify-center gap-1.5 rounded-xl bg-white/[0.08] px-3.5 py-2 text-[12.5px] font-bold text-white transition active:scale-95"
-        >
-          <PencilIcon className="h-3.5 w-3.5" /> {editing ? "Fermer" : "Modifier"}
-        </button>
-        {/*
-          Two-step, because it is irreversible and it sits inches from Modifier.
-          Deliberately in-page rather than confirm(): a native dialog is blocked
-          in some in-app browsers, which silently made it one tap again.
-        */}
-        {confirming ? (
-          <span className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => start(() => deleteRewardAction(reward.id))}
-              className="flex-1 rounded-xl bg-[#ff6b6b] px-2 py-1.5 text-[11px] font-bold text-white"
-            >
-              Confirmer
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirming(false)}
-              className="text-[11px] font-bold text-white/45"
-            >
-              Non
-            </button>
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setConfirming(true)}
-            className="flex items-center justify-center gap-1.5 px-3.5 py-1 text-[12px] font-bold text-[#ff9a9a] transition active:scale-95"
-          >
-            <TrashIcon className="h-3.5 w-3.5" /> Supprimer
-          </button>
-        )}
-      </span>
+        <span className="shrink-0 text-[17px] leading-none text-white/30">
+          {editing ? "⌄" : "›"}
+        </span>
+      </button>
+
+      {/*
+        Saves on the spot, and stays out on the line because it is the daily
+        one. Hiding a reward used to mean opening the editor, unticking a box
+        and pressing save — three steps for the thing an owner does most.
+      */}
+      <label
+        className="flex shrink-0 cursor-pointer items-center border-l border-white/[0.08] py-1.5 pl-3"
+        title={active ? "Visible par vos clients" : "Masquée"}
+      >
+        <input
+          type="checkbox"
+          checked={active}
+          disabled={pending}
+          onChange={(e) => {
+            const next = e.target.checked;
+            setActive(next);
+            start(() => toggleRewardActiveAction(reward.id, next));
+          }}
+          className="peer sr-only"
+        />
+        <span className="sr-only">{active ? "Visible" : "Masquée"}</span>
+        <span className="h-[22px] w-[38px] rounded-full border border-white/12 bg-white/[0.08] p-[2.5px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
+          <span className="block h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-[15px]" />
+        </span>
+      </label>
     </div>
   );
 }
 
-/** The editor for ONE reward — opened by Modifier, or by Ajouter. */
+/**
+ * The editor for ONE reward — two questions, and neither of them is "points".
+ *
+ * It used to ask for a name and a number of points, in a bare numeric field
+ * with the placeholder "25". That second question is unanswerable: the owner
+ * would have to know their own average ticket, divide, and guess — and if they
+ * guessed high, nothing anywhere told them. See lib/rewards.ts for what that
+ * cost this product.
+ *
+ * Now it asks what every shop owner already has an answer for: WHAT do you give
+ * away, and AFTER HOW MANY VISITS. The points are derived and posted in a
+ * hidden field, so saveRewardAction is untouched and points_cost still means
+ * exactly what it always meant.
+ */
 function RewardEditor({
   reward,
-  rate,
+  ticket,
+  ideas,
+  isFirst,
   onDone,
 }: {
   reward: Reward | null;
-  rate: number;
+  ticket: Ticket;
+  /** Names to tap instead of facing an empty field, chosen by trade. */
+  ideas: string[];
+  /** Is this the cheapest one — the reward that decides whether the card works? */
+  isFirst: boolean;
   onDone: () => void;
 }) {
   const [state, action, pending] = useActionState<SettingsState, FormData>(saveRewardAction, {});
-  const [cost, setCost] = useState(reward?.pointsCost ?? 0);
-  const dinars = rate > 0 ? Math.round(cost / rate) : 0;
-  const perTicket = Math.floor(TICKET * rate);
-  const visits = perTicket > 0 ? Math.ceil(cost / perTicket) : null;
+  const [label, setLabel] = useState(reward?.label ?? "");
+  const [visits, setVisits] = useState(
+    reward ? visitsForPoints(reward.pointsCost, ticket) : 3,
+  );
+  const [custom, setCustom] = useState(!VISIT_PRESETS.includes(visits as never));
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, startDelete] = useTransition();
+
+  /*
+    Opening a reward and saving it unchanged must not move its price.
+
+    points → visits → points does not round-trip: a 40-point reward against a
+    7,86 TND ticket displays as 5 visits, and 5 visits computes back to 39. So
+    an owner who opened "Thé à la menthe" to fix a typo would silently re-price
+    it by a point, every time, and again the next time.
+
+    While the visits figure is untouched, the stored cost is therefore posted
+    back verbatim. Only actually moving the control means "re-price this".
+  */
+  const initialVisits = reward ? visitsForPoints(reward.pointsCost, ticket) : null;
+  const cost =
+    reward && visits === initialVisits ? reward.pointsCost : pointsForVisits(visits, ticket);
+  const tooHard = isFirst && visits > EASY_FIRST_VISITS;
 
   return (
     <div className="a-card border border-royal/40 px-4 py-3.5">
-      {reward && <RewardImageUploader reward={reward} />}
       <form action={action}>
         {reward && <input type="hidden" name="id" value={reward.id} />}
-        <label className="block py-2">
-          <span className="mb-1.5 block text-[12px] font-bold text-white/70">Nom</span>
+        {/* the unit the database wants, derived from the unit the owner gave */}
+        <input type="hidden" name="pointsCost" value={cost} />
+
+        {/* ── 1. what do they get ─────────────────────────────────── */}
+        <label className="block">
+          <span className="mb-1.5 block text-[13px] font-bold text-white">
+            Qu&apos;est-ce qu&apos;ils gagnent ?
+          </span>
           <input
             name="label"
-            defaultValue={reward?.label ?? ""}
-            placeholder="Espresso offert"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder={ideas[0]}
             maxLength={60}
             className="a-field"
           />
         </label>
-        <label className="block py-2">
-          <span className="mb-1.5 block text-[12px] font-bold text-white/70">Points requis</span>
-          <input
-            name="pointsCost"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            defaultValue={reward?.pointsCost ?? ""}
-            onChange={(e) => setCost(Number(e.target.value) || 0)}
-            placeholder="25"
-            className="a-field font-mono"
-          />
-        </label>
-        {cost > 0 && (
-          <p className="a-inset px-3.5 py-2 text-[11.5px] leading-snug text-white/55">
-            soit <b className="text-white">{dinars} dinars</b> de dépense
-            {visits ? (
-              <>
-                {" "}
-                · environ <b className="text-white">{visits} visites</b>
-              </>
-            ) : null}
+        {/* An empty field is the hardest question on the screen. These are one
+            tap, and they are picked for the trade the owner already chose. */}
+        {!label.trim() && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {ideas.map((idea) => (
+              <button
+                key={idea}
+                type="button"
+                onClick={() => setLabel(idea)}
+                className="rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-[12px] font-semibold text-white/75 transition active:scale-95"
+              >
+                {idea}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ── 2. how hard is it ───────────────────────────────────── */}
+        <div className="mt-4">
+          <span className="block text-[13px] font-bold text-white">
+            Après combien de visites ?
+          </span>
+          <span className="mt-0.5 mb-2 block text-[12px] leading-snug text-white/55">
+            {isFirst
+              ? "C'est votre première récompense — celle qui donne envie de revenir. Visez 2 ou 3."
+              : "Les suivantes peuvent demander plus d'efforts."}
+          </span>
+
+          <div className="grid grid-cols-6 gap-1.5">
+            {VISIT_PRESETS.map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => {
+                  setVisits(v);
+                  setCustom(false);
+                }}
+                className={`rounded-xl py-2.5 text-[15px] font-extrabold tabular-nums transition ${
+                  !custom && visits === v
+                    ? "bg-royal text-white"
+                    : "bg-white/[0.07] text-white/55"
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setCustom(true)}
+              className={`rounded-xl py-2.5 text-[12px] font-bold transition ${
+                custom ? "bg-royal text-white" : "bg-white/[0.07] text-white/55"
+              }`}
+            >
+              autre
+            </button>
+          </div>
+
+          {custom && (
+            <input
+              type="number"
+              min={1}
+              max={200}
+              inputMode="numeric"
+              value={visits}
+              onChange={(e) => setVisits(Math.max(1, Number(e.target.value) || 1))}
+              className="a-field mt-2 tabular-nums"
+              aria-label="Nombre de visites"
+            />
+          )}
+        </div>
+
+        {/*
+          The arithmetic, shown rather than demanded. `measured` is the
+          difference between "we counted your tickets" and "we are guessing
+          until you have customers", and saying which is which is the only way
+          this number deserves to be believed.
+        */}
+        <p className="a-inset mt-2.5 px-3.5 py-2.5 text-[12px] leading-snug text-white/55">
+          <b className="text-white">{`${visits} visite${visits > 1 ? "s" : ""}`}</b>
+          {" = "}
+          <b className="text-white">{`${cost} points`}</b>
+          {`, soit ${cost} dinars d'achats.`}
+          <br />
+          {ticket.measured
+            ? `Calculé sur votre ticket moyen réel : ${ticket.tnd.toFixed(2)} TND.`
+            : `Estimé sur un ticket de ${ticket.tnd.toFixed(2)} TND — ça s'ajustera avec vos vraies ventes.`}
+        </p>
+
+        {tooHard && (
+          <p className="mt-2 rounded-xl bg-[#ffd27a]/12 px-3.5 py-2.5 text-[12px] font-semibold leading-snug text-[#ffd27a]">
+            {visits} visites avant le premier cadeau, c&apos;est long — beaucoup
+            abandonneront avant. Une première récompense facile est ce qui fait
+            revenir.
           </p>
         )}
         {/*
@@ -787,7 +912,7 @@ function RewardEditor({
         */}
         <input type="hidden" name="active" value="on" />
         <Feedback state={state} />
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-3.5 flex items-center gap-2">
           <button type="submit" disabled={pending} className={btn}>
             {pending ? "· · ·" : reward ? "Enregistrer" : "Ajouter"}
           </button>
@@ -800,12 +925,100 @@ function RewardEditor({
           </button>
         </div>
       </form>
+
+      {/*
+        The photo, LAST and folded.
+
+        It used to be the first thing in this editor — a 12 Mo file picker
+        between an owner and naming their reward, for something entirely
+        optional that a shop can only supply once it has thought of the reward
+        at all. It is also the one control here that saves instantly, so it
+        cannot sit above a form that waits for Enregistrer without implying the
+        button covers it.
+
+        Only for a saved reward: the upload action needs an id.
+      */}
+      {reward && (
+        <details className="group mt-3 border-t border-white/[0.08] pt-2">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 py-1.5 text-[12px] font-bold text-white/55 [&::-webkit-details-marker]:hidden">
+            <span className="text-[15px] transition-transform group-open:rotate-90">›</span>
+            {reward.imageUrl ? "Changer la photo" : "Ajouter une photo (facultatif)"}
+          </summary>
+          <div className="pt-1.5">
+            <RewardImageUploader reward={reward} />
+          </div>
+        </details>
+      )}
+
+      {/*
+        Deleting lives here now, not on the list.
+
+        It used to sit a thumb's width below Modifier on every row, so the list
+        of things you own was also a grid of ways to destroy them. Here it is
+        behind opening the reward — an act that already means "I am changing
+        this one" — set apart below the save, and still two-step because it
+        cannot be undone.
+
+        Deliberately in-page rather than confirm(): a native dialog is blocked
+        in some in-app browsers, which silently made it one tap again.
+      */}
+      {reward && (
+        <div className="mt-3 border-t border-white/[0.08] pt-3">
+          {confirming ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => startDelete(() => deleteRewardAction(reward.id))}
+                className="flex-1 rounded-2xl bg-[#ff6b6b] px-3 py-2.5 text-[13px] font-bold text-white"
+              >
+                {deleting ? "· · ·" : `Supprimer « ${reward.label} »`}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                className="shrink-0 px-3 py-2.5 text-[13px] font-bold text-white/55"
+              >
+                Non
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              className="flex items-center gap-1.5 text-[12px] font-bold text-[#ff9a9a] transition active:scale-95"
+            >
+              <TrashIcon className="h-3.5 w-3.5" /> Supprimer cette récompense
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-export function RewardsEditor({ rewards, rate }: { rewards: Reward[]; rate: number }) {
+export function RewardsEditor({
+  rewards,
+  ticket,
+  businessType,
+}: {
+  rewards: Reward[];
+  ticket: Ticket;
+  businessType: string | null;
+}) {
   const [order, setOrder] = useState(rewards);
+  const ideas = rewardIdeas(businessType);
+  /*
+    The cheapest VISIBLE reward, by points.
+
+    Not the first row: the list order is the owner's own arrangement (they drag
+    it), and a masked reward is not something any customer is working towards.
+    This is the one that decides whether the card feels winnable, so it is the
+    one that gets marked and the one the "too hard" warning is about.
+  */
+  const firstId = [...order]
+    .filter((r) => r.active)
+    .sort((a, b) => a.pointsCost - b.pointsCost)[0]?.id;
   const [editing, setEditing] = useState<string | null>(null);
   // a shop with no rewards has nothing for anyone to aim at — open the form
   const [adding, setAdding] = useState(rewards.length === 0);
@@ -854,22 +1067,30 @@ export function RewardsEditor({ rewards, rate }: { rewards: Reward[]; rate: numb
 
   return (
     <div className="px-4 py-3" onPointerMove={onMove} onPointerUp={onDrop} onPointerCancel={onDrop}>
-      <div className="mb-3 flex justify-end">
-        <button
-          type="button"
-          onClick={() => {
-            setAdding(true);
-            setEditing(null);
-          }}
-          className="flex items-center gap-1.5 rounded-2xl bg-royal px-4 py-2.5 text-[13px] font-bold text-white transition active:scale-95"
-        >
-          <span className="text-[17px] leading-none">+</span> Ajouter une récompense
-        </button>
-      </div>
+      {/* Full width, not floated right. A lone pill in the top-right corner
+          above a list of cards has nothing to align to, and it is the first
+          thing a shop with no rewards has to find. */}
+      <button
+        type="button"
+        onClick={() => {
+          setAdding(true);
+          setEditing(null);
+        }}
+        className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-2xl bg-royal py-3 text-[13px] font-bold text-white transition active:scale-[0.99]"
+      >
+        <span className="text-[17px] leading-none">+</span> Ajouter une récompense
+      </button>
 
       {adding && (
         <div className="mb-3">
-          <RewardEditor reward={null} rate={rate} onDone={() => setAdding(false)} />
+          <RewardEditor
+            reward={null}
+            ticket={ticket}
+            ideas={ideas}
+            // a shop with nothing on the ladder is adding its first rung
+            isFirst={order.filter((r) => r.active).length === 0}
+            onDone={() => setAdding(false)}
+          />
         </div>
       )}
 
@@ -878,7 +1099,8 @@ export function RewardsEditor({ rewards, rate }: { rewards: Reward[]; rate: numb
           <div key={r.id}>
             <RewardCard
               reward={r}
-              rate={rate}
+              ticket={ticket}
+              isFirst={r.id === firstId}
               dragging={dragId === r.id}
               editing={editing === r.id}
               onEdit={() => setEditing(editing === r.id ? null : r.id)}
@@ -886,7 +1108,13 @@ export function RewardsEditor({ rewards, rate }: { rewards: Reward[]; rate: numb
             />
             {editing === r.id && (
               <div className="mt-2">
-                <RewardEditor reward={r} rate={rate} onDone={() => setEditing(null)} />
+                <RewardEditor
+                  reward={r}
+                  ticket={ticket}
+                  ideas={ideas}
+                  isFirst={r.id === firstId}
+                  onDone={() => setEditing(null)}
+                />
               </div>
             )}
           </div>
@@ -900,10 +1128,181 @@ export function RewardsEditor({ rewards, rate }: { rewards: Reward[]; rate: numb
       )}
 
       {order.length > 1 && (
-        <p className="mt-4 hidden items-center justify-center gap-1.5 text-[11.5px] text-white/35 sm:flex">
+        <p className="mt-4 hidden items-center justify-center gap-1.5 text-[12px] text-white/35 sm:flex">
           <GripIcon className="h-3.5 w-2.5" /> Glissez pour réorganiser vos récompenses
         </p>
       )}
+    </div>
+  );
+}
+
+/* La roue ----------------------------------------------------------------- */
+
+/**
+ * The wheel's controls, and the honest version of its odds.
+ *
+ * The draw is UNIFORM over the active segments (spin_wheel, 0031), so the odds
+ * are simply one in however many lots there are — and the screen says so, with
+ * the actual percentage, because an owner setting a price needs to know how
+ * often the expensive lot comes up. There is no weight slider, and adding one
+ * back would mean hiding the odds from the customer who pays to spin.
+ *
+ * ONE screen, in the order the job is done: switch it on, put the lots in, price
+ * the spin, save. The prize list used to be a second component rendered BELOW
+ * this form, which put an "Enregistrer" button in the middle of the sheet with
+ * a list under it that saved itself on every tap — two save models stacked, and
+ * no way to tell by looking which half the button applied to. The list comes
+ * through as `prizes` and sits inside, so the only button below everything is
+ * the one that saves.
+ */
+export function WheelForm({ game, prizes }: { game: Game | null; prizes: ReactNode }) {
+  const [state, action, pending] = useActionState<SettingsState, FormData>(saveWheelAction, {});
+  const [on, setOn] = useState(game?.active ?? false);
+  const [cost, setCost] = useState(game?.spinCost ?? 10);
+
+  if (!game) {
+    return (
+      <p className="px-4 py-6 text-center text-[13px] text-white/55">
+        La roue n&apos;est pas encore disponible pour ce commerce.
+      </p>
+    );
+  }
+
+  const n = game.prizes.length;
+
+  return (
+    <form action={action} className="px-4 py-3">
+      <Toggle
+        name="wheelActive"
+        label="La roue est active"
+        help="Vos clients la voient sur la page des récompenses."
+        defaultChecked={on}
+        onChecked={setOn}
+      />
+
+      <div className={on ? "" : "pointer-events-none opacity-45"}>
+        {/* The lots, before the price — you cannot price a spin at anything
+            sensible until you know what is in it. */}
+        {prizes}
+
+        <Num
+          name="spinCost"
+          label="Coût d'un tour"
+          help="Ce que le client paie, en points, pour tourner une fois."
+          value={cost}
+          suffix="points"
+          onValue={setCost}
+        />
+        <Example>
+          {n === 0 ? (
+            <>aucun lot pour l&apos;instant — la roue reste invisible tant qu&apos;elle est vide.</>
+          ) : (
+            <>
+              {n} lot{n > 1 ? "s" : ""}, tirés au hasard :{" "}
+              <b className="text-white">chacun sort {Math.round(100 / n)}% du temps</b>. Un tour à{" "}
+              {cost} points, c&apos;est {cost} dinars de dépense.
+            </>
+          )}
+        </Example>
+      </div>
+
+      <Feedback state={state} />
+      <button type="submit" disabled={pending} className={`${btn} mt-3`}>
+        {pending ? "· · ·" : "Enregistrer"}
+      </button>
+    </form>
+  );
+}
+
+/** The segments. Order does not matter — the draw is uniform. */
+export function PrizesEditor({ game }: { game: Game | null }) {
+  const [adding, setAdding] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  if (!game) return null;
+
+  async function add() {
+    const label = adding.trim();
+    if (!label || busy) return;
+    setBusy(true);
+    setErr(null);
+    const fd = new FormData();
+    fd.set("label", label);
+    const res = await savePrizeAction({}, fd);
+    setBusy(false);
+    if (res.error) setErr(res.error);
+    else setAdding("");
+  }
+
+  async function remove(id: string) {
+    setBusy(true);
+    const res = await deletePrizeAction(id);
+    setBusy(false);
+    if (res.error) setErr(res.error);
+  }
+
+  return (
+    /*
+      No horizontal padding and no width cap: this now renders INSIDE WheelForm
+      (see its note), which already provides both. Keeping its own would have
+      indented the lots one step further in than every other field beside them.
+    */
+    <div className="py-3">
+      <p className="mb-1.5 text-[13px] font-bold text-white">Les lots</p>
+      {/* Says so out loud, because everything else on this screen waits for
+          Enregistrer and these do not. */}
+      <p className="mb-2 text-[12px] text-white/45">
+        Ajoutés et retirés tout de suite — pas besoin d&apos;enregistrer.
+      </p>
+      <ul className="space-y-2">
+        {game.prizes.map((p) => (
+          <li
+            key={p.id}
+            className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.05] px-3.5 py-3"
+          >
+            <span className="min-w-0 truncate text-[15px] font-semibold text-white">{p.label}</span>
+            <button
+              type="button"
+              onClick={() => remove(p.id)}
+              disabled={busy}
+              className="shrink-0 text-[12px] font-bold text-white/45 hover:text-[#ff9a9a] disabled:opacity-40"
+            >
+              Retirer
+            </button>
+          </li>
+        ))}
+        {game.prizes.length === 0 && (
+          <li className="rounded-xl bg-white/[0.04] px-3.5 py-6 text-center text-[13px] text-white/50">
+            Ajoutez au moins un lot pour que la roue apparaisse.
+          </li>
+        )}
+      </ul>
+
+      <div className="mt-3 flex gap-2">
+        <input
+          value={adding}
+          onChange={(e) => setAdding(e.target.value)}
+          maxLength={40}
+          placeholder="Café offert"
+          className="a-field min-w-0 flex-1"
+        />
+        <button
+          type="button"
+          onClick={add}
+          disabled={busy || !adding.trim()}
+          className="shrink-0 rounded-xl bg-[#6d4ae6] px-4 text-[12px] font-bold text-white disabled:opacity-40"
+        >
+          Ajouter
+        </button>
+      </div>
+      {err && <p className="mt-2 text-[12px] font-semibold text-[#ff9a9a]">{err}</p>}
+
+      <p className="mt-3 text-[12px] leading-snug text-white/45">
+        Le tirage est au hasard, à parts égales. Pour qu&apos;un lot sorte moins
+        souvent, ajoutez d&apos;autres lots — vos clients voient la roue, donc ils
+        voient les chances.
+      </p>
     </div>
   );
 }

@@ -16,13 +16,13 @@ export default async function NouveauCafe() {
 
   return (
     <div>
-      <p className="block text-[10px] font-bold uppercase tracking-[0.1em] text-white/45">◆ Dernière étape</p>
+      <p className="block text-[10px] font-bold uppercase tracking-[0.1em] text-white/45">◆ Étape 1 sur 2</p>
       <h1 className="mt-1 font-display text-[30px] leading-tight">
-        Créez votre café
+        Votre carte
       </h1>
-      <p className="mt-1.5 mb-5 text-[14px] leading-relaxed text-white/55">
-        On vous prépare tout : les points et les récompenses. Vous pourrez
-        changer chaque réglage ensuite.
+      <p className="mt-1.5 mb-5 text-[15px] leading-relaxed text-white/55">
+        C&apos;est ce que vos clients verront sur leur téléphone. Tout se change
+        ensuite.
       </p>
 
       <CreateCafeForm />

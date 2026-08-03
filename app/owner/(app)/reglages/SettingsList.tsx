@@ -2,10 +2,11 @@
 
 import { useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { CardIcon, GiftIcon, Sparkle, StampIcon } from "@/components/icons";
+import { CardIcon, GiftIcon, Sparkle, StampIcon, WheelIcon } from "@/components/icons";
 import { fmtPoints } from "@/lib/points";
-import type { Cafe, LoyaltyProgram, Reward } from "@/lib/types";
-import { CafeForm, EarnForm, RewardsEditor, StampsForm } from "./SettingsForms";
+import { visitsForPoints, type Ticket } from "@/lib/rewards";
+import type { Cafe, Game, LoyaltyProgram, Reward } from "@/lib/types";
+import { CafeForm, EarnForm, PrizesEditor, RewardsEditor, StampsForm, WheelForm } from "./SettingsForms";
 
 /*
   Réglages as a SETTINGS LIST, not a page of forms.
@@ -20,23 +21,46 @@ import { CafeForm, EarnForm, RewardsEditor, StampsForm } from "./SettingsForms";
   things you did not come here to touch.
 */
 
-type PanelId = "points" | "rewards" | "stamps" | "shop";
+type PanelId = "points" | "rewards" | "stamps" | "wheel" | "shop";
 
 export function SettingsList({
   cafe,
   program,
   rewards,
+  game,
   typeLabel,
+  ticket,
 }: {
   cafe: Cafe;
   program: LoyaltyProgram;
   rewards: Reward[];
+  /** The wheel, returned even when off or empty, so the toggle is reachable. */
+  game: Game | null;
   typeLabel: string;
+  /** What one visit is worth here — rewards are priced in visits now. */
+  ticket: Ticket;
 }) {
   const [open, setOpen] = useState<PanelId | null>(null);
 
-  const cheapest = [...rewards].sort((a, b) => a.pointsCost - b.pointsCost)[0];
-  const visible = rewards.filter((r) => r.active).length;
+  /* The cheapest VISIBLE one, to match what the editor marks as "1re" — a
+     masked reward is not something any customer is working towards. */
+  const shown = rewards.filter((r) => r.active);
+  const cheapest = [...shown].sort((a, b) => a.pointsCost - b.pointsCost)[0];
+  const visible = shown.length;
+
+  /*
+    Is each optional mechanic actually running? Computed as the VALUE LINE
+    rather than a boolean, so the row never has to reach back into a possibly
+    null `game` to describe itself.
+
+    "The wheel is on" needs prizes as well as the toggle: an active wheel with
+    an empty prize list shows a customer nothing, so it is not on.
+  */
+  const stampsValue = program.stampsEnabled ? `${program.stampsRequired} visites` : null;
+  const wheelValue =
+    game && game.active && game.prizes.length > 0
+      ? `${game.prizes.length} lot${game.prizes.length > 1 ? "s" : ""} · ${game.spinCost} pts le tour`
+      : null;
 
   const PANELS: Record<PanelId, { title: string; sub: string; body: ReactNode }> = {
     points: {
@@ -46,13 +70,24 @@ export function SettingsList({
     },
     rewards: {
       title: "Les récompenses",
-      sub: "Visez une première récompense atteignable en 2–3 visites.",
-      body: <RewardsEditor rewards={rewards} rate={program.pointsPerTnd} />,
+      sub: "La première doit être facile — 2 ou 3 visites.",
+      body: <RewardsEditor rewards={rewards} ticket={ticket} businessType={cafe.businessType} />,
     },
     stamps: {
       title: "Carte à tampons",
       sub: "Une visite = un tampon. En plus des points, si vous voulez.",
       body: <div className="mx-auto w-full max-w-[560px]"><StampsForm program={program} /></div>,
+    },
+    wheel: {
+      title: "La roue",
+      sub: "Vos clients paient des points pour tourner. Tirage au hasard, à parts égales.",
+      body: (
+        <div className="mx-auto w-full max-w-[560px]">
+          {/* the lots render INSIDE the form, between the switch and the price
+              — one screen, one Enregistrer, at the bottom (see WheelForm) */}
+          <WheelForm game={game} prizes={<PrizesEditor game={game} />} />
+        </div>
+      ),
     },
     shop: {
       title: "Ma vitrine",
@@ -73,24 +108,84 @@ export function SettingsList({
         <Row
           icon={<GiftIcon className="h-[18px] w-[18px]" />}
           label="Les récompenses"
+          /* "dès 3 visites" rather than "dès 40 pts" — the row has to answer
+             the same question the editor now asks, or the two disagree about
+             what a reward even costs. */
           value={
             cheapest
-              ? `${visible} visible${visible > 1 ? "s" : ""} · dès ${fmtPoints(cheapest.pointsCost)} pts`
+              ? `${visible} visible${visible > 1 ? "s" : ""} · dès ${visitsForPoints(cheapest.pointsCost, ticket)} visites`
               : "aucune"
           }
           warn={!cheapest}
           onClick={() => setOpen("rewards")}
         />
-        <Row
-          icon={<StampIcon className="h-[18px] w-[18px]" />}
-          label="Carte à tampons"
-          value={
-            program.stampsEnabled ? `${program.stampsRequired} visites` : "désactivée"
-          }
-          muted={!program.stampsEnabled}
-          onClick={() => setOpen("stamps")}
-        />
+        {/* An extra that is switched ON is part of the programme, not an extra
+            any more — so it sits here, stating its value, like everything else. */}
+        {stampsValue && (
+          <Row
+            icon={<StampIcon className="h-[18px] w-[18px]" />}
+            label="Carte à tampons"
+            value={stampsValue}
+            onClick={() => setOpen("stamps")}
+          />
+        )}
+        {wheelValue && (
+          <Row
+            icon={<WheelIcon className="h-[18px] w-[18px]" />}
+            label="La roue"
+            value={wheelValue}
+            onClick={() => setOpen("wheel")}
+          />
+        )}
       </Group>
+
+      {/*
+        Tampons and la roue, folded away until somebody wants them.
+
+        Both ship OFF. A brand-new owner opened Réglages and met four mechanics
+        — points, récompenses, tampons, roue — two of them reading "désactivée",
+        and had to work out which of the four their shop was actually running
+        before changing anything. Two of those rows were answering a question
+        nobody had asked yet.
+
+        They are not removed and not hidden: the moment either is switched on it
+        moves up into the programme above, because then it IS the programme.
+      */}
+      {(!stampsValue || !wheelValue) && (
+        <details className="group">
+          <summary className="a-card flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 [&::-webkit-details-marker]:hidden">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-white/[0.08] text-[17px] leading-none text-white/70">
+              +
+            </span>
+            <span className="min-w-0 flex-1 text-[15px] font-semibold text-white">
+              Ajouter autre chose
+            </span>
+            <span className="shrink-0 text-[17px] leading-none text-white/30 transition group-open:rotate-90">
+              ›
+            </span>
+          </summary>
+          <div className="a-card mt-1.5 divide-y divide-white/[0.08] overflow-hidden">
+            {!stampsValue && (
+              <Row
+                icon={<StampIcon className="h-[18px] w-[18px]" />}
+                label="Carte à tampons"
+                value="une visite = un tampon"
+                muted
+                onClick={() => setOpen("stamps")}
+              />
+            )}
+            {!wheelValue && (
+              <Row
+                icon={<WheelIcon className="h-[18px] w-[18px]" />}
+                label="La roue"
+                value="ils paient des points pour tourner"
+                muted
+                onClick={() => setOpen("wheel")}
+              />
+            )}
+          </div>
+        </details>
+      )}
 
       <Group label="Votre boutique">
         <Row
@@ -121,7 +216,7 @@ export function SettingsList({
 function Group({ label, children }: { label: string; children: ReactNode }) {
   return (
     <section>
-      <h2 className="mb-1.5 px-1.5 text-[10.5px] font-bold uppercase tracking-[0.1em] text-white/40">
+      <h2 className="mb-1.5 px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/40">
         {label}
       </h2>
       <div className="a-card divide-y divide-white/[0.08] overflow-hidden">{children}</div>
@@ -155,15 +250,26 @@ function Row({
       ) : (
         <span className="w-8 shrink-0" />
       )}
-      <span className="min-w-0 flex-1 text-[14.5px] font-semibold text-white">{label}</span>
+      {/*
+        THE LABEL NEVER WRAPS, THE VALUE GIVES WAY.
+
+        Both sides were flexible, so "Les récompenses" and "6 visibles · dès 5
+        visites" fought over one 390px row and the LABEL lost — it broke onto
+        two lines while the value stayed whole, which is backwards. A settings
+        row is read left to right: the name of the thing is the part that has
+        to survive, and the value is the part that can shorten to an ellipsis.
+      */}
+      <span className="shrink-0 whitespace-nowrap text-[14.5px] font-semibold text-white">
+        {label}
+      </span>
       <span
-        className={`min-w-0 shrink-0 truncate text-right text-[13px] font-bold ${
+        className={`min-w-0 flex-1 truncate text-right text-[12.5px] font-bold ${
           mono ? "font-mono text-[12px]" : ""
-        } ${warn ? "text-[#ff9a9a]" : muted ? "text-white/40" : "text-white/60"}`}
+        } ${warn ? "text-[#ff9a9a]" : muted ? "text-white/40" : "text-white/55"}`}
       >
         {value}
       </span>
-      {onClick && <span className="shrink-0 text-[16px] leading-none text-white/30">›</span>}
+      {onClick && <span className="shrink-0 text-[17px] leading-none text-white/30">›</span>}
     </>
   );
 
@@ -197,9 +303,8 @@ function Sheet({
 
     The owner tab bar carries backdrop-blur, and backdrop-filter creates its own
     stacking context — so a z-50 sheet nested inside the layout still had
-    "Caisse · Analyses · QR · Réglages" bleeding through its own background at
-    the bottom of the screen. Out at body level there is nothing left to lose
-    to.
+    "Caisse · Clients · Réglages" bleeding through its own background at the
+    bottom of the screen. Out at body level there is nothing left to lose to.
 
     No mounted-guard: a Sheet only exists once someone has TAPPED a row, which
     cannot happen on the server — and the usual useState+useEffect dance would
@@ -226,7 +331,7 @@ function Sheet({
             </svg>
           </button>
           <span className="min-w-0">
-            <span className="block truncate text-[19px] font-extrabold leading-tight text-white">
+            <span className="block truncate text-[20px] font-extrabold leading-tight text-white">
               {title}
             </span>
             {/* wraps on a phone rather than truncating — the subtitle is the

@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { currentOwner } from "@/lib/auth/owner";
 import { BUSINESS_TYPES } from "@/lib/businessTypes";
-import { createCafe, setBusinessType, slugify } from "@/lib/db";
+import { createCafe, setBusinessType, setCafeIdentity, slugify } from "@/lib/db";
 
 const TYPE_KEYS = new Set(BUSINESS_TYPES.map((t) => t.key));
 
@@ -47,8 +47,29 @@ export async function createCafeAction(
   const type = String(formData.get("businessType") ?? "");
   if (TYPE_KEYS.has(type) && type !== "other") await setBusinessType(res.id, type);
 
-  // Straight to the till. "/" would only 307 here anyway, and a server-action
-  // redirect is a client navigation — one that has to follow a redirect of its
-  // own does not always commit.
-  redirect("/owner");
+  /*
+    The card's face. Both optional.
+
+    The logo arrives as a data URI the browser already downscaled; it is capped
+    here as well because a hidden field is a field like any other and the client
+    is never the last word on a size limit. ~180 KB is far above what
+    fileToLogoDataUri produces and far below anything that would bloat the row.
+  */
+  const logo = String(formData.get("logo") ?? "");
+  const logoUrl = logo.startsWith("data:image/") && logo.length < 180_000 ? logo : null;
+
+  const rawPhone = String(formData.get("phone") ?? "").trim().slice(0, 24);
+  const phone = rawPhone.length >= 6 ? rawPhone : null;
+
+  await setCafeIdentity(res.id, { logoUrl, phone });
+
+  /*
+    Then rewards — NOT the till.
+
+    An owner who lands on the caisse with an empty reward ladder has a working
+    card that gives customers nothing to aim at, and no reason to suspect it.
+    Réglages holds the reward editor, but Réglages is a screen you go looking
+    for once you already know it exists, and a new owner does not.
+  */
+  redirect("/owner/nouveau/recompenses");
 }

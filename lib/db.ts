@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "./supabase/admin";
+import { DEFAULT_TICKET_INFO, MIN_TICKET_SAMPLE, type Ticket } from "./rewards";
 import type { ActiveCode } from "./types";
 
 /**
@@ -203,33 +204,41 @@ export async function creditPoints(
 /* Play                                                                        */
 /* -------------------------------------------------------------------------- */
 
-export type PlayRpcResult =
+export type SpinRpcResult =
   | {
       ok: true;
       prizeId: string;
       prizeIndex: number;
       prizeLabel: string;
-      isLose: boolean;
-      code: string | null;
-      nextPlayAt: string;
+      code: string;
+      cost: number;
+      balance: number;
     }
-  | { ok: false; reason: "cooldown"; nextPlayAt: string }
-  | { ok: false; reason: "not_found" | "inactive" };
+  | { ok: false; reason: "insufficient"; balance: number; needed: number }
+  | { ok: false; reason: "off" | "unavailable" };
 
-/** The Spin. The server picks the prize by the owner's weights. */
-export async function playGame(
-  slug: string,
+/**
+ * The Spin — paid for in points.
+ *
+ * There is no cost argument, and there never can be one: spin_wheel reads the
+ * price off the games row itself, the same way redeem_at_counter reads a
+ * reward's price off the catalogue. The client says "spin", nothing more.
+ *
+ * There is no prize argument either. The draw happens in the database, over
+ * active segments, uniformly. A client that picked its own prize would be a
+ * client that always won the best one.
+ */
+export async function spinWheel(
+  businessId: string,
   phone: string,
-  device: string | null,
-): Promise<PlayRpcResult> {
+): Promise<SpinRpcResult> {
   const db = createAdminClient();
-  const { data, error } = await db.rpc("play_game", {
-    p_slug: slug,
+  const { data, error } = await db.rpc("spin_wheel", {
+    p_business_id: businessId,
     p_phone: phone,
-    p_device: device,
   });
   if (error) throw new Error(error.message);
-  return data as PlayRpcResult;
+  return data as SpinRpcResult;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -340,7 +349,7 @@ export type WalletCafe = {
 export async function balanceSinceLastOpen(
   businessId: string,
   phone: string,
-): Promise<{ before: number; now: number }> {
+): Promise<{ before: number; now: number; firstOpen: boolean }> {
   const db = createAdminClient();
   const { data: card } = await db
     .from("diner_cafes")
@@ -358,16 +367,31 @@ export async function balanceSinceLastOpen(
   const all = (rows ?? []) as { delta: number; created_at: string }[];
   const now = all.reduce((s, r) => s + Number(r.delta), 0);
 
-  // Never opened it? Then nothing has happened "since" — a brand-new card gets
-  // CardArrived, not this. Returning `now` for both makes the diff empty.
+  /*
+    Never opened it? Then nothing has happened "since" — returning `now` for
+    both makes the diff empty.
+
+    firstOpen rides back out because it is the ONLY honest signal for "this
+    person is seeing this card for the first time", and the card screen needs
+    it. That screen used to play its arrival off a ?nouveau=1 URL flag set by
+    the join action — which meant a card created FOR someone at the counter (a
+    walk-in, credited before they had ever signed up) silently appeared with no
+    arrival at all, and re-joining a shop you already belonged to played one
+    when nothing had been added. last_opened_at cannot be wrong about this: it
+    is null exactly once per card, ever.
+  */
   const seenAt = card?.last_opened_at ? new Date(card.last_opened_at).getTime() : null;
-  if (seenAt === null) return { before: now, now };
+  if (seenAt === null) return { before: now, now, firstOpen: true };
 
   const before = all
     .filter((r) => new Date(r.created_at).getTime() <= seenAt)
     .reduce((s, r) => s + Number(r.delta), 0);
 
-  return { before: Math.round(before * 100) / 100, now: Math.round(now * 100) / 100 };
+  return {
+    before: Math.round(before * 100) / 100,
+    now: Math.round(now * 100) / 100,
+    firstOpen: false,
+  };
 }
 
 export async function touchCardOpened(businessId: string, phone: string): Promise<void> {
@@ -421,7 +445,11 @@ export async function dinerWallet(phone: string): Promise<WalletCafe[]> {
 
 export type Activity = {
   delta: number;
-  reason: "earn" | "redeem" | "welcome" | "adjust" | "expire" | "collected";
+  /* 'spin' since 0029: diner_history selects every ledger row without
+     filtering by reason, so a wheel debit arrives in this feed. It was absent
+     from this union, which meant the history screen showed a blank label for
+     anyone who had played. */
+  reason: "earn" | "redeem" | "welcome" | "adjust" | "expire" | "collected" | "spin";
   /** Set for 'collected' rows — the prize/reward the diner picked up. */
   label: string | null;
   at: string;
@@ -482,6 +510,27 @@ export async function setBusinessType(businessId: string, type: string): Promise
   await db.from("businesses").update({ business_type: type }).eq("id", businessId);
 }
 
+/**
+ * The card's face, set during signup.
+ *
+ * Both fields are optional and both are written in ONE update, so a shop that
+ * gives neither costs no round trip. The logo is a data URI — the browser has
+ * already downscaled it (see fileToLogoDataUri), which is why there is no
+ * storage bucket anywhere in this product.
+ */
+export async function setCafeIdentity(
+  businessId: string,
+  fields: { logoUrl?: string | null; phone?: string | null },
+): Promise<void> {
+  const patch: Record<string, string | null> = {};
+  if (fields.logoUrl !== undefined) patch.logo_url = fields.logoUrl;
+  if (fields.phone !== undefined) patch.phone = fields.phone;
+  if (Object.keys(patch).length === 0) return;
+
+  const db = createAdminClient();
+  await db.from("businesses").update(patch).eq("id", businessId);
+}
+
 export async function createCafe(
   ownerId: string,
   name: string,
@@ -510,6 +559,36 @@ export async function createCafe(
  * able to tell those two emptinesses apart instead of calling both "pas encore
  * de client".
  */
+/**
+ * What one visit is worth at THIS counter, in dinars.
+ *
+ * Rewards are priced in visits now (lib/rewards.ts) and a visit is only worth
+ * what this shop's customers actually spend — 2,5 DT in a café, 30 DT at a
+ * hairdresser. Quoting "5 visites" off a platform-wide guess would be wrong by
+ * an order of magnitude for half the trades on the business-type list.
+ *
+ * Reads amount_tnd, the dinars the cashier keyed, and ignores rows written
+ * before migration 0024 added the column — those genuinely do not know their
+ * amount, and a NULL must not be averaged in as a zero.
+ */
+export async function cafeAvgTicket(businessId: string): Promise<Ticket> {
+  const db = createAdminClient();
+  const { data } = await db
+    .from("points_ledger")
+    .select("amount_tnd")
+    .eq("business_id", businessId)
+    .eq("reason", "earn")
+    .not("amount_tnd", "is", null);
+
+  const amounts = ((data ?? []) as { amount_tnd: number }[]).map((r) => Number(r.amount_tnd));
+  if (amounts.length < MIN_TICKET_SAMPLE) return DEFAULT_TICKET_INFO;
+
+  const mean = amounts.reduce((s, n) => s + n, 0) / amounts.length;
+  // A shop that somehow recorded only zeroes must not price every reward at 1.
+  if (!(mean > 0)) return DEFAULT_TICKET_INFO;
+  return { tnd: Math.round(mean * 100) / 100, measured: true };
+}
+
 export async function cafeCardCount(businessId: string): Promise<number> {
   const db = createAdminClient();
   const { count } = await db

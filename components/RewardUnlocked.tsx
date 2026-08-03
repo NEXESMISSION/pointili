@@ -117,7 +117,7 @@ export function RewardUnlocked({
         ))}
       </span>
 
-      <p className="unlock-line relative z-20 text-[17px] font-extrabold tracking-[0.01em]">
+      <p className="unlock-line relative z-20 text-[15.5px] font-extrabold tracking-[0.01em]">
         Récompense débloquée !
       </p>
 
@@ -154,22 +154,22 @@ export function RewardUnlocked({
         </span>
       </div>
 
-      <h1 className="unlock-line mt-9 text-[30px] font-extrabold leading-none [animation-delay:.24s]">
+      <h1 className="unlock-line mt-9 text-[26px] font-extrabold leading-none [animation-delay:.24s]">
         Félicitations !
       </h1>
-      <p className="unlock-line mt-2.5 text-[14.5px] leading-snug text-white/75 [animation-delay:.32s]">
+      <p className="unlock-line mt-2.5 text-[13.5px] leading-snug text-white/75 [animation-delay:.32s]">
         Tu as gagné
       </p>
       {/* the shop's own wording, on its own line — "Brunch complet" is a title,
           not a noun that can be dropped into the middle of a sentence */}
-      <p className="unlock-line mt-1 text-[21px] font-extrabold leading-tight [animation-delay:.36s]">
+      <p className="unlock-line mt-1 text-[19px] font-extrabold leading-tight [animation-delay:.36s]">
         {label}
       </p>
 
       <Link
         href={href}
         onClick={(e) => e.stopPropagation()}
-        className="unlock-line mt-11 w-full max-w-[330px] rounded-full bg-white py-4 text-[15.5px] font-extrabold text-[#1a1030] shadow-[0_16px_40px_-14px_rgba(0,0,0,.7)] transition active:scale-[0.98] [animation-delay:.4s]"
+        className="unlock-line mt-11 w-full max-w-[330px] rounded-full bg-white py-4 text-[14.5px] font-extrabold text-[#1a1030] shadow-[0_16px_40px_-14px_rgba(0,0,0,.7)] transition active:scale-[0.98] [animation-delay:.4s]"
       >
         Voir mes récompenses
       </Link>

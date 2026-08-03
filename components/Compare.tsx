@@ -120,8 +120,50 @@ export function Compare() {
           marche encore. Voilà simplement là où elle s&apos;arrête.
         </p>
 
-        {/* a table must never push the page sideways on a phone */}
-        <div className="mt-8 overflow-x-auto rounded-[22px] ring-1 ring-white/12">
+        {/*
+          ── PHONE: one card per row, not a 720px table in a scroller ────────
+          The table below is 720px wide, so on a 390px screen it showed roughly
+          one and a half columns and asked the reader to swipe sideways to
+          compare — which is the one thing a comparison must never make you do.
+          Here the three answers stack under the question, and Pointili's is the
+          one with the colour and the tick.
+        */}
+        <ul className="mt-8 space-y-3 md:hidden">
+          {ROWS.map((r) => (
+            <li key={r.label} className="rounded-[18px] bg-white/[0.03] p-4 ring-1 ring-white/10">
+              <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-white/45">
+                {r.label}
+              </p>
+
+              <div className="mt-3 rounded-xl bg-[#7c3aed]/[0.14] px-3.5 py-3 ring-1 ring-[#7c3aed]/30">
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#c4b5fd]">
+                  Pointili
+                </p>
+                <p className="mt-1 flex gap-2 text-[14px] font-semibold leading-snug text-white">
+                  <Check className="mt-[3px] h-[13px] w-[13px] shrink-0 text-[#4ade9f]" />
+                  {r.us}
+                </p>
+              </div>
+
+              <div className="mt-2.5 grid gap-2.5">
+                {[
+                  { who: "Carte en carton", what: r.paper },
+                  { who: "Autres plateformes", what: r.other },
+                ].map(({ who, what }) => (
+                  <div key={who} className="px-1">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-white/35">
+                      {who}
+                    </p>
+                    <p className="mt-0.5 text-[13.5px] leading-snug text-white/60">{what}</p>
+                  </div>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        {/* ── TABLET AND UP: the real table ─────────────────────────────── */}
+        <div className="mt-8 hidden overflow-x-auto rounded-[22px] ring-1 ring-white/12 md:block">
           <table className="w-full min-w-[720px] border-collapse text-left">
             <thead>
               <tr className="bg-white/[0.04]">

@@ -21,10 +21,10 @@ export default async function Login({
 
   return (
     <div className="a-card px-6 py-7">
-      <h1 className="text-[26px] font-extrabold leading-tight text-white">
+      <h1 className="text-[24px] font-extrabold leading-tight text-white">
         Bon retour 👋
       </h1>
-      <p className="mt-1.5 text-[13.5px] leading-relaxed text-white/55">
+      <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">
         Connectez-vous pour gérer vos points, votre caisse et vos récompenses.
       </p>
 

@@ -83,11 +83,11 @@ export function TopBar({
           href={`/cartes?from=${slug}`}
           className="flex min-w-0 items-center gap-1.5 rounded-full bg-white/[0.10] py-1.5 pl-4 pr-3 ring-1 ring-white/15 transition active:scale-[0.97]"
         >
-          <span className="truncate text-[16px] font-extrabold text-white">Mes cartes</span>
+          <span className="truncate text-[15px] font-extrabold text-white">Mes cartes</span>
           <ChevronDownIcon className="h-4 w-4 shrink-0 text-white/70" />
         </Link>
       ) : (
-        <h1 className="min-w-0 truncate text-[18px] font-extrabold text-white">{title}</h1>
+        <h1 className="min-w-0 truncate text-[16.5px] font-extrabold text-white">{title}</h1>
       )}
 
       {/*
@@ -99,7 +99,7 @@ export function TopBar({
         otherwise. A badge that is always lit teaches people to ignore it.
       */}
       <Link
-        href={`/${slug}/codes`}
+        href={`/${slug}/notifications`}
         aria-label={
           pendingCodes > 0
             ? `${pendingCodes} récompense${pendingCodes > 1 ? "s" : ""} à récupérer`

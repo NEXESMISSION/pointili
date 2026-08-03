@@ -125,7 +125,7 @@ export default async function Rejoindre({
       />
 
       <div className="relative mx-auto w-full max-w-[420px]">
-        <p className="text-center font-display text-[26px] font-extrabold leading-none text-white">
+        <p className="text-center font-display text-[23px] font-extrabold leading-none text-white">
           Pointili
         </p>
 
@@ -157,7 +157,7 @@ export default async function Rejoindre({
             </span>
           </span>
 
-          <p className="mt-4 text-[17px] font-extrabold text-white">{cafe.name}</p>
+          <p className="mt-4 text-[15.5px] font-extrabold text-white">{cafe.name}</p>
           <p className="mt-0.5 text-[13px] text-white/50">
             {program.active && program.welcomePoints > 0 ? (
               <>
@@ -198,7 +198,7 @@ export default async function Rejoindre({
           It is also the answer to the question this screen actually raises —
           "do I have to do this again at the next place?".
         */}
-        <p className="mt-9 text-center text-[15px] font-extrabold leading-snug text-white">
+        <p className="mt-9 text-center text-[14px] font-extrabold leading-snug text-white">
           Un seul compte.
           <br />
           Utilisable <span className="text-[#b9a3ff]">partout</span>.

@@ -34,7 +34,7 @@ export default async function Moi() {
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/45">
           ✦ pointili.online
         </p>
-        <h1 className="mt-1.5 font-display text-[30px] font-extrabold leading-tight">
+        <h1 className="mt-1.5 font-display text-[26px] font-extrabold leading-tight">
           Mes cartes
         </h1>
         <p className="mt-1.5 mb-6 text-[14px] leading-relaxed text-white/60">

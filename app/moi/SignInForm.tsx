@@ -55,7 +55,7 @@ export function SignInForm() {
         </p>
       )}
 
-      <button type="submit" disabled={pending} className="!mt-4 w-full rounded-xl bg-royal py-4 text-[15px] font-bold text-white transition active:scale-[0.98] disabled:opacity-60">
+      <button type="submit" disabled={pending} className="!mt-4 w-full rounded-xl bg-royal py-4 text-[14px] font-bold text-white transition active:scale-[0.98] disabled:opacity-60">
         {pending ? "· · ·" : "Voir mes cartes ✦"}
       </button>
     </form>

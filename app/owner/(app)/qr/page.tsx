@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { ownerCafe, ownerHome } from "@/lib/auth/owner";
-import { businessType } from "@/lib/businessTypes";
 import { getLoyaltyProgram } from "@/lib/data";
 import { SITE_URL } from "@/lib/seo";
 import { PrintKit } from "./PrintKit";
@@ -24,8 +23,6 @@ export default async function QrPage() {
   if (!cafe) redirect(await ownerHome());
 
   const program = await getLoyaltyProgram(cafe.id);
-  const type = businessType(cafe.businessType);
-
   /*
     SITE_URL, not a second copy of the env read — this one fell back to the
     APEX, which 308s to www. That redirect is free in a browser and permanent on
@@ -49,19 +46,12 @@ export default async function QrPage() {
       : "Cumulez des points à chaque visite";
 
   return (
-    <QrScreen
-      url={url}
-      svg={svg}
-      logoUrl={cafe.logoUrl}
-      emoji={type.emoji}
-      cafeName={cafe.name}
-    >
+    <QrScreen url={url} svg={svg}>
       <PrintKit
         url={url}
         svg={svg}
         name={cafe.name}
         logoUrl={cafe.logoUrl}
-        emoji={type.emoji}
         promise={promise}
       />
     </QrScreen>

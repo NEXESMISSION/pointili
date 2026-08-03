@@ -41,6 +41,7 @@ type BusinessRow = {
   status: Cafe["status"];
   primary_color: string;
   logo_url: string | null;
+  phone: string | null;
   business_type: string | null;
   design_settings: Record<string, unknown> | null;
   plan: Cafe["plan"];
@@ -50,7 +51,7 @@ type BusinessRow = {
 };
 
 const CAFE_COLS =
-  "id, name, slug, status, primary_color, logo_url, business_type, design_settings, plan, plan_expires_at, suspended_at, suspended_reason";
+  "id, name, slug, status, primary_color, logo_url, phone, business_type, design_settings, plan, plan_expires_at, suspended_at, suspended_reason";
 
 function toCafe(b: BusinessRow): Cafe {
   const d = b.design_settings ?? {};
@@ -68,6 +69,7 @@ function toCafe(b: BusinessRow): Cafe {
     status: b.status,
     primaryColor: b.primary_color,
     logoUrl: b.logo_url,
+    phone: b.phone,
     businessType: b.business_type ?? "other",
     designSettings: {
       loyaltyEnabled: (d.loyaltyEnabled as boolean) ?? true,
@@ -177,7 +179,7 @@ export const getLoyaltyProgram = cache(async (cafeId: string): Promise<LoyaltyPr
   };
 })
 
-type GameRow = { id: string; type: Game["type"]; active: boolean; config: unknown };
+type GameRow = { id: string; type: Game["type"]; active: boolean; spin_cost: number };
 
 /** Assemble a Game (segments + odds) from a games row. */
 async function buildGame(
@@ -191,27 +193,21 @@ async function buildGame(
     .eq("active", true)
     .order("position");
 
-  // Weights + isLose live in games.config.prizeConfig, keyed by prize id (§05).
-  const config = (game.config ?? {}) as {
-    cooldownHours?: number;
-    prizeConfig?: Record<string, { weight?: number; isLose?: boolean }>;
-  };
-  const pc = config.prizeConfig ?? {};
-
+  // games.config still holds the old prizeConfig weights. Nothing reads them
+  // any more — the draw is uniform (see spin_wheel in 0029) — and they are left
+  // in place rather than destroyed, so a café's old settings survive untouched.
   const prizes: Prize[] = (prizeRows ?? []).map((p) => ({
     id: p.id,
     label: p.label,
     position: p.position,
     active: p.active,
-    weight: Number(pc[p.id]?.weight ?? 1),
-    isLose: Boolean(pc[p.id]?.isLose ?? false),
   }));
 
   return {
     id: game.id,
     type: game.type,
     active: game.active,
-    cooldownHours: config.cooldownHours ?? 24,
+    spinCost: game.spin_cost,
     prizes,
   };
 }
@@ -221,7 +217,7 @@ export const getGame = cache(async (cafeId: string): Promise<Game | null> => {
   const db = createAdminClient();
   const { data: game } = await db
     .from("games")
-    .select("id, type, active, config")
+    .select("id, type, active, spin_cost")
     .eq("business_id", cafeId)
     .eq("active", true)
     .order("type")
@@ -243,7 +239,7 @@ export const getOwnerGame = cache(async (cafeId: string): Promise<Game | null> =
   const db = createAdminClient();
   const { data: game } = await db
     .from("games")
-    .select("id, type, active, config")
+    .select("id, type, active, spin_cost")
     .eq("business_id", cafeId)
     .order("type")
     .limit(1)

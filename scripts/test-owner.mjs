@@ -138,7 +138,8 @@ check("a full stamp card issues a code", /Carte pleine/i.test(full) && !!stampCo
 const SEC = 'section:has(h2:has-text("Valider une récompense"))';
 const collect = async (code) => {
   await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await staff.locator('button:has-text("Valider une récompense")').click(); // the terminal's second mode
+  /* No tab to click any more: the till is one screen and the voucher field is
+     simply present, next to the client search. */
   await staff.locator(`${SEC} input[name="code"]`).waitFor({ timeout: 15000 });
   await staff.fill(`${SEC} input[name="code"]`, code);
   await staff.locator(`${SEC} button:has-text("Vérifier")`).click();
@@ -190,15 +191,25 @@ for (let i = 0; i < 20; i++) {
 check("owner can correct a balance", afterAdjust >= 25, `balance=${afterAdjust}`);
 
 /* ── 8. Réglages: each editor saves only its own fields ────────────── */
-// Réglages is a settings list now — every knob is one tap deep, in its own editor.
-const earn = 'form:has(input[name="pointsPerTnd"])';
+/*
+  THE RATE IS NOT A SETTING ANY MORE (0031): one dinar is one point, for every
+  shop, with a CHECK on the column. So this section stopped asserting "the rate
+  saves" and started asserting the opposite pair of truths:
+    · the field is GONE from the screen, and
+    · the value in the database IS 1 — because the server action no longer
+      reads a rate from the form even if someone posts one.
+*/
+const earn = 'form:has(input[name="welcomePoints"])';
 const openPoints = async () => {
   await staff.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
   await staff.locator('button:has-text("Les points")').click();
-  await staff.locator(`${earn} input[name="pointsPerTnd"]`).waitFor({ timeout: 15000 });
+  await staff.locator(`${earn} input[name="welcomePoints"]`).waitFor({ timeout: 15000 });
 };
 await openPoints();
-await staff.locator(`${earn} input[name="pointsPerTnd"]`).fill("3");
+check("the rate field is gone from Réglages",
+  (await staff.locator('input[name="pointsPerTnd"]').count()) === 0);
+check("the screen states 1 dinar = 1 point",
+  /1\s*point/.test(await staff.locator(earn).innerText()));
 await staff.locator(`${earn} input[name="welcomePoints"]`).fill("25");
 await staff.locator(`${earn} button[type="submit"]`).click();
 await staff.locator(`${earn} [role="status"], ${earn} [role="alert"]`).first().waitFor({ timeout: 20000 }).catch(() => {});
@@ -206,26 +217,19 @@ const { data: prog } = await admin
   .from("loyalty_programs")
   .select("points_per_tnd, welcome_points, stamps_enabled, stamps_required, stamp_reward")
   .eq("business_id", cafeId).single();
-check("points settings persist", Number(prog.points_per_tnd) === 3 && prog.welcome_points === 25,
+check("welcome saves and the rate stays 1",
+  Number(prog.points_per_tnd) === 1 && prog.welcome_points === 25,
   `${prog.points_per_tnd} pt/TND · ${prog.welcome_points} welcome`);
 check("saving points did NOT clobber the stamp settings",
   prog.stamps_enabled === true && prog.stamps_required === 2 && prog.stamp_reward === "Café offert (test)",
   `stamps=${prog.stamps_enabled}/${prog.stamps_required}`);
 
-// an out-of-range rate must be refused
-await openPoints();
-await staff.locator(`${earn} input[name="pointsPerTnd"]`).fill("-5");
-await staff.locator(`${earn} button[type="submit"]`).click();
-const rejected = await staff
-  .waitForSelector(`${earn} [role="alert"]`, { timeout: 20000 })
-  .then((el) => el.innerText())
-  .catch(() => "");
-check("an invalid rate is refused", /entre 0,1 et 100/.test(rejected), rejected);
-
 /* ── 9. Analyses renders with real data ────────────────────────────── */
 await staff.goto(`${BASE}/owner/analyses`, { waitUntil: "networkidle" });
 const stats = await staff.locator("main").innerText();
-check("Analyses renders (no crash, no NaN)", /Analyses/.test(stats) && !/NaN|Infinity|undefined/.test(stats));
+/* The page became "Vos clients" in the analytics rework — the word this
+   asserts follows the heading, but the NaN guard is the check that matters. */
+check("Clients/analyses renders (no crash, no NaN)", /Vos clients/i.test(stats) && !/NaN|Infinity|undefined/.test(stats));
 
 /* ── 10. QR page shows the shop's own link ─────────────────────────── */
 await staff.goto(`${BASE}/owner/qr`, { waitUntil: "networkidle" });

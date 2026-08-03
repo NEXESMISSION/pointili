@@ -5,6 +5,7 @@ import { BrandLockup } from "@/components/BrandMark";
 import { currentDiner } from "@/lib/auth/diner";
 import { Showcase } from "@/components/Showcase";
 import { Compare } from "@/components/Compare";
+import { AudienceProvider, AudienceTabs, ForCustomer, ForOwner } from "@/components/Audience";
 import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
 import { ShopArt } from "./LandingArt";
@@ -138,6 +139,7 @@ export default async function Landing({
       };
 
   return (
+    <AudienceProvider>
     <div className="landing-dark min-h-dvh bg-[#070510] text-white">
       {/*
         Server-rendered schema.org, so a crawler that runs no JavaScript still
@@ -163,43 +165,44 @@ export default async function Landing({
         }}
       />
       {/* ── top bar ──────────────────────────────────────────────── */}
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 md:px-8">
+      {/*
+        The audience switch sits here, first, the way Earnly does it. It used to
+        be two headings inside a hamburger menu — "Je suis client" / "Je suis
+        commerçant" — which meant the page's most important question was asked
+        behind a tap, after the hero had already picked a side by accident.
+      */}
+      <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5 md:px-8">
         <Brand />
-        <details className="group relative">
-          <summary className="grid h-10 w-10 cursor-pointer list-none place-items-center rounded-lg text-white/80 [&::-webkit-details-marker]:hidden">
-            <S className="h-6 w-6" strokeWidth="2"><path d="M4 7h16M4 12h16M4 17h16" /></S>
-          </summary>
-          {/*
-            Both doors live here. The page sells to shop owners, so the customer
-            link is present and plainly named rather than competing with the
-            hero — a customer who needs it is looking for it.
-          */}
-          <nav className="absolute right-0 top-12 z-30 w-56 rounded-2xl border border-white/10 bg-[#120d22] p-2 shadow-2xl">
-            <p className="px-3 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white/35">
-              Je suis client
-            </p>
-            <Link href="/moi" className="block rounded-xl px-3 py-2.5 text-[14px] font-semibold text-white/85 hover:bg-white/[0.06]">
-              Mes cartes &amp; mes points
-            </Link>
-            <p className="mt-1.5 border-t border-white/10 px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.08em] text-white/35">
-              Je suis commerçant
-            </p>
-            {ownerHere ? (
-              <Link href="/owner" className="mt-1 block rounded-xl bg-[#7c3aed] px-3 py-2.5 text-center text-[14px] font-bold text-white">
-                Ma caisse
-              </Link>
-            ) : (
-              <>
-                <Link href="/owner/login" className="block rounded-xl px-3 py-2.5 text-[14px] font-semibold text-white/85 hover:bg-white/[0.06]">
-                  Espace café
-                </Link>
-                <Link href="/owner/signup" className="mt-1 block rounded-xl bg-[#7c3aed] px-3 py-2.5 text-center text-[14px] font-bold text-white">
-                  Créer mon compte
-                </Link>
-              </>
-            )}
-          </nav>
-        </details>
+        <AudienceTabs className="hidden sm:flex" />
+        {/*
+          The hamburger is GONE, and taking it out was the point.
+
+          It held two headings — "Je suis client" and "Je suis commerçant" —
+          which is the same question the switch now asks in the open. Keeping
+          both meant two audience controls on one header, and on a 390px screen
+          the menu hung 45 pixels off the right edge and made the whole page
+          scroll sideways.
+
+          What is left is the one thing the switch cannot do: the way in. It
+          follows the audience, because a customer has no use for "Espace café"
+          and an owner has none for "Mes cartes".
+        */}
+        <ForOwner>
+          <Link
+            href={ownerHere ? "/owner" : "/owner/login"}
+            className="shrink-0 whitespace-nowrap text-[13px] font-bold text-white/70 transition hover:text-white"
+          >
+            {ownerHere ? "Ma caisse" : "Espace café"}
+          </Link>
+        </ForOwner>
+        <ForCustomer>
+          <Link
+            href="/moi"
+            className="shrink-0 whitespace-nowrap text-[13px] font-bold text-white/70 transition hover:text-white"
+          >
+            Mes cartes
+          </Link>
+        </ForCustomer>
       </header>
 
       {/* ── hero ─────────────────────────────────────────────────── */}
@@ -217,28 +220,73 @@ export default async function Landing({
 
         <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-5 pb-14 pt-6 md:grid-cols-12 md:gap-10 md:px-8 md:pb-16 md:pt-12">
           <div className="md:col-span-7">
-            <h1 className="text-[46px] font-extrabold leading-[0.98] tracking-[-0.035em] md:text-[56px] lg:text-[64px]">
-              Une seule carte.
-              <br />
-              <span className="bg-gradient-to-r from-[#a78bfa] via-[#8b5cf6] to-[#6d28d9] bg-clip-text text-transparent">
-                Toutes vos récompenses.
-              </span>
-            </h1>
+            {/* the switch, again, on phones — where the header version is hidden.
+                Full width and full labels: here it has the whole column. */}
+            <AudienceTabs full className="mb-7 flex w-full sm:hidden" />
 
-            <p className="mt-7 max-w-[34ch] text-[17px] leading-[1.7] text-white/55">
-              Scannez. Cumulez des points. Revenez quand vous voulez.{" "}
-              <span className="font-semibold text-white">Sans application.</span>
-            </p>
+            {/*
+              THE HERO NOW ADDRESSES THE PERSON WHO WAS CHOSEN.
+
+              It used to read "Une seule carte. / Toutes vos récompenses." over
+              "Scannez. Cumulez des points." — which is spoken to a CUSTOMER, on
+              a page whose own comment said it sells to shop owners. The single
+              largest block on the site was talking to the wrong person, and
+              every section beneath it spent its energy recovering.
+            */}
+            <ForOwner>
+              <h1 className="text-[34px] font-extrabold leading-[1.03] tracking-[-0.03em] md:text-[42px] lg:text-[48px]">
+                Vos habitués reviennent.
+                <br />
+                <span className="bg-gradient-to-r from-[#a78bfa] via-[#8b5cf6] to-[#6d28d9] bg-clip-text text-transparent">
+                  Vous saurez enfin lesquels.
+                </span>
+              </h1>
+              <p className="mt-5 max-w-[42ch] text-[15px] leading-[1.6] text-white/55">
+                La carte de fidélité de votre commerce, dans le téléphone de vos
+                clients. <span className="font-semibold text-white">Aucune application</span>{" "}
+                — ni pour eux, ni pour vous.
+              </p>
+            </ForOwner>
+
+            <ForCustomer>
+              <h1 className="text-[34px] font-extrabold leading-[1.03] tracking-[-0.03em] md:text-[42px] lg:text-[48px]">
+                Vos points,
+                <br />
+                <span className="bg-gradient-to-r from-[#a78bfa] via-[#8b5cf6] to-[#6d28d9] bg-clip-text text-transparent">
+                  dans tous vos commerces.
+                </span>
+              </h1>
+              <p className="mt-5 max-w-[42ch] text-[15px] leading-[1.6] text-white/55">
+                Un numéro, un code secret, et vos cartes sont là.{" "}
+                <span className="font-semibold text-white">Rien à installer.</span>
+              </p>
+            </ForCustomer>
 
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3">
-              <Link
-                href={cta.href}
-                className="group inline-flex items-center gap-2.5 rounded-full bg-[#7c3aed] px-7 py-4 text-[15px] font-bold text-white shadow-[0_20px_50px_-18px_rgba(124,58,237,1)] transition hover:bg-[#8b5cf6] active:scale-[0.98]"
-              >
-                {cta.label}
-                <span className="transition-transform group-hover:translate-x-0.5"><Arrow /></span>
-              </Link>
-              <p className="text-[12.5px] text-white/35">{cta.note}</p>
+              <ForOwner>
+                <Link
+                  href={cta.href}
+                  className="group inline-flex items-center gap-2.5 rounded-full bg-[#7c3aed] px-7 py-4 text-[15px] font-bold text-white shadow-[0_20px_50px_-18px_rgba(124,58,237,1)] transition hover:bg-[#8b5cf6] active:scale-[0.98]"
+                >
+                  {cta.label}
+                  <span className="transition-transform group-hover:translate-x-0.5"><Arrow /></span>
+                </Link>
+                <p className="text-[12.5px] text-white/35">{cta.note}</p>
+              </ForOwner>
+
+              {/* A customer here is looking for their card, not for a pitch. */}
+              <ForCustomer>
+                <Link
+                  href="/moi"
+                  className="group inline-flex items-center gap-2.5 rounded-full bg-[#7c3aed] px-7 py-4 text-[15px] font-bold text-white shadow-[0_20px_50px_-18px_rgba(124,58,237,1)] transition hover:bg-[#8b5cf6] active:scale-[0.98]"
+                >
+                  Ouvrir mes cartes
+                  <span className="transition-transform group-hover:translate-x-0.5"><Arrow /></span>
+                </Link>
+                <p className="text-[12.5px] text-white/35">
+                  Ou scannez le QR posé sur votre table.
+                </p>
+              </ForCustomer>
             </div>
           </div>
 
@@ -278,9 +326,18 @@ export default async function Landing({
           Comment <span className="text-[#8b5cf6]">ça marche</span>
         </h2>
 
+        {/* The clips are the strongest thing on this page, so the lede says what
+            they are — and now says WHOSE screens are about to play, because the
+            page has an audience and can finally admit it. */}
         <p className="mt-3 max-w-[54ch] text-[15px] leading-relaxed text-white/55">
           Rien n&apos;est dessiné ici. Chaque écran ci-dessous est le vrai produit,
-          filmé en train de faire ce qu&apos;il dit.
+          filmé en train de faire ce qu&apos;il dit.{" "}
+          <ForOwner>
+            <span className="font-semibold text-white/80">Voici votre caisse.</span>
+          </ForOwner>
+          <ForCustomer>
+            <span className="font-semibold text-white/80">Voici votre téléphone.</span>
+          </ForCustomer>
         </p>
 
         <div className="mt-14">
@@ -401,6 +458,8 @@ export default async function Landing({
       </section>
 
       {/* ── pricing ──────────────────────────────────────────────── */}
+      {/* Owner-only, obviously: the customer never pays anything. */}
+      <ForOwner>
       <section className="mx-auto max-w-6xl px-5 pb-16 md:px-8 md:pb-24">
         <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] md:text-[38px]">
           Un prix <span className="text-[#8b5cf6]">simple.</span>
@@ -472,6 +531,7 @@ export default async function Landing({
           </div>
         </div>
       </section>
+      </ForOwner>
 
       {/* ── closing ──────────────────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-5 pb-12 md:px-8">
@@ -516,7 +576,11 @@ export default async function Landing({
       </section>
 
       {/* ── pourquoi nous, et les questions du comptoir ──────────── */}
-      <Compare />
+      {/* Owner-only: a customer weighing Pointili against a paper punch card is
+          not a person who exists. They are here to find their points. */}
+      <ForOwner>
+        <Compare />
+      </ForOwner>
 
       {/* ── footer ───────────────────────────────────────────────── */}
       <footer className="mx-auto flex max-w-6xl flex-col gap-4 border-t border-white/[0.07] px-5 py-7 md:flex-row md:items-center md:justify-between md:px-8">
@@ -533,6 +597,7 @@ export default async function Landing({
         </nav>
       </footer>
     </div>
+    </AudienceProvider>
   );
 }
 

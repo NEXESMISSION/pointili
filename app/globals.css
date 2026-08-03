@@ -207,6 +207,32 @@ h4 {
   }
 }
 
+/*
+  THE OWNER APP'S TYPE SCALE.
+
+  Nine steps, and nothing between them:
+
+    10  eyebrow — uppercase, tracked, the label above a value
+    12  small   — sub-labels, helper text, chart axes
+    13  body    — sentences the owner reads
+    15  strong  — the label of a settings row, a button
+    17  lead    — the heading of an empty state
+    20  title   — a page or sheet title
+    24  figure  — a supporting number
+    30  —       — the biggest thing on a crowded screen
+    44  display — the one number a screen exists to show
+
+  There used to be twenty-seven sizes across these pages: 9, 9.5, 10, 10.5, 11,
+  11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 15.5 … Half-steps do not read as
+  hierarchy, they read as a mistake — two labels a pixel apart look misaligned
+  rather than ranked, and no amount of colour or spacing repairs it. That was
+  most of why these screens felt unfinished.
+
+  Tailwind arbitrary values (text-[13px]) rather than named utilities, because
+  that is how the whole codebase already writes type; the discipline is the list
+  above, not the syntax. Adding a twenty-eighth size is how this comes back.
+*/
+
 /* ── shared helpers (modernised from the old "printed toolkit") ────── */
 
 /* small eyebrow label — Inter, uppercase, tracked (was mono "ticket voice") */
@@ -317,6 +343,12 @@ h4 {
    feels like they changed product. Built for a phone held behind a counter:
    high contrast, 56px targets, nothing subtle enough to miss mid-service. */
 .a-shell {
+  /* Kills the double-tap-to-zoom gesture on the till — a cashier tapping fast
+     was zooming the page mid-service. Pinch zoom stays available: manipulation
+     only removes the double-tap and tap-delay behaviours, so accessibility
+     zoom is untouched. Inputs never trigger the OTHER zoom (focus auto-zoom)
+     because every field is at least 16px — see .a-field. */
+  touch-action: manipulation;
   background-color: #08040f;
   background-image:
     radial-gradient(90% 40% at 50% -6%, color-mix(in oklab, #5b3fd1, #fff 4%) 0%, transparent 60%),
@@ -971,3 +1003,51 @@ body:has(.landing-dark) {
   }
 }
 
+
+/* ── the diner ticket ─────────────────────────────────────────────────────
+   The shop card and the QR pass are ONE surface, joined like a boarding pass:
+   a dashed line with a notch punched out of each side.
+
+   The notches are a MASK, not painted circles. The page behind the card is a
+   gradient (DINER_BG), so any circle painted "background colour" would be the
+   wrong colour at every position except the one it was sampled at. A mask is
+   real transparency and cannot be wrong.
+
+   --pass-h must equal the pass zone's fixed height in app/[slug]/page.tsx
+   (h-[128px]) — it is what puts the notches exactly on the dashed line.
+   A browser without mask support simply shows no notches; the dashed line
+   still carries the idea. */
+.ticket-notch {
+  --pass-h: 128px;
+  -webkit-mask-image:
+    radial-gradient(circle 11px at 0 calc(100% - var(--pass-h)), transparent 97%, #000 100%),
+    radial-gradient(circle 11px at 100% calc(100% - var(--pass-h)), transparent 97%, #000 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    radial-gradient(circle 11px at 0 calc(100% - var(--pass-h)), transparent 97%, #000 100%),
+    radial-gradient(circle 11px at 100% calc(100% - var(--pass-h)), transparent 97%, #000 100%);
+  mask-composite: intersect;
+}
+
+/* One diagonal light pass over the ticket when it mounts — the small "this is
+   alive" moment. Transform only (see the rule above), runs ONCE, and the
+   resting transform keeps it parked off-card so reduced-motion users simply
+   never see it. Over the white pass zone a white sheen is invisible, which is
+   exactly right — the light plays on the card, not on the code. */
+.card-sheen {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 38%;
+  background: linear-gradient(100deg, transparent 8%, rgba(255, 255, 255, 0.16) 50%, transparent 92%);
+  transform: translateX(-130%) skewX(-16deg);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .card-sheen { animation: card-sheen 1.15s cubic-bezier(0.45, 0, 0.2, 1) 0.5s both; }
+}
+@keyframes card-sheen {
+  from { transform: translateX(-130%) skewX(-16deg); }
+  to   { transform: translateX(330%) skewX(-16deg); }
+}

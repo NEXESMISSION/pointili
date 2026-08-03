@@ -50,11 +50,11 @@ export default async function Profil({
     <div className="flex flex-1 flex-col px-5 pb-6">
       {/* who */}
       <section className="flex items-center gap-3.5 pb-5 pt-3">
-        <span className="grid h-14 w-14 place-items-center rounded-full bg-white/12 text-[22px] font-extrabold ring-1 ring-white/20">
+        <span className="grid h-14 w-14 place-items-center rounded-full bg-white/12 text-[20px] font-extrabold ring-1 ring-white/20">
           {(diner.name ?? "M").charAt(0).toUpperCase()}
         </span>
         <span className="min-w-0">
-          <span className="block truncate text-[19px] font-extrabold leading-tight">
+          <span className="block truncate text-[17px] font-extrabold leading-tight">
             {diner.name ?? "Membre"}
           </span>
           <span className="block text-[13px] font-medium text-white/55">{diner.phone}</span>
@@ -96,21 +96,21 @@ export default async function Profil({
       </ul>
 
       {/* current card summary */}
-      <h2 className="mt-6 text-[15px] font-extrabold text-white">Cette carte</h2>
+      <h2 className="mt-6 text-[14px] font-extrabold text-white">Cette carte</h2>
       <div className="mt-2.5 flex items-center gap-3 rounded-2xl border border-white/15 bg-white/[0.08] px-3.5 py-3">
         {cafe.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
           <img src={cafe.logoUrl} alt="" className="h-10 w-10 shrink-0 rounded-xl object-cover" />
         ) : (
           <span
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[19px]"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[17px]"
             style={{ background: BRAND_COLOR }}
           >
             {type.emoji}
           </span>
         )}
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[14.5px] font-bold text-white">{cafe.name}</span>
+          <span className="block truncate text-[13.5px] font-bold text-white">{cafe.name}</span>
           <span className="block text-[11.5px] font-medium text-white/60">
             {type.label} · {fmtPoints(diner.balance)} pts
           </span>

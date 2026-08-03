@@ -76,7 +76,7 @@ export function CardArrived({
         <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-white/55">
           Carte de fidélité
         </p>
-        <p className="mt-1 truncate text-[17px] font-extrabold text-white">{cafeName}</p>
+        <p className="mt-1 truncate text-[15.5px] font-extrabold text-white">{cafeName}</p>
         {points > 0 && (
           <p className="arrive-points mt-5 text-[34px] font-extrabold leading-none tabular-nums text-white">
             +{points}
@@ -101,7 +101,7 @@ export function CardArrived({
           ))}
       </div>
 
-      <p className="arrive-text mt-7 text-[19px] font-extrabold text-white">
+      <p className="arrive-text mt-7 text-[17px] font-extrabold text-white">
         Ta carte est prête
       </p>
       <p className="arrive-text mt-1 max-w-[26ch] text-[13px] leading-relaxed text-white/60">

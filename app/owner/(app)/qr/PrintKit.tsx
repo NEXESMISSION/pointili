@@ -58,14 +58,12 @@ export function PrintKit({
   svg,
   name,
   logoUrl,
-  emoji,
   promise,
 }: {
   url: string;
   svg: string;
   name: string;
   logoUrl: string | null;
-  emoji: string;
   promise: string;
 }) {
   const [saving, setSaving] = useState(false);
@@ -183,13 +181,13 @@ export function PrintKit({
           className="flex w-full flex-col items-center justify-center overflow-hidden rounded-3xl bg-[#140d24] px-[7cqw] py-[6cqw] text-center text-white print:h-screen print:rounded-none"
         >
           <div className="flex items-center justify-center gap-[2.5cqw]">
-            {logoUrl ? (
+            {/* Logo when the shop has one; NOTHING when it does not. The old
+                fallback was the business-type emoji in a tile, which put a ✨
+                on every sticker of every shop that skipped the logo step. An
+                absent logo is not information a customer needs. */}
+            {logoUrl && (
               // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
               <img src={logoUrl} alt="" className="h-[9cqw] w-[9cqw] rounded-[2.5cqw] object-cover" />
-            ) : (
-              <span className="grid h-[9cqw] w-[9cqw] place-items-center rounded-[2.5cqw] bg-white/12 text-[4.5cqw]">
-                {emoji}
-              </span>
             )}
             <span className="text-[6cqw] font-extrabold leading-none">{name}</span>
           </div>
@@ -222,12 +220,12 @@ export function PrintKit({
             type="button"
             onClick={() => window.print()}
             disabled={!fmt.page}
-            className="a-btn !text-[13.5px]"
+            className="a-btn !text-[13px]"
             title={fmt.page ? undefined : "Une story se télécharge, elle ne s'imprime pas"}
           >
             Imprimer
           </button>
-          <button type="button" onClick={download} disabled={saving} className="a-btn a-btn--ghost !text-[13.5px]">
+          <button type="button" onClick={download} disabled={saving} className="a-btn a-btn--ghost !text-[13px]">
             {saving ? "· · ·" : "Télécharger"}
           </button>
         </div>

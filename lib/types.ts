@@ -16,6 +16,8 @@ export type Cafe = {
   status: "active" | "paused" | "disabled";
   primaryColor: string;
   logoUrl: string | null;
+  /** Printed on the card if the shop chose to give one. Never used to identify. */
+  phone: string | null;
   /** Category key (see lib/businessTypes) — how a diner tells this card apart. */
   businessType: string;
   designSettings: DesignSettings;
@@ -61,16 +63,25 @@ export type Prize = {
   label: string;
   position: number;
   active: boolean;
-  /** Owner-tuned odds. Weights + isLose live in games.config.prizeConfig. */
-  weight: number;
-  isLose: boolean;
 };
 
+/**
+ * The wheel. Note what is NOT here any more.
+ *
+ * `weight` is gone: the draw is uniform over the active segments, so the odds
+ * are simply one in however many prizes there are. An owner who wants the good
+ * prize to be rarer adds more ordinary segments — which is a thing the customer
+ * can see on the wheel, unlike a hidden multiplier.
+ *
+ * `cooldownHours` is gone: a spin is no longer rationed by time, it is bought
+ * with points. `spinCost` replaced it.
+ */
 export type Game = {
   id: string;
   type: "wheel" | "slot";
   active: boolean;
-  cooldownHours: number;
+  /** Points a diner pays per spin. Read from the row, never from the client. */
+  spinCost: number;
   prizes: Prize[];
 };
 

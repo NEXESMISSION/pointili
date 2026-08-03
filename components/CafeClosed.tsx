@@ -20,13 +20,13 @@ export function CafeClosed({ name }: { name: string }) {
         backgroundImage: `linear-gradient(180deg, color-mix(in oklab, ${BRAND_COLOR}, #000 45%) 0%, #0a0614 100%)`,
       }}
     >
-      <span className="grid h-14 w-14 place-items-center rounded-2xl bg-white/10 text-[26px] ring-1 ring-white/15">
+      <span className="grid h-14 w-14 place-items-center rounded-2xl bg-white/10 text-[23px] ring-1 ring-white/15">
         🌙
       </span>
       <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.1em] text-white/50">
         Momentanément fermé
       </p>
-      <h1 className="mt-1.5 text-[24px] font-extrabold leading-tight">{name}</h1>
+      <h1 className="mt-1.5 text-[21px] font-extrabold leading-tight">{name}</h1>
       <p className="mx-auto mt-2.5 max-w-[32ch] text-[13.5px] leading-relaxed text-white/65">
         La carte de fidélité de cette boutique est en pause. Tes points sont
         conservés — repasse bientôt.

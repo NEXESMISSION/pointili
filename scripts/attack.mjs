@@ -32,10 +32,13 @@ let r = await anon.rpc("credit_points", {
 });
 t("credit_points(1,000,000)", !!r.error, r.error?.code ?? "SUCCEEDED");
 
-// 2. spin for free, ignoring cooldown (EXECUTE is revoked from anon, so the
-// slug is irrelevant — the call must fail before it ever looks one up)
-r = await anon.rpc("play_game", { p_slug: "any", p_phone: "+21600000000", p_device: "x" });
-t("play_game()", !!r.error, r.error?.code ?? "SUCCEEDED");
+// 2. spin without paying the points (EXECUTE is revoked from anon, so the ids
+// are irrelevant — the call must fail before it ever looks one up)
+r = await anon.rpc("spin_wheel", {
+  p_business_id: "00000000-0000-0000-0000-000000000001",
+  p_phone: "+21600000000",
+});
+t("spin_wheel()", !!r.error, r.error?.code ?? "SUCCEEDED");
 
 // 3. redeem without paying
 r = await anon.rpc("redeem_at_counter", {

@@ -180,10 +180,13 @@ await buyOnce();
 const buy1 = await d.locator("main").innerText();
 const code1 = buy1.match(/\b[A-Z2-9]{6}\b/)?.[0] ?? "";
 check("buying issues a counter code", !!code1, code1 || "none");
+/* 0031 removed code expiry — a code keeps until it is used. The screen must
+   SAY so, not merely omit the old countdown: silence would read as "we forgot
+   to tell you", and the whole point is that the customer can relax. */
 check(
-  "the code is shown with its deadline",
-  /à utiliser sous/i.test(buy1),
-  (buy1.match(/À utiliser[^\n]*/i) ?? [""])[0],
+  "the code says it has no deadline",
+  /pas de date limite/i.test(buy1),
+  (buy1.match(/Pas de date limite[^\n]*/i) ?? ["missing"])[0],
 );
 
 // back to the picker, then buy again — a diner with points may stack codes

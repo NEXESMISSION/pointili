@@ -142,11 +142,19 @@ export function DoneSheet({
       */
       aria-live="polite"
       onClick={onClose}
-      className="done-veil fixed inset-0 z-50 flex items-center justify-center bg-black/78 px-3 py-5 backdrop-blur-[3px]"
+      /*
+        overflow-y-auto + m-auto on the sheet, NOT items-center on the veil.
+        Centred flex children that outgrow the container crop at BOTH ends and
+        the cropped part is unreachable — no scroll can get to it, which is
+        exactly the "Bravo!" head cut off on a short phone. Auto margins do the
+        same centring when the sheet is short, and collapse to allow scrolling
+        the moment it is tall.
+      */
+      className="done-veil fixed inset-0 z-50 flex overflow-y-auto bg-black/78 px-3 py-5 backdrop-blur-[3px]"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="done-sheet relative w-full max-w-[420px] rounded-[28px] border border-white/[0.09] bg-[#120d20] p-5 pt-4 text-center text-white shadow-[0_24px_70px_-20px_rgba(0,0,0,.95)]"
+        className="done-sheet relative m-auto w-full max-w-[420px] rounded-[28px] border border-white/[0.09] bg-[#120d20] p-5 pt-4 text-center text-white shadow-[0_24px_70px_-20px_rgba(0,0,0,.95)]"
       >
         {/* an explicit way out, for the cashier who wants the till back NOW */}
         <button
@@ -164,8 +172,8 @@ export function DoneSheet({
 
         {done.kind === "credit" ? (
           <>
-            <h2 className="text-[28px] font-extrabold leading-none">Bravo !</h2>
-            <p className="mt-2 text-[13.5px] text-white/55">
+            <h2 className="text-[30px] font-extrabold leading-none">Bravo !</h2>
+            <p className="mt-2 text-[13px] text-white/55">
               Des points ont été ajoutés à <b className="font-bold text-white/85">{done.who}</b>.
             </p>
 
@@ -174,7 +182,7 @@ export function DoneSheet({
               reads out loud, so the eye lands once instead of hunting.
             */}
             <div className="mt-4 rounded-3xl border border-[#8b6bff]/25 bg-gradient-to-b from-[#2a1d55] to-[#1b1338] px-5 py-6">
-              <p className="text-[54px] font-extrabold leading-none tabular-nums text-[#7ff0b0]">
+              <p className="text-[44px] font-extrabold leading-none tabular-nums text-[#7ff0b0]">
                 +{fmtPoints(done.earned)}
               </p>
               <p className="mt-1.5 text-[17px] font-bold text-white/85">points</p>
@@ -182,7 +190,7 @@ export function DoneSheet({
                 Nouveau solde : {fmtPoints(done.balance)} pts
               </p>
               {done.welcome > 0 && (
-                <p className="mt-2 text-[12.5px] font-bold text-[#ffd27a]">
+                <p className="mt-2 text-[12px] font-bold text-[#ffd27a]">
                   dont +{fmtPoints(done.welcome)} de bienvenue
                 </p>
               )}
@@ -194,8 +202,8 @@ export function DoneSheet({
             </div>
 
             {done.unlocked.length > 0 ? (
-              <p className="mt-3 flex items-center gap-3 rounded-2xl border border-[#ffd27a]/25 bg-[#ffd27a]/[0.08] px-4 py-3 text-left text-[13.5px] leading-snug text-white/60">
-                <span className="shrink-0 text-[22px]">🎁</span>
+              <p className="mt-3 flex items-center gap-3 rounded-2xl border border-[#ffd27a]/25 bg-[#ffd27a]/[0.08] px-4 py-3 text-left text-[13px] leading-snug text-white/60">
+                <span className="shrink-0 text-[20px]">🎁</span>
                 <span>
                   Peut prendre maintenant :{" "}
                   <b className="block font-extrabold text-[#ffd27a]">{done.unlocked.join(", ")}</b>
@@ -203,7 +211,7 @@ export function DoneSheet({
               </p>
             ) : (
               done.next && (
-                <p className="mt-3 text-[12.5px] text-white/45">
+                <p className="mt-3 text-[12px] text-white/45">
                   Encore <b className="font-bold text-white/75">{fmtPoints(done.next.needed)}</b> pour{" "}
                   {done.next.label.toLowerCase()}
                 </p>
@@ -212,19 +220,19 @@ export function DoneSheet({
           </>
         ) : (
           <>
-            <h2 className="text-[28px] font-extrabold leading-none">
+            <h2 className="text-[30px] font-extrabold leading-none">
               {filled ? "Carte pleine !" : "Bravo !"}
             </h2>
-            <p className="mt-2 text-[13.5px] text-white/55">
+            <p className="mt-2 text-[13px] text-white/55">
               {filled ? "La carte de " : "Un tampon de plus pour "}
               <b className="font-bold text-white/85">{done.who}</b>
               {filled ? " est complète." : "."}
             </p>
 
             <div className="mt-4 rounded-3xl border border-[#8b6bff]/25 bg-gradient-to-b from-[#2a1d55] to-[#1b1338] px-5 py-6">
-              <p className="text-[54px] font-extrabold leading-none tabular-nums text-white">
+              <p className="text-[44px] font-extrabold leading-none tabular-nums text-white">
                 {done.count}
-                <span className="text-[26px] text-white/35">/{done.required}</span>
+                <span className="text-[24px] text-white/35">/{done.required}</span>
               </p>
               {/* the punch card, drawn — a row of dots reads faster than "7/10" */}
               <span className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
@@ -241,17 +249,17 @@ export function DoneSheet({
 
             {filled ? (
               <div className="mt-3 rounded-2xl border border-[#ffd27a]/25 bg-[#ffd27a]/[0.08] px-4 py-3.5">
-                <p className="text-[13.5px] font-extrabold leading-snug text-[#ffd27a]">
+                <p className="text-[13px] font-extrabold leading-snug text-[#ffd27a]">
                   🎁 {done.label}
                 </p>
                 {done.code && (
-                  <p className="mt-1.5 font-mono text-[22px] font-bold tracking-[0.18em] text-white">
+                  <p className="mt-1.5 font-mono text-[20px] font-bold tracking-[0.18em] text-white">
                     {done.code}
                   </p>
                 )}
               </div>
             ) : (
-              <p className="mt-3 text-[12.5px] text-white/45">
+              <p className="mt-3 text-[12px] text-white/45">
                 Encore <b className="font-bold text-white/75">{done.required - done.count}</b>{" "}
                 {done.required - done.count === 1 ? "visite" : "visites"}
               </p>
@@ -267,7 +275,7 @@ export function DoneSheet({
                 done.onUndo?.();
                 onClose();
               }}
-              className="shrink-0 rounded-2xl border border-white/15 px-6 py-3.5 text-[13.5px] font-bold text-white/70 active:scale-[0.98]"
+              className="shrink-0 rounded-2xl border border-white/15 px-6 py-3.5 text-[13px] font-bold text-white/70 active:scale-[0.98]"
             >
               Annuler
             </button>
@@ -275,7 +283,7 @@ export function DoneSheet({
           <button
             type="button"
             onClick={onNext}
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#7c3aed] py-3.5 text-[14.5px] font-bold text-white shadow-[0_10px_26px_-10px_rgba(124,58,237,.9)] active:scale-[0.98]"
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#7c3aed] py-3.5 text-[15px] font-bold text-white shadow-[0_10px_26px_-10px_rgba(124,58,237,.9)] active:scale-[0.98]"
           >
             Client suivant
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
@@ -294,8 +302,8 @@ function Fact({ icon, label, value }: { icon: React.ReactNode; label: string; va
       <span className="mx-auto grid h-9 w-9 place-items-center rounded-xl bg-[#8b6bff]/15 text-[#b9a3ff]">
         {icon}
       </span>
-      <span className="mt-2 block text-[11.5px] text-white/45">{label}</span>
-      <span className="mt-0.5 block truncate text-[15.5px] font-extrabold tabular-nums">{value}</span>
+      <span className="mt-2 block text-[12px] text-white/45">{label}</span>
+      <span className="mt-0.5 block truncate text-[15px] font-extrabold tabular-nums">{value}</span>
     </span>
   );
 }

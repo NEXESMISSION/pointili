@@ -75,6 +75,38 @@ export type Stats = {
   // trend
   daily: { day: string; revenue: number; visits: number; newCustomers: number }[];
   topRewards: { label: string; claimed: number }[];
+
+  // the people
+  /** Most loyal first — the ones to recognise across the counter. */
+  regulars: Person[];
+  /** Overdue against their OWN rhythm — the ones quietly leaving. */
+  lapsed: Person[];
+};
+
+/**
+ * One customer, as the owner thinks of them.
+ *
+ * Identified the way the till already identifies people — name, falling back to
+ * the short code — and deliberately NOT by phone number. The counter shows
+ * `name ?? code` (CaisseForms) and nothing in this product has ever put a
+ * customer's phone on a screen; a dashboard is not the place to start.
+ */
+export type Person = {
+  phone: string;
+  name: string | null;
+  code: string | null;
+  visits: number;
+  spend: number;
+  firstAt: number;
+  lastAt: number;
+  /** Whole days since their last purchase. */
+  daysSince: number;
+  /**
+   * Their own typical gap between visits, in days — null with only one visit.
+   * This is what makes "gone" mean something: 20 days is nothing for a monthly
+   * customer and an emergency for a daily one.
+   */
+  rhythm: number | null;
 };
 
 type LedgerRow = {
@@ -115,6 +147,7 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
   const rows = (ledger ?? []) as LedgerRow[];
   const pointsPerTnd = Number(program?.points_per_tnd ?? 1) || 1;
   const now = Date.now();
+  const round = (n: number) => Math.round(n * 100) / 100;
 
   /*
     The dinars the cashier actually keyed, when the row remembers them.
@@ -336,12 +369,106 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
     .sort((a, b) => b.claimed - a.claimed)
     .slice(0, 5);
 
+  /* ══════════════════════════════════════════════════════════════════
+     THE PEOPLE
+
+     Everything above this line is a number about the shop. None of it names
+     anybody, and naming somebody is the only thing on this page an owner can
+     actually DO something with — recognise a regular across the counter, or
+     notice that the woman who came every Tuesday has not been in for a month.
+
+     Both lists are built from `byPhone`, so they count purchases and never
+     signups, exactly like every other figure here.
+     ══════════════════════════════════════════════════════════════════ */
+
+  /** Dinars per phone, netted for reversals — the same money as everywhere else. */
+  const spentByPhone = new Map<string, number>();
+  for (const r of moneyRows) {
+    spentByPhone.set(r.customer_phone, (spentByPhone.get(r.customer_phone) ?? 0) + spend(r));
+  }
+
+  const people: Person[] = [...byPhone.entries()].map(([phone, times]) => {
+    const sorted = [...times].sort((a, b) => a - b);
+    const last = sorted[sorted.length - 1];
+
+    // Their own rhythm: the MEDIAN of their gaps, not the mean, so one holiday
+    // does not make a daily customer look monthly.
+    const own: number[] = [];
+    for (let i = 1; i < sorted.length; i++) own.push((sorted[i] - sorted[i - 1]) / DAY);
+    own.sort((a, b) => a - b);
+    const rhythm = own.length ? Math.round(own[Math.floor(own.length / 2)] * 10) / 10 : null;
+
+    return {
+      phone,
+      name: null,
+      code: null,
+      visits: sorted.length,
+      spend: round(spentByPhone.get(phone) ?? 0),
+      firstAt: sorted[0],
+      lastAt: last,
+      daysSince: Math.floor((now - last) / DAY),
+      rhythm,
+    };
+  });
+
+  /*
+    A regular is someone who came back. One visit is a stranger who bought a
+    coffee, however much they spent — this list is about loyalty, so it is
+    ordered by visits, and spend only breaks ties.
+  */
+  const regulars = people
+    .filter((p) => p.visits > 1)
+    .sort((a, b) => b.visits - a.visits || b.spend - a.spend)
+    .slice(0, 6);
+
+  /*
+    "Gone" measured against each person's OWN rhythm, never a fixed 30 days.
+
+    A customer who comes monthly is not missing at day 25; a customer who came
+    every second day is already gone at day 10. Overdue = twice their own median
+    gap, floored at a week so a very frequent visitor is not declared lost over
+    a long weekend.
+
+    Only people who came back at least twice can be here at all: someone with a
+    single visit never established a rhythm to break, and calling them "lost"
+    would fill this list with every passer-by the shop ever served.
+  */
+  const lapsed = people
+    .filter((p) => p.rhythm !== null && p.daysSince > Math.max(7, p.rhythm * 2))
+    // The ones worth the effort first: most spent, over the whole relationship.
+    .sort((a, b) => b.spend - a.spend || b.visits - a.visits)
+    .slice(0, 6);
+
+  /*
+    Names for the shortlist only.
+
+    `people` is every customer the shop has ever served and could be thousands;
+    at most a dozen of them are ever on screen. Ask for those.
+  */
+  const shown = [...new Set([...regulars, ...lapsed].map((p) => p.phone))];
+  if (shown.length) {
+    const { data: named } = await db
+      .from("accounts")
+      .select("phone, name, code")
+      .in("phone", shown);
+    const byPhoneName = new Map(
+      ((named ?? []) as { phone: string; name: string | null; code: string | null }[]).map((a) => [
+        a.phone,
+        a,
+      ]),
+    );
+    for (const p of [...regulars, ...lapsed]) {
+      const a = byPhoneName.get(p.phone);
+      // A walk-in credited at the till has no account at all, and stays nameless.
+      p.name = a?.name ?? null;
+      p.code = a?.code ?? null;
+    }
+  }
+
   const pendingCodes =
     ((wins ?? []) as { status: string }[]).filter((w) => w.status === "pending").length +
     ((redemptions ?? []) as { status: string }[]).filter((r) => r.status === "pending").length +
     ((stampRewards ?? []) as { status: string }[]).filter((sr) => sr.status === "pending").length;
-
-  const round = (n: number) => Math.round(n * 100) / 100;
 
   return {
     range,
@@ -375,6 +502,9 @@ export async function getStats(businessId: string, range: Range = 30): Promise<S
 
     daily,
     topRewards,
+
+    regulars,
+    lapsed,
   };
 }
 
