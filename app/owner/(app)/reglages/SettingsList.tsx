@@ -113,7 +113,11 @@ export function SettingsList({
              what a reward even costs. */
           value={
             cheapest
-              ? `${visible} visible${visible > 1 ? "s" : ""} · dès ${visitsForPoints(cheapest.pointsCost, ticket)} visites`
+              /* "6 · dès 5 visites", not "6 visibles · dès 5 visites": the long
+                 form did not fit the row and truncated to "dès 5 …", losing the
+                 half that carries the meaning. The count needs no noun — it sits
+                 against a label that already says what is being counted. */
+              ? `${visible} · dès ${visitsForPoints(cheapest.pointsCost, ticket)} visites`
               : "aucune"
           }
           warn={!cheapest}
