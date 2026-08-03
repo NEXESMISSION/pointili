@@ -62,9 +62,14 @@ export default async function Codes({
                   {KIND_LABEL[c.kind] ?? "Récompense"}
                 </span>
                 <span className="block truncate text-[14px] font-bold text-white">{c.label}</span>
-                <span className="mt-0.5 block text-[11px] font-medium text-[#ffd27a]">
-                  {expiresIn(c.expiresAt)}
-                </span>
+                {/*
+                  No countdown, because there is nothing to count down to
+                  (0031). This line used to read "expire dans 5 h" and, once
+                  the column went null, "expiré" — on a code that is perfectly
+                  valid, to the customer holding it. The reassurance a code
+                  needs now is that it does NOT run out, and the quietest way
+                  to say that is to stop mentioning time at all.
+                */}
               </span>
               <span className="shrink-0 rounded-xl bg-white px-3 py-2 text-center">
                 <span className="block font-mono text-[16.5px] font-bold tracking-[0.14em] text-charcoal">
@@ -79,14 +84,3 @@ export default async function Codes({
   );
 }
 
-/** "expire dans 5 h" — the countdown a diner needs before a code lapses. */
-function expiresIn(iso: string): string {
-  const ms = new Date(iso).getTime() - Date.now();
-  if (ms <= 0) return "expiré";
-  const mins = Math.floor(ms / 60_000);
-  if (mins < 60) return `expire dans ${mins} min`;
-  const h = Math.floor(mins / 60);
-  if (h < 24) return `expire dans ${h} h`;
-  const d = Math.floor(h / 24);
-  return d === 1 ? "expire demain" : `expire dans ${d} j`;
-}

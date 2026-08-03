@@ -89,7 +89,17 @@ export type ActiveCode = {
   code: string;
   label: string;
   kind: "win" | "reward" | "stamp";
-  expiresAt: string;
+  /**
+   * ALWAYS null since 0031 — a code does not expire.
+   *
+   * Typed `string` before, which is how a customer holding a perfectly valid
+   * reward came to be told it had "expiré": the column is null now, and
+   * `new Date(null).getTime()` is 0, so a countdown against the epoch made
+   * every code look decades overdue. The field stays for the rows written
+   * before the migration, and the type now says what it really is so the next
+   * reader has to handle it.
+   */
+  expiresAt: string | null;
 };
 
 /** What the diner sees on Ma carte. Balance is always sum(ledger.delta). */
