@@ -147,7 +147,19 @@ export function CreateCafeForm() {
         <span className="mb-1.5 block text-[13px] font-semibold text-white">
           Ce que vous vendez
         </span>
-        <BusinessTypePicker defaultValue="cafe" />
+        {/*
+          COLLAPSIBLE, which Réglages already knew and this screen did not.
+
+          Twenty-three tiles, open, is about 1100px — the whole page, on the
+          very first screen a new owner sees, before they have typed anything.
+          The wall of emoji IS what made signing up feel complicated: it reads
+          as a form with twenty-three questions rather than one with a default
+          already chosen.
+
+          Collapsed it is one row saying "☕ Café" with a way to change it, and
+          the page fits a phone.
+        */}
+        <BusinessTypePicker defaultValue="cafe" collapsible />
       </div>
 
       {/*
