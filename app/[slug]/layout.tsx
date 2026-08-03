@@ -4,7 +4,7 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import { CafeClosed } from "@/components/CafeClosed";
 import { TopBar } from "@/components/TopBar";
 import { BRAND_COLOR, DINER_BG } from "@/lib/brand";
-import { getCafe } from "@/lib/data";
+import { getCafe, getMember } from "@/lib/data";
 
 export default async function CafeLayout({
   children,
@@ -27,6 +27,13 @@ export default async function CafeLayout({
   */
   if (!cafe.live) return <CafeClosed name={cafe.name} />;
 
+  /*
+    Only for the bell's dot. Null for someone who has scanned the QR but not
+    joined yet — they have no card, so nothing can be waiting for them, and the
+    bar must not fall over on the one screen that exists to sign them up.
+  */
+  const diner = await getMember(cafe.id);
+
   return (
     /*
       The mockup look: a deep-purple loyalty CARD. The café's brand colour drives
@@ -37,12 +44,7 @@ export default async function CafeLayout({
       className="app-shell app-shell--dark flex min-h-dvh flex-col text-white"
       style={{ ["--cafe" as string]: BRAND_COLOR, ...DINER_BG }}
     >
-      <TopBar
-        slug={cafe.slug}
-        cafeName={cafe.name}
-        logoUrl={cafe.logoUrl}
-        businessTypeKey={cafe.businessType}
-      />
+      <TopBar slug={cafe.slug} pendingCodes={diner?.codes.length ?? 0} />
 
       <main className="flex flex-1 flex-col">{children}</main>
 

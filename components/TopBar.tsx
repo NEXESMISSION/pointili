@@ -2,73 +2,98 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { businessType } from "@/lib/businessTypes";
 import { BackLink } from "./BackLink";
-import { ChevronDownIcon } from "./icons";
+import { UserIcon } from "./icons";
 
 /**
- * The diner app's top bar — a slim café-identity chip on the deep-purple card.
+ * The diner app's top bar: who you are, where you are, what is waiting.
  *
- * A diner carries cards for several shops, so "which one am I on?" has to be
- * answerable at a glance (the shop's type emoji + name), and switching has to be
- * one tap — the chip opens the wallet (/cartes) where every card lives.
+ * It used to be a café-identity chip — logo + name + chevron — because the shop
+ * had to be identifiable and switchable from every screen. The card itself now
+ * carries the shop at full size (its logo at 96px and its name at 30px), so
+ * repeating the name in a pill 130px above it was the same word twice on the
+ * most cramped surface in the product. The chip's other job, switching cards,
+ * moved onto the card: tapping it opens the wallet.
  *
- * IT ALSO OWNS THE WAY BACK, and that is why it is here rather than on each
- * page. Adding a chevron to boutique, codes, historique, scanner and profil
- * individually cost each of them a whole row — a lone arrow floating in the gap
- * between the café chip and the title, on the one surface with the least
- * vertical room in the product. In the bar it costs nothing: it sits in space
- * the header already occupied.
+ * IT STILL OWNS THE WAY BACK. Adding a chevron to boutique, codes, historique,
+ * scanner and profil individually cost each of them a whole row — a lone arrow
+ * floating above the title. Here it costs nothing: it sits in space the header
+ * already occupied. On the card itself there is nothing above it inside the
+ * shop, so that slot becomes the profile instead.
  *
- * The chip stays OPTICALLY centred because the arrow is positioned absolutely.
- * Centring it in a flex row would shift the shop's name off-axis on exactly the
- * screens that have a back button and not the ones that do not.
+ * The title stays OPTICALLY centred because both sides are fixed-width boxes.
+ * Centring in a plain flex row would shift it off-axis on the screens that have
+ * a back arrow and not the ones that do not.
  */
+const TITLES: Record<string, string> = {
+  "": "Ma carte",
+  historique: "Historique",
+  profil: "Profil",
+  boutique: "Récompenses",
+  codes: "Mes codes",
+  scanner: "Mon code",
+};
+
 export function TopBar({
   slug,
-  cafeName,
-  logoUrl,
-  businessTypeKey,
+  pendingCodes = 0,
 }: {
   slug: string;
-  cafeName: string;
-  logoUrl: string | null;
-  businessTypeKey: string;
+  /** Rewards bought and not yet collected — what the bell's dot is about. */
+  pendingCodes?: number;
 }) {
   const pathname = usePathname();
 
   // Pre-account (just scanned the QR): no card yet — keep that screen on joining.
   if (pathname === `/${slug}/rejoindre`) return null;
 
-  const type = businessType(businessTypeKey);
+  const onCard = pathname === `/${slug}`;
+  const leaf = pathname.replace(`/${slug}`, "").replace("/", "");
+  const title = TITLES[leaf] ?? "Ma carte";
 
   return (
     /* safe-t: installed, the status bar sits on top of this row. */
-    <header className="safe-t relative flex items-center justify-center px-5 pb-1 [--safe-pt:1rem]">
-      {/*
-        On the shop's own card there is nothing "above" it inside the shop, so
-        back means the wallet. Anywhere deeper it means the card. Both are only
-        fallbacks — BackLink pops real history first, which is what returns the
-        person to their scroll position.
-      */}
-      <span className="absolute bottom-1 left-3.5">
-        <BackLink fallback={pathname === `/${slug}` ? "/cartes" : `/${slug}`} />
+    <header className="safe-t flex items-center justify-between gap-2 px-4 pb-2 [--safe-pt:1rem]">
+      <span className="grid h-10 w-10 place-items-center">
+        {onCard ? (
+          <Link
+            href={`/${slug}/profil`}
+            aria-label="Mon profil"
+            className="grid h-10 w-10 place-items-center rounded-full text-white/80 transition active:scale-95"
+          >
+            <UserIcon className="h-[22px] w-[22px]" />
+          </Link>
+        ) : (
+          <BackLink fallback={`/${slug}`} />
+        )}
       </span>
 
+      <h1 className="min-w-0 truncate text-[17px] font-extrabold text-white">{title}</h1>
+
+      {/*
+        A real bell, not a decorative one.
+
+        It points at the rewards this person has already bought and not yet
+        collected — the only thing in the product that is genuinely WAITING for
+        them — so the dot appears when there is something to collect and never
+        otherwise. A badge that is always lit teaches people to ignore it.
+      */}
       <Link
-        href={`/cartes?from=${slug}`}
-        className="inline-flex max-w-full items-center gap-2 rounded-full bg-white/10 py-1.5 pl-1.5 pr-3.5 ring-1 ring-white/15 active:scale-[0.98]"
+        href={`/${slug}/codes`}
+        aria-label={
+          pendingCodes > 0
+            ? `${pendingCodes} récompense${pendingCodes > 1 ? "s" : ""} à récupérer`
+            : "Mes codes"
+        }
+        className="relative grid h-10 w-10 place-items-center rounded-full text-white/80 transition active:scale-95"
       >
-        {logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded, arbitrary remote host
-          <img src={logoUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
-        ) : (
-          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/90 text-[13px]">
-            {type.emoji}
-          </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px]" aria-hidden>
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        {pendingCodes > 0 && (
+          <span className="absolute right-[9px] top-[8px] h-[9px] w-[9px] rounded-full bg-[#8b5cf6] ring-2 ring-[#1a1030]" />
         )}
-        <span className="min-w-0 truncate text-[13.5px] font-bold text-white">{cafeName}</span>
-        <ChevronDownIcon className="h-3.5 w-3.5 shrink-0 text-white/60" />
       </Link>
     </header>
   );

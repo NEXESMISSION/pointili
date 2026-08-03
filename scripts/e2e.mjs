@@ -361,7 +361,10 @@ if (redeemCode) {
 
   // it must actually reach the (signed-in) diner's card header
   await diner.goto(`${BASE}/${SLUG}`, { waitUntil: "networkidle" });
-  check("logo appears on the client card header", (await diner.locator("header img").count()) > 0);
+  /* The shop's logo moved OUT of the top bar and onto the card, at 92px — the
+     bar was repeating a name printed below it at four times the size. Same
+     property, asserted where the logo actually is now. */
+  check("logo appears on the client card", (await diner.locator("[data-shop-logo]").count()) > 0);
 
   await admin.from("businesses").update({ logo_url: null }).eq("id", biz.id);
 }
@@ -378,7 +381,7 @@ if (redeemCode) {
   await back.waitForURL(`**/${SLUG}`, { timeout: 15000 }).catch(() => {});
   const landed = await back
     .waitForFunction(
-      () => /Tes points/i.test(document.querySelector("main")?.innerText ?? ""),
+      () => Boolean(document.querySelector("[data-carte]")),
       undefined,
       { timeout: 10000 },
     )

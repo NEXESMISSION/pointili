@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { CafeClosed } from "@/components/CafeClosed";
+import { businessType } from "@/lib/businessTypes";
 import { notFound, redirect } from "next/navigation";
-import { GiftIcon, ScanIcon, Sparkle } from "@/components/icons";
+import { GiftIcon, ScanIcon } from "@/components/icons";
 import { getCafe, getLoyaltyProgram, getMember, getRewards, nextRewardNudge } from "@/lib/data";
 import { balanceSinceLastOpen, touchCardOpened } from "@/lib/db";
 import type { LoyaltyProgram } from "@/lib/types";
@@ -70,8 +71,21 @@ export default async function Carte({
 
   const stampView = stampCardView(diner.stamps, diner.stampsStartedAt, program);
 
+  /* Everything the card face states, computed once, on the server. */
+  const type = businessType(cafe.businessType);
+  const stampsLeft = Math.max(0, program.stampsRequired - stampView.shown);
+  const nudge = nextRewardNudge(diner.balance, rewards);
+
   return (
-    <div className="flex flex-1 flex-col pb-6">
+    /*
+      data-carte is a landmark for the suites, not styling. e2e used to assert
+      it had landed here by looking for the words "Tes points" — copy that this
+      redesign deleted, so a passing test started failing on a page that works
+      perfectly. A test should break when the BEHAVIOUR breaks, never when the
+      wording improves. (Second time this session: test-owner was selecting a
+      field by its placeholder.)
+    */
+    <div data-carte className="flex flex-1 flex-col pb-6">
       {/* Plays once, over a card that is already rendered and already usable. */}
       {nouveau && <CardArrived cafeName={cafe.name} points={program.welcomePoints ?? 0} />}
       {/* A brand-new card gets CardArrived, never both — balanceSinceLastOpen
@@ -83,88 +97,158 @@ export default async function Carte({
           href={`/${slug}/boutique`}
         />
       )}
-      {/* greeting + points badge */}
-      <section className="px-5 pb-5 pt-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[14px] font-medium leading-tight text-white/70">Bonjour</p>
-            <h1 className="truncate text-[26px] font-extrabold leading-tight">
-              {diner.name ?? "toi"}
-            </h1>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 rounded-2xl bg-white/10 px-3.5 py-2 ring-1 ring-white/15">
-            <span
-              className="grid h-7 w-7 place-items-center rounded-full bg-white/90"
-              style={{ color: "var(--cafe)" }}
-            >
-              <Sparkle className="h-4 w-4" />
+      {/*
+        ── THE SHOP'S CARD ────────────────────────────────────────────────
+        Built to the supplied mockup: a circular shop mark, the name at a size
+        you can read across a table, a type pill under it, and the balance on
+        the far side of a hairline rule. Then the stamp track, and one row that
+        carries the earning rate on the left and the distance to the prize on
+        the right.
+
+        Tapping it opens the wallet. The old top bar had a café chip whose job
+        was switching cards; the card is a better target for that than a pill
+        repeating a name printed 130px below it at four times the size.
+      */}
+      <section className="px-4 pb-4 pt-1">
+        <Link
+          href={`/cartes?from=${slug}`}
+          aria-label={`${cafe.name} — voir toutes mes cartes`}
+          className="block overflow-hidden rounded-[28px] p-5 transition active:scale-[0.99]"
+          style={{
+            backgroundImage:
+              "linear-gradient(150deg, #7c56e8 0%, #6039cf 26%, #3d2483 62%, #241748 100%)",
+            boxShadow: "0 24px 50px -20px rgba(101,67,214,.9), inset 0 1px 0 rgba(255,255,255,.22)",
+          }}
+        >
+          <div className="flex items-center gap-4">
+            {cafe.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
+              <img
+                src={cafe.logoUrl}
+                alt=""
+                data-shop-logo
+                className="h-[92px] w-[92px] shrink-0 rounded-full bg-white/15 object-cover ring-1 ring-white/20"
+              />
+            ) : (
+              <span className="grid h-[92px] w-[92px] shrink-0 place-items-center rounded-full bg-white/15 text-[42px] ring-1 ring-white/20">
+                {type.emoji}
+              </span>
+            )}
+
+            <span className="min-w-0 flex-1">
+              {/* two lines by design, like the mockup — a shop name is a name,
+                  not a label to be squeezed onto one row and truncated */}
+              <span className="block text-[27px] font-extrabold leading-[1.05] tracking-[-0.02em] line-clamp-2">
+                {cafe.name}
+              </span>
+              <span className="mt-2 inline-block rounded-full bg-white/20 px-3 py-[3px] text-[12.5px] font-bold text-white">
+                {type.label}
+              </span>
             </span>
-            <span className="leading-none">
-              {/*
-                Counts up from the balance at the last visit, so the points
-                earned since then are something the customer WATCHES arrive
-                rather than something they have to work out. seen.before was
-                already being computed and thrown away.
-              */}
+
+            <span className="h-[74px] w-px shrink-0 bg-white/20" />
+
+            <span className="shrink-0 pl-1 text-center">
               <CountUp
                 from={seen.before}
                 to={diner.balance}
-                className="block text-[18px] font-extrabold tabular-nums"
+                className="block text-[42px] font-extrabold leading-none tabular-nums tracking-[-0.03em]"
               />
-              <span className="block text-[10px] font-semibold text-white/60">points</span>
+              <span className="mt-1 block text-[13px] font-bold text-[#c9b8ff]">points</span>
             </span>
           </div>
-        </div>
-        <p className="mt-1 text-[13px] text-white/60">Merci pour votre fidélité !</p>
+
+          {/*
+            ONE progress track, and the line under it NAMES THE PRIZE.
+
+            The stamp mechanic used to be told three times over: ten dots, a
+            sentence saying how far off it was, and a third card saying what it
+            was — so the sentence never named the prize and the prize never said
+            how far. Segments, then one line that says both.
+          */}
+          {program.stampsEnabled ? (
+            <>
+              <div className="mt-6 flex gap-2">
+                {Array.from({ length: program.stampsRequired }).map((_, i) => (
+                  <span
+                    key={i}
+                    className={`h-[13px] flex-1 rounded-full ${
+                      i < stampView.shown ? "bg-[#a78bfa]" : "bg-white/[0.13]"
+                    }`}
+                  />
+                ))}
+              </div>
+              <div className="mt-4 flex items-end justify-between gap-4">
+                <span className="shrink-0 whitespace-nowrap text-[11.5px] leading-snug text-white/50">
+                  {rateLabel(program.pointsPerTnd)}
+                </span>
+                <span className="min-w-0 text-right text-[12px] leading-snug text-white/70">
+                  {stampsLeft <= 0 ? (
+                    <b className="font-extrabold text-white">
+                      {program.stampReward} t&apos;attend 🎉
+                    </b>
+                  ) : (
+                    <>
+                      Encore{" "}
+                      <b className="font-extrabold text-white">
+                        {stampsLeft} visite{stampsLeft > 1 ? "s" : ""}
+                      </b>{" "}
+                      pour <b className="font-extrabold text-[#c9b8ff]">{program.stampReward}</b>
+                    </>
+                  )}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              {nudge && (
+                <span className="mt-6 block h-[13px] overflow-hidden rounded-full bg-white/[0.13]">
+                  <span
+                    className="block h-full rounded-full bg-[#a78bfa]"
+                    style={{
+                      width: `${Math.min(100, Math.round((diner.balance / nudge.target.pointsCost) * 100))}%`,
+                    }}
+                  />
+                </span>
+              )}
+              <div className="mt-4 flex items-end justify-between gap-4">
+                <span className="shrink-0 whitespace-nowrap text-[11.5px] leading-snug text-white/50">
+                  {rateLabel(program.pointsPerTnd)}
+                </span>
+                {nudge && (
+                  <span className="min-w-0 text-right text-[12px] leading-snug text-white/70">
+                    Encore{" "}
+                    <b className="font-extrabold text-white">
+                      {fmtPoints(nudge.needed)} point{nudge.needed >= 2 ? "s" : ""}
+                    </b>{" "}
+                    pour <b className="font-extrabold text-[#c9b8ff]">{nudge.target.label}</b>
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+        </Link>
       </section>
 
-      {/* the main card */}
-      <div className="px-5">
-        {program.stampsEnabled ? (
-          <StampCard shown={stampView.shown} expiry={stampView.expiry} program={program} />
-        ) : (
-          <PointsCard balance={diner.balance} rewards={rewards} rate={program.pointsPerTnd} />
-        )}
-      </div>
-
-      {/* how you earn: show your number so the counter can find you */}
-      <div className="px-5 pt-3">
+      {/* the one thing you do here, and what it is for */}
+      <div className="px-4">
         <Link
           href={`/${slug}/scanner`}
-          className="d-soft flex items-center justify-center gap-2 py-3 text-[13.5px] font-bold text-white active:scale-[0.99]"
+          className="flex items-center justify-center gap-3.5 rounded-[24px] bg-white px-5 py-4 text-[#150d2b] shadow-[0_16px_38px_-16px_rgba(0,0,0,.85)] transition active:scale-[0.99]"
         >
-          <ScanIcon className="h-[18px] w-[18px]" />
-          Montrer mon code au comptoir
+          <ScanIcon className="h-8 w-8 shrink-0" />
+          <span className="text-left">
+            <span className="block text-[18px] font-extrabold leading-tight">Montrer mon code</span>
+            <span className="block text-[13px] font-medium text-[#150d2b]/50">
+              Scannez en caisse
+            </span>
+          </span>
         </Link>
       </div>
 
-      {/* stamp reward card */}
-      {program.stampsEnabled && (
-        <div className="px-5 pt-3">
-          <div className="d-card flex items-center gap-3.5 px-4 py-3.5">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/12">
-              <GiftIcon className="h-5 w-5 text-white" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[10.5px] font-bold uppercase tracking-[0.06em] text-white/55">
-                Récompense
-              </span>
-              <span className="block text-[14.5px] font-bold leading-snug text-white line-clamp-2">
-                {program.stampReward}
-              </span>
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* codes to show at the counter */}
       {diner.codes.length > 0 && (
-        <section className="px-5 pt-4">
-          {/*
-            Deliberately NOT "À montrer au comptoir": the CTA higher up the page
-            already says "Montrer mon code au comptoir" about the account code,
-            and these are a different thing — expiring reward vouchers.
-          */}
+        <section className="px-4 pt-5">
           <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-white/55">
             Récompenses à récupérer
           </p>
@@ -189,39 +273,81 @@ export default async function Carte({
         </section>
       )}
 
-      {/* offers — points always accrue, so this shows in both modes */}
+      {/*
+        ── MES RÉCOMPENSES ────────────────────────────────────────────────
+        The mockup's row: a white tile carrying the shop's own artwork, the
+        name, and the cost in a tinted box on the right.
+
+        The cost box also carries the ANSWER, which the mockup could not know:
+        it goes green when the balance already covers it. A customer holding 219
+        points was being shown "60 points · 70 points · 90 points" — three
+        things they could have had that morning — and left to do the subtraction
+        themselves. Colour is doing work here, not decoration.
+      */}
       {offers.length > 0 && (
-        <section className="px-5 pt-5">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-[15px] font-extrabold text-white">Récompenses disponibles</h2>
-            <Link href={`/${slug}/boutique`} className="text-[12.5px] font-bold text-white/70">
+        <section className="px-4 pt-6">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="text-[17px] font-extrabold text-white">Mes récompenses</h2>
+            <Link href={`/${slug}/boutique`} className="text-[13.5px] font-bold text-[#a78bfa]">
               Voir tout
             </Link>
           </div>
-          <ul className="stagger mt-2.5 space-y-2">
-            {offers.map((r, i) => (
-              <li key={r.id} style={{ ["--i" as string]: i }}>
-                <Link
-                  href={`/${slug}/boutique`}
-                  className="flex items-center gap-3.5 rounded-2xl border border-white/12 bg-white/[0.06] px-3.5 py-3 active:scale-[0.99]"
-                >
-                  {r.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-                    <img src={r.imageUrl} alt="" className="h-11 w-11 shrink-0 rounded-xl object-cover" />
-                  ) : (
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/12">
-                      <GiftIcon className="h-5 w-5 text-white" />
+
+          <ul className="stagger space-y-3">
+            {offers.map((r, i) => {
+              const ready = diner.balance >= r.pointsCost;
+              return (
+                <li key={r.id} style={{ ["--i" as string]: i }}>
+                  <Link
+                    href={`/${slug}/boutique`}
+                    className="flex items-center gap-4 rounded-[22px] border border-white/[0.08] bg-white/[0.035] p-3 transition active:scale-[0.99]"
+                  >
+                    {r.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
+                      <img
+                        src={r.imageUrl}
+                        alt=""
+                        className="h-[62px] w-[62px] shrink-0 rounded-2xl bg-white object-cover"
+                      />
+                    ) : (
+                      <span className="grid h-[62px] w-[62px] shrink-0 place-items-center rounded-2xl bg-white">
+                        <GiftIcon className="h-7 w-7 text-[#5b3fd1]" />
+                      </span>
+                    )}
+
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[16px] font-extrabold text-white">
+                        {r.label}
+                      </span>
+                      <span className="mt-0.5 block text-[12.5px] font-medium text-white/45">
+                        {ready ? "Tu peux la prendre" : `Encore ${fmtPoints(r.pointsCost - diner.balance)}`}
+                      </span>
                     </span>
-                  )}
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14.5px] font-bold text-white">{r.label}</span>
-                    <span className="block text-[12.5px] font-bold text-[#ffd27a]">
-                      {r.pointsCost} points 🪙
+
+                    <span
+                      className={`grid shrink-0 place-items-center rounded-2xl px-3.5 py-2.5 text-center ${
+                        ready ? "bg-[#7ff0b0]/15 ring-1 ring-[#7ff0b0]/40" : "bg-[#7c56e8]/22"
+                      }`}
+                    >
+                      <span
+                        className={`block text-[20px] font-extrabold leading-none tabular-nums ${
+                          ready ? "text-[#7ff0b0]" : "text-white"
+                        }`}
+                      >
+                        {fmtPoints(r.pointsCost)}
+                      </span>
+                      <span
+                        className={`mt-0.5 block text-[11px] font-bold ${
+                          ready ? "text-[#7ff0b0]/75" : "text-[#c9b8ff]"
+                        }`}
+                      >
+                        points
+                      </span>
                     </span>
-                  </span>
-                </Link>
-              </li>
-            ))}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
@@ -229,149 +355,17 @@ export default async function Carte({
   );
 }
 
-/**
- * The punch card: dots that fill toward the reward slot.
- *
- * `shown` and `expiry` are computed by the (server) page, not here — what we
- * display has to match what the next stamp will actually do, and that depends on
- * the current time, which a component must not read.
- */
-function StampCard({
-  shown,
-  expiry,
-  program,
-}: {
-  shown: number;
-  expiry: string | null;
-  program: LoyaltyProgram;
-}) {
-  const required = program.stampsRequired;
-  const remaining = Math.max(0, required - shown);
-  const pct = Math.min(100, Math.round((shown / required) * 100));
-  const size = required > 10 ? "h-9 w-9" : "h-11 w-11";
 
-  return (
-    <div className="d-card px-5 pb-5 pt-6">
-      <div className="flex flex-wrap justify-center gap-2.5">
-        {Array.from({ length: required }).map((_, i) => {
-          const filled = i < shown;
-          const isReward = i === required - 1;
-          return (
-            <span
-              key={i}
-              className={`grid ${size} place-items-center rounded-full ${filled ? "d-stamp" : "d-stamp--empty"}`}
-            >
-              {filled ? (
-                <Sparkle className="h-5 w-5" />
-              ) : isReward ? (
-                <GiftIcon className="h-5 w-5" />
-              ) : null}
-            </span>
-          );
-        })}
-      </div>
+/*
+  StampCard and PointsCard are gone, absorbed into the shop's card above.
 
-      <p className="mt-5 text-center text-[13.5px] font-medium text-white/85">
-        {remaining <= 0 ? (
-          "Ta récompense t'attend 🎉"
-        ) : (
-          <>
-            Encore <b className="font-extrabold text-white">{remaining} visite{remaining > 1 ? "s" : ""}</b> pour
-            votre récompense
-          </>
-        )}
-      </p>
-
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/12">
-        <div
-          className="h-full rounded-full bg-white transition-[width] duration-700"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <div className="mt-1.5 flex items-center justify-between">
-        {expiry ? (
-          <span className="text-[10.5px] font-medium text-white/45">Valable jusqu&apos;au {expiry}</span>
-        ) : (
-          <span />
-        )}
-        <span className="text-[11.5px] font-semibold tabular-nums text-white/55">
-          {shown} / {required}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-/** Points mode: progress toward the next reward. */
-function PointsCard({
-  balance,
-  rewards,
-  rate,
-}: {
-  balance: number;
-  rewards: Parameters<typeof nextRewardNudge>[1];
-  rate: number;
-}) {
-  const nudge = nextRewardNudge(balance, rewards);
-  /*
-    Fill the bar from the SAME numbers as its caption (balance / target).
-    nudge.progress measures from the previous reward tier, so the bar and the
-    "450 / 500" underneath it disagreed — and it contradicted the bar shown for
-    the very same reward in /boutique.
-  */
-  const pct = nudge ? Math.min(100, Math.round((balance / nudge.target.pointsCost) * 100)) : 100;
-
-  return (
-    <div className="d-card px-5 pb-5 pt-5">
-      <p className="text-[12px] font-semibold text-white/70">Tes points</p>
-      <p className="mt-1 flex items-center gap-2.5">
-        <span className="text-[52px] font-extrabold leading-none tabular-nums">{fmtPoints(balance)}</span>
-        <span
-          className="grid h-8 w-8 place-items-center rounded-full bg-white/90"
-          style={{ color: "var(--cafe)" }}
-        >
-          <Sparkle className="h-4 w-4" />
-        </span>
-      </p>
-
-      {nudge ? (
-        <>
-          <p className="mt-3 text-[13px] font-medium text-white/90">
-            Encore <b>{nudge.needed} points</b> pour {nudge.target.label.toLowerCase()} !
-          </p>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/12">
-            <div className="h-full rounded-full bg-white transition-[width] duration-700" style={{ width: `${pct}%` }} />
-          </div>
-          <p className="mt-1.5 text-[11.5px] font-semibold tabular-nums text-white/55">
-            {fmtPoints(balance)} / {nudge.target.pointsCost}
-          </p>
-        </>
-      ) : rewards.length > 0 ? (
-        <p className="mt-3 text-[13.5px] font-semibold text-white/95">✦ Tu peux t&apos;offrir une récompense.</p>
-      ) : (
-        <p className="mt-3 text-[13px] font-medium text-white/70">Cumule des points — des offres arrivent bientôt.</p>
-      )}
-
-      {/*
-        The scale, and the fact that nothing runs out.
-
-        Without the rate, "40 points" is a number with no unit: the first thing
-        a customer asks on this screen is whether 40 points is 40 dinars or 4.
-        The rate was printed on the owner's Créditer button and on Réglages, and
-        reached the customer exactly once — inside a JSON-LD blob no human sees.
-
-        "Ils n'expirent jamais" is a promise, so it is checked, not assumed:
-        nothing in the codebase ever writes a ledger row with reason 'expire'.
-        If that ever changes this line has to change with it.
-      */}
-      <p className="mt-3 border-t border-white/10 pt-2.5 text-[11.5px] leading-relaxed text-white/45">
-        {rateLabel(rate)}
-        {" · Tes points n'expirent jamais."}
-      </p>
-    </div>
-  );
-}
-
+  They were two separate boxes drawing the same idea — "how far from the next
+  thing" — and only one could ever be on screen, so the page carried a branch
+  and two implementations to render one line. The stamp version also told the
+  story three times (dots, a sentence, and a third card naming the prize) while
+  the points version repeated a bar the wallet already draws. One progress line
+  on the card, naming the prize, replaces both.
+*/
 /**
  * "1 dinar = 1 point", or "1 dinar = 2 points", or "2 dinars = 1 point".
  *
