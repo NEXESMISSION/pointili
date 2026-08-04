@@ -76,10 +76,18 @@ export function RewardUnlocked({
       aria-label={`Récompense débloquée : ${label}`}
       onClick={() => setOpen(false)}
       className="unlock-veil fixed inset-0 z-[60] flex flex-col items-center justify-center px-6 text-center text-white"
-      /* the café's own colour, deepened — this is their moment, not Pointili's */
+      /*
+        The café's own colour, deepened — this is their moment, not Pointili's.
+
+        DEEPENED HARD, and that is the whole trick: every word and every ray on
+        this screen is white, so the veil has to stay dark for ANY brand colour
+        an owner picks. The centre used to be the hue mixed with WHITE, which is
+        fine for a deep purple and illegible for a shop whose colour is yellow.
+        Mixing toward black instead keeps the hue and keeps the contrast.
+      */
       style={{
         background:
-          "radial-gradient(120% 70% at 50% 38%, color-mix(in oklab, var(--cafe, #5b3fd1), #ffffff 12%) 0%, color-mix(in oklab, var(--cafe, #5b3fd1), #05010a 45%) 55%, #0b0616 100%)",
+          "radial-gradient(120% 70% at 50% 38%, color-mix(in oklab, var(--cafe, #5b3fd1), #000 25%) 0%, color-mix(in oklab, var(--cafe, #5b3fd1), #05010a 62%) 55%, #0b0616 100%)",
       }}
     >
       <button
@@ -149,7 +157,11 @@ export function RewardUnlocked({
             // eslint-disable-next-line @next/next/no-img-element -- an owner-uploaded URL, not a build-time asset
             <img src={imageUrl} alt="" className="h-full w-full scale-[1.02] object-cover" />
           ) : (
-            <GiftIcon className="h-20 w-20 text-[#5b3fd1]" />
+            /* the colour goes on a wrapper — the icons draw in currentColor and
+               take no style prop */
+            <span style={{ color: "var(--cafe-text)" }}>
+              <GiftIcon className="h-20 w-20" />
+            </span>
           )}
         </span>
       </div>

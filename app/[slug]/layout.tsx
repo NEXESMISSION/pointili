@@ -3,7 +3,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { CafeClosed } from "@/components/CafeClosed";
 import { TopBar } from "@/components/TopBar";
-import { BRAND_COLOR, DINER_BG } from "@/lib/brand";
+import { cafeVars } from "@/lib/theme";
 import { getCafe, getMember } from "@/lib/data";
 
 export default async function CafeLayout({
@@ -36,13 +36,19 @@ export default async function CafeLayout({
 
   return (
     /*
-      The mockup look: a deep-purple loyalty CARD. The café's brand colour drives
-      a dark gradient (default = deep purple), each page floats frosted panels on
-      it, and everything is one phone-width column.
+      A white app that belongs to the SHOP, not to us.
+
+      The café's own colour is injected here as custom properties and nothing
+      below hard-codes a hue — every accent, stamp, active tab and banner reads
+      --cafe / --cafe-ink / --cafe-text, all three computed in lib/theme.ts so a
+      pale or a fluorescent brand still produces a readable screen.
+
+      One phone-width column, as before: the journey starts at a QR glued to a
+      table, so a phone is the honest shape.
     */
     <div
-      className="app-shell app-shell--dark flex min-h-dvh flex-col text-white"
-      style={{ ["--cafe" as string]: BRAND_COLOR, ...DINER_BG }}
+      className="app-shell app-shell--light d-shell flex min-h-dvh flex-col"
+      style={cafeVars(cafe.primaryColor)}
     >
       <TopBar slug={cafe.slug} pendingCodes={diner?.codes.length ?? 0} />
 

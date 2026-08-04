@@ -2,22 +2,31 @@ import Link from "next/link";
 import { CafeClosed } from "@/components/CafeClosed";
 import { businessType } from "@/lib/businessTypes";
 import { notFound, redirect } from "next/navigation";
-import { GiftIcon, ScanIcon, Sparkle } from "@/components/icons";
+import { GiftIcon, Sparkle, UserIcon } from "@/components/icons";
 import { getCafe, getLoyaltyProgram, getMember, getRewards, nextRewardNudge } from "@/lib/data";
-import { balanceSinceLastOpen, dinerWallet } from "@/lib/db";
+import { balanceSinceLastOpen } from "@/lib/db";
 import type { LoyaltyProgram } from "@/lib/types";
 import { CardArrived } from "@/components/CardArrived";
 import { CountUp } from "@/components/CountUp";
 import { RewardUnlocked } from "@/components/RewardUnlocked";
 import { MarkOpened } from "@/components/MarkOpened";
 import { fmtPoints } from "@/lib/points";
-import QRCode from "qrcode";
+import { codeQr } from "@/lib/qr";
 
 /**
- * Carte — the diner's loyalty card, in the deep-purple mockup:
- * greeting + points badge, then the STAMP card (a punch card that fills toward a
- * reward) when the café runs stamps, or a points-progress card when it doesn't.
- * Points always accrue, so offers show in both modes.
+ * Ma carte — the shop's own card, in the shop's own colour.
+ *
+ * ONE COLOURED BANNER, THEN WHITE. The screen used to be a deep-purple ticket on
+ * a deep-purple page: our brand, handed to every boulangerie and barber in the
+ * country with their logo shrunk into the corner of it. Now the top of the
+ * screen is theirs — their colour, their logo, their name, and the balance they
+ * are keeping — and everything under it is white and quiet.
+ *
+ * The order is what a person actually does, top to bottom:
+ *   1. the banner       who this is and what I have
+ *   2. the code         what the cashier scans — no tap, ever
+ *   3. what is waiting  a reward already bought, or one now within reach
+ *   4. the rest         codes, history
  */
 export default async function Carte({
   params,
@@ -51,13 +60,6 @@ export default async function Carte({
   */
   const seen = await balanceSinceLastOpen(cafe.id, diner.phone);
 
-  /*
-    The mark is NOT moved here any more — <MarkOpened> does it from the browser,
-    after paint. A write during render runs however many times Next decides to
-    render, and an invisible pass was spending the unlock window before the
-    diner ever saw the page. See markCardOpenedAction.
-  */
-
   const [program, rewards] = await Promise.all([getLoyaltyProgram(cafe.id), getRewards(cafe.id)]);
 
   /*
@@ -65,82 +67,31 @@ export default async function Carte({
     SINCE they last looked. Affordable-now-and-then is old news they have
     already been congratulated for; affordable-now-but-not-then is the moment
     this whole product exists to produce.
-
-    The dearest of the newly reachable, not the cheapest — "tu as gagné un
-    brunch complet" is the better sentence, and the cheaper ones are still
-    waiting for them on the boutique screen the button leads to.
   */
   const justUnlocked = rewards
     .filter((r) => r.active && r.pointsCost <= seen.now && r.pointsCost > seen.before)
     .sort((a, b) => b.pointsCost - a.pointsCost)[0];
 
   const stampView = stampCardView(diner.stamps, diner.stampsStartedAt, program);
-
-  /* Everything the card face states, computed once, on the server. */
   const type = businessType(cafe.businessType);
   const stampsLeft = Math.max(0, program.stampsRequired - stampView.shown);
   const nudge = nextRewardNudge(diner.balance, rewards);
-  /* Rewards this balance already covers — the number the boutique tab
-     cannot show, and the only reason to look at that tile. */
   const readyCount = rewards.filter((r) => r.active && r.pointsCost <= diner.balance).length;
-  /* How many shops this person carries — the wallet tile's whole point, and a
-     number the header pill cannot show. One query, already indexed by phone. */
-  const cardCount = (await dinerWallet(diner.phone)).length;
+  const pending = diner.codes.length;
+  /* Cheapest first — the row is read left to right and the first card should be
+     the one they can nearly afford, not the one they cannot. */
+  const ladder = rewards.filter((r) => r.active).sort((a, b) => a.pointsCost - b.pointsCost);
 
-  /* The code the cashier scans, drawn HERE rather than one tap away. Encodes the
-     ACCOUNT code, never the phone number — same as /scanner did. */
-  const qr = await QRCode.toString(diner.code, {
-    type: "svg",
-    errorCorrectionLevel: "M",
-    margin: 0,
-    /* Dark modules now, not white: the code sits on the ticket's white pass
-       zone, which is also the polarity the QR spec actually promises decoders
-       will read. The old white-on-dark worked, but this one cannot not-work. */
-    color: { dark: "#1a1128", light: "#00000000" },
-  });
+  /* The code the cashier scans, drawn HERE rather than one tap away — this is
+     the screen someone has open when they reach the till. Encodes the ACCOUNT
+     code, never the phone number. */
+  const qr = await codeQr(diner.code);
 
   return (
-    /*
-      data-carte is a landmark for the suites, not styling. e2e used to assert
-      it had landed here by looking for the words "Tes points" — copy that this
-      redesign deleted, so a passing test started failing on a page that works
-      perfectly. A test should break when the BEHAVIOUR breaks, never when the
-      wording improves. (Second time this session: test-owner was selecting a
-      field by its placeholder.)
-    */
-    /*
-      justify-center, now that the page is a card and a button.
-
-      With the rewards list gone the content stops about a third of the way
-      down, and everything crammed against the top over 400px of nothing reads
-      as a screen that failed to finish loading. Centred, the same two elements
-      read as all there is — which is the point.
-    */
-    /* Top-anchored, not justify-center: centring was invisible while this
-       screen held three stacked blocks, but the single compact ticket floated
-       to mid-screen with a dead band above it the moment the page got short.
-       The ticket is the object of this screen — it sits where the eye starts. */
+    /* data-carte is a landmark for the suites, not styling — a test should break
+       when the BEHAVIOUR breaks, never when the wording improves. */
     <div data-carte className="flex flex-1 flex-col pb-6">
       <MarkOpened slug={slug} />
-      {/*
-        Plays once, over a card that is already rendered and already usable.
-
-        THE TRIGGER IS THE CARD, NOT THE URL. This used to be `nouveau` alone —
-        a ?nouveau=1 flag set by the join action — which meant the arrival was
-        tied to the act of joining rather than to a card actually being new:
-
-          · signed up here            → played  ✓
-          · joined a second shop      → played  ✓
-          · a cashier credited you as a walk-in and made your card FOR you,
-            and you opened it later   → NEVER played  ✗
-          · re-joined a shop you were already in → played anyway, with nothing
-            added                                 ✗
-
-        seen.firstOpen is diner_cafes.last_opened_at being null, which is true
-        exactly once per card no matter how the card came to exist. `nouveau` is
-        kept as well: on the join path the row is stamped in the same request,
-        so the flag is what covers that one race.
-      */}
       {(nouveau || seen.firstOpen) && (
         <CardArrived cafeName={cafe.name} points={program.welcomePoints ?? 0} />
       )}
@@ -153,285 +104,225 @@ export default async function Carte({
           href={`/${slug}/boutique`}
         />
       )}
-      {/*
-        ── THE SHOP'S CARD ────────────────────────────────────────────────
-        Built to the supplied mockup: a circular shop mark, the name at a size
-        you can read across a table, a type pill under it, and the balance on
-        the far side of a hairline rule. Then the stamp track, and one row that
-        carries the earning rate on the left and the distance to the prize on
-        the right.
 
-        Tapping it opens the wallet. The old top bar had a café chip whose job
-        was switching cards; the card is a better target for that than a pill
-        repeating a name printed 130px below it at four times the size.
-      */}
-      <section className="px-4 pb-4 pt-1">
+      {/* ══ THE BANNER — the shop's, not ours ═══════════════════════════ */}
+      <section className="d-banner safe-t relative rounded-b-[30px] px-5 pb-14 [--safe-pt:0.75rem]">
         {/*
-          ONE TICKET, NOT TWO CARDS.
+          The header lives INSIDE the colour.
 
-          The QR used to sit under the card as a second bordered block of almost
-          equal weight — two surfaces stacked, neither winning, nothing shared.
-          Now the whole thing is one boarding pass: the loyalty card on top, a
-          perforated line with two notches punched out of the sides, and the
-          code in a white pass zone at the bottom of the SAME container.
-
-          The notches are a CSS mask (.ticket-notch), not painted circles — the
-          page behind is a gradient, so a painted "hole" would be the wrong
-          colour at every scroll position except one.
+          It is the same three controls the other screens carry in a white bar
+          (profile, card switcher, bell) — but stacking a white strip above a
+          coloured banner put two rows of chrome on the one screen that should
+          open with the shop's name. TopBar returns null here for that reason.
         */}
-        <div
-          className="ticket-notch relative overflow-hidden rounded-[28px]"
-          style={{
-            backgroundImage:
-              "linear-gradient(150deg, #7c56e8 0%, #6039cf 26%, #3d2483 62%, #241748 100%)",
-            boxShadow: "0 24px 50px -20px rgba(101,67,214,.9), inset 0 1px 0 rgba(255,255,255,.22)",
-          }}
-        >
-          {/* one diagonal light pass when the card mounts — see .card-sheen */}
-          <span aria-hidden className="card-sheen" />
+        <header className="flex items-center justify-between gap-2">
+          <Link
+            href={`/${slug}/profil`}
+            aria-label="Mon profil"
+            className="grid h-10 w-10 place-items-center rounded-full transition active:scale-95"
+            style={{ background: "color-mix(in oklab, var(--cafe-ink) 14%, transparent)" }}
+          >
+            <UserIcon className="h-[21px] w-[21px]" />
+          </Link>
 
-        <Link
-          href={`/cartes?from=${slug}`}
-          aria-label={`${cafe.name} — voir toutes mes cartes`}
-          className="block p-5 pb-4 transition active:opacity-90"
-        >
-          {/*
-            SIZED DOWN, HARD.
+          {/* A CONTROL, not a caption: on the card screen the thing people most
+              often want is the OTHER card, and a pill with a chevron says so on
+              sight. */}
+          <Link
+            href={`/cartes?from=${slug}`}
+            className="flex min-w-0 items-center gap-1.5 rounded-full py-1.5 pl-4 pr-3 transition active:scale-[0.97]"
+            style={{ background: "color-mix(in oklab, var(--cafe-ink) 14%, transparent)" }}
+          >
+            <span className="truncate text-[14px] font-extrabold">Mes cartes</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0 opacity-75" aria-hidden>
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </Link>
 
-            This row used to be a 78px logo beside a 29px name allowed to run to
-            two lines, beside a 48px number — three things all shouting, and on a
-            390px screen the name wrapped, the divider stretched, and the whole
-            card became a wall. The wallet's own card row says the same four
-            facts in a third of the height, which is why it reads better; this
-            now follows it. Nothing was removed — it just stopped competing.
-          */}
-          <div className="flex items-center gap-3.5">
-            {cafe.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-              <img
-                src={cafe.logoUrl}
-                alt=""
-                data-shop-logo
-                className="h-[52px] w-[52px] shrink-0 rounded-full bg-white/15 object-cover ring-1 ring-white/20"
+          <Link
+            href={`/${slug}/notifications`}
+            aria-label={
+              pending > 0 ? `${pending} récompense${pending > 1 ? "s" : ""} à récupérer` : "Mes codes"
+            }
+            className="relative grid h-10 w-10 place-items-center rounded-full transition active:scale-95"
+            style={{ background: "color-mix(in oklab, var(--cafe-ink) 14%, transparent)" }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-[21px] w-[21px]" aria-hidden>
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            {pending > 0 && (
+              /* white dot, ringed in the banner's own colour — it has to read on
+                 whatever hue the shop chose */
+              <span
+                className="absolute right-[8px] top-[7px] h-[10px] w-[10px] rounded-full"
+                style={{ background: "var(--cafe-ink)", boxShadow: "0 0 0 2px var(--cafe)" }}
               />
-            ) : (
-              <span className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full bg-white/15 text-[21px] ring-1 ring-white/20">
-                {type.emoji}
-              </span>
             )}
+          </Link>
+        </header>
 
-            <span className="min-w-0 flex-1">
-              {/* ONE line now. A name that needs two lines gets an ellipsis —
-                  better than a card whose height depends on the shop's name. */}
-              <span className="block truncate text-[17px] font-extrabold leading-tight tracking-[-0.015em]">
-                {cafe.name}
-              </span>
-              <span className="mt-1 inline-block rounded-full bg-white/20 px-2.5 py-[2px] text-[11px] font-bold text-white">
-                {type.label}
-              </span>
-            </span>
-
-            <span className="shrink-0 text-right">
-              <CountUp
-                from={seen.before}
-                to={diner.balance}
-                className="block text-[28px] font-extrabold leading-none tabular-nums tracking-[-0.03em]"
-              />
-              <span className="mt-0.5 block text-[11.5px] font-bold text-[#c9b8ff]">points</span>
-            </span>
-          </div>
-
-          {/*
-            ONE progress track, and the line under it NAMES THE PRIZE.
-
-            The stamp mechanic used to be told three times over: ten dots, a
-            sentence saying how far off it was, and a third card saying what it
-            was — so the sentence never named the prize and the prize never said
-            how far. Segments, then one line that says both.
-          */}
-          {program.stampsEnabled ? (
-            <>
-              {/*
-                Circles, not bars. A punch card is round holes in card stock and
-                that is the whole reason the mechanic reads without a caption —
-                the bar version was tidier and said "progress", which is what
-                every bar says. The gift in the last slot is the prize sitting
-                at the end of the row where you can see it coming.
-              */}
-              {/*
-                A GRID, NOT A WRAP.
-
-                `flex-wrap justify-center` left the last row centred under a full
-                one — ten stamps came out as seven and three, floating, which is
-                the ragged block in the screenshot. A grid with a fixed column
-                count fills evenly: ten becomes two rows of five, twelve becomes
-                two of six. Same dots, no raggedness.
-              */}
-              {/*
-                A WELL, NOT LOOSE DOTS. The grid alone spread its columns across
-                the full card width, so the dots floated in empty purple — the
-                "scattered" look. w-fit makes the grid hug its dots, the darker
-                inset ties them together as one object, and mx-auto centres that
-                object. The dots stopped floating because they are IN something.
-              */}
-              <div className="mx-auto mt-4 w-fit rounded-2xl bg-black/[0.18] px-3.5 py-2.5">
-                <div
-                  className="grid gap-1.5"
-                  style={{
-                    gridTemplateColumns: `repeat(${
-                      program.stampsRequired > 6
-                        ? Math.ceil(program.stampsRequired / 2)
-                        : program.stampsRequired
-                    }, minmax(0, 1fr))`,
-                  }}
-                >
-                  {Array.from({ length: program.stampsRequired }).map((_, i) => {
-                    const filled = i < stampView.shown;
-                    const isReward = i === program.stampsRequired - 1;
-                    return (
-                      <span
-                        key={i}
-                        className={`grid h-7 w-7 place-items-center rounded-full ${
-                          filled
-                            ? "bg-white text-[#5b3fd1]"
-                            : "border border-dashed border-white/30 text-white/35"
-                        }`}
-                      >
-                        {filled ? (
-                          <Sparkle className="h-3.5 w-3.5" />
-                        ) : isReward ? (
-                          <GiftIcon className="h-3.5 w-3.5" />
-                        ) : null}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* One line, and it wraps as prose instead of as two columns
-                  fighting over a 390px row — which is what produced the three
-                  ragged right-aligned lines. */}
-              <p className="mt-3.5 text-[12.5px] leading-snug text-white/60">
-                {stampsLeft <= 0 ? (
-                  <b className="font-extrabold text-white">
-                    {program.stampReward} t&apos;attend 🎉
-                  </b>
-                ) : (
-                  <>
-                    Encore{" "}
-                    <b className="font-extrabold text-white">
-                      {stampsLeft} visite{stampsLeft > 1 ? "s" : ""}
-                    </b>{" "}
-                    pour <b className="font-extrabold text-[#c9b8ff]">{program.stampReward}</b>
-                  </>
-                )}
-              </p>
-            </>
+        {/* who — the shop at the size a shop deserves on its own card */}
+        <div className="mt-5 flex items-center gap-3">
+          {cafe.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
+            <img
+              src={cafe.logoUrl}
+              alt=""
+              data-shop-logo
+              className="h-[46px] w-[46px] shrink-0 rounded-full object-cover"
+              style={{ boxShadow: "0 0 0 2px color-mix(in oklab, var(--cafe-ink) 28%, transparent)" }}
+            />
           ) : (
-            <>
-              {nudge && (
-                <span className="mt-5 block h-[9px] overflow-hidden rounded-full bg-white/[0.13]">
-                  <span
-                    className="block h-full rounded-full bg-[#a78bfa]"
-                    style={{
-                      width: `${Math.min(100, Math.round((diner.balance / nudge.target.pointsCost) * 100))}%`,
-                    }}
-                  />
-                </span>
-              )}
-              {nudge && (
-                <p className="mt-3 text-[12.5px] leading-snug text-white/60">
-                  Encore{" "}
-                  <b className="font-extrabold text-white">
-                    {fmtPoints(nudge.needed)} point{nudge.needed >= 2 ? "s" : ""}
-                  </b>{" "}
-                  pour <b className="font-extrabold text-[#c9b8ff]">{nudge.target.label}</b>
-                </p>
-              )}
-            </>
+            <span
+              className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-full text-[20px]"
+              style={{ background: "color-mix(in oklab, var(--cafe-ink) 16%, transparent)" }}
+            >
+              {type.emoji}
+            </span>
           )}
+          <span className="min-w-0">
+            <span className="block truncate text-[18px] font-extrabold leading-tight tracking-[-0.015em]">
+              {cafe.name}
+            </span>
+            <span className="block text-[12px] font-semibold opacity-70">{type.label}</span>
+          </span>
+        </div>
 
-          {/* The rate, a footnote — the perforation below is the separator now,
-              so the border-t this line used to carry is gone. */}
-          <p className="mt-2.5 text-[10.5px] font-medium text-white/35">
-            {rateLabel(program.pointsPerTnd)}
-          </p>
-        </Link>
+        {/* what I have — the one number this screen exists to show */}
+        <div className="mt-6 flex items-end gap-2">
+          <CountUp
+            from={seen.before}
+            to={diner.balance}
+            className="text-[52px] font-extrabold leading-[0.9] tabular-nums tracking-[-0.04em]"
+          />
+          <span className="pb-1.5 text-[15px] font-bold opacity-75">points</span>
+        </div>
 
-        {/* ── the perforation ─────────────────────────────────────────
-            The dashed line sits exactly on the notch centres (--pass-h in
-            .ticket-notch). Above it: the card. Below it: the pass. */}
-        <div aria-hidden className="mx-4 border-t-2 border-dashed border-white/20" />
+        {/* how far — one track, and the line under it NAMES the prize */}
+        {program.stampsEnabled ? (
+          <div className="mt-5">
+            <div
+              className="flex w-fit flex-wrap gap-1.5 rounded-2xl px-3 py-2.5"
+              style={{ background: "color-mix(in oklab, var(--cafe-ink) 12%, transparent)" }}
+            >
+              {Array.from({ length: program.stampsRequired }).map((_, i) => {
+                const filled = i < stampView.shown;
+                const isReward = i === program.stampsRequired - 1;
+                return (
+                  <span
+                    key={i}
+                    className="grid h-6 w-6 place-items-center rounded-full"
+                    style={
+                      filled
+                        ? { background: "var(--cafe-ink)", color: "var(--cafe)" }
+                        : {
+                            border: "1px dashed color-mix(in oklab, var(--cafe-ink) 45%, transparent)",
+                            color: "color-mix(in oklab, var(--cafe-ink) 55%, transparent)",
+                          }
+                    }
+                  >
+                    {filled ? (
+                      <Sparkle className="h-3 w-3" />
+                    ) : isReward ? (
+                      <GiftIcon className="h-3 w-3" />
+                    ) : null}
+                  </span>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-[12.5px] leading-snug opacity-85">
+              {stampsLeft <= 0 ? (
+                <b className="font-extrabold">{program.stampReward} t&apos;attend 🎉</b>
+              ) : (
+                <>
+                  Encore <b className="font-extrabold">{stampsLeft} visite{stampsLeft > 1 ? "s" : ""}</b>{" "}
+                  pour <b className="font-extrabold">{program.stampReward}</b>
+                </>
+              )}
+            </p>
+          </div>
+        ) : nudge ? (
+          <div className="mt-5">
+            <span
+              className="block h-[7px] overflow-hidden rounded-full"
+              style={{ background: "color-mix(in oklab, var(--cafe-ink) 20%, transparent)" }}
+            >
+              <span
+                className="block h-full rounded-full"
+                style={{
+                  width: `${Math.min(100, Math.round((diner.balance / nudge.target.pointsCost) * 100))}%`,
+                  background: "var(--cafe-ink)",
+                }}
+              />
+            </span>
+            <p className="mt-2.5 text-[12.5px] leading-snug opacity-85">
+              Encore{" "}
+              <b className="font-extrabold">
+                {fmtPoints(nudge.needed)} point{nudge.needed >= 2 ? "s" : ""}
+              </b>{" "}
+              pour <b className="font-extrabold">{nudge.target.label}</b>
+            </p>
+          </div>
+        ) : (
+          <p className="mt-5 text-[12.5px] leading-snug opacity-85">{rateLabel(program.pointsPerTnd)}</p>
+        )}
+      </section>
 
-        {/*
-          ── THE PASS ZONE ────────────────────────────────────────────
-          The code itself, not a button to go and get it: the card screen IS
-          the screen someone has open when they reach the till, and one more
-          tap while a queue waits was a tap for nothing. /scanner still exists
-          for the bottom nav and deep links.
-
-          White, inside the same ticket — the QR small on the left, the code
-          readable ACROSS a counter on the right for when a camera won't focus.
-          h-[128px] is load-bearing: it is what .ticket-notch's --pass-h aligns
-          the notches to. Change one, change both.
-        */}
-        <div className="flex h-[128px] items-center gap-4 bg-white px-5">
+      {/* ══ THE CODE — riding up over the banner's edge ══════════════════
+          Overlapping is not decoration: it ties the pass to the card it belongs
+          to, and it puts the one scannable thing on this screen at the exact
+          height a thumb rests. No tap — a queue is waiting. */}
+      {/* relative z-10 is load-bearing: the banner above is positioned, so
+          without it the banner's rounded corner paints OVER the top of this
+          card and clips the QR. */}
+      <section className="relative z-10 -mt-9 px-4">
+        <div className="d-card flex items-center gap-4 px-4 py-4">
           <div
-            className="w-[92px] shrink-0 [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+            className="w-[86px] shrink-0 [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
             dangerouslySetInnerHTML={{ __html: qr }}
           />
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#17121f]/45">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate">
               Mon code client
             </p>
-            <p className="mt-1 font-mono text-[30px] font-extrabold leading-none tracking-[0.14em] text-[#4c2fd6]">
+            <p
+              className="mt-1 font-mono text-[30px] font-extrabold leading-none tracking-[0.14em]"
+              style={{ color: "var(--cafe-text)" }}
+            >
               {diner.code}
             </p>
-            <p className="mt-1.5 text-[11.5px] leading-snug text-[#17121f]/55">
+            <p className="mt-1.5 text-[11.5px] leading-snug text-slate">
               Le serveur le scanne — pas besoin de ton numéro.
             </p>
           </div>
         </div>
-        </div>
       </section>
 
-
-      {/*
-        ── FOUR SHORTCUTS, UNDER THE TICKET ───────────────────────────────
-        The ticket ends a third of the way down and left a dead band above the
-        tab bar. Filling it with links to the tabs would be the clutter this
-        screen just had removed, so each tile carries a LIVE NUMBER the tab bar
-        cannot: how many rewards are within reach right now, how many codes are
-        waiting, how many visits are on record. That is the difference between
-        a shortcut and a second navigation.
-
-        Sized to leave the page exactly one screen — measured at 390×844, no
-        scroll. Two columns, because four in a row puts a 9px label under a
-        20px icon and nobody reads it.
-      */}
-      <section className="mt-4 grid grid-cols-2 gap-2.5 px-4">
-        <Tile
-          href={`/${slug}/boutique`}
-          label="Récompenses"
-          value={
-            readyCount > 0
-              ? `${readyCount} à prendre`
-              : nudge
-                ? `encore ${fmtPoints(nudge.needed)}`
-                : "à découvrir"
-          }
-          accent={readyCount > 0}
-          icon={<GiftIcon className="h-[19px] w-[19px]" />}
+      {/* ══ WHAT IS WAITING ═════════════════════════════════════════════
+          At most one of these, and only when it is true. A permanent banner
+          saying "you have 0 rewards" is furniture; this is either an errand or
+          it is not on the screen. */}
+      {pending > 0 ? (
+        <Waiting
+          href={`/${slug}/codes`}
+          title={`${pending} récompense${pending > 1 ? "s" : ""} à récupérer`}
+          hint="Montre le QR au comptoir — c'est déjà payé."
         />
+      ) : readyCount > 0 ? (
+        <Waiting
+          href={`/${slug}/boutique`}
+          title={`${readyCount} récompense${readyCount > 1 ? "s" : ""} à ta portée`}
+          hint="Tu as assez de points — choisis la tienne."
+        />
+      ) : null}
+
+      {/* ══ THE REST ════════════════════════════════════════════════════ */}
+      <section className="mt-3 grid grid-cols-2 gap-2.5 px-4">
         <Tile
           href={`/${slug}/codes`}
           label="Mes codes"
-          value={
-            diner.codes.length > 0
-              ? `${diner.codes.length} à récupérer`
-              : "aucun"
-          }
-          accent={diner.codes.length > 0}
+          value={pending > 0 ? `${pending} en attente` : "aucun"}
           icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]">
               <rect x="3" y="7" width="18" height="12" rx="2.5" />
@@ -450,100 +341,138 @@ export default async function Carte({
             </svg>
           }
         />
-        <Tile
-          href={`/${slug}/profil`}
-          label="Mon profil"
-          value={diner.name ?? "mon compte"}
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]">
-              <circle cx="12" cy="8" r="3.4" />
-              <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
-            </svg>
-          }
-        />
       </section>
 
-      {/* Full width, because it leaves this shop rather than going deeper into
-          it — and because the wallet otherwise exists only as a pill in the
-          header, which is the one place a first-timer does not look. */}
-      <div className="mt-2.5 px-4">
-        <Tile
-          href={`/cartes?from=${slug}`}
-          label="Mes cartes"
-          value={`${cardCount} boutique${cardCount > 1 ? "s" : ""}`}
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]">
-              <rect x="2.5" y="7.5" width="15" height="11" rx="2.5" />
-              <path d="M6.5 5.5h13a2 2 0 0 1 2 2v9" />
-            </svg>
-          }
-        />
-      </div>
+      {/*
+        ══ WHAT THIS SHOP GIVES ═══════════════════════════════════════════
+        The rewards themselves, on the card screen.
+
+        Taking the ladder off this page (it moved to its own tab) left a hand's
+        width of empty grey under the tiles — and worse, it left the card screen
+        unable to answer "what am I saving FOR?" without a tap. A row of the
+        actual things, with the shop's own photographs on them, is the reason
+        somebody keeps the app installed.
+
+        Horizontal, and deliberately cut off at the right edge: a row that ends
+        exactly at the screen edge looks like the whole list, and nobody swipes
+        a list they believe they have already seen.
+      */}
+      {ladder.length > 0 && (
+        <section className="mt-5">
+          <div className="flex items-baseline justify-between px-4">
+            <h2 className="text-[14.5px] font-extrabold text-charcoal">À gagner ici</h2>
+            <Link
+              href={`/${slug}/boutique`}
+              className="text-[12px] font-bold"
+              style={{ color: "var(--cafe-text)" }}
+            >
+              Tout voir
+            </Link>
+          </div>
+
+          <ul className="mt-2.5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {ladder.slice(0, 6).map((r) => {
+              const affordable = r.pointsCost <= diner.balance;
+              return (
+                <li key={r.id} className="w-[132px] shrink-0 snap-start">
+                  <Link href={`/${slug}/boutique`} className="d-card block overflow-hidden active:scale-[0.98]">
+                    <span
+                      className="grid h-[86px] w-full place-items-center"
+                      style={{ background: "var(--cafe-soft)", color: "var(--cafe-text)" }}
+                    >
+                      {r.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
+                        <img src={r.imageUrl} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <GiftIcon className="h-7 w-7" />
+                      )}
+                    </span>
+                    <span className="block px-3 py-2.5">
+                      <span className="block truncate text-[12.5px] font-bold text-charcoal">
+                        {r.label}
+                      </span>
+                      <span
+                        className="mt-0.5 block text-[11.5px] font-extrabold"
+                        style={{ color: affordable ? "var(--cafe-text)" : undefined }}
+                      >
+                        <span className={affordable ? "" : "text-slate"}>
+                          {affordable ? "à prendre" : `${fmtPoints(r.pointsCost)} points`}
+                        </span>
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
 
 /**
- * One shortcut.
+ * The one errand on the screen.
  *
- * `accent` is not decoration — it lights only when the tile has something
- * waiting behind it (a reward you can take today, a code to collect), so the
- * grid reads at a glance instead of being four identical boxes.
+ * Coloured, because it is the only thing here competing with the banner for
+ * attention and it should win when it exists — but tinted rather than filled, so
+ * it reads as a note from the shop and not as a second banner.
  */
+function Waiting({ href, title, hint }: { href: string; title: string; hint: string }) {
+  return (
+    <Link
+      href={href}
+      className="mx-4 mt-3 flex items-center gap-3 rounded-[20px] px-4 py-3.5 transition active:scale-[0.99]"
+      style={{ background: "var(--cafe-soft)", border: "1px solid var(--cafe-line)" }}
+    >
+      <span
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-full"
+        style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
+      >
+        <GiftIcon className="h-[19px] w-[19px]" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[14px] font-extrabold" style={{ color: "var(--cafe-text)" }}>
+          {title}
+        </span>
+        <span className="block truncate text-[11.5px] text-slate">{hint}</span>
+      </span>
+      <span className="shrink-0 text-[17px] leading-none text-slate/50">›</span>
+    </Link>
+  );
+}
+
+/** One shortcut, white and quiet — the colour on this screen belongs upstairs. */
 function Tile({
   href,
   label,
   value,
   icon,
-  accent = false,
 }: {
   href: string;
   label: string;
   value: string;
   icon: React.ReactNode;
-  accent?: boolean;
 }) {
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3 rounded-[20px] border px-3.5 py-3 transition active:scale-[0.98] ${
-        accent
-          ? "border-[#7ff0b0]/30 bg-[#7ff0b0]/[0.07]"
-          : "border-white/[0.08] bg-white/[0.035]"
-      }`}
+      className="d-card flex items-center gap-3 px-3.5 py-3 transition active:scale-[0.98]"
     >
       <span
-        className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${
-          accent ? "bg-[#7ff0b0]/15 text-[#7ff0b0]" : "bg-white/[0.07] text-[#a78bfa]"
-        }`}
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-full"
+        style={{ background: "var(--cafe-soft)", color: "var(--cafe-text)" }}
       >
         {icon}
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-[12.5px] font-extrabold text-white">{label}</span>
-        <span
-          className={`block truncate text-[11px] font-medium ${
-            accent ? "text-[#7ff0b0]/80" : "text-white/45"
-          }`}
-        >
-          {value}
-        </span>
+        <span className="block truncate text-[12.5px] font-extrabold text-charcoal">{label}</span>
+        <span className="block truncate text-[11px] font-medium text-slate">{value}</span>
       </span>
     </Link>
   );
 }
 
-
-/*
-  StampCard and PointsCard are gone, absorbed into the shop's card above.
-
-  They were two separate boxes drawing the same idea — "how far from the next
-  thing" — and only one could ever be on screen, so the page carried a branch
-  and two implementations to render one line. The stamp version also told the
-  story three times (dots, a sentence, and a third card naming the prize) while
-  the points version repeated a bar the wallet already draws. One progress line
-  on the card, naming the prize, replaces both.
-*/
 /**
  * "1 dinar = 1 point", or "1 dinar = 2 points", or "2 dinars = 1 point".
  *
@@ -574,33 +503,11 @@ function stampCardView(
   stamps: number,
   startedAt: string | null,
   program: LoyaltyProgram,
-): { shown: number; expiry: string | null } {
+): { shown: number } {
   const expiresAt =
     program.stampExpiryDays > 0 && startedAt
       ? new Date(startedAt).getTime() + program.stampExpiryDays * 86_400_000
       : null;
   const lapsed = expiresAt !== null && stamps > 0 && expiresAt < Date.now();
-  const shown = lapsed ? 0 : Math.min(stamps, Math.max(0, program.stampsRequired - 1));
-
-  return {
-    shown,
-    expiry:
-      expiresAt !== null && shown > 0 && !lapsed
-        ? new Date(expiresAt).toLocaleDateString("fr-FR", {
-            day: "2-digit",
-            month: "long",
-            // A card valid a year or more out read as a date already past
-            // without the year ("12 mars" when it's May).
-            ...(new Date(expiresAt).getFullYear() !== new Date().getFullYear()
-              ? { year: "numeric" }
-              : {}),
-          })
-        : null,
-  };
+  return { shown: lapsed ? 0 : Math.min(stamps, Math.max(0, program.stampsRequired - 1)) };
 }
-
-/*
-  expiresIn() lived here and counted a code down to its deadline. Codes have no
-  deadline any more (0031), so it had nothing left to count and every string it
-  returned would have been a lie. Deleted rather than left dark.
-*/

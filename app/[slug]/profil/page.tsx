@@ -2,7 +2,6 @@ import Link from "next/link";
 import { CafeClosed } from "@/components/CafeClosed";
 import { notFound, redirect } from "next/navigation";
 import { GiftIcon, HistoryIcon, ScanIcon, StampIcon } from "@/components/icons";
-import { BRAND_COLOR } from "@/lib/brand";
 import { businessType } from "@/lib/businessTypes";
 import { getCafe, getMember } from "@/lib/data";
 import { logoutDinerAction } from "../actions";
@@ -50,25 +49,34 @@ export default async function Profil({
     <div className="flex flex-1 flex-col px-5 pb-6">
       {/* who */}
       <section className="flex items-center gap-3.5 pb-5 pt-3">
-        <span className="grid h-14 w-14 place-items-center rounded-full bg-white/12 text-[20px] font-extrabold ring-1 ring-white/20">
+        <span
+          className="grid h-14 w-14 place-items-center rounded-full text-[20px] font-extrabold"
+          style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
+        >
           {(diner.name ?? "M").charAt(0).toUpperCase()}
         </span>
         <span className="min-w-0">
-          <span className="block truncate text-[17px] font-extrabold leading-tight">
+          <span className="block truncate text-[17px] font-extrabold leading-tight text-charcoal">
             {diner.name ?? "Membre"}
           </span>
-          <span className="block text-[13px] font-medium text-white/55">{diner.phone}</span>
+          <span className="block text-[13px] font-medium text-slate">{diner.phone}</span>
           {/*
             The code sits with the NAME and the NUMBER because it is an account
             fact, the same four characters at every shop. It used to live under
             "Cette carte", which now reads as a bug: the identical code would
             appear beneath every shop's panel.
           */}
-          <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-white/12 px-2.5 py-1">
-            <span className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-white/55">
+          <span
+            className="mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1"
+            style={{ background: "var(--cafe-soft)" }}
+          >
+            <span className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-slate">
               Mon code client
             </span>
-            <span className="font-mono text-[13px] font-bold tracking-[0.14em] text-white">
+            <span
+              className="font-mono text-[13px] font-bold tracking-[0.14em]"
+              style={{ color: "var(--cafe-text)" }}
+            >
               {diner.code}
             </span>
           </span>
@@ -81,14 +89,17 @@ export default async function Profil({
           <li key={href}>
             <Link
               href={href}
-              className="flex h-full flex-col gap-2 rounded-2xl border border-white/12 bg-white/[0.07] px-4 py-3.5 active:scale-[0.98]"
+              className="d-card flex h-full flex-col gap-2 px-4 py-3.5 active:scale-[0.98]"
             >
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/12">
-                <Icon className="h-[18px] w-[18px] text-white" />
+              <span
+                className="grid h-9 w-9 place-items-center rounded-xl"
+                style={{ background: "var(--cafe-soft)", color: "var(--cafe-text)" }}
+              >
+                <Icon className="h-[18px] w-[18px]" />
               </span>
               <span>
-                <span className="block text-[14px] font-bold text-white">{label}</span>
-                <span className="block text-[11px] text-white/55">{hint}</span>
+                <span className="block text-[14px] font-bold text-charcoal">{label}</span>
+                <span className="block text-[11px] text-slate">{hint}</span>
               </span>
             </Link>
           </li>
@@ -96,22 +107,22 @@ export default async function Profil({
       </ul>
 
       {/* current card summary */}
-      <h2 className="mt-6 text-[14px] font-extrabold text-white">Cette carte</h2>
-      <div className="mt-2.5 flex items-center gap-3 rounded-2xl border border-white/15 bg-white/[0.08] px-3.5 py-3">
+      <h2 className="mt-6 text-[14px] font-extrabold text-charcoal">Cette carte</h2>
+      <div className="d-card mt-2.5 flex items-center gap-3 px-3.5 py-3">
         {cafe.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
           <img src={cafe.logoUrl} alt="" className="h-10 w-10 shrink-0 rounded-xl object-cover" />
         ) : (
           <span
             className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[17px]"
-            style={{ background: BRAND_COLOR }}
+            style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
           >
             {type.emoji}
           </span>
         )}
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13.5px] font-bold text-white">{cafe.name}</span>
-          <span className="block text-[11.5px] font-medium text-white/60">
+          <span className="block truncate text-[13.5px] font-bold text-charcoal">{cafe.name}</span>
+          <span className="block text-[11.5px] font-medium text-slate">
             {type.label} · {fmtPoints(diner.balance)} pts
           </span>
         </span>
@@ -119,7 +130,7 @@ export default async function Profil({
 
       <Link
         href={`/cartes?from=${slug}`}
-        className="mt-2.5 flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] py-3 text-[13px] font-bold text-white active:scale-[0.99]"
+        className="d-card mt-2.5 flex items-center justify-center gap-2 py-3 text-[13px] font-bold text-charcoal active:scale-[0.99]"
       >
         Voir toutes mes cartes →
       </Link>
@@ -127,7 +138,7 @@ export default async function Profil({
       <form action={logoutDinerAction.bind(null, slug)} className="mt-6">
         <button
           type="submit"
-          className="w-full rounded-2xl border border-white/20 py-3 text-[13px] font-bold text-white/80 active:scale-[0.99]"
+          className="w-full rounded-2xl border border-[#ddd9e6] py-3 text-[13px] font-bold text-slate active:scale-[0.99]"
         >
           Changer de compte
         </button>

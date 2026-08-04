@@ -120,6 +120,19 @@ export function InstallPrompt({
   if (gone || (!deferred && !showIos)) return null;
 
   const what = audience === "owner" ? "Ma caisse" : "Ma carte";
+  /*
+    The two apps no longer share a surface: the till is a dark terminal and the
+    customer's app is white. A single dark toast was fine when both were dark;
+    on the client it now lands as a black slab over a white page.
+  */
+  const dark = audience === "owner";
+  const panel = dark
+    ? "border-white/12 bg-[#181031]/95 text-white"
+    : "border-[#ebe9ef] bg-white/95 text-charcoal";
+  const sub = dark ? "text-white/50" : "text-slate";
+  const cta = dark
+    ? "bg-[#7c3aed] text-white"
+    : "text-[var(--cafe-ink)] [background:var(--cafe)]";
 
   return (
     <>
@@ -130,13 +143,15 @@ export function InstallPrompt({
         side of the bar never swallows a tap meant for the page.
       */}
       <div className="pointer-events-none fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-40 flex justify-center px-3">
-        <div className="pointer-events-auto flex w-full max-w-[420px] items-center gap-3 rounded-2xl border border-white/12 bg-[#181031]/95 px-3.5 py-3 shadow-[0_16px_40px_-12px_rgba(0,0,0,.8)] backdrop-blur">
+        <div
+          className={`pointer-events-auto flex w-full max-w-[420px] items-center gap-3 rounded-2xl border px-3.5 py-3 shadow-[0_16px_40px_-16px_rgba(23,18,31,.5)] backdrop-blur ${panel}`}
+        >
           <BrandMark size={40} />
           <span className="min-w-0 flex-1 leading-tight">
-            <span className="block text-[13.5px] font-bold text-white">
+            <span className="block text-[13.5px] font-bold">
               Ajouter à l&apos;écran d&apos;accueil
             </span>
-            <span className="block truncate text-[11.5px] text-white/50">
+            <span className={`block truncate text-[11.5px] ${sub}`}>
               « {what} » — sans store, sans installation
             </span>
           </span>
@@ -150,7 +165,7 @@ export function InstallPrompt({
                 setGone(true);
                 await e.prompt().catch(() => {});
               }}
-              className="shrink-0 rounded-full bg-[#7c3aed] px-4 py-2 text-[12.5px] font-bold text-white active:scale-95"
+              className={`shrink-0 rounded-full px-4 py-2 text-[12.5px] font-bold active:scale-95 ${cta}`}
             >
               Ajouter
             </button>
@@ -158,7 +173,7 @@ export function InstallPrompt({
             <button
               type="button"
               onClick={() => setHowTo(true)}
-              className="shrink-0 rounded-full bg-[#7c3aed] px-4 py-2 text-[12.5px] font-bold text-white active:scale-95"
+              className={`shrink-0 rounded-full px-4 py-2 text-[12.5px] font-bold active:scale-95 ${cta}`}
             >
               Comment ?
             </button>
@@ -167,7 +182,7 @@ export function InstallPrompt({
             type="button"
             onClick={dismiss}
             aria-label="Masquer"
-            className="-mr-1 shrink-0 px-1.5 text-[18px] leading-none text-white/35"
+            className={`-mr-1 shrink-0 px-1.5 text-[18px] leading-none ${sub}`}
           >
             ×
           </button>
@@ -181,11 +196,11 @@ export function InstallPrompt({
           onClick={() => setHowTo(false)}
         >
           <div
-            className="w-full max-w-[420px] rounded-3xl border border-white/12 bg-[#181031] p-5 text-white"
+            className={`w-full max-w-[420px] rounded-3xl border p-5 ${panel}`}
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-[16px] font-extrabold">Ajouter à l&apos;écran d&apos;accueil</p>
-            <p className="mt-1 text-[12.5px] leading-relaxed text-white/55">
+            <p className={`mt-1 text-[12.5px] leading-relaxed ${sub}`}>
               Sur iPhone, c&apos;est Safari qui installe — en trois gestes.
             </p>
             <ol className="mt-4 space-y-3">
@@ -195,17 +210,17 @@ export function InstallPrompt({
                 ["3", "Touche « Ajouter »", "en haut à droite. L'icône Pointili apparaît avec tes autres apps."],
               ].map(([n, title, hint]) => (
                 <li key={n} className="flex gap-3">
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/12 text-[12.5px] font-bold">
+                  <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[12.5px] font-bold ${dark ? "bg-white/12" : "bg-[#f2f1f5]"}`}>
                     {n}
                   </span>
                   <span className="min-w-0">
                     <span className="block text-[13.5px] font-bold leading-snug">{title}</span>
-                    <span className="block text-[12px] leading-snug text-white/50">{hint}</span>
+                    <span className={`block text-[12px] leading-snug ${sub}`}>{hint}</span>
                   </span>
                 </li>
               ))}
             </ol>
-            <p className="mt-4 rounded-xl bg-white/[0.06] px-3.5 py-2.5 text-[11.5px] leading-relaxed text-white/45">
+            <p className={`mt-4 rounded-xl px-3.5 py-2.5 text-[11.5px] leading-relaxed ${dark ? "bg-white/[0.06]" : "bg-[#f2f1f5]"} ${sub}`}>
               Si tu ne vois pas « Sur l&apos;écran d&apos;accueil », ouvre cette page
               dans Safari : Chrome et les autres navigateurs iOS ne peuvent pas
               installer.
@@ -213,7 +228,7 @@ export function InstallPrompt({
             <button
               type="button"
               onClick={() => setHowTo(false)}
-              className="mt-4 w-full rounded-2xl bg-[#7c3aed] py-3 text-[13.5px] font-bold text-white"
+              className={`mt-4 w-full rounded-2xl py-3 text-[13.5px] font-bold ${cta}`}
             >
               C&apos;est fait
             </button>

@@ -2,25 +2,24 @@
 
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { CardIcon, GiftIcon, HistoryIcon } from "./icons";
+import { CardIcon, GiftIcon } from "./icons";
 
 /**
- * The diner's bottom nav — three flat tabs on the deep-purple card, per the
- * product mockup: Carte (points / stamps), Historique (activity), Profil
- * (account + card switcher). Active tab is bright; the rest are dimmed white.
+ * The diner's bottom nav — TWO tabs, white, with the shop's colour marking the
+ * one you are on.
+ *
+ * HISTORIQUE LEFT THE BAR. A tab bar is for the places you move between all
+ * day, and there are two of those: the card you show at the till, and the
+ * rewards you are saving for. Past activity is something you look up — once,
+ * when a balance surprises you — and giving it permanent residence next to the
+ * two live screens made the bar read as a menu rather than a switch. It is one
+ * tap away on the card, on a tile that sits beside the codes tile — where you
+ * go when you are asking a question, not when you are being served.
+ *
+ * The profile went the same way earlier, for the same reason.
  */
 const tabs = [
-  { key: "carte", label: "Carte", Icon: CardIcon, href: "" },
-  { key: "historique", label: "Historique", Icon: HistoryIcon, href: "/historique" },
-  /*
-    The store, not the profile.
-
-    A tab bar has three slots and the profile was spending one of them on
-    something a customer opens perhaps twice ever — to change their name. The
-    rewards are what they came for, and they were two taps away behind "Voir
-    tout". The profile moved to the person icon in the header, which is where
-    every app on the phone already keeps it.
-  */
+  { key: "carte", label: "Ma carte", Icon: CardIcon, href: "" },
   { key: "boutique", label: "Récompenses", Icon: GiftIcon, href: "/boutique" },
 ];
 
@@ -43,15 +42,24 @@ function TabBody({ label, Icon, active }: { label: string; Icon: typeof CardIcon
   const lit = active || pending;
   return (
     <>
-      <Icon
-        className={`h-[22px] w-[22px] transition-colors ${lit ? "text-white" : "text-white/45"} ${
+      {/* The active tab sits in a pill of the shop's own colour — on white,
+          colour alone is too quiet to answer "where am I?" at arm's length. */}
+      {/* The colour is set on the pill and the icons inherit it — they draw in
+          currentColor and take no style prop of their own. */}
+      <span
+        className={`grid h-[34px] w-[58px] place-items-center rounded-full transition ${
           pending && !active ? "animate-pulse" : ""
         }`}
-      />
+        style={{
+          background: lit ? "var(--cafe-soft)" : undefined,
+          color: lit ? "var(--cafe-text)" : "#8b8598",
+        }}
+      >
+        <Icon className="h-[21px] w-[21px]" />
+      </span>
       <span
-        className={`text-[10.5px] font-semibold transition-colors ${
-          lit ? "text-white" : "text-white/45"
-        }`}
+        className="text-[10.5px] font-bold transition-colors"
+        style={{ color: lit ? "var(--cafe-text)" : "#8b8598" }}
       >
         {label}
       </span>
@@ -67,12 +75,7 @@ export function BottomNav({ slug }: { slug: string }) {
   if (pathname === `${base}/rejoindre`) return null;
 
   return (
-    <nav
-      className="sticky bottom-0 z-20 border-t border-white/10 pb-[env(safe-area-inset-bottom)]"
-      /* derive the bar from the café's own colour so a recoloured shop stays
-         consistent — no more fixed purple against a teal (or any) card */
-      style={{ background: "color-mix(in oklab, var(--cafe), #05010a 88%)" }}
-    >
+    <nav className="sticky bottom-0 z-20 border-t border-[#ebe9ef] bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
       <ul className="flex">
         {tabs.map(({ key, label, Icon, href }) => {
           const to = `${base}${href}`;
@@ -82,7 +85,7 @@ export function BottomNav({ slug }: { slug: string }) {
               <Link
                 href={to}
                 aria-current={active ? "page" : undefined}
-                className="flex min-h-[62px] flex-col items-center justify-center gap-1 py-2"
+                className="flex min-h-[62px] flex-col items-center justify-center gap-0.5 py-2"
               >
                 <TabBody label={label} Icon={Icon} active={active} />
               </Link>

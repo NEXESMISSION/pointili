@@ -49,19 +49,22 @@ export default async function Codes({
   return (
     <div className="flex flex-1 flex-col px-5 pb-6">
       <section className="pb-4 pt-3">
-        <h1 className="text-[21px] font-extrabold">Mes codes</h1>
-        <p className="mt-0.5 text-[13px] text-white/60">
+        <h1 className="text-[21px] font-extrabold text-charcoal">Mes codes</h1>
+        <p className="mt-0.5 text-[13px] text-slate">
           Fais scanner le QR au comptoir — rien à dicter.
         </p>
       </section>
 
       {codes.length === 0 ? (
         <div className="d-card px-6 py-12 text-center">
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white/12">
-            <GiftIcon className="h-6 w-6 text-white" />
+          <span
+            className="mx-auto grid h-12 w-12 place-items-center rounded-2xl"
+            style={{ background: "var(--cafe-soft)", color: "var(--cafe-text)" }}
+          >
+            <GiftIcon className="h-6 w-6" />
           </span>
-          <p className="mt-3 text-[14px] font-bold text-white">Aucun code en attente</p>
-          <p className="mx-auto mt-1 max-w-[28ch] text-[13px] text-white/60">
+          <p className="mt-3 text-[14px] font-bold text-charcoal">Aucun code en attente</p>
+          <p className="mx-auto mt-1 max-w-[28ch] text-[13px] text-slate">
             Échange tes points dans les Récompenses — le code apparaîtra ici.
           </p>
         </div>
@@ -80,13 +83,18 @@ export default async function Codes({
             <li
               key={c.code}
               style={{ ["--i" as string]: i }}
-              className="overflow-hidden rounded-[24px] border border-white/[0.08] bg-white/[0.05]"
+              className="d-card overflow-hidden"
             >
-              <div className="px-4 pb-3 pt-3.5">
-                <span className="block text-[10.5px] font-bold uppercase tracking-[0.06em] text-white/50">
+              {/* the header rides on the shop's own tint, so a stack of codes
+                  reads as a stack of tickets from THIS shop */}
+              <div className="px-4 pb-3 pt-3.5" style={{ background: "var(--cafe-soft)" }}>
+                <span
+                  className="block text-[10.5px] font-bold uppercase tracking-[0.06em]"
+                  style={{ color: "var(--cafe-text)" }}
+                >
                   {KIND_LABEL[c.kind] ?? "Récompense"}
                 </span>
-                <span className="mt-0.5 block truncate text-[15px] font-bold text-white">
+                <span className="mt-0.5 block truncate text-[15px] font-bold text-charcoal">
                   {c.label}
                 </span>
                 {/*
@@ -99,7 +107,12 @@ export default async function Codes({
                 */}
               </div>
 
-              <div aria-hidden className="mx-4 border-t-2 border-dashed border-white/15" />
+              {/* the perforation — the tint above it, the white pass below */}
+              <div
+                aria-hidden
+                className="border-t-2 border-dashed"
+                style={{ borderColor: "var(--cafe-line)" }}
+              />
 
               {/* the pass zone — white, because that is the polarity every
                   decoder is promised, and because it reads as "detachable" */}
@@ -109,15 +122,18 @@ export default async function Codes({
                   dangerouslySetInnerHTML={{ __html: c.qr }}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#17121f]/45">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate">
                     À scanner au comptoir
                   </p>
                   {/* kept, and kept BIG: a scratched lens, a dead battery, a
                       shop whose only phone is in someone's pocket */}
-                  <p className="mt-1 font-mono text-[26px] font-extrabold leading-none tracking-[0.14em] text-[#4c2fd6]">
+                  <p
+                    className="mt-1 font-mono text-[26px] font-extrabold leading-none tracking-[0.14em]"
+                    style={{ color: "var(--cafe-text)" }}
+                  >
                     {c.code}
                   </p>
-                  <p className="mt-1.5 text-[11.5px] leading-snug text-[#17121f]/55">
+                  <p className="mt-1.5 text-[11.5px] leading-snug text-slate">
                     Ou dicte le code — les deux marchent.
                   </p>
                 </div>

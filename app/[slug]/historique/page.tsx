@@ -48,31 +48,33 @@ export default async function Historique({
   return (
     <div className="flex flex-1 flex-col px-5 pb-6">
       <section className="pb-4 pt-3">
-        <h1 className="text-[21px] font-extrabold">Historique</h1>
-        <p className="mt-0.5 text-[13px] text-white/60">Tes points et tes récompenses.</p>
+        <h1 className="text-[21px] font-extrabold text-charcoal">Historique</h1>
+        <p className="mt-0.5 text-[13px] text-slate">Tes points et tes récompenses.</p>
       </section>
 
       {activity.length === 0 ? (
-        <p className="d-card px-4 py-12 text-center text-[13.5px] text-white/60">
+        <p className="d-card px-4 py-12 text-center text-[13.5px] text-slate">
           Rien pour l&apos;instant — tes points et tes récompenses s&apos;afficheront ici.
         </p>
       ) : (
-        <ul className="d-card divide-y divide-white/10 px-4">
+        <ul className="d-card divide-y divide-[#f0eef4] px-4">
           {activity.map((a, i) => (
             <li key={i} className="flex items-center justify-between gap-3 py-3">
               <span className="min-w-0">
-                <span className="block truncate text-[13.5px] font-semibold text-white">
+                <span className="block truncate text-[13.5px] font-semibold text-charcoal">
                   {a.reason === "collected" ? `Récupéré${a.label ? ` · ${a.label}` : ""}` : LABELS[a.reason]}
                 </span>
-                <span className="block text-[11px] text-white/50">{ago(a.at)}</span>
+                <span className="block text-[11px] text-slate">{ago(a.at)}</span>
               </span>
               {a.reason === "collected" ? (
-                <span className="shrink-0 text-[12px] font-bold text-white/80">✓ pris</span>
+                <span className="shrink-0 text-[12px] font-bold text-slate">✓ pris</span>
               ) : (
+                /* Earned is the shop's colour, spent is grey: on a white page a
+                   green "+" and a grey "−" was the only thing telling them
+                   apart, and green is not this app's colour to spend. */
                 <span
-                  className={`shrink-0 text-[14px] font-bold tabular-nums ${
-                    a.delta > 0 ? "text-[#7ff0b0]" : "text-white/55"
-                  }`}
+                  className="shrink-0 text-[14px] font-extrabold tabular-nums"
+                  style={{ color: a.delta > 0 ? "var(--cafe-text)" : "#8b8598" }}
                 >
                   {a.delta > 0 ? "+" : ""}
                   {fmtPoints(a.delta)}

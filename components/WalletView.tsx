@@ -8,6 +8,7 @@ import type { WalletCafe } from "@/lib/db";
 import { fmtPoints } from "@/lib/points";
 import { GoChevron } from "@/components/GoChevron";
 import { StampIcon } from "@/components/icons";
+import { cafeVars } from "@/lib/theme";
 
 /**
  * The wallet — every shop the diner holds a card at.
@@ -105,7 +106,7 @@ export function WalletView({
             else router.back();
           }}
           aria-label="Retour"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/[0.07] text-white/80 ring-1 ring-white/10 transition active:scale-[0.95]"
+          className="d-card grid h-10 w-10 shrink-0 place-items-center rounded-full text-slate transition active:scale-[0.95]"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
             <path d="m15 18-6-6 6-6" />
@@ -119,10 +120,10 @@ export function WalletView({
             broke across two lines — and a two-line title beside a one-line
             panel is what made this header look unfinished rather than big.
           */}
-          <h1 className="truncate whitespace-nowrap text-[21px] font-extrabold leading-tight tracking-[-0.02em]">
+          <h1 className="truncate whitespace-nowrap text-[21px] font-extrabold leading-tight tracking-[-0.02em] text-charcoal">
             Mes cartes
           </h1>
-          <p className="text-[12.5px] text-white/45">
+          <p className="text-[12.5px] text-slate">
             {cards.length} boutique{cards.length === 1 ? "" : "s"}
           </p>
         </div>
@@ -137,9 +138,9 @@ export function WalletView({
             onChange={(e) => setQ(e.target.value)}
             placeholder="Rechercher…"
             inputMode="search"
-            className="w-full rounded-2xl bg-white/[0.07] py-2.5 pl-9 pr-4 text-[16px] font-medium text-white outline-none ring-1 ring-white/10 transition placeholder:text-white/40 focus:ring-white/25"
+            className="d-card w-full py-2.5 pl-9 pr-4 text-[16px] font-medium text-charcoal outline-none transition placeholder:text-slate"
           />
-          <span className="pointer-events-none absolute inset-y-0 left-0 grid place-items-center pl-3 text-white/40">
+          <span className="pointer-events-none absolute inset-y-0 left-0 grid place-items-center pl-3 text-slate">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
               <circle cx="11" cy="11" r="7" />
               <path d="m20 20-3.2-3.2" strokeLinecap="round" />
@@ -149,7 +150,7 @@ export function WalletView({
       )}
 
       {shown.length === 0 ? (
-        <p className="mt-4 rounded-2xl bg-white/[0.05] px-6 py-12 text-center text-[13.5px] leading-relaxed text-white/55 ring-1 ring-white/10">
+        <p className="d-card mt-4 px-6 py-12 text-center text-[13.5px] leading-relaxed text-slate">
           {q
             ? "Aucune boutique ne correspond."
             : "Scanne le QR d'un commerce pour ajouter ta première carte."}
@@ -170,9 +171,9 @@ export function WalletView({
 
       {/* The wallet is where a signed-in diner always lands, so it has to be the
           one place that also leads OUT — to the shop-owner side. */}
-      <p className="mt-auto pt-10 text-center text-[11.5px] text-white/35">
+      <p className="mt-auto pt-10 text-center text-[11.5px] text-slate">
         Vous êtes commerçant ?{" "}
-        <Link href="/?pro=1" className="font-semibold text-white/60 underline underline-offset-2">
+        <Link href="/?pro=1" className="font-semibold text-charcoal underline underline-offset-2">
           Espace boutique
         </Link>
       </p>
@@ -197,11 +198,21 @@ export function WalletView({
  * to its own content — see the note on the className below, which is the second
  * time this card was cut in half.
  *
- * EVERY CARD WEARS THE SAME FACE, on purpose. Telling shops apart by colour is
- * tempting and it is a decision already taken against (lib/brand.ts: owners used
- * to recolour their card and the app looked incoherent). Real branded loyalty
- * cards from one issuer look alike too; the logo and the name identify the shop,
- * and one house style is what makes a wallet of six of them look like a wallet.
+ * EVERY CARD WEARS ITS OWN SHOP'S COLOUR.
+ *
+ * That is a reversal, and a deliberate one. The rule used to be one house face
+ * for every card, because owners recolouring their card made the app look
+ * incoherent — a fixed purple nav against an arbitrary tile. The nav is not
+ * fixed any more: the whole client app is white and takes its accent from
+ * whichever shop you are inside, so a wallet of coloured cards on white is the
+ * consistent thing rather than the incoherent one.
+ *
+ * And it is what a wallet is FOR. Six identical purple rectangles told you
+ * nothing until you read them; six cards in six shops' colours are findable at
+ * a glance, which is exactly how a real wallet works.
+ *
+ * The shape stays one house style — a coloured header band, a white body with
+ * the balance — so it still reads as one product issuing six cards.
  */
 /**
  * The account code, labelled and copyable.
@@ -228,19 +239,19 @@ function CodePanel({ code }: { code: string }) {
         );
       }}
       aria-label={`Copier mon code client ${code}`}
-      className="shrink-0 rounded-xl bg-white/[0.07] px-3 py-1.5 text-center ring-1 ring-white/10 transition active:scale-[0.97]"
+      className="d-card shrink-0 rounded-xl px-3 py-1.5 text-center transition active:scale-[0.97]"
     >
-      <span className="block text-[8.5px] font-bold uppercase tracking-[0.08em] text-white/40">
+      <span className="block text-[8.5px] font-bold uppercase tracking-[0.08em] text-slate">
         Mon code client
       </span>
       <span className="mt-0.5 flex items-center justify-center gap-1.5">
-        <span className="font-mono text-[15.5px] font-bold tracking-[0.12em] text-white">{code}</span>
+        <span className="font-mono text-[15.5px] font-bold tracking-[0.12em] text-charcoal">{code}</span>
         {copied ? (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-[#7ff0b0]">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-ok">
             <path d="m5 13 4 4L19 7" />
           </svg>
         ) : (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-white/45">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-slate">
             <rect x="9" y="9" width="11" height="11" rx="2.5" />
             <path d="M5 15V5.5A1.5 1.5 0 0 1 6.5 4H15" />
           </svg>
@@ -266,7 +277,7 @@ function CardRow({
   const pending = card.pendingWins + card.pendingRewards;
 
   return (
-    <li style={{ ["--i" as string]: index }}>
+    <li style={{ ["--i" as string]: index, ...cafeVars(card.primaryColor) }}>
       <Link
         href={`/${card.slug}`}
         /*
@@ -276,33 +287,27 @@ function CardRow({
           There is no aspect-ratio here any more — the card is as tall as it
           needs to be — but the width stays explicit so it cannot come back.
         */
-        className={`group relative block w-full overflow-hidden rounded-[22px] p-4 transition active:scale-[0.985] ${
-          current ? "ring-1 ring-white/25" : "ring-1 ring-white/[0.10]"
-        }`}
-        style={
-          current
-            ? {
-                backgroundImage:
-                  "linear-gradient(150deg, #7c56e8 0%, #6039cf 30%, #4a2ca6 68%, #3a2288 100%)",
-                boxShadow: "0 24px 48px -20px rgba(101,67,214,.9), inset 0 1px 0 rgba(255,255,255,.22)",
-              }
-            : {
-                backgroundImage: "linear-gradient(150deg, #1c1533 0%, #171129 60%, #140f24 100%)",
-                boxShadow: "0 18px 38px -22px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.07)",
-              }
-        }
+        className="d-card group relative block w-full overflow-hidden transition active:scale-[0.985]"
+        /* The card you are currently inside is outlined in its own colour —
+           the only difference between cards, since every one of them is already
+           wearing a different hue. */
+        style={current ? { borderColor: "var(--cafe)", boxShadow: "0 0 0 1px var(--cafe)" } : undefined}
       >
-        {/* ── the shop ── */}
-        <div className="flex items-start gap-3.5">
+        {/* ── the shop, on its own colour ── */}
+        <div className="d-banner flex items-start gap-3.5 px-4 py-3.5">
           {card.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
             <img
               src={card.logoUrl}
               alt=""
-              className="h-[46px] w-[46px] shrink-0 rounded-full bg-white/15 object-cover ring-1 ring-white/20"
+              className="h-[42px] w-[42px] shrink-0 rounded-full object-cover"
+              style={{ boxShadow: "0 0 0 2px color-mix(in oklab, var(--cafe-ink) 28%, transparent)" }}
             />
           ) : (
-            <span className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-full bg-white/15 text-[20px] ring-1 ring-white/20">
+            <span
+              className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full text-[19px]"
+              style={{ background: "color-mix(in oklab, var(--cafe-ink) 16%, transparent)" }}
+            >
               {t.emoji}
             </span>
           )}
@@ -311,81 +316,87 @@ function CardRow({
             {/* wraps rather than truncating: the ACTUELLE pill takes the room a
                 shop name needs, and "Café El M…" identifies nothing — which is
                 the one job this screen has */}
-            <span className="block text-[16.5px] font-extrabold leading-tight line-clamp-2">
+            <span className="block text-[16px] font-extrabold leading-tight line-clamp-2">
               {card.name}
             </span>
-            <span className="block truncate text-[11.5px] font-medium text-white/45">{t.label}</span>
+            <span className="block truncate text-[11.5px] font-medium opacity-70">{t.label}</span>
           </span>
 
           {current && (
-            <span className="flex shrink-0 items-center gap-1 rounded-full bg-white px-2.5 py-1">
-              <span className="h-[7px] w-[7px] rounded-full bg-[#7c3aed]" />
-              <span className="text-[9.5px] font-extrabold uppercase tracking-[0.05em] text-[#1a1030]">
-                Actuelle
-              </span>
+            <span
+              className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1"
+              style={{ background: "var(--cafe-ink)", color: "var(--cafe)" }}
+            >
+              <span className="text-[9.5px] font-extrabold uppercase tracking-[0.05em]">Actuelle</span>
             </span>
           )}
         </div>
 
-        {/*
-          How close they are, then the bar. Named prize, not "ta récompense" —
-          the whole reason to open this card is the thing at the end of it.
-        */}
-        {nudge && (
-          <div className="mt-5">
-            <p className="truncate text-[14px] text-white/70">
-              Encore <b className="font-extrabold text-white">{fmtPoints(nudge.needed)}</b> pour{" "}
-              {nudge.label.toLowerCase()}
-            </p>
-            <span className="mt-2 block h-[6px] overflow-hidden rounded-full bg-black/30">
-              <span
-                className="block h-full rounded-full bg-[#a78bfa]"
-                style={{
-                  width: `${Math.min(100, Math.round((card.balance / nudge.cost) * 100))}%`,
-                }}
-              />
+        <div className="px-4 pb-3.5 pt-3">
+          {/*
+            How close they are, then the bar. Named prize, not "ta récompense" —
+            the whole reason to open this card is the thing at the end of it.
+          */}
+          {nudge && (
+            <div className="mb-3">
+              <p className="truncate text-[13px] text-slate">
+                Encore <b className="font-extrabold text-charcoal">{fmtPoints(nudge.needed)}</b> pour{" "}
+                {nudge.label.toLowerCase()}
+              </p>
+              <span className="mt-1.5 block h-[6px] overflow-hidden rounded-full bg-[#eceaf1]">
+                <span
+                  className="block h-full rounded-full"
+                  style={{
+                    width: `${Math.min(100, Math.round((card.balance / nudge.cost) * 100))}%`,
+                    background: "var(--cafe)",
+                  }}
+                />
+              </span>
+            </div>
+          )}
+
+          {/* ── the balance, which is the only reason to open this card ── */}
+          <div className="flex items-end justify-between gap-3">
+            <span className="min-w-0">
+              <span className="flex items-baseline gap-2">
+                <span
+                  className="text-[28px] font-extrabold leading-none tabular-nums tracking-[-0.03em]"
+                  style={{ color: "var(--cafe-text)" }}
+                >
+                  {fmtPoints(card.balance)}
+                </span>
+                <span className="text-[12px] font-bold text-slate">points</span>
+              </span>
+
+              {/*
+                The stamp count as ONE line, not a row of dots.
+
+                Ten dots belong on the card screen where they are the mechanic you
+                are watching fill. Here they were ten more objects on a list that
+                already has three shops competing for attention, and the wallet
+                only has to answer "how am I doing here" — a number does that.
+              */}
+              {card.stampsEnabled && card.stamps > 0 && (
+                <span className="mt-1.5 flex items-center gap-1.5 text-[11.5px] text-slate">
+                  <StampIcon className="h-[14px] w-[14px]" />
+                  <b className="font-extrabold text-charcoal">{card.stamps}</b> tampon
+                  {card.stamps > 1 ? "s" : ""}
+                </span>
+              )}
+
+              {pending > 0 && (
+                <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gold-soft px-2.5 py-[3px] text-[10.5px] font-extrabold text-gold-deep">
+                  🎁 {pending} à récupérer
+                </span>
+              )}
             </span>
+
+            {/* GoChevron, not a plain arrow: it turns into a spinner while the
+                card is loading. There is no loading.tsx under /[slug] — every page
+                there redirects, and a redirect inside a streamed Suspense boundary
+                stops being an HTTP one — so this is the only tap feedback. */}
+            <GoChevron size={36} />
           </div>
-        )}
-
-        {/* ── the balance, which is the only reason to open this card ── */}
-        <div className="mt-3 flex items-end justify-between gap-3">
-          <span className="min-w-0">
-            <span className="flex items-baseline gap-2">
-              <span className="text-[30px] font-extrabold leading-none tabular-nums tracking-[-0.03em]">
-                {fmtPoints(card.balance)}
-              </span>
-              <span className="text-[12px] font-bold text-[#c9b8ff]">points</span>
-            </span>
-
-            {/*
-              The stamp count as ONE line, not a row of dots.
-
-              Ten dots belong on the card screen where they are the mechanic you
-              are watching fill. Here they were ten more objects on a list that
-              already has three shops competing for attention, and the wallet
-              only has to answer "how am I doing here" — a number does that.
-            */}
-            {card.stampsEnabled && card.stamps > 0 && (
-              <span className="mt-1.5 flex items-center gap-1.5 text-[11.5px] text-white/55">
-                <StampIcon className="h-[14px] w-[14px] text-white/60" />
-                <b className="font-extrabold text-white">{card.stamps}</b> tampon
-                {card.stamps > 1 ? "s" : ""}
-              </span>
-            )}
-
-            {pending > 0 && (
-              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#ffd27a] px-2.5 py-[3px] text-[10.5px] font-extrabold text-[#3a2a06]">
-                🎁 {pending} à récupérer
-              </span>
-            )}
-          </span>
-
-          {/* GoChevron, not a plain arrow: it turns into a spinner while the
-              card is loading. There is no loading.tsx under /[slug] — every page
-              there redirects, and a redirect inside a streamed Suspense boundary
-              stops being an HTTP one — so this is the only tap feedback. */}
-          <GoChevron size={36} />
         </div>
       </Link>
     </li>

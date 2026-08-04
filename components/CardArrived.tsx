@@ -64,23 +64,32 @@ export function CardArrived({
       onClick={() => setOpen(false)}
       className="arrive-veil fixed inset-0 z-50 flex flex-col items-center justify-center px-8 text-center"
     >
-      {/* the card, arriving */}
-      <div className="arrive-card relative w-[248px] rounded-[22px] p-4 text-left shadow-[0_24px_60px_-18px_rgba(0,0,0,.9)] ring-1 ring-white/20"
+      {/*
+        The card, arriving — IN THE SHOP'S COLOUR.
+
+        The veil stays dark, because this is a spotlight and a white page cannot
+        give one. But the object in the spotlight is the thing they have just
+        been given, and it should already look like the card they will be
+        opening tomorrow.
+      */}
+      <div
+        className="arrive-card relative w-[248px] rounded-[22px] p-4 text-left shadow-[0_24px_60px_-18px_rgba(0,0,0,.9)]"
         style={{
           backgroundImage: [
-            "radial-gradient(78% 62% at 6% -6%, rgba(255,255,255,.26) 0%, rgba(255,255,255,.06) 38%, transparent 62%)",
-            "linear-gradient(160deg, #6543d6 0%, #4b2fa9 34%, #33206f 70%, #281a58 100%)",
+            "radial-gradient(78% 62% at 6% -6%, color-mix(in oklab, var(--cafe-ink) 22%, transparent) 0%, transparent 62%)",
+            "linear-gradient(160deg, var(--cafe) 0%, var(--cafe-deep) 100%)",
           ].join(","),
+          color: "var(--cafe-ink)",
         }}
       >
-        <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-white/55">
+        <p className="text-[11px] font-bold uppercase tracking-[0.1em] opacity-70">
           Carte de fidélité
         </p>
-        <p className="mt-1 truncate text-[15.5px] font-extrabold text-white">{cafeName}</p>
+        <p className="mt-1 truncate text-[15.5px] font-extrabold">{cafeName}</p>
         {points > 0 && (
-          <p className="arrive-points mt-5 text-[34px] font-extrabold leading-none tabular-nums text-white">
+          <p className="arrive-points mt-5 text-[34px] font-extrabold leading-none tabular-nums">
             +{points}
-            <span className="ml-1.5 align-middle text-[13px] font-bold text-white/60">points</span>
+            <span className="ml-1.5 align-middle text-[13px] font-bold opacity-70">points</span>
           </p>
         )}
         {/* the points landing on it */}

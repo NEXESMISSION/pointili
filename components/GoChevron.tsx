@@ -37,8 +37,8 @@ export function GoChevron({
   return (
     <span
       style={{ width: size, height: size }}
-      className={`grid shrink-0 place-items-center rounded-full bg-white/[0.14] text-white ring-1 ring-white/20 transition group-active:bg-white/25 ${
-        pending ? "bg-white/30" : ""
+      className={`grid shrink-0 place-items-center rounded-full transition ${
+        pending ? "opacity-80" : ""
       }`}
       aria-hidden
     >

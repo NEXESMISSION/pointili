@@ -28,8 +28,20 @@ const R = 112; // radius
 const TURNS = 5; // full rotations before landing
 const SPIN_MS = 4200;
 
-/* Alternating segment fills, diner palette. */
-const FILLS = ["#7b52ff", "#5b3ad6", "#9a7bff", "#4a2fb8"];
+/*
+  Alternating segment fills, derived from the SHOP's colour at paint time.
+
+  They used to be four fixed purples, which put our brand on the one animated
+  object on the customer's screen. color-mix against the café's own hue keeps
+  the wheel legible whatever they chose — white text sits on --cafe, and every
+  segment is a step of the same colour rather than a different one.
+*/
+const FILLS = [
+  "var(--cafe)",
+  "color-mix(in oklab, var(--cafe), #000 22%)",
+  "color-mix(in oklab, var(--cafe), #fff 18%)",
+  "color-mix(in oklab, var(--cafe), #000 40%)",
+];
 
 /**
  * Point on the wheel edge, θ from 12 o'clock, clockwise.
@@ -152,8 +164,8 @@ export function WheelPlayer({
 
   return (
     <section className="d-card mb-4 px-5 py-6 text-center">
-      <h2 className="text-[15.5px] font-extrabold text-white">La roue</h2>
-      <p className="mx-auto mt-1 max-w-[30ch] text-[13px] text-white/55">
+      <h2 className="text-[15.5px] font-extrabold text-charcoal">La roue</h2>
+      <p className="mx-auto mt-1 max-w-[30ch] text-[13px] text-slate">
         {spinCost > 0
           ? `${fmtPoints(spinCost)} points le tour. Tout le monde repart avec quelque chose.`
           : "Un tour offert. Tout le monde repart avec quelque chose."}
@@ -167,8 +179,10 @@ export function WheelPlayer({
           style={{
             borderLeft: "9px solid transparent",
             borderRight: "9px solid transparent",
-            borderTop: "16px solid #ffffff",
-            filter: "drop-shadow(0 2px 4px rgba(0,0,0,.45))",
+            /* charcoal, not white: the page behind it is white now and a white
+               pointer on a white card is an invisible pointer */
+            borderTop: "16px solid #1a1330",
+            filter: "drop-shadow(0 2px 4px rgba(23,18,31,.28))",
           }}
         />
         <svg
@@ -180,7 +194,7 @@ export function WheelPlayer({
                on top of it fights the easing and overshoots the segment */
           }}
         >
-          <circle cx={C} cy={C} r={R + 5} fill="rgba(255,255,255,.10)" />
+          <circle cx={C} cy={C} r={R + 5} fill="var(--cafe-soft)" />
           {prizes.map((p, i) => {
             const mid = (i + 0.5) * seg;
             const [lx, ly] = pt(mid, R * 0.64);
@@ -190,7 +204,9 @@ export function WheelPlayer({
                 <text
                   x={lx}
                   y={ly}
-                  fill="#fff"
+                  /* whatever the shop's colour can carry — a fixed white label
+                     disappears the moment somebody picks a pale brand */
+                  fill="var(--cafe-ink)"
                   fontSize={prizes.length > 8 ? 8 : 10}
                   fontWeight="700"
                   textAnchor="middle"
@@ -202,30 +218,36 @@ export function WheelPlayer({
               </g>
             );
           })}
-          <circle cx={C} cy={C} r="17" fill="#0d0b14" stroke="rgba(255,255,255,.22)" strokeWidth="2" />
+          <circle cx={C} cy={C} r="17" fill="#fff" stroke="#ebe9ef" strokeWidth="2" />
         </svg>
       </div>
 
       {revealed ? (
         <div ref={wonRef} className="mt-5">
-          <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-white/45">
+          <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-slate">
             Tu as gagné
           </p>
-          <p className="mt-1 text-[17px] font-extrabold text-white">{revealed.label}</p>
-          <p className="mt-3 text-[12.5px] text-white/55">Fais scanner ça au comptoir</p>
+          <p className="mt-1 text-[17px] font-extrabold text-charcoal">{revealed.label}</p>
+          <p className="mt-3 text-[12.5px] text-slate">Fais scanner ça au comptoir</p>
           {/* Same pass zone as a bought reward — a win is collected by the same
               cashier pressing the same button, so it must not look like a
               different kind of object. */}
-          <div className="mx-auto mt-2 w-[138px] rounded-2xl bg-white p-3">
+          <div
+            className="mx-auto mt-2 w-[138px] rounded-2xl bg-white p-3"
+            style={{ border: "1px solid var(--cafe-line)" }}
+          >
             <div
               className="[&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
               dangerouslySetInnerHTML={{ __html: revealed.qr }}
             />
           </div>
-          <p className="mt-2.5 font-mono text-[23px] font-extrabold tracking-[0.14em] text-[#b9a3ff]">
+          <p
+            className="mt-2.5 font-mono text-[23px] font-extrabold tracking-[0.14em]"
+            style={{ color: "var(--cafe-text)" }}
+          >
             {revealed.code}
           </p>
-          <p className="mt-2 text-[12px] text-white/40">
+          <p className="mt-2 text-[12px] text-slate">
             Pas de date limite · il te reste {fmtPoints(revealed.balance)} points
           </p>
         </div>
@@ -234,7 +256,8 @@ export function WheelPlayer({
           <button
             type="submit"
             disabled={spinning || !affordable}
-            className="w-full rounded-2xl bg-white py-3.5 text-[14px] font-extrabold text-[#17121f] transition active:scale-[0.98] disabled:opacity-45"
+            className="w-full rounded-2xl py-3.5 text-[14px] font-extrabold transition active:scale-[0.98] disabled:opacity-45"
+            style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
           >
             {spinning
               ? "La roue tourne…"
@@ -243,7 +266,7 @@ export function WheelPlayer({
                 : `Il te faut ${fmtPoints(spinCost)} points`}
           </button>
           {state.error && (
-            <p className="mt-2 text-[13px] font-semibold text-[#ff9d9d]">{state.error}</p>
+            <p className="mt-2 text-[13px] font-semibold text-seal">{state.error}</p>
           )}
         </form>
       )}

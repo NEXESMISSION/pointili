@@ -23,21 +23,23 @@ export function JoinForm({ slug }: { slug: string }) {
   const action = joinAction.bind(null, slug);
   const [state, formAction, pending] = useActionState(action, initial);
 
+  /* The selected tab is a white card on the tinted rail — on a light screen an
+     opacity step is not a state, it is a rendering artefact. */
   const tab = (active: boolean) =>
     `rounded-xl py-2.5 text-[13px] font-bold transition ${
-      active ? "bg-white/[0.16] text-white shadow-sm" : "text-white/50"
+      active ? "bg-white text-charcoal shadow-sm" : "text-slate"
     }`;
 
-  const label = "mb-2 block text-[13px] font-semibold text-white/80";
+  const label = "mb-2 block text-[13px] font-semibold text-charcoal";
   const box =
     /* 16px is a FLOOR, not a taste: any input under 16px makes iOS zoom the
        whole page the moment it is focused. Shrink everything else, never this. */
-    "w-full rounded-2xl border border-white/14 bg-white/[0.06] px-4 py-3.5 text-[16px] font-medium text-white outline-none transition-colors placeholder:font-normal placeholder:text-white/30 focus:border-[#8b6bff] focus:bg-white/[0.09]";
+    "w-full rounded-2xl border border-[#ddd9e6] bg-white px-4 py-3.5 text-[16px] font-medium text-charcoal outline-none transition-colors placeholder:font-normal placeholder:text-slate/60 focus:border-[var(--cafe)]";
 
   return (
     <div>
       {/* new vs returning — so signing in is a first-class, obvious path */}
-      <div className="mb-5 grid grid-cols-2 gap-1 rounded-2xl bg-white/[0.07] p-1">
+      <div className="mb-5 grid grid-cols-2 gap-1 rounded-2xl bg-[#eceaf1] p-1">
         <button type="button" onClick={() => setReturning(false)} className={tab(!returning)}>
           Nouveau compte
         </button>
@@ -66,7 +68,7 @@ export function JoinForm({ slug }: { slug: string }) {
             offer.
           */}
           <div className="flex items-stretch gap-2">
-            <span className="flex shrink-0 items-center gap-1.5 rounded-2xl border border-white/14 bg-white/[0.06] px-3 text-[14px] font-semibold text-white/80">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-2xl border border-[#ddd9e6] bg-white px-3 text-[14px] font-semibold text-charcoal">
               <span aria-hidden>🇹🇳</span>
               +216
             </span>
@@ -111,7 +113,7 @@ export function JoinForm({ slug }: { slug: string }) {
             <button
               type="button"
               onClick={() => setShowPin((v) => !v)}
-              className="absolute inset-y-0 right-0 px-4 text-[11px] font-bold uppercase tracking-[0.06em] text-white/50"
+              className="absolute inset-y-0 right-0 px-4 text-[11px] font-bold uppercase tracking-[0.06em] text-slate"
             >
               {showPin ? "Cacher" : "Voir"}
             </button>
@@ -123,7 +125,7 @@ export function JoinForm({ slug }: { slug: string }) {
             announced to nobody, so the customer's only model of losing the code
             was losing everything.
           */}
-          <p className="mt-2 text-[12px] leading-snug text-white/45">
+          <p className="mt-2 text-[12px] leading-snug text-slate">
             {returning
               ? "Le code que tu as choisi en créant ton compte. Oublié ? Demande au comptoir."
               : "Garde-le : c'est lui qui te rendra tes cartes sur un autre téléphone. Oublié ? Le commerce peut le réinitialiser."}
@@ -134,7 +136,7 @@ export function JoinForm({ slug }: { slug: string }) {
         {!returning && (
           <div>
             <label htmlFor="name" className={label}>
-              Ton prénom <span className="font-normal text-white/40">(optionnel)</span>
+              Ton prénom <span className="font-normal text-slate">(optionnel)</span>
             </label>
             <input
               id="name"
@@ -150,7 +152,7 @@ export function JoinForm({ slug }: { slug: string }) {
         {state.error && (
           <p
             role="alert"
-            className="rounded-2xl border border-[#ff6b6b]/35 bg-[#ff6b6b]/12 px-4 py-3 text-[13px] font-semibold text-[#ff9a9a]"
+            className="rounded-2xl border border-seal/25 bg-seal-soft px-4 py-3 text-[13px] font-semibold text-seal"
           >
             {state.error}
           </p>
@@ -159,7 +161,8 @@ export function JoinForm({ slug }: { slug: string }) {
         <button
           type="submit"
           disabled={pending}
-          className="!mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#6d4ae6] py-4 text-[14.5px] font-bold text-white shadow-[0_16px_36px_-14px_rgba(109,74,230,.9)] transition active:scale-[0.98] disabled:opacity-60"
+          className="!mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[14.5px] font-bold transition active:scale-[0.98] disabled:opacity-60"
+          style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
         >
           {pending ? "· · ·" : returning ? "Retrouver mes cartes" : "Créer mon compte"}
           {!pending && (
@@ -170,13 +173,13 @@ export function JoinForm({ slug }: { slug: string }) {
         </button>
 
         {!returning && (
-          <p className="pt-0.5 text-center text-[11.5px] leading-relaxed text-white/35">
+          <p className="pt-0.5 text-center text-[11.5px] leading-relaxed text-slate">
             En continuant, tu acceptes nos{" "}
-            <a href="/conditions" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-white/60">
+            <a href="/conditions" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-charcoal">
               conditions
             </a>{" "}
             et notre{" "}
-            <a href="/confidentialite" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-white/60">
+            <a href="/confidentialite" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-charcoal">
               politique de confidentialité
             </a>.
           </p>

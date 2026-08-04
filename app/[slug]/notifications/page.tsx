@@ -105,19 +105,24 @@ function Row({
 }) {
   const inner = (
     <span className="flex items-center gap-3 px-3.5 py-3">
+      {/* `accent` means "this one is waiting for you" — the shop's colour,
+          filled, against the quiet tint every other row wears. */}
       <span
-        className={`grid h-[38px] w-[38px] shrink-0 place-items-center rounded-xl ${
-          accent ? "bg-[#7ff0b0]/15 ring-1 ring-[#7ff0b0]/35" : "bg-white/[0.07]"
-        }`}
+        className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-xl"
+        style={
+          accent
+            ? { background: "var(--cafe)", color: "var(--cafe-ink)" }
+            : { background: "var(--cafe-soft)", color: "var(--cafe-text)" }
+        }
       >
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13.5px] font-bold text-white">{title}</span>
-        <span className="mt-0.5 block truncate text-[11.5px] font-medium text-white/45">{detail}</span>
+        <span className="block truncate text-[13.5px] font-bold text-charcoal">{title}</span>
+        <span className="mt-0.5 block truncate text-[11.5px] font-medium text-slate">{detail}</span>
       </span>
       {right && (
-        <span className="shrink-0 whitespace-nowrap text-[11.5px] font-semibold text-white/35">
+        <span className="shrink-0 whitespace-nowrap text-[11.5px] font-semibold text-slate">
           {right}
         </span>
       )}
@@ -125,7 +130,7 @@ function Row({
   );
 
   return href ? (
-    <Link href={href} className="block transition active:bg-white/[0.05]">
+    <Link href={href} className="block transition active:bg-[#f4f3f7]">
       {inner}
     </Link>
   ) : (
@@ -136,10 +141,8 @@ function Row({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="px-4 pt-6">
-      <h2 className="mb-3 text-[16.5px] font-extrabold text-white">{title}</h2>
-      <ul className="divide-y divide-white/[0.07] overflow-hidden rounded-[20px] border border-white/[0.08] bg-white/[0.03]">
-        {children}
-      </ul>
+      <h2 className="mb-3 text-[16.5px] font-extrabold text-charcoal">{title}</h2>
+      <ul className="d-card divide-y divide-[#f0eef4] overflow-hidden">{children}</ul>
     </section>
   );
 }
@@ -191,11 +194,14 @@ export default async function Notifications({
     <div className="pb-6">
       {nothing ? (
         <div className="px-6 pt-16 text-center">
-          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-white/[0.07]">
-            <Sparkle className="h-6 w-6 text-white/60" />
+          <span
+            className="mx-auto grid h-14 w-14 place-items-center rounded-2xl"
+            style={{ background: "var(--cafe-soft)", color: "var(--cafe-text)" }}
+          >
+            <Sparkle className="h-6 w-6" />
           </span>
-          <p className="mt-4 text-[15px] font-extrabold text-white">Rien de neuf</p>
-          <p className="mx-auto mt-1.5 max-w-[30ch] text-[13.5px] leading-relaxed text-white/55">
+          <p className="mt-4 text-[15px] font-extrabold text-charcoal">Rien de neuf</p>
+          <p className="mx-auto mt-1.5 max-w-[30ch] text-[13.5px] leading-relaxed text-slate">
             Ta prochaine visite chez {cafe.name} apparaîtra ici : les points
             gagnés, les récompenses débloquées, les codes à récupérer.
           </p>
@@ -209,7 +215,7 @@ export default async function Notifications({
             <li key={c.code}>
               <Row
                 accent
-                icon={<GiftIcon className="h-[18px] w-[18px] text-[#7ff0b0]" />}
+                icon={<GiftIcon className="h-[18px] w-[18px]" />}
                 title={c.label}
                 detail={`Code ${c.code} — à montrer au comptoir`}
                 href={`/${slug}/codes`}
@@ -225,7 +231,7 @@ export default async function Notifications({
           {affordable.map((r) => (
             <li key={r.id}>
               <Row
-                icon={<Sparkle className="h-[18px] w-[18px] text-[#c9b8ff]" />}
+                icon={<Sparkle className="h-[18px] w-[18px]" />}
                 title={r.label}
                 /* Short on purpose: this row carries a right-hand action, so a
                    longer sentence truncates mid-word on a 390px screen. */
@@ -245,9 +251,7 @@ export default async function Notifications({
             <Row
               accent={stampCardFull}
               icon={
-                <StampIcon
-                  className={`h-[18px] w-[18px] ${stampCardFull ? "text-[#7ff0b0]" : "text-[#c9b8ff]"}`}
-                />
+                <StampIcon className="h-[18px] w-[18px]" />
               }
               title={stampCardFull ? "Ta carte est pleine 🎉" : `Encore ${stampsLeft} visite${stampsLeft! > 1 ? "s" : ""}`}
               detail={
@@ -265,12 +269,13 @@ export default async function Notifications({
       {activity.length > 0 && (
         <section className="px-4 pt-6">
           <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="text-[16.5px] font-extrabold text-white">Ton activité</h2>
-            <Link href={`/${slug}/historique`} className="text-[13.5px] font-bold text-[#a78bfa]">
+            <h2 className="text-[16.5px] font-extrabold text-charcoal">Ton activité</h2>
+            <Link href={`/${slug}/historique`} className="text-[13.5px] font-bold"
+              style={{ color: "var(--cafe-text)" }}>
               Historique
             </Link>
           </div>
-          <ul className="divide-y divide-white/[0.07] overflow-hidden rounded-[20px] border border-white/[0.08] bg-white/[0.03]">
+          <ul className="d-card divide-y divide-[#f0eef4] overflow-hidden">
             {activity.map((a, i) => {
               const d = describe(a, cafe.name);
               return (
@@ -278,11 +283,9 @@ export default async function Notifications({
                   <Row
                     icon={
                       d.tone === "up" ? (
-                        <Sparkle className="h-[18px] w-[18px] text-[#7ff0b0]" />
-                      ) : d.tone === "down" ? (
-                        <GiftIcon className="h-[18px] w-[18px] text-[#c9b8ff]" />
+                        <Sparkle className="h-[18px] w-[18px]" />
                       ) : (
-                        <GiftIcon className="h-[18px] w-[18px] text-white/55" />
+                        <GiftIcon className="h-[18px] w-[18px]" />
                       )
                     }
                     title={d.title}

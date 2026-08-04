@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { WalletView } from "@/components/WalletView";
 import { currentDiner } from "@/lib/auth/diner";
-import { BRAND_COLOR, DINER_BG } from "@/lib/brand";
 import { dinerWallet } from "@/lib/db";
 
 export const metadata = { title: "Mes cartes" };
@@ -57,10 +56,10 @@ export default async function Cartes({
   );
 
   return (
-    <div
-      className="safe-t safe-b app-shell app-shell--dark min-h-dvh px-5 text-white [--safe-pb:2.5rem] [--safe-pt:1.5rem]"
-      style={{ ["--cafe" as string]: BRAND_COLOR, ...DINER_BG }}
-    >
+    /* No --cafe here on purpose: this screen belongs to no single shop. Each
+       card carries its own colour (see WalletView), and the page around them
+       stays the same white as the rest of the client app. */
+    <div className="safe-t safe-b app-shell app-shell--light d-shell min-h-dvh px-5 [--safe-pb:2.5rem] [--safe-pt:1.5rem]">
       {/* The wallet is the only shop-neutral diner screen, which makes it the
           right home for a code that is the same at every shop. */}
       <WalletView

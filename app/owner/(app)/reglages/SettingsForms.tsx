@@ -13,6 +13,8 @@ import {
   type Ticket,
 } from "@/lib/rewards";
 import { BRAND_COLOR } from "@/lib/brand";
+import { businessType } from "@/lib/businessTypes";
+import { BRAND_SWATCHES, inkOn, textOnWhite } from "@/lib/theme";
 import type { Cafe, Game, LoyaltyProgram, Reward } from "@/lib/types";
 import {
   deleteRewardAction,
@@ -462,6 +464,8 @@ export function CafeForm({ cafe }: { cafe: Cafe }) {
           <BusinessTypePicker defaultValue={cafe.businessType} collapsible />
         </div>
 
+        <BrandColour cafe={cafe} />
+
         <Advanced>
           <Toggle
             name="showEngagement"
@@ -478,6 +482,128 @@ export function CafeForm({ cafe }: { cafe: Cafe }) {
       </form>
     </div>
   );
+}
+
+/**
+ * THE COLOUR OF THE CUSTOMER'S APP.
+ *
+ * It writes businesses.primary_color, which every diner screen reads (see
+ * lib/theme.ts). The column and its validation have existed all along — what was
+ * missing was any way for the person who owns the brand to set it.
+ *
+ * Eight swatches for the shop that just wants to look like itself in one tap,
+ * and a real colour picker for the one that knows its hex. Neither can produce
+ * an unreadable screen: the text on the banner is computed from the colour, not
+ * assumed, and the preview here shows exactly what that produces — including the
+ * flip to dark text on a pale brand, which is the moment an owner needs to SEE
+ * rather than be told about.
+ */
+function BrandColour({ cafe }: { cafe: Cafe }) {
+  const [colour, setColour] = useState(cafe.primaryColor || BRAND_SWATCHES[0].hex);
+  const ink = inkOn(colour);
+  const type = businessType(cafe.businessType);
+
+  return (
+    <div className="py-2.5">
+      <span className="block text-[13px] font-semibold text-white">Couleur de la marque</span>
+      <span className="mt-0.5 mb-2.5 block text-[12px] text-white/55">
+        Elle habille la carte de vos clients — en-tête, boutons, progression.
+      </span>
+
+      {/* the value that actually gets saved */}
+      <input type="hidden" name="primaryColor" value={colour} />
+
+      <div className="flex flex-wrap gap-2">
+        {BRAND_SWATCHES.map((s) => {
+          const on = s.hex.toLowerCase() === colour.toLowerCase();
+          return (
+            <button
+              key={s.hex}
+              type="button"
+              onClick={() => setColour(s.hex)}
+              aria-label={s.name}
+              aria-pressed={on}
+              className={`h-10 w-10 rounded-full transition active:scale-95 ${
+                on ? "ring-2 ring-white ring-offset-2 ring-offset-[#1a1030]" : "ring-1 ring-white/20"
+              }`}
+              style={{ background: s.hex }}
+            />
+          );
+        })}
+
+        {/*
+          The free picker, as a ninth swatch.
+
+          A separate labelled row for it made the eight above look like the only
+          real answer. It is the same size and the same shape as they are — it
+          just opens the system colour wheel, and it shows the CURRENT colour so
+          a shop that pasted its own hex can still see what it chose.
+        */}
+        <label
+          className="relative grid h-10 w-10 cursor-pointer place-items-center rounded-full ring-1 ring-white/20"
+          style={{
+            background:
+              "conic-gradient(#ff4d4d, #ffd400, #4ade80, #22d3ee, #6d4ae6, #ec4899, #ff4d4d)",
+          }}
+        >
+          <input
+            type="color"
+            value={colour}
+            onChange={(e) => setColour(e.target.value)}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            aria-label="Choisir une autre couleur"
+          />
+          <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[#1a1030] text-[13px] font-bold leading-none text-white">
+            +
+          </span>
+        </label>
+      </div>
+
+      {/* what the customer will actually be looking at */}
+      <p className="mt-3.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white/45">
+        Aperçu côté client
+      </p>
+      <div className="mt-1.5 overflow-hidden rounded-2xl border border-white/10">
+        <div
+          className="flex items-center gap-3 px-3.5 py-3"
+          style={{
+            backgroundImage: `linear-gradient(168deg, ${colour} 0%, ${mixToBlack(colour, 0.28)} 100%)`,
+            color: ink,
+          }}
+        >
+          {cafe.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
+            <img src={cafe.logoUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
+          ) : (
+            <span
+              className="grid h-9 w-9 place-items-center rounded-full text-[16px]"
+              style={{ background: "color-mix(in oklab, currentColor 16%, transparent)" }}
+            >
+              {type.emoji}
+            </span>
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13.5px] font-extrabold">{cafe.name}</span>
+            <span className="block text-[11px] font-bold opacity-75">130 points</span>
+          </span>
+        </div>
+        <div className="bg-white px-3.5 py-2.5">
+          <span className="text-[11px] font-bold" style={{ color: textOnWhite(colour) }}>
+            Encore 20 points pour votre récompense
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** The banner's darker end, mirrored from lib/theme so the preview cannot lie. */
+function mixToBlack(hex: string, amount: number): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.round(v * (1 - amount)));
+  return `#${c.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 }
 
 /* Les récompenses --------------------------------------------------------- */

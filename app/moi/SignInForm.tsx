@@ -14,7 +14,7 @@ export function SignInForm() {
   return (
     <form action={action} className="space-y-2.5">
       <label className="block">
-        <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.1em] text-white/45">
+        <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.1em] text-slate">
           Ton numéro
         </span>
         <input
@@ -30,7 +30,7 @@ export function SignInForm() {
       </label>
 
       <label className="block">
-        <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.1em] text-white/45">
+        <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.1em] text-slate">
           Ton code secret
         </span>
         <input
@@ -49,13 +49,14 @@ export function SignInForm() {
       {state.error && (
         <p
           role="alert"
-          className="rounded-xl border border-[#ff6b6b]/35 bg-[#ff6b6b]/12 px-3.5 py-2.5 text-[13px] font-semibold text-[#ff9a9a]"
+          className="rounded-xl border border-seal/25 bg-seal-soft px-3.5 py-2.5 text-[13px] font-semibold text-seal"
         >
           {state.error}
         </p>
       )}
 
-      <button type="submit" disabled={pending} className="!mt-4 w-full rounded-xl bg-royal py-4 text-[14px] font-bold text-white transition active:scale-[0.98] disabled:opacity-60">
+      <button type="submit" disabled={pending} className="!mt-4 w-full rounded-xl py-4 text-[14px] font-bold transition active:scale-[0.98] disabled:opacity-60"
+        style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}>
         {pending ? "· · ·" : "Voir mes cartes ✦"}
       </button>
     </form>

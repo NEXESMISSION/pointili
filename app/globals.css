@@ -169,24 +169,23 @@ h4 {
   shape and rebuilding it wide would be building for a visitor who barely
   exists.
 
-  What was NOT a decision was the page around it: the app is dark and the page
-  under it was #eae5f6, so two thirds of a desktop window was pale lavender with
-  a dark slab down the middle. It read as broken rather than deliberate — the
-  customer's own note was "am I looking at a page or at a screenshot of a
-  phone?".
+  What was NOT a decision was the page around it: the column and the page behind
+  it were different colours, so two thirds of a desktop window was one shade
+  with a slab of another down the middle. It read as broken rather than
+  deliberate — the customer's own note was "am I looking at a page or at a
+  screenshot of a phone?".
 
-  So the surround is painted to match, and only for the DARK diner screens.
-  Keyed off .app-shell--dark, never .app-shell alone: app/not-found.tsx is a
-  light screen wearing the same class, and this rule would black out its page
-  and leave dark text on it. #07030f is DINER_BG's own base colour (lib/brand.ts)
-  — same value on purpose, so the column edge shows no seam.
+  So the surround is painted to match the column, one step darker so the phone
+  still reads as an object rather than as a page that failed to fill. Keyed off
+  .app-shell--light, never .app-shell alone: other screens wear the same class
+  and set their own surface.
 
   :has() is the mechanism and it degrades correctly: a browser without it simply
-  keeps the old light surround.
+  keeps the default page colour.
 */
 @media (min-width: 768px) {
-  body:has(.app-shell--dark) {
-    background: #07030f;
+  body:has(.app-shell--light) {
+    background: #e9e8ee;
   }
 }
 
@@ -473,34 +472,56 @@ h4 {
   color: #ff8fa3;
 }
 
-/* ── deep-purple diner theme (the card mockup) ────────────────────────────
-   A dark, premium loyalty card. The hue comes from each café's --cafe colour
-   (default deep purple), so a shop that recolours still gets a coherent dark
-   card. Panels are a faint translucent white so they read one step lighter
-   than the gradient behind them. */
-/* Panels lift a little harder now that the page behind them is near-black —
-   same frosted look, enough separation to still read as a raised surface. */
+/* ══ the diner app, in white ══════════════════════════════════════════════
+   WHY IT IS NOT DARK ANY MORE.
+
+   The deep-purple card was OUR brand on every shop's screen: a boulangerie, a
+   barber and a coffee roaster all handed their customer the same purple app
+   with their logo shrunk into the corner of it. A loyalty card belongs to the
+   shop that gives it out.
+
+   So the app is white and quiet, and exactly ONE surface carries colour: the
+   banner at the top of the card, which is the shop's own (lib/theme.ts derives
+   every token from businesses.primary_color and guarantees the text on it stays
+   readable). White is also what makes that possible — a coloured banner on a
+   coloured page is two brands arguing; on white it is simply theirs.
+
+   Everything below is neutral on purpose. No lavender tints: a grey that leans
+   purple would put OUR hue back on a screen we just handed over. */
+.d-shell {
+  background: #f6f6f8;
+  color: #17121f;
+}
+/* the primary surface — white, lifted off the page rather than outlined */
 .d-card {
-  background: rgba(255, 255, 255, 0.085);
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 26px;
-  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.85);
-}
-.d-soft {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 18px;
-}
-/* a filled loyalty stamp — white disc, café-coloured mark */
-.d-stamp {
   background: #fff;
-  color: var(--cafe, #5b3fd1);
-  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.5);
+  border: 1px solid #ebe9ef;
+  border-radius: 22px;
+  box-shadow: 0 1px 2px rgba(23, 18, 31, 0.04), 0 10px 26px -20px rgba(23, 18, 31, 0.35);
+}
+/* a panel nested inside a card, or a quiet row on the page */
+.d-soft {
+  background: #f2f1f5;
+  border: 1px solid #eceaf1;
+  border-radius: 16px;
+}
+/* a filled loyalty stamp — the shop's colour, with text it can carry */
+.d-stamp {
+  background: var(--cafe, #5b3fd1);
+  color: var(--cafe-ink, #fff);
 }
 .d-stamp--empty {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1.5px dashed rgba(255, 255, 255, 0.28);
-  color: rgba(255, 255, 255, 0.45);
+  background: #f4f3f7;
+  border: 1.5px dashed #d8d4e2;
+  color: #a9a3b8;
+}
+
+/* The one coloured surface: the shop's banner, falling from its own colour into
+   a darker end of the same hue so it reads as a printed card and not a flat
+   swatch. --cafe-deep is computed, never guessed. */
+.d-banner {
+  background-image: linear-gradient(168deg, var(--cafe) 0%, var(--cafe-deep) 100%);
+  color: var(--cafe-ink);
 }
 
 /*

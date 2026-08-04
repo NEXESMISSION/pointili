@@ -4,7 +4,7 @@ import { CafeClosed } from "@/components/CafeClosed";
 import { GoChevron } from "@/components/GoChevron";
 import { Sparkle } from "@/components/icons";
 import { businessType } from "@/lib/businessTypes";
-import QRCode from "qrcode";
+import { codeQr } from "@/lib/qr";
 import { getCafe, getMember } from "@/lib/data";
 import { fmtPoints } from "@/lib/points";
 
@@ -36,30 +36,16 @@ export default async function Scanner({
   if (!diner) redirect(`/${slug}/rejoindre`);
 
   /*
-    WHITE modules on a DARK card, not a white card.
+    DARK MODULES AGAIN, now that the app is white.
 
-    The old screen printed a white slab in the middle of a dark app, which is
-    what every QR screen did in 2013 because scanners needed the quiet zone to
-    be paper-white. Phone cameras have not needed that in years — they read
-    light-on-dark fine, and the CSS quiet zone below is real padding, not a
-    guess. What the white slab actually cost was the shop: at arm's length
-    across a counter the brightest thing on screen was a rectangle, and the
-    café it belonged to was a 24px line above it.
-
-    INVERTING A QR IS NOT FREE and it was checked rather than assumed: the
-    polarity the spec assumes is dark-on-light, and plenty of decoders refuse
-    the other way round. The one that matters is jsQR, because that is what
-    this product's own till runs (components/QrScanner). Rendered the real page,
-    cut the real QR out of the real screenshot, and put it through jsQR: reads
-    "844Y" as drawn, and also inverted. Safe — but re-check it if the decoder
-    is ever swapped.
+    This used to be white-on-dark, deliberately: the app was a dark card and a
+    white slab in the middle of it made the QR — not the shop — the brightest
+    thing on the screen. That reasoning died with the dark app. Inverted modules
+    on a white page would simply be an invisible QR, so this is back to the
+    polarity the spec actually promises decoders will read, from the one
+    renderer every code in the product now shares.
   */
-  const qr = await QRCode.toString(diner.code, {
-    type: "svg",
-    errorCorrectionLevel: "M",
-    margin: 0,
-    color: { dark: "#ffffff", light: "#00000000" },
-  });
+  const qr = await codeQr(diner.code);
 
   const type = businessType(cafe.businessType);
 
@@ -68,43 +54,42 @@ export default async function Scanner({
       {/* ── whose counter this is ── */}
       <section className="pt-2 text-center">
         <span className="relative mx-auto grid h-[74px] w-[74px] place-items-center">
-          {/* the glow is what makes a flat circle read as a lit object */}
-          <span
-            aria-hidden
-            className="absolute inset-[-18%] rounded-full"
-            style={{
-              background: "radial-gradient(closest-side, rgba(124,86,232,.55), transparent 72%)",
-            }}
-          />
           {cafe.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
             <img
               src={cafe.logoUrl}
               alt=""
-              className="relative h-[74px] w-[74px] rounded-full bg-white/10 object-cover ring-1 ring-white/20"
+              className="relative h-[74px] w-[74px] rounded-full object-cover"
+              style={{ boxShadow: "0 0 0 2px var(--cafe-line)" }}
             />
           ) : (
-            <span className="relative grid h-[74px] w-[74px] place-items-center rounded-full bg-white/10 text-[34px] ring-1 ring-white/20">
+            <span
+              className="relative grid h-[74px] w-[74px] place-items-center rounded-full text-[34px]"
+              style={{ background: "var(--cafe-soft)" }}
+            >
               {type.emoji}
             </span>
           )}
         </span>
 
-        <h1 className="mt-3 text-[25px] font-extrabold leading-tight tracking-[-0.02em]">
+        <h1 className="mt-3 text-[25px] font-extrabold leading-tight tracking-[-0.02em] text-charcoal">
           {cafe.name}
         </h1>
-        <span className="mt-2 inline-block rounded-full bg-[#7c56e8] px-3.5 py-[3px] text-[12.5px] font-bold text-white">
+        <span
+          className="mt-2 inline-block rounded-full px-3.5 py-[3px] text-[12.5px] font-bold"
+          style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
+        >
           {type.label}
         </span>
       </section>
 
       {/* ── the thing the cashier points a camera at ── */}
-      <div className="mt-5 rounded-[26px] border border-white/[0.10] bg-white/[0.035] px-6 pb-5 pt-6 text-center">
+      <div className="d-card mt-5 px-6 pb-5 pt-6 text-center">
         <div className="mx-auto w-[182px] [&>svg]:h-auto [&>svg]:w-full">
           <div dangerouslySetInnerHTML={{ __html: qr }} />
         </div>
 
-        <p className="mt-5 text-[11.5px] font-bold uppercase tracking-[0.10em] text-white/45">
+        <p className="mt-5 text-[11.5px] font-bold uppercase tracking-[0.10em] text-slate">
           Mon code client
         </p>
         {/*
@@ -112,22 +97,31 @@ export default async function Scanner({
           shop has no phone free — so it is set at a size that can be READ OUT
           across a counter rather than squinted at.
         */}
-        <p className="mt-1.5 font-mono text-[31px] font-extrabold leading-none tracking-[0.16em] text-[#a78bfa]">
+        <p
+          className="mt-1.5 font-mono text-[31px] font-extrabold leading-none tracking-[0.16em]"
+          style={{ color: "var(--cafe-text)" }}
+        >
           {diner.code}
         </p>
       </div>
 
       {/* ── what the person holding the phone should expect to happen ── */}
-      <div className="mt-3 flex items-start gap-3 rounded-[22px] border border-white/[0.08] bg-white/[0.035] px-4 py-3">
-        <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#7c56e8]/25 text-[#c9b8ff]">
+      <div className="d-soft mt-3 flex items-start gap-3 px-4 py-3">
+        <span
+          className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full"
+          style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
+        >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
             <path d="M12 16v-5M12 8h.01" />
             <circle cx="12" cy="12" r="9" />
           </svg>
         </span>
-        <p className="text-[13.5px] leading-relaxed text-white/70">
+        <p className="text-[13.5px] leading-relaxed text-slate">
           Le serveur scanne ce QR (ou saisis le code) —{" "}
-          <b className="font-extrabold text-[#a78bfa]">pas besoin</b> de donner ton numéro.
+          <b className="font-extrabold" style={{ color: "var(--cafe-text)" }}>
+            pas besoin
+          </b>{" "}
+          de donner ton numéro.
         </p>
       </div>
 
@@ -140,14 +134,17 @@ export default async function Scanner({
       */}
       <Link
         href={`/${slug}`}
-        className="mt-3 flex items-center gap-3.5 rounded-[22px] border border-white/[0.08] bg-white/[0.035] px-4 py-3 transition active:scale-[0.99]"
+        className="d-card mt-3 flex items-center gap-3.5 px-4 py-3 transition active:scale-[0.99]"
       >
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#7c56e8]">
-          <Sparkle className="h-6 w-6 text-white" />
+        <span
+          className="grid h-12 w-12 shrink-0 place-items-center rounded-full"
+          style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
+        >
+          <Sparkle className="h-6 w-6" />
         </span>
         <span className="min-w-0 flex-1 text-left">
-          <span className="block text-[13px] font-medium text-white/55">Solde actuel</span>
-          <span className="block text-[17px] font-extrabold text-white">
+          <span className="block text-[13px] font-medium text-slate">Solde actuel</span>
+          <span className="block text-[17px] font-extrabold text-charcoal">
             {fmtPoints(diner.balance)} points
           </span>
         </span>

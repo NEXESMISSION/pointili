@@ -34,29 +34,30 @@ export default async function Recompenses({
   const ladder = [...rewards].sort((a, b) => a.pointsCost - b.pointsCost);
 
   return (
-    <div className="relative flex flex-1 flex-col overflow-hidden px-5 pb-8">
-      {/* the same ambient glow as the signup screen — one client look */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-28 left-1/2 h-[300px] w-[300px] -translate-x-1/2 rounded-full opacity-60 blur-[70px]"
-        style={{ background: "radial-gradient(circle, #7b52ff 0%, transparent 68%)" }}
-      />
-
+    <div className="relative flex flex-1 flex-col px-5 pb-8">
       <div className="relative mx-auto w-full max-w-[420px]">
         <section className="pb-5 pt-3 text-center">
-          <h1 className="text-[21px] font-extrabold text-white">Choisis ta récompense</h1>
-          <p className="mt-1 text-[13.5px] text-white/55">
+          <h1 className="text-[21px] font-extrabold text-charcoal">Choisis ta récompense</h1>
+          <p className="mt-1 text-[13.5px] text-slate">
             Échange tes points contre du réel, chez {cafe.name}.
           </p>
-          <p className="mt-3 inline-flex items-baseline gap-1.5 rounded-full bg-white/[0.08] px-4 py-1.5">
-            <span className="text-[16.5px] font-extrabold tabular-nums text-[#b9a3ff]">
+          {/* The balance in the shop's own colour — it is the number every row
+              below is measured against. */}
+          <p
+            className="mt-3 inline-flex items-baseline gap-1.5 rounded-full px-4 py-1.5"
+            style={{ background: "var(--cafe-soft)" }}
+          >
+            <span
+              className="text-[16.5px] font-extrabold tabular-nums"
+              style={{ color: "var(--cafe-text)" }}
+            >
               {fmtPoints(diner.balance)}
             </span>
-            <span className="text-[12.5px] font-semibold text-white/60">points disponibles</span>
+            <span className="text-[12.5px] font-semibold text-slate">points disponibles</span>
           </p>
           {nudge && (
-            <p className="mt-2 text-[12.5px] text-white/50">
-              Encore <b className="text-white/80">{nudge.needed}</b> pour{" "}
+            <p className="mt-2 text-[12.5px] text-slate">
+              Encore <b className="font-extrabold text-charcoal">{nudge.needed}</b> pour{" "}
               {nudge.target.label.toLowerCase()}.
             </p>
           )}
@@ -73,11 +74,14 @@ export default async function Recompenses({
 
         {ladder.length === 0 ? (
           <div className="d-card px-5 py-10 text-center">
-            <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white/12">
-              <GiftIcon className="h-6 w-6 text-white" />
+            <span
+              className="mx-auto grid h-12 w-12 place-items-center rounded-2xl"
+              style={{ background: "var(--cafe-soft)", color: "var(--cafe-text)" }}
+            >
+              <GiftIcon className="h-6 w-6" />
             </span>
-            <p className="mt-3 text-[14px] font-bold text-white">Pas encore d&apos;offres</p>
-            <p className="mx-auto mt-1 max-w-[26ch] text-[13px] text-white/60">
+            <p className="mt-3 text-[14px] font-bold text-charcoal">Pas encore d&apos;offres</p>
+            <p className="mx-auto mt-1 max-w-[26ch] text-[13px] text-slate">
               Continue de cumuler des points — {cafe.name} en prépare.
             </p>
           </div>
