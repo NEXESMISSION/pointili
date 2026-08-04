@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { ownerCafe } from "@/lib/auth/owner";
+import { rewardArtFor } from "@/lib/rewardArt";
 import { createClient } from "@/lib/supabase/server";
 
 export type StarterState = { error?: string };
@@ -34,7 +35,15 @@ export async function saveStarterRewardsAction(
   const db = await createClient();
 
   const updates: { id: string; label: string; points_cost: number; position: number }[] = [];
-  const inserts: { business_id: string; label: string; points_cost: number; active: boolean; position: number }[] = [];
+  const inserts: {
+    business_id: string;
+    label: string;
+    points_cost: number;
+    active: boolean;
+    position: number;
+    /** null when nothing in the drawn set fits — see lib/rewardArt. */
+    image_url: string | null;
+  }[] = [];
   const retire: string[] = [];
   let position = 0;
 
@@ -53,7 +62,26 @@ export async function saveStarterRewardsAction(
     }
 
     if (id) updates.push({ id, label, points_cost: cost, position: position++ });
-    else inserts.push({ business_id: cafe.id, label, points_cost: cost, active: true, position: position++ });
+    else
+      inserts.push({
+        business_id: cafe.id,
+        label,
+        points_cost: cost,
+        active: true,
+        position: position++,
+        /*
+          A PICTURE, WITHOUT ASKING FOR ONE.
+
+          A shop finishing signup used to land four rewards with an empty
+          image_url, so its customers' first look at the card was four identical
+          grey gift glyphs. Matching the label against the drawn set costs
+          nothing and only ever fills a field that would otherwise be null — an
+          owner who uploads a photo in Réglages overwrites it, and a label with
+          no match (a barber's "coupe offerte") still gets null rather than a
+          croissant.
+        */
+        image_url: rewardArtFor(label),
+      });
   }
 
   for (const u of updates) {
@@ -63,6 +91,24 @@ export async function saveStarterRewardsAction(
       .eq("id", u.id)
       .eq("business_id", cafe.id); // belt and braces; RLS enforces it too
     if (error) return { error: "Enregistrement impossible — réessayez." };
+  }
+
+  /*
+    Fill the pictures of the seeded rows too — but ONLY where the field is
+    still empty. The seeded ladder arrives with ids, so it takes the update
+    path above and would otherwise be the one ladder that never gets art. The
+    `is("image_url", null)` guard is what keeps this from ever overwriting a
+    photo the owner uploaded.
+  */
+  for (const u of updates) {
+    const art = rewardArtFor(u.label);
+    if (!art) continue;
+    await db
+      .from("loyalty_rewards")
+      .update({ image_url: art })
+      .eq("id", u.id)
+      .eq("business_id", cafe.id)
+      .is("image_url", null);
   }
 
   if (inserts.length) {

@@ -155,7 +155,7 @@ export function RewardUnlocked({
         <span className="unlock-medal relative grid h-[186px] w-[186px] place-items-center overflow-hidden rounded-full bg-white shadow-[0_18px_50px_-12px_rgba(0,0,0,.55)]">
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- an owner-uploaded URL, not a build-time asset
-            <img src={imageUrl} alt="" className="h-full w-full scale-[1.02] object-cover" />
+            <img src={imageUrl} alt="" className="absolute inset-0 h-full w-full object-contain p-6" />
           ) : (
             /* the colour goes on a wrapper — the icons draw in currentColor and
                take no style prop */

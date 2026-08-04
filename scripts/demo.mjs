@@ -50,6 +50,7 @@
  * past that produces one.
  */
 import { randomBytes, scrypt as _scrypt } from "node:crypto";
+import { shopLogo } from "./shop-logo.mjs";
 import { promisify } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import { connect, env } from "./db.mjs";
@@ -109,6 +110,8 @@ const PREFIXES = [
 */
 const RATE = 1;
 const WELCOME = 10;
+
+const DEMO_BRAND = "#7a4a25"; // a roaster's brown
 
 const REWARDS = [
   ["Thé à la menthe", 40, "/rewards/the-a-la-menthe.png"],
@@ -218,9 +221,13 @@ await sql.query(
 /* ── the shop ─────────────────────────────────────────────────────────── */
 const opened = new Date(now - 96 * DAY);
 const { rows: bizRows } = await sql.query(
-  `insert into businesses (owner_id, name, slug, status, primary_color, business_type, plan, plan_expires_at, created_at)
-   values ($1,$2,$3,'active','#5b3fd1','cafe','pro',$4,$5) returning id`,
-  [ownerId, NAME, SLUG, new Date(now + 300 * DAY), opened],
+  /* A colour and a mark. The demo shop used to have neither, so every
+     screenshot taken from it showed the customer's card with an emoji circle
+     where the shop's identity goes — which is not what a real café looks like
+     and is not what we should be judging the design against. */
+  `insert into businesses (owner_id, name, slug, status, primary_color, logo_url, business_type, plan, plan_expires_at, created_at)
+   values ($1,$2,$3,'active',$4,$5,'cafe','pro',$6,$7) returning id`,
+  [ownerId, NAME, SLUG, DEMO_BRAND, await shopLogo(NAME, DEMO_BRAND), new Date(now + 300 * DAY), opened],
 );
 const biz = bizRows[0].id;
 

@@ -164,22 +164,61 @@ const ITEMS = {
   },
 };
 
-const svg = ([a, b], art) => `
+/*
+  NO FIELD. The art is transparent now, and that is the change that made the
+  set stop looking like a sticker sheet.
+
+  Each item used to carry its own baked-in pastel square — cream, rose, mint,
+  sand — which was right when the app was one deep purple and the tiles needed
+  telling apart. On the white app it is eight different backgrounds fighting the
+  shop's own colour in a row four cards wide: a cappuccino on sand beside a
+  pâtisserie on rose beside the shop's green. Nothing was wrong with any one of
+  them and the row read as clipart.
+
+  The field is CSS now (--cafe-soft), so every reward sits on a tint of the
+  shop's own colour and the only other colours on the screen are the coffee and
+  the croissant. One set, per shop, for free.
+
+  `field` stays in ITEMS: it is still the source of each object's own palette
+  choices, and dropping it would mean re-picking eight of them.
+*/
+const svg = (_field, art) => `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" width="480" height="480">
-  <defs>
-    <linearGradient id="f" x1="0" y1="0" x2="0.4" y2="1">
-      <stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/>
-    </linearGradient>
-  </defs>
-  <rect width="480" height="480" fill="url(#f)"/>
-  ${art}
+  <!-- Each object was drawn to fill ~62% of its square, which was right when a
+       coloured field surrounded it. With the field gone the same object reads as
+       small and lost, so the whole set is scaled about its centre.
+
+       1.12, not 1.2, and about a centre 12px BELOW the middle: every item is
+       bottom-weighted (they all stand on a shadow ellipse around y=368), so
+       scaling about the true centre pushed that shadow past y=480 and the
+       rasteriser simply cut it off — cups with no saucer. -->
+  <g transform="translate(240 228) scale(1.12) translate(-240 -228)">${art}</g>
 </svg>`;
 
 await mkdir(OUT, { recursive: true });
 const made = [];
 for (const [name, { field, art }] of Object.entries(ITEMS)) {
-  const buf = await sharp(Buffer.from(svg(field, art)))
-    .resize(SIZE, SIZE)
+  /*
+    TRIMMED, THEN RE-CENTRED — the step that makes the set line up.
+
+    Every object was drawn bottom-weighted inside its square, because it used to
+    sit on a coloured field where the empty space above it was part of the
+    picture. Transparent, that empty space is just off-centre: in a 132×86 tile
+    the app draws the WHOLE square, so the cup hangs low and the row looks
+    misaligned even though every file is the same size.
+
+    trim() cuts the transparent margin to the object's real bounding box, then
+    contain-resize + extend puts it back in a square with an equal margin all
+    round. Now every item is optically centred whatever box the app gives it.
+  */
+  const CLEAR = { r: 0, g: 0, b: 0, alpha: 0 };
+  const object = await sharp(Buffer.from(svg(field, art)))
+    .trim({ threshold: 0 })
+    .resize(SIZE - 72, SIZE - 72, { fit: "contain", background: CLEAR })
+    .toBuffer();
+
+  const buf = await sharp(object)
+    .extend({ top: 36, bottom: 36, left: 36, right: 36, background: CLEAR })
     .png({ compressionLevel: 9, palette: true, colours: 96, dither: 0 })
     .toBuffer();
   const file = `${OUT}/${name}.png`;
@@ -189,7 +228,7 @@ for (const [name, { field, art }] of Object.entries(ITEMS)) {
 
 /* A contact sheet, so the whole set can be judged in one look rather than eight. */
 const sheet = await sharp({
-  create: { width: 4 * 240, height: 2 * 240, channels: 4, background: "#160e2c" },
+  create: { width: 4 * 240, height: 2 * 240, channels: 4, background: "#f6f6f8" },
 })
   .composite(
     await Promise.all(

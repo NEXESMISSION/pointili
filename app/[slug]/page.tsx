@@ -377,12 +377,26 @@ export default async function Carte({
                 <li key={r.id} className="w-[132px] shrink-0 snap-start">
                   <Link href={`/${slug}/boutique`} className="d-card block overflow-hidden active:scale-[0.98]">
                     <span
-                      className="grid h-[86px] w-full place-items-center"
+                      className="relative grid h-[86px] w-full place-items-center"
                       style={{ background: "var(--cafe-soft)", color: "var(--cafe-text)" }}
                     >
+                      {/*
+                        object-CONTAIN and absolute inset-0, both load-bearing.
+
+                        CONTAIN because the drawn set is transparent and sized to
+                        its own margin, so cropping it to fill would cut the cup's
+                        handle off — and an owner's photograph is the same call:
+                        better letterboxed on the shop's tint than beheaded.
+
+                        ABSOLUTE because this tile is a centred grid item, and a
+                        percentage height on a centred item has no definite box to
+                        resolve against: the image fell back to its INTRINSIC
+                        480px, the square overflowed the 86px tile, and
+                        overflow-hidden cut the saucer off every single cup.
+                      */}
                       {r.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-                        <img src={r.imageUrl} alt="" className="h-full w-full object-cover" />
+                        <img src={r.imageUrl} alt="" className="absolute inset-0 h-full w-full object-contain p-2" />
                       ) : (
                         <GiftIcon className="h-7 w-7" />
                       )}

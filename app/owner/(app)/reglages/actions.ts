@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { ownerCafe } from "@/lib/auth/owner";
+import { rewardArtFor } from "@/lib/rewardArt";
 import { BUSINESS_TYPES } from "@/lib/businessTypes";
 import { createClient } from "@/lib/supabase/server";
 
@@ -320,11 +321,28 @@ export async function saveRewardAction(
           points_cost: Math.round(cost),
           active,
           position: 99,
+          // a drawn illustration when the name matches one — see lib/rewardArt
+          image_url: rewardArtFor(label),
         })
         .select("id");
 
   const failed = assertWrote(data, error);
   if (failed) return failed;
+
+  /*
+    Renaming an existing reward can EARN it a picture — "Offre du jour" becomes
+    "Croissant offert" and there is now a drawing for it. Only where the field
+    is still empty, so an uploaded photo is never replaced by a drawing.
+  */
+  const art = rewardArtFor(label);
+  if (id && art) {
+    await db
+      .from("loyalty_rewards")
+      .update({ image_url: art })
+      .eq("id", id)
+      .eq("business_id", cafe.id)
+      .is("image_url", null);
+  }
 
   revalidatePath("/owner/reglages");
   revalidatePath(`/${cafe.slug}/boutique`);

@@ -12,16 +12,29 @@
  * it.
  */
 import { connect, env } from "./db.mjs";
+import { shopLogo } from "./shop-logo.mjs";
 
 export const TEST_SLUG = "e2etest";
+/** The fixture shop's brand colour — deliberately not the house purple, so a
+    screenshot proves the per-shop theming rather than the default. */
+export const BRAND = "#0f6b4f";
 export const TEST_NAME = "Café Test";
 export const OWNER_EMAIL = process.env.OWNER_EMAIL ?? env.SUPER_ADMIN_EMAIL;
 
+/*
+  Labels, cost, position — and the drawn illustration each one carries.
+
+  The art was added because a fixture with null image_url is a fixture that
+  cannot show whether the card looks finished: every screenshot taken against
+  it showed four identical gift glyphs, which is exactly the failure the
+  drawings exist to fix. These paths are the same ones lib/rewardArt assigns in
+  the product, so what the suites render is what a real shop gets.
+*/
 const REWARDS = [
-  ["Espresso offert", 40, 0],
-  ["Cappuccino offert", 80, 1],
-  ["Pâtisserie du jour", 120, 2],
-  ["Brunch complet", 300, 3],
+  ["Espresso offert", 40, 0, "/rewards/espresso-offert.png"],
+  ["Cappuccino offert", 80, 1, "/rewards/cappuccino-offert.png"],
+  ["Pâtisserie du jour", 120, 2, "/rewards/patisserie-du-jour.png"],
+  ["Brunch complet", 300, 3, "/rewards/brunch-complet.png"],
 ];
 
 // Every segment is a REAL prize. Points come only from buying (§00).
@@ -68,9 +81,11 @@ export async function ensureTestCafe({ ownerEmail = OWNER_EMAIL, slug = TEST_SLU
       owner app resolves to, and keeps the suite off the real shop's data.
     */
     const biz = await c.query(
-      `insert into businesses (owner_id, name, slug, status, primary_color, created_at)
-       values ($1, $2, $3, 'active', '#5b3fd1', timestamptz '2000-01-01') returning id`,
-      [ownerId, TEST_NAME, slug],
+      `insert into businesses (owner_id, name, slug, status, primary_color, logo_url, created_at)
+       values ($1, $2, $3, 'active', $4, $5, timestamptz '2000-01-01') returning id`,
+      /* A colour and a mark, because a shop that has neither cannot show
+         whether the customer's card looks like a shop's card. */
+      [ownerId, TEST_NAME, slug, BRAND, await shopLogo(TEST_NAME, BRAND)],
     );
     const businessId = biz.rows[0].id;
 
@@ -80,11 +95,11 @@ export async function ensureTestCafe({ ownerEmail = OWNER_EMAIL, slug = TEST_SLU
       [businessId],
     );
 
-    for (const [label, cost, pos] of REWARDS) {
+    for (const [label, cost, pos, img] of REWARDS) {
       await c.query(
-        `insert into loyalty_rewards (business_id, label, points_cost, active, position)
-         values ($1, $2, $3, true, $4)`,
-        [businessId, label, cost, pos],
+        `insert into loyalty_rewards (business_id, label, points_cost, active, position, image_url)
+         values ($1, $2, $3, true, $4, $5)`,
+        [businessId, label, cost, pos, img],
       );
     }
 

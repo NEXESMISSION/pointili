@@ -102,17 +102,29 @@ export function RewardPicker({
                     : undefined
                 }
               >
-                {r.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-                  <img src={r.imageUrl} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" />
-                ) : (
-                  <span
-                    className="grid h-14 w-14 shrink-0 place-items-center rounded-xl"
-                    style={{ background: "var(--cafe-soft)", color: "var(--cafe-text)" }}
-                  >
+                {/*
+                  The plate goes WHITE on the selected row.
+
+                  It is the shop's tint normally — so a shop with photographs and
+                  a shop with none read as the same list — but the selected row
+                  is painted in that same tint, and a tinted plate on a tinted
+                  row is no plate at all: the cup was left floating in the middle
+                  of the row with nothing under it.
+                */}
+                <span
+                  className="relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl"
+                  style={{
+                    background: on ? "#fff" : "var(--cafe-soft)",
+                    color: "var(--cafe-text)",
+                  }}
+                >
+                  {r.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
+                    <img src={r.imageUrl} alt="" className="absolute inset-0 h-full w-full object-contain p-1" />
+                  ) : (
                     <GiftIcon className="h-6 w-6" />
-                  </span>
-                )}
+                  )}
+                </span>
 
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[14px] font-bold text-charcoal">{r.label}</span>
