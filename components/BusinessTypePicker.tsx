@@ -14,19 +14,35 @@ export function BusinessTypePicker({
   /** Start collapsed once a type is already chosen — 26 tiles is a lot of page
    *  for a field an owner sets once. */
   collapsible = false,
+  suggested,
 }: {
   name?: string;
   defaultValue?: string;
   collapsible?: boolean;
+  /**
+   * A guess from elsewhere on the form — on the create screen, read out of the
+   * shop's own NAME. It moves the selection only while the owner has not
+   * touched this control; the moment they pick anything, their choice wins for
+   * good. Without that guard, typing a name after choosing a type would quietly
+   * undo the choice.
+   */
+  suggested?: string | null;
 }) {
   const [sel, setSel] = useState(defaultValue || "cafe");
+  const [touched, setTouched] = useState(false);
   const [open, setOpen] = useState(!collapsible);
-  const current = BUSINESS_TYPES.find((t) => t.key === sel);
+
+  const effective = !touched && suggested ? suggested : sel;
+  const current = BUSINESS_TYPES.find((t) => t.key === effective);
+  const choose = (key: string) => {
+    setTouched(true);
+    setSel(key);
+  };
 
   if (collapsible && !open) {
     return (
       <div className="flex items-center gap-2.5">
-        <input type="hidden" name={name} value={sel} />
+        <input type="hidden" name={name} value={effective} />
         <span className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-white/12 bg-white/[0.06] px-3.5 py-2.5">
           <span className="text-[18px]">{current?.emoji ?? "✨"}</span>
           <span className="truncate text-[14px] font-bold text-white">
@@ -46,15 +62,15 @@ export function BusinessTypePicker({
 
   return (
     <div>
-      <input type="hidden" name={name} value={sel} />
+      <input type="hidden" name={name} value={effective} />
       <div className="grid grid-cols-3 gap-2">
         {BUSINESS_TYPES.map((t) => {
-          const active = sel === t.key;
+          const active = effective === t.key;
           return (
             <button
               key={t.key}
               type="button"
-              onClick={() => setSel(t.key)}
+              onClick={() => choose(t.key)}
               aria-pressed={active}
               className={`flex flex-col items-center gap-1 rounded-xl border px-1.5 py-2.5 text-center transition active:scale-[0.97] ${
                 active

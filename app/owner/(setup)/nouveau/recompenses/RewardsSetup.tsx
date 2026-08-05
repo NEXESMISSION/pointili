@@ -143,8 +143,12 @@ export function RewardsSetup({
                 changes the outcome. */}
             {i === 0 && row.visits > 6 && row.label.trim() && (
               <p className="mt-2 rounded-xl bg-[#ffd27a]/12 px-3 py-2 text-[12px] font-semibold leading-snug text-[#ffd27a]">
-                C&apos;est votre première récompense — {row.visits} visites,
-                c&apos;est long. La plupart abandonneront avant.
+                {/* {" "} after the expression, not a plain space: the space
+                    written there is swallowed by the JSX text transform, and
+                    this line shipped reading "10visites, c'est long". Same fix
+                    as the ticket note below. */}
+                C&apos;est votre première récompense — {row.visits}
+                {" "}visites, c&apos;est long. La plupart abandonneront avant.
               </p>
             )}
           </li>
@@ -174,9 +178,9 @@ export function RewardsSetup({
         ) : (
           <>
             Estimé sur un panier de{" "}
-            <b className="text-white">{ticket.tnd.toFixed(2)} TND</b> — vous
-            n&apos;avez pas encore de ventes. Vous pourrez tout changer plus tard
-            dans Réglages.
+            <b className="text-white">{ticket.tnd.toFixed(2)} TND</b>
+            {" "}— vous n&apos;avez pas encore de ventes. Vous pourrez tout
+            changer plus tard dans Réglages.
           </>
         )}
       </p>

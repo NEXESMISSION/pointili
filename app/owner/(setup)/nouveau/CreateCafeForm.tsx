@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { BusinessTypePicker } from "@/components/BusinessTypePicker";
+import { guessBusinessType } from "@/lib/businessTypes";
 import { createCafeAction, type CreateState } from "./actions";
 
 const field = "a-field";
@@ -159,7 +160,15 @@ export function CreateCafeForm() {
           Collapsed it is one row saying "☕ Café" with a way to change it, and
           the page fits a phone.
         */}
-        <BusinessTypePicker defaultValue="cafe" collapsible />
+        {/* The guess comes from the name they just typed — "Boulangerie Nour"
+            was being created as a Café because the default said so and nobody
+            argues with a default. It stops guessing the instant the owner
+            picks something. */}
+        <BusinessTypePicker
+          defaultValue="cafe"
+          suggested={guessBusinessType(name)}
+          collapsible
+        />
       </div>
 
       {/*

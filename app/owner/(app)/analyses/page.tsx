@@ -461,14 +461,53 @@ function Lapsed({ s }: { s: Stats }) {
  */
 function Empty({ cards }: { cards: number }) {
   if (cards === 0) {
+    /*
+      THE FIRST-DAY SCREEN, WHICH IS WHAT THIS ACTUALLY IS.
+
+      It said "posez votre QR sur les tables" — the right instruction, with no
+      way to do it: no button, no QR, and then six hundred pixels of empty
+      gradient underneath. A brand-new owner opens the second tab in their new
+      app and finds a sentence telling them to go and find something else.
+
+      So the empty state is the three steps of the first day, in order, with the
+      only thing they can act on right now as the button. It costs nothing once
+      the shop has data — the whole block is replaced by the real figures the
+      moment one card exists.
+    */
+    const steps = [
+      ["Posez votre QR", "Sur les tables, au comptoir, sur la vitrine."],
+      ["Le client scanne", "Sa carte se crée en dix secondes, sans application."],
+      ["Créditez en caisse", "Son achat, ses points — et il revient pour les dépenser."],
+    ];
+
     return (
-      <section className="a-card p-6 text-center">
-        <p className="text-[30px]">✦</p>
-        <p className="mt-2 text-[17px] font-extrabold text-white">Pas encore de carte</p>
-        <p className="mx-auto mt-1.5 max-w-[30ch] text-[13px] leading-relaxed text-white/55">
-          Posez votre QR sur les tables. Dès la première carte, vous verrez ici
-          s&apos;ils reviennent.
+      <section className="a-card p-5">
+        <p className="text-[17px] font-extrabold text-white">Votre première carte</p>
+        <p className="mt-1 text-[13px] leading-relaxed text-white/55">
+          Rien à mesurer tant que personne n&apos;a de carte. Voilà comment la
+          première arrive.
         </p>
+
+        <ol className="mt-4 space-y-3">
+          {steps.map(([title, hint], i) => (
+            <li key={title} className="flex gap-3">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#7c3aed] text-[12.5px] font-bold text-white">
+                {i + 1}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[13.5px] font-bold leading-snug text-white">{title}</span>
+                <span className="block text-[12px] leading-snug text-white/50">{hint}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+
+        <Link
+          href="/owner/qr"
+          className="mt-5 flex min-h-[52px] items-center justify-center rounded-2xl bg-[#7c3aed] text-[14px] font-bold text-white transition active:scale-[0.99]"
+        >
+          Voir mon QR
+        </Link>
       </section>
     );
   }

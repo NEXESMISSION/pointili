@@ -198,8 +198,14 @@ export function SettingsList({
           value={typeLabel}
           onClick={() => setOpen("shop")}
         />
-        {/* not editable: changing it would break every printed QR in the shop */}
-        <Row label="Adresse de la carte" value={`/${cafe.slug}`} mono />
+        {/*
+          NOT EDITABLE — changing it would break every printed QR in the shop —
+          but the two things an owner actually wants to DO with it are copy it
+          and look at it. It was a dead row: the shop's own public address,
+          truncated to "/boulangerie-ess…", in a list where every other row
+          opens something.
+        */}
+        <CardAddress slug={cafe.slug} />
       </Group>
 
       {open && (
@@ -216,6 +222,67 @@ export function SettingsList({
 }
 
 /* ── the list ─────────────────────────────────────────────────────────── */
+
+/**
+ * The shop's public address — copyable, and openable.
+ *
+ * It is the link an owner pastes into their Instagram bio, sends to a customer
+ * who lost the QR, and checks when they want to see what the card looks like.
+ * As a plain row it did none of those: it was truncated, unselectable, and
+ * inert. Two targets now, both labelled, and the full address is shown rather
+ * than cut — at 12px it fits.
+ */
+function CardAddress({ slug }: { slug: string }) {
+  const [copied, setCopied] = useState(false);
+  const url = `pointili.online/${slug}`;
+
+  return (
+    /*
+      TWO LINES, not one.
+
+      Squeezed onto a single row beside two buttons the address truncated to
+      "pointili.o…" — which is less use than the "/boulangerie-ess…" it
+      replaced. The label and the actions share the top line; the address gets
+      the full width underneath, where it fits whole.
+    */
+    <div className="px-4 py-3">
+      <div className="flex items-center gap-2">
+        <span className="w-8 shrink-0" />
+        <span className="min-w-0 flex-1 whitespace-nowrap text-[14.5px] font-semibold text-white">
+          Adresse de la carte
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            navigator.clipboard?.writeText(`https://${url}`).then(
+              () => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1600);
+              },
+              () => {},
+            );
+          }}
+          aria-label="Copier l'adresse de la carte"
+          className="shrink-0 rounded-lg bg-white/[0.08] px-2.5 py-1.5 text-[11px] font-bold text-white/80 transition active:scale-95"
+        >
+          {copied ? "Copié ✓" : "Copier"}
+        </button>
+        <a
+          href={`https://${url}`}
+          target="_blank"
+          rel="noopener"
+          aria-label="Ouvrir la carte"
+          className="shrink-0 rounded-lg bg-white/[0.08] px-2.5 py-1.5 text-[11px] font-bold text-white/80 transition active:scale-95"
+        >
+          Ouvrir
+        </a>
+      </div>
+
+      {/* select-all: the other way anyone copies a URL is by long-pressing it */}
+      <p className="mt-1 select-all break-all pl-10 font-mono text-[12px] text-white/55">{url}</p>
+    </div>
+  );
+}
 
 function Group({ label, children }: { label: string; children: ReactNode }) {
   return (
