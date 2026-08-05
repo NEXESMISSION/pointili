@@ -114,12 +114,12 @@ const WELCOME = 10;
 const DEMO_BRAND = "#7a4a25"; // a roaster's brown
 
 const REWARDS = [
-  ["Thé à la menthe", 40, "/rewards/the-a-la-menthe.png"],
-  ["Espresso offert", 45, "/rewards/espresso-offert.png"],
-  ["Cappuccino offert", 55, "/rewards/cappuccino-offert.png"],
-  ["Croissant offert", 60, "/rewards/croissant-offert.png"],
-  ["Pâtisserie du jour", 85, "/rewards/patisserie-du-jour.png"],
-  ["Brunch complet", 180, "/rewards/brunch-complet.png"],
+  ["Thé à la menthe", 40, "/rewards/the-a-la-menthe.webp"],
+  ["Espresso offert", 45, "/rewards/espresso-offert.webp"],
+  ["Cappuccino offert", 55, "/rewards/cappuccino-offert.webp"],
+  ["Croissant offert", 60, "/rewards/croissant-offert.webp"],
+  ["Pâtisserie du jour", 85, "/rewards/patisserie-du-jour.webp"],
+  ["Brunch complet", 180, "/rewards/brunch-complet.webp"],
 ];
 
 /*

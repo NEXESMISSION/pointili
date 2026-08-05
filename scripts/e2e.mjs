@@ -415,9 +415,18 @@ if (redeemCode) {
     )
     .then(() => true)
     .catch(() => false);
+  /*
+    PATHNAME, not the whole URL.
+
+    joinAction always lands on `/slug?nouveau=1` and CardArrived strips the flag
+    from the browser once it has played — so asserting the full URL was a race
+    against a client-side replace, and it started losing the moment the card
+    grew photographs to paint. What this check is actually about is WHICH screen
+    they reached, and that is the pathname.
+  */
   check(
     "returning diner signs in with phone + PIN",
-    back.url().endsWith(`/${SLUG}`) && landed,
+    new URL(back.url()).pathname === `/${SLUG}` && landed,
     back.url().replace(BASE, ""),
   );
 

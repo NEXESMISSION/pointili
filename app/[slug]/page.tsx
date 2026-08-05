@@ -381,22 +381,25 @@ export default async function Carte({
                       style={{ background: "var(--cafe-soft)", color: "var(--cafe-text)" }}
                     >
                       {/*
-                        object-CONTAIN and absolute inset-0, both load-bearing.
+                        A photograph FILLS its tile — no padding, no letterbox.
 
-                        CONTAIN because the drawn set is transparent and sized to
-                        its own margin, so cropping it to fill would cut the cup's
-                        handle off — and an owner's photograph is the same call:
-                        better letterboxed on the shop's tint than beheaded.
+                        The illustrated set had to be contained on a tint, because
+                        cropping a drawing cuts the cup's handle off. A photograph
+                        is the opposite: it wants the whole tile, edge to edge,
+                        and the crop was already chosen on the busiest part of the
+                        frame when the file was built (sharp's attention strategy).
+                        The tint underneath is now only what shows when a shop has
+                        no picture at all.
 
-                        ABSOLUTE because this tile is a centred grid item, and a
-                        percentage height on a centred item has no definite box to
-                        resolve against: the image fell back to its INTRINSIC
-                        480px, the square overflowed the 86px tile, and
-                        overflow-hidden cut the saucer off every single cup.
+                        absolute inset-0, not h-full: this tile is a centred grid
+                        item, and a percentage height on a centred item has no
+                        definite box to resolve against — the image fell back to
+                        its intrinsic size, overflowed the 86px tile, and
+                        overflow-hidden cut the bottom off every one of them.
                       */}
                       {r.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-                        <img src={r.imageUrl} alt="" className="absolute inset-0 h-full w-full object-contain p-2" />
+                        <img src={r.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
                       ) : (
                         <GiftIcon className="h-7 w-7" />
                       )}

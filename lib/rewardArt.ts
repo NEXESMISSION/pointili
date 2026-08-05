@@ -1,5 +1,5 @@
 /**
- * A PICTURE FOR EVERY REWARD, WITHOUT ASKING THE OWNER FOR ONE.
+ * A PHOTOGRAPH FOR EVERY REWARD, WITHOUT ASKING THE OWNER FOR ONE.
  *
  * loyalty_rewards.image_url has existed all along, and scripts/reward-art.mjs
  * drew a set of flat illustrations for it — but nothing ever connected the two.
@@ -12,9 +12,18 @@
  * label, because "Espresso offert", "1 espresso" and "espresso gratuit" are the
  * same drink and an owner should not have to guess our filename.
  *
- * Drawn, not photographed, on purpose: stock photography of a coffee would be
- * someone else's espresso, someone else's licence, and 200 KB on a phone on 3G.
- * These are ~4 KB PNGs served from /public.
+ * PHOTOGRAPHS, NOT DRAWINGS — reversed deliberately. The first version of this
+ * pointed at a flat illustrated set, on the argument that stock photography is
+ * someone else's espresso and someone else's licence. Half of that was right and
+ * half was an excuse: an icon of a croissant beside the words "Croissant offert"
+ * tells a customer something they have already read, and a loyalty card that
+ * looks illustrated looks unfinished.
+ *
+ * The licence half is answered rather than dodged. Every file is CC0 — a public
+ * domain dedication, no attribution obligation, commercial use fine — pulled
+ * with scripts/reward-photos.mjs, which refuses anything else, and each one's
+ * origin is recorded in public/rewards/CREDITS.json. WebP at 640px: 12-70 KB
+ * apiece, for a picture that renders at 132px on a phone.
  */
 
 /** Every keyword that should land on a given file, most specific first. */
@@ -43,7 +52,7 @@ export function rewardArtFor(label: string): string | null {
   if (!hay) return null;
 
   for (const [file, words] of MATCHES) {
-    if (words.some((w) => hay.includes(normalise(w)))) return `/rewards/${file}.png`;
+    if (words.some((w) => hay.includes(normalise(w)))) return `/rewards/${file}.webp`;
   }
   return null;
 }

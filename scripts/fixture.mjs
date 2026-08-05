@@ -31,10 +31,10 @@ export const OWNER_EMAIL = process.env.OWNER_EMAIL ?? env.SUPER_ADMIN_EMAIL;
   the product, so what the suites render is what a real shop gets.
 */
 const REWARDS = [
-  ["Espresso offert", 40, 0, "/rewards/espresso-offert.png"],
-  ["Cappuccino offert", 80, 1, "/rewards/cappuccino-offert.png"],
-  ["Pâtisserie du jour", 120, 2, "/rewards/patisserie-du-jour.png"],
-  ["Brunch complet", 300, 3, "/rewards/brunch-complet.png"],
+  ["Espresso offert", 40, 0, "/rewards/espresso-offert.webp"],
+  ["Cappuccino offert", 80, 1, "/rewards/cappuccino-offert.webp"],
+  ["Pâtisserie du jour", 120, 2, "/rewards/patisserie-du-jour.webp"],
+  ["Brunch complet", 300, 3, "/rewards/brunch-complet.webp"],
 ];
 
 // Every segment is a REAL prize. Points come only from buying (§00).
