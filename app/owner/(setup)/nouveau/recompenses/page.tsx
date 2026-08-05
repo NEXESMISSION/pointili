@@ -21,11 +21,11 @@ export default async function Recompenses() {
 
   return (
     <div>
-      <p className="block text-[10px] font-bold uppercase tracking-[0.1em] text-white/45">◆ Étape 2 sur 2</p>
+      <p className="block text-[10px] font-bold uppercase tracking-[0.1em] text-slate">◆ Étape 2 sur 2</p>
       <h1 className="mt-1 font-display text-[30px] leading-tight">
         Vos récompenses
       </h1>
-      <p className="mt-1.5 mb-5 text-[15px] leading-relaxed text-white/55">
+      <p className="mt-1.5 mb-5 text-[15px] leading-relaxed text-slate">
         Ce que vos clients gagnent en revenant. On vous en a déjà mis
         quelques-unes — changez les mots, réglez le nombre de visites, videz une
         ligne pour la retirer.

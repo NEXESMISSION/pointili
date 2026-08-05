@@ -35,7 +35,7 @@ export default async function SetupLayout({
           <form action={logoutAction}>
             <button
               type="submit"
-              className="text-[10px] font-semibold uppercase tracking-[0.06em] text-white/35 underline underline-offset-2"
+              className="text-[10px] font-semibold uppercase tracking-[0.06em] text-slate underline underline-offset-2"
             >
               Se déconnecter
             </button>

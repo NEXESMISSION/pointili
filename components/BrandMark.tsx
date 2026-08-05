@@ -61,8 +61,17 @@ export function BrandLockup({
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <BrandMark size={size} />
+      {/*
+        INHERITS ITS COLOUR — it used to be hard-coded text-white.
+
+        That was true of all three places it appeared while every one of them
+        was a dark surface. The owner's sign-in screen is white now, and a white
+        wordmark on a white page is an invisible brand on the first screen an
+        owner ever sees. The landing and the legal pages set white on their own
+        shells, so they are unaffected.
+      */}
       <span
-        className="font-extrabold tracking-[-0.02em] text-white"
+        className="font-extrabold tracking-[-0.02em]"
         style={{ fontSize: Math.round(size * 0.5) }}
       >
         pointili<span style={{ color: accent }}>.online</span>

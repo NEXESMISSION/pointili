@@ -337,10 +337,40 @@ h4 {
   box-shadow: none;
 }
 
-/* ── the owner app: a dark POS terminal ───────────────────────────────────
-   Same deep purple as the diner card, so a shop owner who uses both never
-   feels like they changed product. Built for a phone held behind a counter:
-   high contrast, 56px targets, nothing subtle enough to miss mid-service. */
+/* ══ the owner app — a WHITE terminal ═════════════════════════════════════
+   IT USED TO BE DARK, AND THE REASON IS WORTH KEEPING IN MIND.
+
+   A deep-purple POS: high contrast, 56px targets, nothing subtle enough to
+   miss mid-service. Those requirements have not changed and none of them
+   needed darkness — what they needed was CONTRAST, which white gives more of
+   under the fluorescent tube over a Tunisian counter than a dark screen at
+   40% brightness ever did.
+
+   What darkness did cost: the owner app and the customer app looked like two
+   different products, and a shop showing a customer their own card had to
+   explain why one was black and one was white.
+
+   The six tokens are the same idea as the client app's — one set of values,
+   used by every .a-* surface, so the till is one edit away from anything. */
+/*
+  ON :root, NOT ON .a-shell — and that is not tidiness, it is a bug fix.
+
+  Réglages opens its editors through createPortal into document.body, which is
+  OUTSIDE the owner shell. Scoped to .a-shell these six resolved to nothing in
+  every one of those sheets: the segmented rails lost their background, the
+  swatch rings fell back to Tailwind's default colour, and the selected colour
+  showed no ring at all. Nothing errored — undefined custom properties simply
+  compute to nothing, which is the quietest way for a whole panel to go wrong.
+*/
+:root {
+  --o-surface: #f4f4f7;
+  --o-panel: #ffffff;
+  --o-inset: #f1f0f5;
+  --o-edge: #e5e3ec;
+  --o-accent: #5b3fd1;
+  --o-muted: #6b6580;
+}
+/* the till's own behaviour, unchanged by the colour */
 .a-shell {
   /* Kills the double-tap-to-zoom gesture on the till — a cashier tapping fast
      was zooming the page mid-service. Pinch zoom stays available: manipulation
@@ -348,51 +378,43 @@ h4 {
      zoom is untouched. Inputs never trigger the OTHER zoom (focus auto-zoom)
      because every field is at least 16px — see .a-field. */
   touch-action: manipulation;
-  background-color: #08040f;
-  background-image:
-    radial-gradient(90% 40% at 50% -6%, color-mix(in oklab, #5b3fd1, #fff 4%) 0%, transparent 60%),
-    linear-gradient(180deg,
-      color-mix(in oklab, #5b3fd1, #000 46%) 0%,
-      color-mix(in oklab, #5b3fd1, #000 74%) 40%,
-      #08040f 100%);
-  background-attachment: fixed;
-  color: #fff;
+  background: var(--o-surface);
+  color: var(--color-charcoal);
 }
 .a-card {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: var(--o-panel);
+  border: 1px solid var(--o-edge);
   border-radius: 22px;
-  box-shadow: 0 20px 44px -26px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 1px 2px rgba(23, 18, 31, 0.04), 0 10px 26px -22px rgba(23, 18, 31, 0.4);
 }
-/* a panel nested inside a card — one step lighter again */
+/* a panel nested inside a card — a step DOWN from white now, not up from black */
 .a-inset {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--o-inset);
+  border: 1px solid var(--o-edge);
   border-radius: 16px;
 }
 .a-field {
   width: 100%;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--o-edge);
+  background: var(--o-panel);
   padding: 14px 16px;
   font-size: 16px; /* 16px so iOS never zooms on focus */
   font-weight: 600;
-  color: #fff;
-  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  color: var(--color-charcoal);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 .a-field::placeholder {
-  color: rgba(255, 255, 255, 0.38);
+  color: var(--o-muted);
   font-weight: 500;
 }
 .a-field:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.55);
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+  border-color: var(--o-accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--o-accent), transparent 84%);
 }
-/* The native number spinners render as dark-on-dark smudges here, and a till
-   is thumb-driven anyway — drop them. */
+/* The native number spinners are a smudge at this size and a till is
+   thumb-driven anyway — drop them. */
 .a-field[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
@@ -407,23 +429,27 @@ h4 {
   width: 100%;
   min-height: 52px;
   border-radius: 14px;
-  background: #6d4ae6;
+  background: var(--o-accent);
   color: #fff;
   font-weight: 800;
   font-size: 15px;
-  box-shadow: 0 14px 30px -14px rgba(109, 74, 230, 0.9);
+  box-shadow: 0 12px 26px -16px color-mix(in oklab, var(--o-accent), transparent 20%);
   transition: transform 0.1s, background 0.15s;
 }
 .a-btn:active { transform: scale(0.99); }
 .a-btn:disabled { opacity: 0.45; box-shadow: none; }
+/* the secondary — an outlined white button, which on a light surface is the
+   only version of "quiet" that still looks pressable */
 .a-btn--ghost {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: var(--o-panel);
+  border: 1px solid var(--o-edge);
+  color: var(--color-charcoal);
   box-shadow: none;
 }
 .a-btn--dark {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--o-inset);
+  border: 1px solid var(--o-edge);
+  color: var(--color-charcoal);
   box-shadow: none;
 }
 

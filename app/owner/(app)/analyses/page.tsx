@@ -70,8 +70,8 @@ export default async function Clients({
     <div data-owner-wide className="space-y-3">
       <div className="px-1">
         <BackLink fallback="/owner" className="md:hidden" />
-        <h1 className="text-[24px] font-extrabold leading-tight text-white">Vos clients</h1>
-        <p className="mt-0.5 text-[13px] text-white/55">Qui revient, et qui ne revient plus.</p>
+        <h1 className="text-[24px] font-extrabold leading-tight text-charcoal">Vos clients</h1>
+        <p className="mt-0.5 text-[13px] text-slate">Qui revient, et qui ne revient plus.</p>
       </div>
 
       {s.customers === 0 ? (
@@ -79,14 +79,14 @@ export default async function Clients({
       ) : (
         <>
           {/* the one control on the page — it governs the money strip only */}
-          <nav className="grid grid-cols-3 gap-1 rounded-2xl bg-white/[0.07] p-1">
+          <nav className="grid grid-cols-3 gap-1 rounded-2xl bg-[var(--o-inset)] p-1">
             {RANGES.map((r) => (
               <Link
                 key={r.slug}
                 href={`/owner/analyses?p=${r.slug}`}
                 scroll={false}
                 className={`rounded-xl py-2.5 text-center text-[13px] font-bold transition ${
-                  r.slug === picked.slug ? "bg-[#6d4ae6] text-white shadow-lg" : "text-white/55"
+                  r.slug === picked.slug ? "bg-[#5b3fd1] text-white shadow-lg" : "text-slate"
                 }`}
               >
                 {r.label}
@@ -120,16 +120,16 @@ function Period({ s, label }: { s: Stats; label: string }) {
     <section className="a-card p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-white/45">
+          <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-slate">
             {s.range === 0 ? "Depuis le début" : label}
           </p>
-          <p className="mt-1 font-display text-[44px] font-extrabold leading-[0.9] tabular-nums text-[#b9a3ff]">
+          <p className="mt-1 font-display text-[44px] font-extrabold leading-[0.9] tabular-nums text-[#5b3fd1]">
             {Math.round(w.revenue)}
-            <span className="ml-1.5 align-middle text-[15px] font-bold text-white/45">TND</span>
+            <span className="ml-1.5 align-middle text-[15px] font-bold text-slate">TND</span>
           </p>
           {/* ticket moyen, which used to need a card of its own */}
           {s.avgTicketTnd > 0 && (
-            <p className="mt-1 text-[12px] font-medium text-white/45">
+            <p className="mt-1 text-[12px] font-medium text-slate">
               {s.avgTicketTnd.toFixed(2)} TND par passage en moyenne
             </p>
           )}
@@ -146,15 +146,15 @@ function Period({ s, label }: { s: Stats; label: string }) {
             className={`flex-1 rounded-t-[3px] ${
               b.revenue
                 ? i === s.series.length - 1
-                  ? "bg-[#8b6bff]"
-                  : "bg-[#8b6bff]/45"
-                : "bg-white/[0.09]"
+                  ? "bg-[#5b3fd1]"
+                  : "bg-[#5b3fd1]/45"
+                : "bg-[var(--o-inset)]"
             }`}
             style={{ height: `${Math.max(4, (b.revenue / max) * 100)}%` }}
           />
         ))}
       </div>
-      <div className="mt-1.5 flex justify-between text-[10px] font-medium text-white/40">
+      <div className="mt-1.5 flex justify-between text-[10px] font-medium text-slate">
         <span>
           {s.series.length > 0 &&
             new Date(s.series[0].at).toLocaleDateString("fr-FR", {
@@ -166,7 +166,7 @@ function Period({ s, label }: { s: Stats; label: string }) {
         <span>aujourd&apos;hui</span>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/12 pt-3.5">
+      <div className="mt-4 grid grid-cols-3 gap-2 border-t border-[var(--o-edge)] pt-3.5">
         <Cell label="visites" now={w.visits} before={s.previous?.visits} />
         <Cell label="clients servis" now={w.activeCustomers} before={s.previous?.activeCustomers} />
         <Cell label="nouveaux" now={w.newCustomers} before={s.previous?.newCustomers} />
@@ -178,10 +178,10 @@ function Period({ s, label }: { s: Stats; label: string }) {
 function Cell({ label, now, before }: { label: string; now: number; before?: number }) {
   return (
     <div>
-      <p className="font-display text-[24px] font-extrabold leading-none tabular-nums text-white">
+      <p className="font-display text-[24px] font-extrabold leading-none tabular-nums text-charcoal">
         {now}
       </p>
-      <p className="mt-0.5 text-[12px] font-semibold leading-tight text-white/50">{label}</p>
+      <p className="mt-0.5 text-[12px] font-semibold leading-tight text-slate">{label}</p>
       <Delta now={now} before={before} small />
     </div>
   );
@@ -205,7 +205,7 @@ function Delta({
   if (before === 0) {
     if (now === 0) return null;
     return (
-      <span className={`mt-1 block font-bold text-[#7ff0b0] ${small ? "text-[12px]" : "text-[12px]"}`}>
+      <span className={`mt-1 block font-bold text-[#2f9e6e] ${small ? "text-[12px]" : "text-[12px]"}`}>
         nouveau
       </span>
     );
@@ -213,15 +213,15 @@ function Delta({
   const pct = Math.round(((now - before) / before) * 100);
   if (pct === 0)
     return (
-      <span className={`mt-1 block font-bold text-white/40 ${small ? "text-[12px]" : "text-[12px]"}`}>
+      <span className={`mt-1 block font-bold text-slate ${small ? "text-[12px]" : "text-[12px]"}`}>
         = stable
       </span>
     );
   const up = pct > 0;
   return (
     <span
-      className={`mt-1 block font-bold ${up ? "text-[#7ff0b0]" : "text-[#ff9a9a]"} ${
-        small ? "text-[12px]" : "whitespace-nowrap rounded-full bg-white/[0.08] px-2.5 py-1 text-[12px]"
+      className={`mt-1 block font-bold ${up ? "text-[#2f9e6e]" : "text-[#e5484d]"} ${
+        small ? "text-[12px]" : "whitespace-nowrap rounded-full bg-[var(--o-inset)] px-2.5 py-1 text-[12px]"
       }`}
     >
       {up ? "▲" : "▼"} {up ? "+" : "−"}
@@ -272,12 +272,12 @@ function verdict(s: Stats): { tone: Tone; headline: string; advice: string } {
 
 function Verdict({ s }: { s: Stats }) {
   const { tone, headline, advice } = verdict(s);
-  const num = { good: "text-[#7ff0b0]", ok: "text-[#ffd27a]", bad: "text-[#ff9a9a]", early: "text-white/55" }[tone];
+  const num = { good: "text-[#2f9e6e]", ok: "text-[#a06e00]", bad: "text-[#e5484d]", early: "text-slate" }[tone];
 
   return (
     <section className="a-card p-5">
       {/* labelled all-time so it is never read as "this week" */}
-      <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-white/45">
+      <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-slate">
         Fidélité · depuis le début
       </p>
 
@@ -286,20 +286,20 @@ function Verdict({ s }: { s: Stats }) {
           <p className={`font-display text-[44px] font-extrabold leading-[0.9] tabular-nums ${num}`}>
             {s.repeatRate}%
           </p>
-          <p className="pb-1 text-[13px] font-semibold leading-snug text-white/60">
+          <p className="pb-1 text-[13px] font-semibold leading-snug text-slate">
             reviennent
             <br />
-            <span className="text-white/45">
+            <span className="text-slate">
               {s.repeatCustomers} sur {s.customers}
             </span>
           </p>
         </div>
       ) : (
-        <p className="mt-1.5 font-display text-[20px] font-extrabold text-white">{headline}</p>
+        <p className="mt-1.5 font-display text-[20px] font-extrabold text-charcoal">{headline}</p>
       )}
 
-      <p className="mt-2 text-[13px] font-medium leading-relaxed text-white/60">
-        {s.confident && <b className="font-extrabold text-white">{headline}. </b>}
+      <p className="mt-2 text-[13px] font-medium leading-relaxed text-slate">
+        {s.confident && <b className="font-extrabold text-charcoal">{headline}. </b>}
         {advice}
       </p>
 
@@ -307,9 +307,9 @@ function Verdict({ s }: { s: Stats }) {
         The favourite reward, which used to be a whole card to say one thing.
       */}
       {s.topRewards.length > 0 && (
-        <p className="mt-3 border-t border-white/12 pt-3 text-[13px] text-white/55">
+        <p className="mt-3 border-t border-[var(--o-edge)] pt-3 text-[13px] text-slate">
           Leur préférée :{" "}
-          <b className="font-extrabold text-[#b9a3ff]">{s.topRewards[0].label}</b>, servie{" "}
+          <b className="font-extrabold text-[#5b3fd1]">{s.topRewards[0].label}</b>, servie{" "}
           {s.topRewards[0].claimed} fois.
         </p>
       )}
@@ -347,38 +347,38 @@ function rhythmLabel(days: number) {
 function Regulars({ s }: { s: Stats }) {
   return (
     <section className="a-card p-5">
-      <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-white/45">
+      <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-slate">
         Vos habitués
       </p>
 
       {s.regulars.length === 0 ? (
-        <p className="mt-2 text-[13px] leading-relaxed text-white/50">
+        <p className="mt-2 text-[13px] leading-relaxed text-slate">
           Personne n&apos;est encore venu deux fois. Dès qu&apos;un client revient,
           il apparaît ici.
         </p>
       ) : (
         <>
-          <p className="mt-0.5 text-[12px] text-white/50">
+          <p className="mt-0.5 text-[12px] text-slate">
             Ceux à reconnaître quand ils passent la porte.
           </p>
           <ul className="mt-3 space-y-2.5">
             {s.regulars.map((p) => (
               <li key={p.phone} className="flex items-center gap-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#6d4ae6] text-[15px] font-extrabold text-white">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#5b3fd1] text-[15px] font-extrabold text-white">
                   {initial(p)}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-bold text-white">{who(p)}</span>
-                  <span className="block text-[12px] text-white/45">
+                  <span className="block truncate text-[15px] font-bold text-charcoal">{who(p)}</span>
+                  <span className="block text-[12px] text-slate">
                     {p.rhythm !== null && `${rhythmLabel(p.rhythm)} · `}
                     vu {ago(p.daysSince)}
                   </span>
                 </span>
                 <span className="shrink-0 text-right">
-                  <span className="block text-[15px] font-extrabold tabular-nums text-white">
+                  <span className="block text-[15px] font-extrabold tabular-nums text-charcoal">
                     {p.visits}
                   </span>
-                  <span className="block text-[10px] font-semibold text-white/40">visites</span>
+                  <span className="block text-[10px] font-semibold text-slate">visites</span>
                 </span>
               </li>
             ))}
@@ -403,39 +403,39 @@ function Lapsed({ s }: { s: Stats }) {
 
   return (
     <section className="a-card p-5">
-      <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-white/45">
+      <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-slate">
         Ils ne sont pas revenus
       </p>
 
       {s.lapsed.length === 0 ? (
-        <p className="mt-2 text-[13px] leading-relaxed text-[#7ff0b0]">
+        <p className="mt-2 text-[13px] leading-relaxed text-[#2f9e6e]">
           Personne ne manque à l&apos;appel — tous vos habitués sont passés
           récemment.
         </p>
       ) : (
         <>
-          <p className="mt-0.5 text-[12px] text-white/50">
+          <p className="mt-0.5 text-[12px] text-slate">
             En retard sur leur propre habitude. Un mot, un café offert, et ils
             reviennent.
           </p>
           <ul className="mt-3 space-y-2.5">
             {s.lapsed.map((p) => (
               <li key={p.phone} className="flex items-center gap-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/[0.09] text-[15px] font-extrabold text-white/70">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--o-inset)] text-[15px] font-extrabold text-slate">
                   {initial(p)}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-bold text-white">{who(p)}</span>
-                  <span className="block text-[12px] text-white/45">
+                  <span className="block truncate text-[15px] font-bold text-charcoal">{who(p)}</span>
+                  <span className="block text-[12px] text-slate">
                     venait {p.rhythm !== null ? rhythmLabel(p.rhythm) : "régulièrement"} ·{" "}
                     {p.visits} visites
                   </span>
                 </span>
                 <span className="shrink-0 text-right">
-                  <span className="block text-[15px] font-extrabold tabular-nums text-[#ff9a9a]">
+                  <span className="block text-[15px] font-extrabold tabular-nums text-[#e5484d]">
                     {p.daysSince} j
                   </span>
-                  <span className="block text-[10px] font-semibold text-white/40">sans lui</span>
+                  <span className="block text-[10px] font-semibold text-slate">sans lui</span>
                 </span>
               </li>
             ))}
@@ -482,8 +482,8 @@ function Empty({ cards }: { cards: number }) {
 
     return (
       <section className="a-card p-5">
-        <p className="text-[17px] font-extrabold text-white">Votre première carte</p>
-        <p className="mt-1 text-[13px] leading-relaxed text-white/55">
+        <p className="text-[17px] font-extrabold text-charcoal">Votre première carte</p>
+        <p className="mt-1 text-[13px] leading-relaxed text-slate">
           Rien à mesurer tant que personne n&apos;a de carte. Voilà comment la
           première arrive.
         </p>
@@ -491,12 +491,12 @@ function Empty({ cards }: { cards: number }) {
         <ol className="mt-4 space-y-3">
           {steps.map(([title, hint], i) => (
             <li key={title} className="flex gap-3">
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#7c3aed] text-[12.5px] font-bold text-white">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#5b3fd1] text-[12.5px] font-bold text-white">
                 {i + 1}
               </span>
               <span className="min-w-0">
-                <span className="block text-[13.5px] font-bold leading-snug text-white">{title}</span>
-                <span className="block text-[12px] leading-snug text-white/50">{hint}</span>
+                <span className="block text-[13.5px] font-bold leading-snug text-charcoal">{title}</span>
+                <span className="block text-[12px] leading-snug text-slate">{hint}</span>
               </span>
             </li>
           ))}
@@ -504,7 +504,7 @@ function Empty({ cards }: { cards: number }) {
 
         <Link
           href="/owner/qr"
-          className="mt-5 flex min-h-[52px] items-center justify-center rounded-2xl bg-[#7c3aed] text-[14px] font-bold text-white transition active:scale-[0.99]"
+          className="mt-5 flex min-h-[52px] items-center justify-center rounded-2xl bg-[#5b3fd1] text-[14px] font-bold text-white transition active:scale-[0.99]"
         >
           Voir mon QR
         </Link>
@@ -515,10 +515,10 @@ function Empty({ cards }: { cards: number }) {
   return (
     <section className="a-card p-6 text-center">
       <p className="text-[30px]">✦</p>
-      <p className="mt-2 text-[17px] font-extrabold text-white">
+      <p className="mt-2 text-[17px] font-extrabold text-charcoal">
         {cards} carte{cards > 1 ? "s" : ""} — aucun passage en caisse
       </p>
-      <p className="mx-auto mt-1.5 max-w-[32ch] text-[13px] leading-relaxed text-white/55">
+      <p className="mx-auto mt-1.5 max-w-[32ch] text-[13px] leading-relaxed text-slate">
         Votre QR marche : {cards === 1 ? "une personne a" : `${cards} personnes ont`} déjà
         pris {cards === 1 ? "sa" : "leur"} carte. Cette page compte les passages,
         pas les inscriptions — créditez un achat en caisse et les chiffres
@@ -526,7 +526,7 @@ function Empty({ cards }: { cards: number }) {
       </p>
       <Link
         href="/owner"
-        className="mt-4 inline-flex rounded-full bg-[#7c3aed] px-5 py-2.5 text-[13px] font-bold text-white"
+        className="mt-4 inline-flex rounded-full bg-[#5b3fd1] px-5 py-2.5 text-[13px] font-bold text-white"
       >
         Aller à la caisse
       </Link>

@@ -42,14 +42,14 @@ const btn =
 function Feedback({ state }: { state: SettingsState }) {
   if (state.error) {
     return (
-      <p role="alert" className="mt-2 rounded-xl bg-[#ff6b6b]/12 px-3.5 py-2.5 text-[12px] font-semibold text-[#ff9a9a]">
+      <p role="alert" className="mt-2 rounded-xl bg-[#e5484d]/12 px-3.5 py-2.5 text-[12px] font-semibold text-[#e5484d]">
         {state.error}
       </p>
     );
   }
   if (state.saved) {
     return (
-      <p role="status" className="mt-2 rounded-xl bg-ok/10 px-3.5 py-2.5 text-[12px] font-semibold text-[#7ff0b0]">
+      <p role="status" className="mt-2 rounded-xl bg-ok/10 px-3.5 py-2.5 text-[12px] font-semibold text-[#2f9e6e]">
         Enregistré ✦
       </p>
     );
@@ -75,8 +75,8 @@ function Toggle({
   return (
     <label className="flex cursor-pointer items-start justify-between gap-3 py-1">
       <span className="min-w-0">
-        <span className="block text-[13px] font-semibold text-white">{label}</span>
-        <span className="mt-0.5 block text-[12px] leading-snug text-white/55">{help}</span>
+        <span className="block text-[13px] font-semibold text-charcoal">{label}</span>
+        <span className="mt-0.5 block text-[12px] leading-snug text-slate">{help}</span>
       </span>
       <input
         type="checkbox"
@@ -85,7 +85,7 @@ function Toggle({
         onChange={onChecked ? (e) => onChecked(e.target.checked) : undefined}
         className="peer sr-only"
       />
-      <span className="mt-0.5 h-[24px] w-[42px] shrink-0 rounded-full border border-white/12 bg-white/[0.08] p-[3px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
+      <span className="mt-0.5 h-[24px] w-[42px] shrink-0 rounded-full border border-[var(--o-edge)] bg-[var(--o-inset)] p-[3px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
         <span className="block h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-[18px]" />
       </span>
     </label>
@@ -95,8 +95,8 @@ function Toggle({
 /** A concrete example under a setting — the fastest way to make it click. */
 function Example({ children }: { children: ReactNode }) {
   return (
-    <p className="a-inset mt-1.5 px-3.5 py-2.5 text-[12px] leading-snug text-white/55">
-      <span className="font-bold text-white">Exemple :</span> {children}
+    <p className="a-inset mt-1.5 px-3.5 py-2.5 text-[12px] leading-snug text-slate">
+      <span className="font-bold text-charcoal">Exemple :</span> {children}
     </p>
   );
 }
@@ -104,8 +104,8 @@ function Example({ children }: { children: ReactNode }) {
 /** Advanced settings, hidden by default — a first-timer should see 2-3 knobs. */
 function Advanced({ children }: { children: ReactNode }) {
   return (
-    <details className="group mt-2 border-t border-white/10 pt-1">
-      <summary className="flex cursor-pointer list-none items-center gap-1.5 py-2.5 text-[12px] font-bold text-white/55 [&::-webkit-details-marker]:hidden">
+    <details className="group mt-2 border-t border-[var(--o-edge)] pt-1">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 py-2.5 text-[12px] font-bold text-slate [&::-webkit-details-marker]:hidden">
         <span className="text-[15px] transition-transform group-open:rotate-90">›</span>
         Réglages avancés
       </summary>
@@ -134,8 +134,8 @@ function Num({
 }) {
   return (
     <label className="block py-2.5">
-      <span className="block text-[13px] font-semibold text-white">{label}</span>
-      <span className="mt-0.5 mb-2 block text-[12px] leading-snug text-white/55">{help}</span>
+      <span className="block text-[13px] font-semibold text-charcoal">{label}</span>
+      <span className="mt-0.5 mb-2 block text-[12px] leading-snug text-slate">{help}</span>
       <span className="flex items-center gap-2.5">
         <input
           type="number"
@@ -146,7 +146,7 @@ function Num({
           onChange={onValue ? (e) => onValue(Number(e.target.value) || 0) : undefined}
           className="a-field font-mono"
         />
-        {suffix && <span className="shrink-0 text-[12px] font-semibold text-white/55">{suffix}</span>}
+        {suffix && <span className="shrink-0 text-[12px] font-semibold text-slate">{suffix}</span>}
       </span>
     </label>
   );
@@ -190,13 +190,13 @@ export function EarnForm({
     <form action={action} className="px-4 py-3">
       {/* Stated, not offered. An owner still needs to know the rate to price a
           reward — they simply do not get to change it. */}
-      <div className="flex items-baseline justify-between rounded-xl bg-white/[0.05] px-3.5 py-3">
-        <span className="text-[13px] font-semibold text-white">1 dinar dépensé</span>
-        <span className="text-[13px] font-extrabold text-[#b9a3ff]">= 1 point</span>
+      <div className="flex items-baseline justify-between rounded-xl bg-[var(--o-inset)] px-3.5 py-3">
+        <span className="text-[13px] font-semibold text-charcoal">1 dinar dépensé</span>
+        <span className="text-[13px] font-extrabold text-[#5b3fd1]">= 1 point</span>
       </div>
       <Example>
         un café à {TICKET.toString().replace(".", ",")} dinars rapporte{" "}
-        <b className="text-white">{perTicket} points</b>.
+        <b className="text-charcoal">{perTicket} points</b>.
         {/*
           THE line this screen was missing. The rate lives here and the reward
           prices live one editor away, so the two numbers never met: this shop
@@ -206,14 +206,14 @@ export function EarnForm({
         {cheapest && (
           <>
             {" "}
-            <b className="text-white">{cheapest.label}</b> coûte {cheapest.pointsCost} points, soit{" "}
-            <b className="text-white">
+            <b className="text-charcoal">{cheapest.label}</b> coûte {cheapest.pointsCost} points, soit{" "}
+            <b className="text-charcoal">
               {Math.round(cheapest.pointsCost / (rate || 1))} dinars de dépense
             </b>
             {visitsToReward && (
               <>
                 {" "}
-                — environ <b className="text-white">{visitsToReward} visites</b> après le cadeau de
+                — environ <b className="text-charcoal">{visitsToReward} visites</b> après le cadeau de
                 bienvenue
               </>
             )}
@@ -259,8 +259,8 @@ export function StampsForm({ program }: { program: LoyaltyProgram }) {
     <form action={action} className="px-4 py-3">
       <label className="flex cursor-pointer items-start justify-between gap-3 py-1">
         <span className="min-w-0">
-          <span className="block text-[13px] font-semibold text-white">Carte à tampons activée</span>
-          <span className="mt-0.5 block text-[12px] leading-snug text-white/55">
+          <span className="block text-[13px] font-semibold text-charcoal">Carte à tampons activée</span>
+          <span className="mt-0.5 block text-[12px] leading-snug text-slate">
             Un tampon par visite ; carte pleine = récompense. Fonctionne en plus des points.
           </span>
         </span>
@@ -271,7 +271,7 @@ export function StampsForm({ program }: { program: LoyaltyProgram }) {
           onChange={(e) => setOn(e.target.checked)}
           className="peer sr-only"
         />
-        <span className="mt-0.5 h-[24px] w-[42px] shrink-0 rounded-full border border-white/12 bg-white/[0.08] p-[3px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
+        <span className="mt-0.5 h-[24px] w-[42px] shrink-0 rounded-full border border-[var(--o-edge)] bg-[var(--o-inset)] p-[3px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
           <span className="block h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-[18px]" />
         </span>
       </label>
@@ -286,8 +286,8 @@ export function StampsForm({ program }: { program: LoyaltyProgram }) {
           suffix="tampons"
         />
         <label className="block py-2.5">
-          <span className="block text-[13px] font-semibold text-white">Récompense de la carte</span>
-          <span className="mt-0.5 mb-2 block text-[12px] text-white/55">
+          <span className="block text-[13px] font-semibold text-charcoal">Récompense de la carte</span>
+          <span className="mt-0.5 mb-2 block text-[12px] text-slate">
             Ce que le client gagne en remplissant sa carte.
           </span>
           <input
@@ -387,22 +387,22 @@ function LogoUploader({ cafe }: { cafe: Cafe }) {
 
   return (
     <div className="py-2.5">
-      <span className="block text-[13px] font-semibold text-white">Logo de la boutique</span>
-      <span className="mt-0.5 mb-2.5 block text-[12px] leading-snug text-white/55">
+      <span className="block text-[13px] font-semibold text-charcoal">Logo de la boutique</span>
+      <span className="mt-0.5 mb-2.5 block text-[12px] leading-snug text-slate">
         Il s&apos;affiche en haut de la carte de vos clients.
       </span>
 
       <div className="flex items-center gap-3.5">
         {/* preview */}
         <span
-          className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-white/12"
+          className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-[var(--o-edge)]"
           style={{ background: logo ? "#fff" : BRAND_COLOR }}
         >
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element -- data-URI preview
             <img src={logo} alt="Logo" className="h-full w-full object-cover" />
           ) : (
-            <span className="text-[24px] font-extrabold text-white">
+            <span className="text-[24px] font-extrabold text-charcoal">
               {cafe.name.charAt(0).toUpperCase()}
             </span>
           )}
@@ -410,7 +410,7 @@ function LogoUploader({ cafe }: { cafe: Cafe }) {
 
         <div className="min-w-0 flex-1">
           <label
-            className={`flex cursor-pointer items-center justify-center rounded-xl border border-white/14 bg-white/[0.08] py-2.5 text-[12px] font-bold text-white transition active:scale-[0.99] ${
+            className={`flex cursor-pointer items-center justify-center rounded-xl border border-[var(--o-edge)] bg-[var(--o-inset)] py-2.5 text-[12px] font-bold text-charcoal transition active:scale-[0.99] ${
               pending ? "opacity-55" : ""
             }`}
           >
@@ -428,7 +428,7 @@ function LogoUploader({ cafe }: { cafe: Cafe }) {
               type="button"
               onClick={onRemove}
               disabled={pending}
-              className="mt-1.5 w-full text-[12px] font-bold uppercase tracking-[0.05em] text-[#ff9a9a] underline underline-offset-2 disabled:opacity-55"
+              className="mt-1.5 w-full text-[12px] font-bold uppercase tracking-[0.05em] text-[#e5484d] underline underline-offset-2 disabled:opacity-55"
             >
               Retirer
             </button>
@@ -447,18 +447,18 @@ export function CafeForm({ cafe }: { cafe: Cafe }) {
       {/* logo saves on its own (instant), so it lives outside the name/colour form */}
       <LogoUploader cafe={cafe} />
 
-      <form action={action} className="border-t border-white/10 pt-1">
+      <form action={action} className="border-t border-[var(--o-edge)] pt-1">
         <label className="block py-2.5">
-          <span className="block text-[13px] font-semibold text-white">Nom de la boutique</span>
-          <span className="mt-0.5 mb-2 block text-[12px] text-white/55">
+          <span className="block text-[13px] font-semibold text-charcoal">Nom de la boutique</span>
+          <span className="mt-0.5 mb-2 block text-[12px] text-slate">
             Ce que vos clients voient en haut de leur carte.
           </span>
           <input name="name" defaultValue={cafe.name} maxLength={60} className="a-field" />
         </label>
 
         <div className="py-2.5">
-          <span className="block text-[13px] font-semibold text-white">Type de commerce</span>
-          <span className="mt-0.5 mb-2.5 block text-[12px] text-white/55">
+          <span className="block text-[13px] font-semibold text-charcoal">Type de commerce</span>
+          <span className="mt-0.5 mb-2.5 block text-[12px] text-slate">
             Vos clients le voient pour reconnaître votre carte.
           </span>
           <BusinessTypePicker defaultValue={cafe.businessType} collapsible />
@@ -505,8 +505,8 @@ function BrandColour({ cafe }: { cafe: Cafe }) {
 
   return (
     <div className="py-2.5">
-      <span className="block text-[13px] font-semibold text-white">Couleur de la marque</span>
-      <span className="mt-0.5 mb-2.5 block text-[12px] text-white/55">
+      <span className="block text-[13px] font-semibold text-charcoal">Couleur de la marque</span>
+      <span className="mt-0.5 mb-2.5 block text-[12px] text-slate">
         Elle habille la carte de vos clients — en-tête, boutons, progression.
       </span>
 
@@ -524,7 +524,7 @@ function BrandColour({ cafe }: { cafe: Cafe }) {
               aria-label={s.name}
               aria-pressed={on}
               className={`h-10 w-10 rounded-full transition active:scale-95 ${
-                on ? "ring-2 ring-white ring-offset-2 ring-offset-[#1a1030]" : "ring-1 ring-white/20"
+                on ? "ring-2 ring-charcoal ring-offset-2 ring-offset-[var(--o-panel)]" : "ring-1 ring-[var(--o-edge)]"
               }`}
               style={{ background: s.hex }}
             />
@@ -540,10 +540,10 @@ function BrandColour({ cafe }: { cafe: Cafe }) {
           a shop that pasted its own hex can still see what it chose.
         */}
         <label
-          className="relative grid h-10 w-10 cursor-pointer place-items-center rounded-full ring-1 ring-white/20"
+          className="relative grid h-10 w-10 cursor-pointer place-items-center rounded-full ring-1 ring-[var(--o-edge)]"
           style={{
             background:
-              "conic-gradient(#ff4d4d, #ffd400, #4ade80, #22d3ee, #6d4ae6, #ec4899, #ff4d4d)",
+              "conic-gradient(#ff4d4d, #ffd400, #4ade80, #22d3ee, #5b3fd1, #ec4899, #ff4d4d)",
           }}
         >
           <input
@@ -553,17 +553,17 @@ function BrandColour({ cafe }: { cafe: Cafe }) {
             className="absolute inset-0 cursor-pointer opacity-0"
             aria-label="Choisir une autre couleur"
           />
-          <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[#1a1030] text-[13px] font-bold leading-none text-white">
+          <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[#ffffff] text-[13px] font-bold leading-none text-charcoal">
             +
           </span>
         </label>
       </div>
 
       {/* what the customer will actually be looking at */}
-      <p className="mt-3.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white/45">
+      <p className="mt-3.5 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
         Aperçu côté client
       </p>
-      <div className="mt-1.5 overflow-hidden rounded-2xl border border-white/10">
+      <div className="mt-1.5 overflow-hidden rounded-2xl border border-[var(--o-edge)]">
         <div
           className="flex items-center gap-3 px-3.5 py-3"
           style={{
@@ -653,16 +653,16 @@ function RewardImageUploader({ reward }: { reward: Reward }) {
   return (
     <div className="mb-2.5">
       <div className="flex items-center gap-3">
-        <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl border border-white/12 bg-white/[0.08]">
+        <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl border border-[var(--o-edge)] bg-[var(--o-inset)]">
           {img ? (
             // eslint-disable-next-line @next/next/no-img-element -- data-URI preview
             <img src={img} alt="" className="h-full w-full object-cover" />
           ) : (
-            <GiftIcon className="h-5 w-5 text-white/55" />
+            <GiftIcon className="h-5 w-5 text-slate" />
           )}
         </span>
         <label
-          className={`flex cursor-pointer items-center rounded-xl border border-white/14 bg-white/[0.08] px-3 py-2 text-[12px] font-bold text-white active:scale-[0.99] ${
+          className={`flex cursor-pointer items-center rounded-xl border border-[var(--o-edge)] bg-[var(--o-inset)] px-3 py-2 text-[12px] font-bold text-charcoal active:scale-[0.99] ${
             pending ? "opacity-55" : ""
           }`}
         >
@@ -674,7 +674,7 @@ function RewardImageUploader({ reward }: { reward: Reward }) {
             type="button"
             onClick={onRemove}
             disabled={pending}
-            className="text-[10px] font-bold uppercase tracking-[0.05em] text-[#ff9a9a] underline underline-offset-2 disabled:opacity-55"
+            className="text-[10px] font-bold uppercase tracking-[0.05em] text-[#e5484d] underline underline-offset-2 disabled:opacity-55"
           >
             Retirer
           </button>
@@ -776,7 +776,7 @@ function RewardCard({
         type="button"
         onPointerDown={onGrab}
         aria-label={`Déplacer ${reward.label}`}
-        className="hidden shrink-0 cursor-grab touch-none px-0.5 py-2 text-white/25 transition hover:text-white/50 active:cursor-grabbing sm:block"
+        className="hidden shrink-0 cursor-grab touch-none px-0.5 py-2 text-slate transition hover:text-slate active:cursor-grabbing sm:block"
       >
         <GripIcon className="h-5 w-3" />
       </button>
@@ -788,12 +788,12 @@ function RewardCard({
         aria-expanded={editing}
         className="flex min-w-0 flex-1 items-center gap-3 text-left"
       >
-        <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white/[0.07]">
+        <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-[var(--o-inset)]">
           {reward.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded, not a build asset
             <img src={reward.imageUrl} alt="" className="h-full w-full object-cover" />
           ) : (
-            <GiftIcon className="h-5 w-5 text-white/35" />
+            <GiftIcon className="h-5 w-5 text-slate" />
           )}
         </span>
         <span className="min-w-0 flex-1">
@@ -807,11 +807,11 @@ function RewardCard({
               acronym rather than an ordinal.
             */}
             {isFirst && (
-              <span className="shrink-0 rounded-full bg-[#b9a3ff]/15 px-2 py-0.5 text-[10px] font-extrabold text-[#b9a3ff]">
+              <span className="shrink-0 rounded-full bg-[#5b3fd1]/15 px-2 py-0.5 text-[10px] font-extrabold text-[#5b3fd1]">
                 1<sup>re</sup>
               </span>
             )}
-            <span className="min-w-0 truncate text-[15px] font-bold text-white">
+            <span className="min-w-0 truncate text-[15px] font-bold text-charcoal">
               {reward.label}
             </span>
           </span>
@@ -819,15 +819,15 @@ function RewardCard({
               reads "45 pts" and an editor that asks "how many visits" are not
               the same screen. Points stay, small, because the customer's card
               counts in them. */}
-          <span className="block truncate text-[12px] font-semibold text-white/45">
-            <b className={`font-extrabold ${tooHard ? "text-[#ffd27a]" : "text-[#b9a3ff]"}`}>
+          <span className="block truncate text-[12px] font-semibold text-slate">
+            <b className={`font-extrabold ${tooHard ? "text-[#a06e00]" : "text-[#5b3fd1]"}`}>
               {visits} visite{visits > 1 ? "s" : ""}
             </b>
             {" · "}
             {fmtPoints(reward.pointsCost)} pts
           </span>
         </span>
-        <span className="shrink-0 text-[17px] leading-none text-white/30">
+        <span className="shrink-0 text-[17px] leading-none text-slate">
           {editing ? "⌄" : "›"}
         </span>
       </button>
@@ -838,7 +838,7 @@ function RewardCard({
         and pressing save — three steps for the thing an owner does most.
       */}
       <label
-        className="flex shrink-0 cursor-pointer items-center border-l border-white/[0.08] py-1.5 pl-3"
+        className="flex shrink-0 cursor-pointer items-center border-l border-[var(--o-edge)] py-1.5 pl-3"
         title={active ? "Visible par vos clients" : "Masquée"}
       >
         <input
@@ -853,7 +853,7 @@ function RewardCard({
           className="peer sr-only"
         />
         <span className="sr-only">{active ? "Visible" : "Masquée"}</span>
-        <span className="h-[22px] w-[38px] rounded-full border border-white/12 bg-white/[0.08] p-[2.5px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
+        <span className="h-[22px] w-[38px] rounded-full border border-[var(--o-edge)] bg-[var(--o-inset)] p-[2.5px] transition-colors peer-checked:border-royal peer-checked:bg-royal">
           <span className="block h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-[15px]" />
         </span>
       </label>
@@ -924,7 +924,7 @@ function RewardEditor({
 
         {/* ── 1. what do they get ─────────────────────────────────── */}
         <label className="block">
-          <span className="mb-1.5 block text-[13px] font-bold text-white">
+          <span className="mb-1.5 block text-[13px] font-bold text-charcoal">
             Qu&apos;est-ce qu&apos;ils gagnent ?
           </span>
           <input
@@ -945,7 +945,7 @@ function RewardEditor({
                 key={idea}
                 type="button"
                 onClick={() => setLabel(idea)}
-                className="rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-[12px] font-semibold text-white/75 transition active:scale-95"
+                className="rounded-full border border-[var(--o-edge)] bg-[var(--o-inset)] px-3 py-1.5 text-[12px] font-semibold text-slate transition active:scale-95"
               >
                 {idea}
               </button>
@@ -955,10 +955,10 @@ function RewardEditor({
 
         {/* ── 2. how hard is it ───────────────────────────────────── */}
         <div className="mt-4">
-          <span className="block text-[13px] font-bold text-white">
+          <span className="block text-[13px] font-bold text-charcoal">
             Après combien de visites ?
           </span>
-          <span className="mt-0.5 mb-2 block text-[12px] leading-snug text-white/55">
+          <span className="mt-0.5 mb-2 block text-[12px] leading-snug text-slate">
             {isFirst
               ? "C'est votre première récompense — celle qui donne envie de revenir. Visez 2 ou 3."
               : "Les suivantes peuvent demander plus d'efforts."}
@@ -976,7 +976,7 @@ function RewardEditor({
                 className={`rounded-xl py-2.5 text-[15px] font-extrabold tabular-nums transition ${
                   !custom && visits === v
                     ? "bg-royal text-white"
-                    : "bg-white/[0.07] text-white/55"
+                    : "bg-[var(--o-inset)] text-slate"
                 }`}
               >
                 {v}
@@ -986,7 +986,7 @@ function RewardEditor({
               type="button"
               onClick={() => setCustom(true)}
               className={`rounded-xl py-2.5 text-[12px] font-bold transition ${
-                custom ? "bg-royal text-white" : "bg-white/[0.07] text-white/55"
+                custom ? "bg-royal text-white" : "bg-[var(--o-inset)] text-slate"
               }`}
             >
               autre
@@ -1013,10 +1013,10 @@ function RewardEditor({
           until you have customers", and saying which is which is the only way
           this number deserves to be believed.
         */}
-        <p className="a-inset mt-2.5 px-3.5 py-2.5 text-[12px] leading-snug text-white/55">
-          <b className="text-white">{`${visits} visite${visits > 1 ? "s" : ""}`}</b>
+        <p className="a-inset mt-2.5 px-3.5 py-2.5 text-[12px] leading-snug text-slate">
+          <b className="text-charcoal">{`${visits} visite${visits > 1 ? "s" : ""}`}</b>
           {" = "}
-          <b className="text-white">{`${cost} points`}</b>
+          <b className="text-charcoal">{`${cost} points`}</b>
           {`, soit ${cost} dinars d'achats.`}
           <br />
           {ticket.measured
@@ -1025,7 +1025,7 @@ function RewardEditor({
         </p>
 
         {tooHard && (
-          <p className="mt-2 rounded-xl bg-[#ffd27a]/12 px-3.5 py-2.5 text-[12px] font-semibold leading-snug text-[#ffd27a]">
+          <p className="mt-2 rounded-xl bg-[#a06e00]/12 px-3.5 py-2.5 text-[12px] font-semibold leading-snug text-[#a06e00]">
             {visits} visites avant le premier cadeau, c&apos;est long — beaucoup
             abandonneront avant. Une première récompense facile est ce qui fait
             revenir.
@@ -1045,7 +1045,7 @@ function RewardEditor({
           <button
             type="button"
             onClick={onDone}
-            className="shrink-0 rounded-2xl px-4 py-3 text-[13px] font-bold text-white/55"
+            className="shrink-0 rounded-2xl px-4 py-3 text-[13px] font-bold text-slate"
           >
             Fermer
           </button>
@@ -1065,8 +1065,8 @@ function RewardEditor({
         Only for a saved reward: the upload action needs an id.
       */}
       {reward && (
-        <details className="group mt-3 border-t border-white/[0.08] pt-2">
-          <summary className="flex cursor-pointer list-none items-center gap-1.5 py-1.5 text-[12px] font-bold text-white/55 [&::-webkit-details-marker]:hidden">
+        <details className="group mt-3 border-t border-[var(--o-edge)] pt-2">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 py-1.5 text-[12px] font-bold text-slate [&::-webkit-details-marker]:hidden">
             <span className="text-[15px] transition-transform group-open:rotate-90">›</span>
             {reward.imageUrl ? "Changer la photo" : "Ajouter une photo (facultatif)"}
           </summary>
@@ -1089,21 +1089,21 @@ function RewardEditor({
         in some in-app browsers, which silently made it one tap again.
       */}
       {reward && (
-        <div className="mt-3 border-t border-white/[0.08] pt-3">
+        <div className="mt-3 border-t border-[var(--o-edge)] pt-3">
           {confirming ? (
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 disabled={deleting}
                 onClick={() => startDelete(() => deleteRewardAction(reward.id))}
-                className="flex-1 rounded-2xl bg-[#ff6b6b] px-3 py-2.5 text-[13px] font-bold text-white"
+                className="flex-1 rounded-2xl bg-[#e5484d] px-3 py-2.5 text-[13px] font-bold text-white"
               >
                 {deleting ? "· · ·" : `Supprimer « ${reward.label} »`}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirming(false)}
-                className="shrink-0 px-3 py-2.5 text-[13px] font-bold text-white/55"
+                className="shrink-0 px-3 py-2.5 text-[13px] font-bold text-slate"
               >
                 Non
               </button>
@@ -1112,7 +1112,7 @@ function RewardEditor({
             <button
               type="button"
               onClick={() => setConfirming(true)}
-              className="flex items-center gap-1.5 text-[12px] font-bold text-[#ff9a9a] transition active:scale-95"
+              className="flex items-center gap-1.5 text-[12px] font-bold text-[#e5484d] transition active:scale-95"
             >
               <TrashIcon className="h-3.5 w-3.5" /> Supprimer cette récompense
             </button>
@@ -1248,13 +1248,13 @@ export function RewardsEditor({
       </div>
 
       {order.length === 0 && !adding && (
-        <p className="a-inset px-4 py-6 text-center text-[13px] leading-snug text-white/50">
+        <p className="a-inset px-4 py-6 text-center text-[13px] leading-snug text-slate">
           Aucune récompense pour l&apos;instant — vos clients n&apos;ont rien à viser.
         </p>
       )}
 
       {order.length > 1 && (
-        <p className="mt-4 hidden items-center justify-center gap-1.5 text-[12px] text-white/35 sm:flex">
+        <p className="mt-4 hidden items-center justify-center gap-1.5 text-[12px] text-slate sm:flex">
           <GripIcon className="h-3.5 w-2.5" /> Glissez pour réorganiser vos récompenses
         </p>
       )}
@@ -1288,7 +1288,7 @@ export function WheelForm({ game, prizes }: { game: Game | null; prizes: ReactNo
 
   if (!game) {
     return (
-      <p className="px-4 py-6 text-center text-[13px] text-white/55">
+      <p className="px-4 py-6 text-center text-[13px] text-slate">
         La roue n&apos;est pas encore disponible pour ce commerce.
       </p>
     );
@@ -1325,7 +1325,7 @@ export function WheelForm({ game, prizes }: { game: Game | null; prizes: ReactNo
           ) : (
             <>
               {n} lot{n > 1 ? "s" : ""}, tirés au hasard :{" "}
-              <b className="text-white">chacun sort {Math.round(100 / n)}% du temps</b>. Un tour à{" "}
+              <b className="text-charcoal">chacun sort {Math.round(100 / n)}% du temps</b>. Un tour à{" "}
               {cost} points, c&apos;est {cost} dinars de dépense.
             </>
           )}
@@ -1375,31 +1375,31 @@ export function PrizesEditor({ game }: { game: Game | null }) {
       indented the lots one step further in than every other field beside them.
     */
     <div className="py-3">
-      <p className="mb-1.5 text-[13px] font-bold text-white">Les lots</p>
+      <p className="mb-1.5 text-[13px] font-bold text-charcoal">Les lots</p>
       {/* Says so out loud, because everything else on this screen waits for
           Enregistrer and these do not. */}
-      <p className="mb-2 text-[12px] text-white/45">
+      <p className="mb-2 text-[12px] text-slate">
         Ajoutés et retirés tout de suite — pas besoin d&apos;enregistrer.
       </p>
       <ul className="space-y-2">
         {game.prizes.map((p) => (
           <li
             key={p.id}
-            className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.05] px-3.5 py-3"
+            className="flex items-center justify-between gap-3 rounded-xl bg-[var(--o-inset)] px-3.5 py-3"
           >
-            <span className="min-w-0 truncate text-[15px] font-semibold text-white">{p.label}</span>
+            <span className="min-w-0 truncate text-[15px] font-semibold text-charcoal">{p.label}</span>
             <button
               type="button"
               onClick={() => remove(p.id)}
               disabled={busy}
-              className="shrink-0 text-[12px] font-bold text-white/45 hover:text-[#ff9a9a] disabled:opacity-40"
+              className="shrink-0 text-[12px] font-bold text-slate hover:text-[#e5484d] disabled:opacity-40"
             >
               Retirer
             </button>
           </li>
         ))}
         {game.prizes.length === 0 && (
-          <li className="rounded-xl bg-white/[0.04] px-3.5 py-6 text-center text-[13px] text-white/50">
+          <li className="rounded-xl bg-[var(--o-inset)] px-3.5 py-6 text-center text-[13px] text-slate">
             Ajoutez au moins un lot pour que la roue apparaisse.
           </li>
         )}
@@ -1417,14 +1417,14 @@ export function PrizesEditor({ game }: { game: Game | null }) {
           type="button"
           onClick={add}
           disabled={busy || !adding.trim()}
-          className="shrink-0 rounded-xl bg-[#6d4ae6] px-4 text-[12px] font-bold text-white disabled:opacity-40"
+          className="shrink-0 rounded-xl bg-[#5b3fd1] px-4 text-[12px] font-bold text-white disabled:opacity-40"
         >
           Ajouter
         </button>
       </div>
-      {err && <p className="mt-2 text-[12px] font-semibold text-[#ff9a9a]">{err}</p>}
+      {err && <p className="mt-2 text-[12px] font-semibold text-[#e5484d]">{err}</p>}
 
-      <p className="mt-3 text-[12px] leading-snug text-white/45">
+      <p className="mt-3 text-[12px] leading-snug text-slate">
         Le tirage est au hasard, à parts égales. Pour qu&apos;un lot sorte moins
         souvent, ajoutez d&apos;autres lots — vos clients voient la roue, donc ils
         voient les chances.

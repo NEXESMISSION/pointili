@@ -158,8 +158,8 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
             aria-pressed={s.hex.toLowerCase() === colour.toLowerCase()}
             className={`h-10 w-10 rounded-full transition active:scale-95 ${
               s.hex.toLowerCase() === colour.toLowerCase()
-                ? "ring-2 ring-white ring-offset-2 ring-offset-[#1a1030]"
-                : "ring-1 ring-white/20"
+                ? "ring-2 ring-charcoal ring-offset-2 ring-offset-[var(--o-panel)]"
+                : "ring-1 ring-[var(--o-edge)]"
             }`}
             style={{ background: s.hex }}
           />
@@ -167,8 +167,8 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
         {/* the free picker, as one more swatch — a separate labelled row made
             the eight above look like the only real answer */}
         <label
-          className="relative grid h-10 w-10 cursor-pointer place-items-center rounded-full ring-1 ring-white/20"
-          style={{ background: "conic-gradient(#ff4d4d,#ffd400,#4ade80,#22d3ee,#6d4ae6,#ec4899,#ff4d4d)" }}
+          className="relative grid h-10 w-10 cursor-pointer place-items-center rounded-full ring-1 ring-[var(--o-edge)]"
+          style={{ background: "conic-gradient(#ff4d4d,#ffd400,#4ade80,#22d3ee,#5b3fd1,#ec4899,#ff4d4d)" }}
         >
           <input
             type="color"
@@ -177,7 +177,7 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
             className="absolute inset-0 cursor-pointer opacity-0"
             aria-label="Choisir une autre couleur"
           />
-          <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[#1a1030] text-[13px] font-bold leading-none text-white">
+          <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[#ffffff] text-[13px] font-bold leading-none text-charcoal">
             +
           </span>
         </label>
@@ -213,18 +213,18 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
                 }
               })
             }
-            className="text-[12px] font-bold text-white/50 hover:text-white/80"
+            className="text-[12px] font-bold text-slate hover:text-slate"
           >
             Retirer
           </button>
         )}
       </div>
-      <p className="mt-1.5 text-[11.5px] leading-snug text-white/45">
+      <p className="mt-1.5 text-[11.5px] leading-snug text-slate">
         Votre salle, votre comptoir, votre vitrine. Elle est recadrée et allégée
         automatiquement — et le nom reste lisible dessus.
       </p>
       {coverMsg.error && (
-        <p role="alert" className="mt-1.5 text-[12px] font-semibold text-[#ff9a9a]">
+        <p role="alert" className="mt-1.5 text-[12px] font-semibold text-[#e5484d]">
           {coverMsg.error}
         </p>
       )}
@@ -249,12 +249,12 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
       <Segmented options={FONTS} value={font} onChange={(v) => setFont(v)} />
 
       {state.error && (
-        <p role="alert" className="mt-3 rounded-xl bg-[#ff6b6b]/12 px-3.5 py-2.5 text-[13px] font-semibold text-[#ff9a9a]">
+        <p role="alert" className="mt-3 rounded-xl bg-[#e5484d]/12 px-3.5 py-2.5 text-[13px] font-semibold text-[#e5484d]">
           {state.error}
         </p>
       )}
       {state.saved && (
-        <p role="status" className="mt-3 rounded-xl bg-[#7ff0b0]/12 px-3.5 py-2.5 text-[13px] font-semibold text-[#7ff0b0]">
+        <p role="status" className="mt-3 rounded-xl bg-[#2f9e6e]/12 px-3.5 py-2.5 text-[13px] font-semibold text-[#2f9e6e]">
           Enregistré ✦
         </p>
       )}
@@ -270,7 +270,7 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-2 mt-5 text-[11px] font-bold uppercase tracking-[0.08em] text-white/45">
+    <p className="mb-2 mt-5 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
       {children}
     </p>
   );
@@ -288,7 +288,7 @@ function Segmented<T extends string>({
   disabled?: readonly T[];
 }) {
   return (
-    <div className="flex gap-1 rounded-2xl bg-white/[0.06] p-1">
+    <div className="flex gap-1 rounded-2xl bg-[var(--o-inset)] p-1">
       {options.map((o) => {
         const off = disabled.includes(o.key);
         const on = value === o.key;
@@ -300,7 +300,11 @@ function Segmented<T extends string>({
             onClick={() => onChange(o.key)}
             aria-pressed={on}
             className={`min-h-[40px] flex-1 rounded-xl text-[13px] font-bold transition ${
-              on ? "bg-white text-[#1a1030]" : off ? "text-white/25" : "text-white/60"
+              on
+                ? "bg-[var(--o-panel)] text-charcoal shadow-sm"
+                : off
+                  ? "text-slate/40"
+                  : "text-slate"
             }`}
           >
             {o.label}
@@ -345,7 +349,7 @@ function Preview({
 
   return (
     <div
-      className="overflow-hidden rounded-2xl border border-white/10"
+      className="overflow-hidden rounded-2xl border border-[var(--o-edge)]"
       style={{ background: dark ? "#0e0c15" : "#f6f6f8", fontFamily: font }}
     >
       <div
@@ -392,7 +396,7 @@ function Preview({
             borderRadius: px,
           }}
         >
-          <span className="grid h-8 w-8 place-items-center rounded-md bg-[#1a1030] text-[9px] font-bold text-white">
+          <span className="grid h-8 w-8 place-items-center rounded-md bg-[#ffffff] text-[9px] font-bold text-charcoal">
             QR
           </span>
           <span className="min-w-0">

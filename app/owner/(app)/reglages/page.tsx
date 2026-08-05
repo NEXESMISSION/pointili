@@ -57,15 +57,15 @@ export default async function Reglages() {
           // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
           <img src={cafe.logoUrl} alt="" className="h-12 w-12 shrink-0 rounded-2xl object-cover" />
         ) : (
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#6d4ae6] text-[18px] font-extrabold text-white">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#5b3fd1] text-[18px] font-extrabold text-white">
             {cafe.name.charAt(0).toUpperCase()}
           </span>
         )}
         <div className="min-w-0">
-          <h1 className="truncate text-[20px] font-extrabold leading-tight text-white">
+          <h1 className="truncate text-[20px] font-extrabold leading-tight text-charcoal">
             {cafe.name}
           </h1>
-          <p className="truncate text-[12px] text-white/50">
+          <p className="truncate text-[12px] text-slate">
             {type.label} · pointili.online/{cafe.slug}
           </p>
         </div>
@@ -96,17 +96,17 @@ export default async function Reglages() {
         there for the day somebody needs them, no longer taking a row each.
       */}
       <section>
-        <h2 className="mb-1.5 px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/40">
+        <h2 className="mb-1.5 px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-slate">
           Votre compte
         </h2>
         <div className="a-card overflow-hidden">
           <div className="flex items-center justify-between gap-3 px-4 py-3.5">
             <span className="min-w-0">
-              <span className="block text-[15px] font-semibold text-white">
+              <span className="block text-[15px] font-semibold text-charcoal">
                 {PLAN_LABEL[cafe.plan] ?? cafe.plan}
               </span>
               {cafe.planExpiresAt && (
-                <span className="mt-0.5 block text-[12px] text-white/45">
+                <span className="mt-0.5 block text-[12px] text-slate">
                   {left.expired ? "expiré le " : "jusqu'au "}
                   {new Date(cafe.planExpiresAt).toLocaleDateString("fr-FR", {
                     day: "2-digit",
@@ -119,10 +119,10 @@ export default async function Reglages() {
             <span
               className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[12px] font-bold ${
                 left.expired
-                  ? "bg-[#ff6b6b]/12 text-[#ff9a9a]"
+                  ? "bg-[#e5484d]/12 text-[#e5484d]"
                   : left.soon && !left.unlimited
-                    ? "bg-[#ffd27a]/12 text-[#ffd27a]"
-                    : "bg-ok/10 text-[#7ff0b0]"
+                    ? "bg-[#a06e00]/12 text-[#a06e00]"
+                    : "bg-ok/10 text-[#2f9e6e]"
               }`}
             >
               {left.label}
@@ -135,10 +135,10 @@ export default async function Reglages() {
           sidebar carries this too, but the sidebar is laptop-only and most
           owners never see one.
         */}
-        <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 px-1.5 text-[11.5px] text-white/35">
+        <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 px-1.5 text-[11.5px] text-slate">
           <span className="truncate font-mono">{owner?.email ?? "—"}</span>
-          <span className="text-white/20">·</span>
-          <Link href="/?pro=1" className="font-bold text-white/50 underline underline-offset-2">
+          <span className="text-slate">·</span>
+          <Link href="/?pro=1" className="font-bold text-slate underline underline-offset-2">
             site public
           </Link>
         </p>
@@ -161,32 +161,32 @@ export default async function Reglages() {
       */}
       <details open={left.expired || (left.soon && !left.unlimited)} className="group">
         <summary className="a-card flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 [&::-webkit-details-marker]:hidden">
-          <span className="min-w-0 flex-1 text-[15px] font-semibold text-white">
+          <span className="min-w-0 flex-1 text-[15px] font-semibold text-charcoal">
             Formules et tarifs
           </span>
-          <span className="shrink-0 text-[13px] font-bold text-white/50">dès 7 TND / mois</span>
-          <span className="shrink-0 text-[17px] leading-none text-white/30 transition group-open:rotate-90">
+          <span className="shrink-0 text-[13px] font-bold text-slate">dès 7 TND / mois</span>
+          <span className="shrink-0 text-[17px] leading-none text-slate transition group-open:rotate-90">
             ›
           </span>
         </summary>
         <div className="a-card mt-1.5 p-4">
           <div className="grid grid-cols-2 gap-2.5">
-            <div className="rounded-2xl bg-white/[0.07] px-3 py-3 text-center">
-              <p className="text-[12px] font-semibold text-white/55">6 mois</p>
-              <p className="mt-0.5 font-display text-[24px] font-extrabold leading-none text-white">
-                65 <span className="text-[12px] font-bold text-white/50">TND</span>
+            <div className="rounded-2xl bg-[var(--o-inset)] px-3 py-3 text-center">
+              <p className="text-[12px] font-semibold text-slate">6 mois</p>
+              <p className="mt-0.5 font-display text-[24px] font-extrabold leading-none text-charcoal">
+                65 <span className="text-[12px] font-bold text-slate">TND</span>
               </p>
-              <p className="mt-0.5 text-[10px] text-white/40">≈ 11 TND / mois</p>
+              <p className="mt-0.5 text-[10px] text-slate">≈ 11 TND / mois</p>
             </div>
-            <div className="rounded-2xl bg-[#6d4ae6]/25 px-3 py-3 text-center ring-1 ring-[#8b6bff]/40">
-              <p className="text-[12px] font-semibold text-[#b9a3ff]">1 an</p>
-              <p className="mt-0.5 font-display text-[24px] font-extrabold leading-none text-white">
-                80 <span className="text-[12px] font-bold text-white/50">TND</span>
+            <div className="rounded-2xl bg-[#5b3fd1]/25 px-3 py-3 text-center ring-1 ring-[#5b3fd1]/40">
+              <p className="text-[12px] font-semibold text-[#5b3fd1]">1 an</p>
+              <p className="mt-0.5 font-display text-[24px] font-extrabold leading-none text-charcoal">
+                80 <span className="text-[12px] font-bold text-slate">TND</span>
               </p>
-              <p className="mt-0.5 text-[10px] text-[#b9a3ff]">≈ 7 TND / mois</p>
+              <p className="mt-0.5 text-[10px] text-[#5b3fd1]">≈ 7 TND / mois</p>
             </div>
           </div>
-          <p className="mt-3 text-[12px] leading-relaxed text-white/55">
+          <p className="mt-3 text-[12px] leading-relaxed text-slate">
             Tout est compris : points, récompenses, tampons, analyses et le kit QR
             pour vos tables. Écrivez-nous pour renouveler — on active votre compte
             le jour même.
@@ -198,12 +198,12 @@ export default async function Reglages() {
             the owner app linked it, so the person deciding whether to spend 80
             TND had no way to reach the paragraph written for them.
           */}
-          <p className="mt-2 text-[12px] leading-relaxed text-white/55">
+          <p className="mt-2 text-[12px] leading-relaxed text-slate">
             Si vous vous arrêtez, rien n&apos;est effacé : vos clients et leurs
             points restent, et reviennent intacts le jour où vous rallumez.{" "}
             <Link
               href="/conditions"
-              className="font-bold text-[#b9a3ff] underline underline-offset-2"
+              className="font-bold text-[#5b3fd1] underline underline-offset-2"
             >
               Conditions
             </Link>
@@ -214,7 +214,7 @@ export default async function Reglages() {
       <form action={logoutAction} className="px-1">
         <button
           type="submit"
-          className="w-full rounded-2xl border border-white/12 py-3 text-[13px] font-bold text-white/55 active:scale-[0.99]"
+          className="w-full rounded-2xl border border-[var(--o-edge)] py-3 text-[13px] font-bold text-slate active:scale-[0.99]"
         >
           Se déconnecter
         </button>

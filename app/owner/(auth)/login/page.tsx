@@ -21,10 +21,10 @@ export default async function Login({
 
   return (
     <div className="a-card px-6 py-7">
-      <h1 className="text-[24px] font-extrabold leading-tight text-white">
+      <h1 className="text-[24px] font-extrabold leading-tight text-charcoal">
         Bon retour 👋
       </h1>
-      <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">
+      <p className="mt-1.5 text-[13px] leading-relaxed text-slate">
         Connectez-vous pour gérer vos points, votre caisse et vos récompenses.
       </p>
 
@@ -35,7 +35,7 @@ export default async function Login({
         their click did nothing.
       */}
       {lien === "expire" && (
-        <p className="mt-4 rounded-xl bg-[#ffd27a]/12 px-3.5 py-2.5 text-[12px] leading-relaxed text-[#ffd27a]">
+        <p className="mt-4 rounded-xl bg-[#a06e00]/12 px-3.5 py-2.5 text-[12px] leading-relaxed text-[#a06e00]">
           Ce lien de confirmation a expiré ou a déjà été utilisé. Connectez-vous
           ci-dessous — si le compte n&apos;est pas encore confirmé, créez-le à
           nouveau pour recevoir un nouveau lien.
@@ -43,7 +43,7 @@ export default async function Login({
       )}
 
       {!configured && (
-        <p className="mt-4 rounded-xl bg-[#ffd27a]/12 px-3.5 py-2.5 text-[12px] leading-relaxed text-[#ffd27a]">
+        <p className="mt-4 rounded-xl bg-[#a06e00]/12 px-3.5 py-2.5 text-[12px] leading-relaxed text-[#a06e00]">
           Supabase n&apos;est pas encore configuré. En développement, l&apos;espace
           est accessible sans connexion —{" "}
           {/* /owner, not "/". This used to work only because the proxy mapped
@@ -60,9 +60,9 @@ export default async function Login({
         <AuthForm action={loginAction} cta="Se connecter" />
       </div>
 
-      <p className="mt-5 text-center text-[13px] text-white/55">
+      <p className="mt-5 text-center text-[13px] text-slate">
         Pas encore de compte ?{" "}
-        <Link href="/owner/signup" className="font-bold text-[#b9a3ff]">
+        <Link href="/owner/signup" className="font-bold text-[#5b3fd1]">
           Créer un compte
         </Link>
       </p>

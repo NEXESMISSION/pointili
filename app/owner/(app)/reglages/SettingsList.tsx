@@ -183,17 +183,17 @@ export function SettingsList({
       {(!stampsValue || !wheelValue) && (
         <details className="group">
           <summary className="a-card flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 [&::-webkit-details-marker]:hidden">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-white/[0.08] text-[17px] leading-none text-white/70">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-[var(--o-inset)] text-[17px] leading-none text-slate">
               +
             </span>
-            <span className="min-w-0 flex-1 text-[15px] font-semibold text-white">
+            <span className="min-w-0 flex-1 text-[15px] font-semibold text-charcoal">
               Ajouter autre chose
             </span>
-            <span className="shrink-0 text-[17px] leading-none text-white/30 transition group-open:rotate-90">
+            <span className="shrink-0 text-[17px] leading-none text-slate transition group-open:rotate-90">
               ›
             </span>
           </summary>
-          <div className="a-card mt-1.5 divide-y divide-white/[0.08] overflow-hidden">
+          <div className="a-card mt-1.5 divide-y divide-[var(--o-edge)] overflow-hidden">
             {!stampsValue && (
               <Row
                 icon={<StampIcon className="h-[18px] w-[18px]" />}
@@ -279,7 +279,7 @@ function CardAddress({ slug }: { slug: string }) {
     <div className="px-4 py-3">
       <div className="flex items-center gap-2">
         <span className="w-8 shrink-0" />
-        <span className="min-w-0 flex-1 whitespace-nowrap text-[14.5px] font-semibold text-white">
+        <span className="min-w-0 flex-1 whitespace-nowrap text-[14.5px] font-semibold text-charcoal">
           Adresse de la carte
         </span>
         <button
@@ -294,7 +294,7 @@ function CardAddress({ slug }: { slug: string }) {
             );
           }}
           aria-label="Copier l'adresse de la carte"
-          className="shrink-0 rounded-lg bg-white/[0.08] px-2.5 py-1.5 text-[11px] font-bold text-white/80 transition active:scale-95"
+          className="shrink-0 rounded-lg bg-[var(--o-inset)] px-2.5 py-1.5 text-[11px] font-bold text-slate transition active:scale-95"
         >
           {copied ? "Copié ✓" : "Copier"}
         </button>
@@ -303,14 +303,14 @@ function CardAddress({ slug }: { slug: string }) {
           target="_blank"
           rel="noopener"
           aria-label="Ouvrir la carte"
-          className="shrink-0 rounded-lg bg-white/[0.08] px-2.5 py-1.5 text-[11px] font-bold text-white/80 transition active:scale-95"
+          className="shrink-0 rounded-lg bg-[var(--o-inset)] px-2.5 py-1.5 text-[11px] font-bold text-slate transition active:scale-95"
         >
           Ouvrir
         </a>
       </div>
 
       {/* select-all: the other way anyone copies a URL is by long-pressing it */}
-      <p className="mt-1 select-all break-all pl-10 font-mono text-[12px] text-white/55">{url}</p>
+      <p className="mt-1 select-all break-all pl-10 font-mono text-[12px] text-slate">{url}</p>
     </div>
   );
 }
@@ -318,10 +318,10 @@ function CardAddress({ slug }: { slug: string }) {
 function Group({ label, children }: { label: string; children: ReactNode }) {
   return (
     <section>
-      <h2 className="mb-1.5 px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/40">
+      <h2 className="mb-1.5 px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-slate">
         {label}
       </h2>
-      <div className="a-card divide-y divide-white/[0.08] overflow-hidden">{children}</div>
+      <div className="a-card divide-y divide-[var(--o-edge)] overflow-hidden">{children}</div>
     </section>
   );
 }
@@ -346,7 +346,7 @@ function Row({
   const inner = (
     <>
       {icon ? (
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-[#6d4ae6] text-white">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-[#5b3fd1] text-white">
           {icon}
         </span>
       ) : (
@@ -361,17 +361,17 @@ function Row({
         row is read left to right: the name of the thing is the part that has
         to survive, and the value is the part that can shorten to an ellipsis.
       */}
-      <span className="shrink-0 whitespace-nowrap text-[14.5px] font-semibold text-white">
+      <span className="shrink-0 whitespace-nowrap text-[14.5px] font-semibold text-charcoal">
         {label}
       </span>
       <span
         className={`min-w-0 flex-1 truncate text-right text-[12.5px] font-bold ${
           mono ? "font-mono text-[12px]" : ""
-        } ${warn ? "text-[#ff9a9a]" : muted ? "text-white/40" : "text-white/55"}`}
+        } ${warn ? "text-[#e5484d]" : muted ? "text-slate" : "text-slate"}`}
       >
         {value}
       </span>
-      {onClick && <span className="shrink-0 text-[17px] leading-none text-white/30">›</span>}
+      {onClick && <span className="shrink-0 text-[17px] leading-none text-slate">›</span>}
     </>
   );
 
@@ -380,7 +380,7 @@ function Row({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-white/[0.05]"
+      className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-[var(--o-inset)]"
     >
       {inner}
     </button>
@@ -417,15 +417,15 @@ function Sheet({
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="sheet-in fixed inset-0 z-[70] flex flex-col bg-[#0a0614]"
+      className="sheet-in fixed inset-0 z-[70] flex flex-col bg-[#ffffff]"
     >
       {/* safe-t, or the title sits under the notch in the installed app */}
-      <header className="safe-t border-b border-white/10 px-3 pb-3 [--safe-pt:0.75rem]">
+      <header className="safe-t border-b border-[var(--o-edge)] px-3 pb-3 [--safe-pt:0.75rem]">
         <div className="mx-auto flex w-full max-w-[900px] items-center gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition active:bg-white/10"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-charcoal transition active:bg-[var(--o-inset)]"
             aria-label="Retour"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
@@ -433,13 +433,13 @@ function Sheet({
             </svg>
           </button>
           <span className="min-w-0">
-            <span className="block truncate text-[20px] font-extrabold leading-tight text-white">
+            <span className="block truncate text-[20px] font-extrabold leading-tight text-charcoal">
               {title}
             </span>
             {/* wraps on a phone rather than truncating — the subtitle is the
                 one line telling an owner how to price this, and "…en 2–3 vi…"
                 tells them nothing */}
-            <span className="block text-[12px] leading-snug text-white/50">{sub}</span>
+            <span className="block text-[12px] leading-snug text-slate">{sub}</span>
           </span>
         </div>
       </header>

@@ -12,15 +12,15 @@ export default async function Signup() {
 
   return (
     <div className="a-card px-6 py-7">
-      <h1 className="text-[24px] font-extrabold leading-tight text-white">
+      <h1 className="text-[24px] font-extrabold leading-tight text-charcoal">
         Créez votre compte
       </h1>
-      <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">
+      <p className="mt-1.5 text-[13px] leading-relaxed text-slate">
         Quelques secondes, et vos clients peuvent scanner.
       </p>
 
       {/* the offer, up front — matches the landing + marketing */}
-      <p className="mt-4 rounded-xl bg-white/[0.08] px-3.5 py-2.5 text-[12px] font-semibold leading-relaxed text-[#b9a3ff]">
+      <p className="mt-4 rounded-xl bg-[var(--o-inset)] px-3.5 py-2.5 text-[12px] font-semibold leading-relaxed text-[#5b3fd1]">
         ✦ 14 jours gratuits — sans carte bancaire.
       </p>
 
@@ -33,9 +33,9 @@ export default async function Signup() {
         />
       </div>
 
-      <p className="mt-5 text-center text-[13px] text-white/55">
+      <p className="mt-5 text-center text-[13px] text-slate">
         Déjà un compte ?{" "}
-        <Link href="/owner/login" className="font-bold text-[#b9a3ff]">
+        <Link href="/owner/login" className="font-bold text-[#5b3fd1]">
           Se connecter
         </Link>
       </p>

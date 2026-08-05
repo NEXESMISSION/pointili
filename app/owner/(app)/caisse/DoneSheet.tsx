@@ -60,14 +60,14 @@ export type Done =
   on the same frame.
 */
 const CONFETTI: [number, number, string, number, number][] = [
-  [16, -6, "#8b6bff", 0, 7], [30, 12, "#7ff0b0", 60, 5], [44, -14, "#ffd27a", 120, 6],
-  [58, 8, "#8b6bff", 40, 5], [72, -10, "#7ff0b0", 100, 7], [86, 14, "#ffd27a", 150, 5],
-  [10, 26, "#ffd27a", 90, 5], [24, 40, "#8b6bff", 180, 6], [50, 46, "#7ff0b0", 30, 5],
-  [66, 34, "#ffd27a", 130, 6], [80, 44, "#8b6bff", 70, 5], [92, 28, "#7ff0b0", 160, 6],
+  [16, -6, "#5b3fd1", 0, 7], [30, 12, "#2f9e6e", 60, 5], [44, -14, "#a06e00", 120, 6],
+  [58, 8, "#5b3fd1", 40, 5], [72, -10, "#2f9e6e", 100, 7], [86, 14, "#a06e00", 150, 5],
+  [10, 26, "#a06e00", 90, 5], [24, 40, "#5b3fd1", 180, 6], [50, 46, "#2f9e6e", 30, 5],
+  [66, 34, "#a06e00", 130, 6], [80, 44, "#5b3fd1", 70, 5], [92, 28, "#2f9e6e", 160, 6],
 ];
 
 function Celebration({ tone }: { tone: "green" | "gold" }) {
-  const ring = tone === "green" ? "#7ff0b0" : "#ffd27a";
+  const ring = tone === "green" ? "#2f9e6e" : "#a06e00";
   return (
     <span className="relative mx-auto block h-[104px] w-full">
       <span aria-hidden className="pointer-events-none absolute inset-0">
@@ -94,7 +94,7 @@ function Celebration({ tone }: { tone: "green" | "gold" }) {
       />
       <span
         className="done-tick absolute left-1/2 top-[20px] grid h-16 w-16 -translate-x-1/2 place-items-center rounded-full"
-        style={{ background: ring, color: "#062b18" }}
+        style={{ background: ring, color: "#ffffff" }}
       >
         <CheckIcon className="h-9 w-9" />
       </span>
@@ -154,14 +154,14 @@ export function DoneSheet({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="done-sheet relative m-auto w-full max-w-[420px] rounded-[28px] border border-white/[0.09] bg-[#120d20] p-5 pt-4 text-center text-white shadow-[0_24px_70px_-20px_rgba(0,0,0,.95)]"
+        className="done-sheet relative m-auto w-full max-w-[420px] rounded-[28px] border border-[var(--o-edge)] bg-[var(--o-panel)] p-5 pt-4 text-center text-charcoal shadow-[0_24px_70px_-24px_rgba(23,18,31,.45)]"
       >
         {/* an explicit way out, for the cashier who wants the till back NOW */}
         <button
           type="button"
           onClick={onClose}
           aria-label="Fermer"
-          className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/[0.08] text-white/60 transition active:scale-95"
+          className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-[var(--o-inset)] text-slate transition active:scale-95"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="h-4 w-4">
             <path d="M18 6 6 18M6 6l12 12" />
@@ -173,24 +173,24 @@ export function DoneSheet({
         {done.kind === "credit" ? (
           <>
             <h2 className="text-[30px] font-extrabold leading-none">Bravo !</h2>
-            <p className="mt-2 text-[13px] text-white/55">
-              Des points ont été ajoutés à <b className="font-bold text-white/85">{done.who}</b>.
+            <p className="mt-2 text-[13px] text-slate">
+              Des points ont été ajoutés à <b className="font-bold text-slate">{done.who}</b>.
             </p>
 
             {/*
               The hero. One framed block holding the only two numbers a cashier
               reads out loud, so the eye lands once instead of hunting.
             */}
-            <div className="mt-4 rounded-3xl border border-[#8b6bff]/25 bg-gradient-to-b from-[#2a1d55] to-[#1b1338] px-5 py-6">
-              <p className="text-[44px] font-extrabold leading-none tabular-nums text-[#7ff0b0]">
+            <div className="mt-4 rounded-3xl border border-[#5b3fd1]/25 bg-[var(--o-inset)] px-5 py-6">
+              <p className="text-[44px] font-extrabold leading-none tabular-nums text-[#2f9e6e]">
                 +{fmtPoints(done.earned)}
               </p>
-              <p className="mt-1.5 text-[17px] font-bold text-white/85">points</p>
-              <p className="mt-3.5 inline-block rounded-full bg-[#7ff0b0]/12 px-3.5 py-1.5 text-[13px] font-bold text-[#7ff0b0]">
+              <p className="mt-1.5 text-[17px] font-bold text-slate">points</p>
+              <p className="mt-3.5 inline-block rounded-full bg-[#2f9e6e]/12 px-3.5 py-1.5 text-[13px] font-bold text-[#2f9e6e]">
                 Nouveau solde : {fmtPoints(done.balance)} pts
               </p>
               {done.welcome > 0 && (
-                <p className="mt-2 text-[12px] font-bold text-[#ffd27a]">
+                <p className="mt-2 text-[12px] font-bold text-[#a06e00]">
                   dont +{fmtPoints(done.welcome)} de bienvenue
                 </p>
               )}
@@ -202,17 +202,17 @@ export function DoneSheet({
             </div>
 
             {done.unlocked.length > 0 ? (
-              <p className="mt-3 flex items-center gap-3 rounded-2xl border border-[#ffd27a]/25 bg-[#ffd27a]/[0.08] px-4 py-3 text-left text-[13px] leading-snug text-white/60">
+              <p className="mt-3 flex items-center gap-3 rounded-2xl border border-[#a06e00]/25 bg-[#a06e00]/[0.08] px-4 py-3 text-left text-[13px] leading-snug text-slate">
                 <span className="shrink-0 text-[20px]">🎁</span>
                 <span>
                   Peut prendre maintenant :{" "}
-                  <b className="block font-extrabold text-[#ffd27a]">{done.unlocked.join(", ")}</b>
+                  <b className="block font-extrabold text-[#a06e00]">{done.unlocked.join(", ")}</b>
                 </span>
               </p>
             ) : (
               done.next && (
-                <p className="mt-3 text-[12px] text-white/45">
-                  Encore <b className="font-bold text-white/75">{fmtPoints(done.next.needed)}</b> pour{" "}
+                <p className="mt-3 text-[12px] text-slate">
+                  Encore <b className="font-bold text-slate">{fmtPoints(done.next.needed)}</b> pour{" "}
                   {done.next.label.toLowerCase()}
                 </p>
               )
@@ -223,16 +223,16 @@ export function DoneSheet({
             <h2 className="text-[30px] font-extrabold leading-none">
               {filled ? "Carte pleine !" : "Bravo !"}
             </h2>
-            <p className="mt-2 text-[13px] text-white/55">
+            <p className="mt-2 text-[13px] text-slate">
               {filled ? "La carte de " : "Un tampon de plus pour "}
-              <b className="font-bold text-white/85">{done.who}</b>
+              <b className="font-bold text-slate">{done.who}</b>
               {filled ? " est complète." : "."}
             </p>
 
-            <div className="mt-4 rounded-3xl border border-[#8b6bff]/25 bg-gradient-to-b from-[#2a1d55] to-[#1b1338] px-5 py-6">
-              <p className="text-[44px] font-extrabold leading-none tabular-nums text-white">
+            <div className="mt-4 rounded-3xl border border-[#5b3fd1]/25 bg-[var(--o-inset)] px-5 py-6">
+              <p className="text-[44px] font-extrabold leading-none tabular-nums text-charcoal">
                 {done.count}
-                <span className="text-[24px] text-white/35">/{done.required}</span>
+                <span className="text-[24px] text-slate">/{done.required}</span>
               </p>
               {/* the punch card, drawn — a row of dots reads faster than "7/10" */}
               <span className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
@@ -240,7 +240,7 @@ export function DoneSheet({
                   <span
                     key={i}
                     className={`h-[11px] w-[11px] rounded-full ${
-                      i < done.count ? "bg-[#7ff0b0]" : "bg-white/15"
+                      i < done.count ? "bg-[#2f9e6e]" : "bg-[var(--o-inset)]"
                     }`}
                   />
                 ))}
@@ -248,19 +248,19 @@ export function DoneSheet({
             </div>
 
             {filled ? (
-              <div className="mt-3 rounded-2xl border border-[#ffd27a]/25 bg-[#ffd27a]/[0.08] px-4 py-3.5">
-                <p className="text-[13px] font-extrabold leading-snug text-[#ffd27a]">
+              <div className="mt-3 rounded-2xl border border-[#a06e00]/25 bg-[#a06e00]/[0.08] px-4 py-3.5">
+                <p className="text-[13px] font-extrabold leading-snug text-[#a06e00]">
                   🎁 {done.label}
                 </p>
                 {done.code && (
-                  <p className="mt-1.5 font-mono text-[20px] font-bold tracking-[0.18em] text-white">
+                  <p className="mt-1.5 font-mono text-[20px] font-bold tracking-[0.18em] text-charcoal">
                     {done.code}
                   </p>
                 )}
               </div>
             ) : (
-              <p className="mt-3 text-[12px] text-white/45">
-                Encore <b className="font-bold text-white/75">{done.required - done.count}</b>{" "}
+              <p className="mt-3 text-[12px] text-slate">
+                Encore <b className="font-bold text-slate">{done.required - done.count}</b>{" "}
                 {done.required - done.count === 1 ? "visite" : "visites"}
               </p>
             )}
@@ -275,7 +275,7 @@ export function DoneSheet({
                 done.onUndo?.();
                 onClose();
               }}
-              className="shrink-0 rounded-2xl border border-white/15 px-6 py-3.5 text-[13px] font-bold text-white/70 active:scale-[0.98]"
+              className="shrink-0 rounded-2xl border border-[var(--o-edge)] px-6 py-3.5 text-[13px] font-bold text-slate active:scale-[0.98]"
             >
               Annuler
             </button>
@@ -283,7 +283,7 @@ export function DoneSheet({
           <button
             type="button"
             onClick={onNext}
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#7c3aed] py-3.5 text-[15px] font-bold text-white shadow-[0_10px_26px_-10px_rgba(124,58,237,.9)] active:scale-[0.98]"
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#5b3fd1] py-3.5 text-[15px] font-bold text-white shadow-[0_10px_26px_-10px_rgba(124,58,237,.9)] active:scale-[0.98]"
           >
             Client suivant
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
@@ -298,11 +298,11 @@ export function DoneSheet({
 
 function Fact({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <span className="rounded-2xl bg-white/[0.05] px-3 py-3.5">
-      <span className="mx-auto grid h-9 w-9 place-items-center rounded-xl bg-[#8b6bff]/15 text-[#b9a3ff]">
+    <span className="rounded-2xl bg-[var(--o-inset)] px-3 py-3.5">
+      <span className="mx-auto grid h-9 w-9 place-items-center rounded-xl bg-[#5b3fd1]/15 text-[#5b3fd1]">
         {icon}
       </span>
-      <span className="mt-2 block text-[12px] text-white/45">{label}</span>
+      <span className="mt-2 block text-[12px] text-slate">{label}</span>
       <span className="mt-0.5 block truncate text-[15px] font-extrabold tabular-nums">{value}</span>
     </span>
   );

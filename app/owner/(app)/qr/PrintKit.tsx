@@ -178,7 +178,7 @@ export function PrintKit({
       <div className="@container mx-auto w-full max-w-[380px] print:max-w-none">
         <div
           style={{ aspectRatio: String(fmt.ratio) }}
-          className="flex w-full flex-col items-center justify-center overflow-hidden rounded-3xl bg-[#140d24] px-[7cqw] py-[6cqw] text-center text-white print:h-screen print:rounded-none"
+          className="flex w-full flex-col items-center justify-center overflow-hidden rounded-3xl bg-[#140d24] px-[7cqw] py-[6cqw] text-center text-charcoal print:h-screen print:rounded-none"
         >
           <div className="flex items-center justify-center gap-[2.5cqw]">
             {/* Logo when the shop has one; NOTHING when it does not. The old
@@ -192,7 +192,7 @@ export function PrintKit({
             <span className="text-[6cqw] font-extrabold leading-none">{name}</span>
           </div>
 
-          <p className="mt-[6cqw] text-[2.8cqw] font-bold uppercase tracking-[0.14em] text-white/55">
+          <p className="mt-[6cqw] text-[2.8cqw] font-bold uppercase tracking-[0.14em] text-slate">
             Carte de fidélité
           </p>
           <p className="mt-[1.5cqw] max-w-[20ch] text-[6.4cqw] font-extrabold leading-tight">
@@ -207,8 +207,8 @@ export function PrintKit({
           </div>
 
           <p className="mt-[4cqw] text-[4cqw] font-bold">Scannez pour commencer</p>
-          <p className="mt-[0.8cqw] text-[2.9cqw] text-white/60">Sans application · en 10 secondes</p>
-          <p className="mt-[4cqw] break-all font-mono text-[2.4cqw] tracking-[0.04em] text-white/40">
+          <p className="mt-[0.8cqw] text-[2.9cqw] text-slate">Sans application · en 10 secondes</p>
+          <p className="mt-[4cqw] break-all font-mono text-[2.4cqw] tracking-[0.04em] text-slate">
             {url.replace(/^https?:\/\//, "")}
           </p>
         </div>

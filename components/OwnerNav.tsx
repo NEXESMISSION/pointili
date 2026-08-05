@@ -53,7 +53,7 @@ export function OwnerTabs() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky bottom-0 z-20 border-t border-white/10 bg-[#0b0616]/90 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden print:hidden">
+    <nav className="sticky bottom-0 z-20 border-t border-[var(--o-edge)] bg-[var(--o-panel)]/92 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden print:hidden">
       <ul className="flex">
         {TABS.map(({ label, Icon, href }) => {
           const active = isActive(pathname, href);
@@ -66,14 +66,14 @@ export function OwnerTabs() {
               >
                 <span
                   className={`grid h-[30px] w-[30px] place-items-center rounded-full transition-colors ${
-                    active ? "bg-[#6d4ae6] text-white" : "text-white/45"
+                    active ? "bg-[#5b3fd1] text-white" : "text-slate"
                   }`}
                 >
                   <Icon className="h-[17px] w-[17px]" />
                 </span>
                 <span
                   className={`text-[10px] font-semibold transition-colors ${
-                    active ? "text-white" : "text-white/45"
+                    active ? "text-charcoal" : "text-slate"
                   }`}
                 >
                   {label}
@@ -103,19 +103,19 @@ export function OwnerSidebar({
   const pathname = usePathname();
 
   return (
-    <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col border-r border-white/10 bg-[#0b0616]/70 px-3 py-4 md:flex print:hidden">
+    <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col border-r border-[var(--o-edge)] bg-[var(--o-panel)]/70 px-3 py-4 md:flex print:hidden">
       <div className="mb-5 flex items-center gap-2.5 px-2">
         <span
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[15px] font-extrabold text-white"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[15px] font-extrabold text-charcoal"
           style={{ background: colour }}
         >
           {initial}
         </span>
         <span className="min-w-0">
-          <span className="block truncate text-[15px] font-extrabold leading-tight text-white">
+          <span className="block truncate text-[15px] font-extrabold leading-tight text-charcoal">
             {name ?? "pointili.online"}
           </span>
-          <span className="block text-[10px] font-semibold text-white/45">Espace café</span>
+          <span className="block text-[10px] font-semibold text-slate">Espace café</span>
         </span>
       </div>
 
@@ -129,7 +129,7 @@ export function OwnerSidebar({
                   href={href}
                   aria-current={active ? "page" : undefined}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-bold transition ${
-                    active ? "bg-[#6d4ae6] text-white" : "text-white/55 hover:bg-white/[0.06]"
+                    active ? "bg-[#5b3fd1] text-white" : "text-slate hover:bg-[var(--o-inset)]"
                   }`}
                 >
                   <Icon className="h-[18px] w-[18px]" />
@@ -154,7 +154,7 @@ export function OwnerSidebar({
       */}
       <Link
         href="/?pro=1"
-        className="mt-auto flex items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-semibold text-white/40 transition hover:bg-white/[0.06] hover:text-white/70"
+        className="mt-auto flex items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-semibold text-slate transition hover:bg-[var(--o-inset)] hover:text-slate"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
           <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />

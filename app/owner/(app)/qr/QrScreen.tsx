@@ -44,7 +44,7 @@ export function QrScreen({
           type="button"
           onClick={() => router.push("/owner")}
           aria-label="Retour"
-          className="grid h-11 w-11 place-items-center rounded-full text-white/80 transition active:scale-95"
+          className="grid h-11 w-11 place-items-center rounded-full text-slate transition active:scale-95"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
             <path d="m15 18-6-6 6-6" />
@@ -53,7 +53,7 @@ export function QrScreen({
       </div>
 
       {/* ── the code, which is the page ── */}
-      <div className="mt-1 rounded-[30px] border border-white/[0.08] bg-white/[0.03] px-5 py-5 print:hidden">
+      <div className="mt-1 rounded-[30px] border border-[var(--o-edge)] bg-[var(--o-inset)] px-5 py-5 print:hidden">
         <div className="relative mx-auto w-full max-w-[min(300px,46vh)]">
           <span
             aria-hidden
@@ -82,18 +82,18 @@ export function QrScreen({
               () => {},
             );
           }}
-          className="flex w-full items-center justify-center gap-2.5 rounded-[22px] border border-white/[0.12] bg-white/[0.05] py-3.5 text-[15px] font-bold text-white transition active:scale-[0.99]"
+          className="flex w-full items-center justify-center gap-2.5 rounded-[22px] border border-[var(--o-edge)] bg-[var(--o-inset)] py-3.5 text-[15px] font-bold text-charcoal transition active:scale-[0.99]"
         >
           {copied ? (
             <>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px] text-[#7ff0b0]">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px] text-[#2f9e6e]">
                 <path d="m5 13 4 4L19 7" />
               </svg>
               Lien copié
             </>
           ) : (
             <>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px]">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#5b3fd1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px]">
                 <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5" />
                 <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19" />
               </svg>
@@ -106,7 +106,7 @@ export function QrScreen({
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex w-full items-center justify-center gap-2.5 rounded-[22px] bg-[#7c3aed] py-3.5 text-[15px] font-bold text-white shadow-[0_18px_40px_-16px_rgba(124,58,237,1)] transition active:scale-[0.99]"
+          className="flex w-full items-center justify-center gap-2.5 rounded-[22px] bg-[#5b3fd1] py-3.5 text-[15px] font-bold text-white shadow-[0_18px_40px_-16px_rgba(124,58,237,1)] transition active:scale-[0.99]"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px]">
             <path d="M15 3h6v6M10 14 21 3" />
@@ -120,7 +120,7 @@ export function QrScreen({
           type="button"
           onClick={() => setMore((v) => !v)}
           aria-expanded={more}
-          className="w-full py-2 text-center text-[13px] font-bold text-white/45 transition hover:text-white/75"
+          className="w-full py-2 text-center text-[13px] font-bold text-slate transition hover:text-slate"
         >
           {more ? "Masquer" : "Imprimer ou télécharger l'affiche"}
         </button>

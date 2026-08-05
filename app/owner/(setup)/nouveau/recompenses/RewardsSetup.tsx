@@ -112,7 +112,7 @@ export function RewardsSetup({
               never does.
             */}
             <div className="mt-2.5 flex items-center gap-2.5">
-              <span className="min-w-0 flex-1 text-[12px] font-semibold text-white/55">
+              <span className="min-w-0 flex-1 text-[12px] font-semibold text-slate">
                 Après combien de visites ?
               </span>
               <div className="flex shrink-0 items-center gap-1">
@@ -126,7 +126,7 @@ export function RewardsSetup({
                 {/* The number alone — the label beside it already says
                     "visites", and repeating it here stole enough width to wrap
                     that label and orphan its question mark on its own line. */}
-                <span className="w-[38px] text-center text-[17px] font-extrabold tabular-nums text-white">
+                <span className="w-[38px] text-center text-[17px] font-extrabold tabular-nums text-charcoal">
                   {row.visits}
                 </span>
                 <Step
@@ -142,7 +142,7 @@ export function RewardsSetup({
             {/* The one warning worth giving a beginner, on the one row where it
                 changes the outcome. */}
             {i === 0 && row.visits > 6 && row.label.trim() && (
-              <p className="mt-2 rounded-xl bg-[#ffd27a]/12 px-3 py-2 text-[12px] font-semibold leading-snug text-[#ffd27a]">
+              <p className="mt-2 rounded-xl bg-[#a06e00]/12 px-3 py-2 text-[12px] font-semibold leading-snug text-[#a06e00]">
                 {/* {" "} after the expression, not a plain space: the space
                     written there is swallowed by the JSX text transform, and
                     this line shipped reading "10visites, c'est long". Same fix
@@ -159,7 +159,7 @@ export function RewardsSetup({
         <button
           type="button"
           onClick={() => setShown((n) => n + 1)}
-          className="text-[12px] font-bold text-[#b9a3ff] hover:text-white"
+          className="text-[12px] font-bold text-[#5b3fd1] hover:text-charcoal"
         >
           + Ajouter une récompense
         </button>
@@ -169,16 +169,16 @@ export function RewardsSetup({
         What "visites" is being measured against. It used to explain the points
         rate, which is no longer a number anyone on this screen has to hold.
       */}
-      <p className="!mt-4 rounded-xl bg-white/[0.05] px-3.5 py-2.5 text-[12px] leading-snug text-white/60">
+      <p className="!mt-4 rounded-xl bg-[var(--o-inset)] px-3.5 py-2.5 text-[12px] leading-snug text-slate">
         {ticket.measured ? (
           <>
             Calculé sur votre ticket moyen réel :{" "}
-            <b className="text-white">{ticket.tnd.toFixed(2)} TND</b> par visite.
+            <b className="text-charcoal">{ticket.tnd.toFixed(2)} TND</b> par visite.
           </>
         ) : (
           <>
             Estimé sur un panier de{" "}
-            <b className="text-white">{ticket.tnd.toFixed(2)} TND</b>
+            <b className="text-charcoal">{ticket.tnd.toFixed(2)} TND</b>
             {" "}— vous n&apos;avez pas encore de ventes. Vous pourrez tout
             changer plus tard dans Réglages.
           </>
@@ -188,7 +188,7 @@ export function RewardsSetup({
       {state.error && (
         <p
           role="alert"
-          className="rounded-xl border border-[#ff6b6b]/35 bg-[#ff6b6b]/12 px-3.5 py-2.5 text-[13px] font-semibold text-[#ff9a9a]"
+          className="rounded-xl border border-[#e5484d]/35 bg-[#e5484d]/12 px-3.5 py-2.5 text-[13px] font-semibold text-[#e5484d]"
         >
           {state.error}
         </p>
@@ -197,7 +197,7 @@ export function RewardsSetup({
       <button
         type="submit"
         disabled={pending}
-        className="!mt-4 w-full rounded-xl bg-[#6d4ae6] py-4 text-[12px] font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
+        className="!mt-4 w-full rounded-xl bg-[#5b3fd1] py-4 text-[12px] font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
       >
         {pending
           ? "· · ·"
@@ -208,7 +208,7 @@ export function RewardsSetup({
 
       <Link
         href="/owner"
-        className="block pt-1 text-center text-[12px] font-semibold text-white/45 hover:text-white/75"
+        className="block pt-1 text-center text-[12px] font-semibold text-slate hover:text-slate"
       >
         Je le ferai plus tard
       </Link>
@@ -233,7 +233,7 @@ function Step({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/[0.09] text-[18px] font-bold leading-none text-white transition active:scale-95 disabled:opacity-30"
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--o-inset)] text-[18px] font-bold leading-none text-charcoal transition active:scale-95 disabled:opacity-30"
     >
       {children}
     </button>

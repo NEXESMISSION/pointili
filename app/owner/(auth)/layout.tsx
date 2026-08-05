@@ -19,13 +19,14 @@ export default function OwnerAuthLayout({
       {/*
         The mark sits on PAPER, not straight on the page.
 
-        The artwork is a purple card on a transparent background, and .a-shell is
-        #08040f under a purple gradient — so purple-on-purple made the mark
-        effectively invisible next to a crisp white wordmark. The fix is not to
-        recolour the brand: it is to give it the same light tile it already wears
-        as an app icon. Two wins for one change — it reads on any background, and
-        the sign-in screen now looks like the icon the owner just installed on
-        their home screen.
+        The artwork is a purple card on a transparent background, and when
+        .a-shell was a deep purple gradient, purple-on-purple made the mark
+        effectively invisible. The fix was not to recolour the brand: it was to
+        give it the same light tile it already wears as an app icon.
+
+        The shell is white now, so the mark would read either way — but the tile
+        stays, because it is what makes this screen look like the icon the owner
+        just installed on their home screen.
 
         Same tile as components/InstallPrompt.tsx and the same #f8f7fc as
         scripts/icons.mjs, so all three are one object.
@@ -50,7 +51,7 @@ export default function OwnerAuthLayout({
       <div className="mb-4 w-full max-w-[400px]">
         <Link
           href="/?pro=1"
-          className="-ml-2 inline-flex items-center gap-1.5 rounded-full py-1.5 pl-2 pr-3 text-[13px] font-semibold text-white/55 transition hover:bg-white/[0.07] hover:text-white/85"
+          className="-ml-2 inline-flex items-center gap-1.5 rounded-full py-1.5 pl-2 pr-3 text-[13px] font-semibold text-slate transition hover:bg-[var(--o-inset)] hover:text-slate"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
             <path d="m15 18-6-6 6-6" />
@@ -60,7 +61,7 @@ export default function OwnerAuthLayout({
       </div>
 
       <Link href="/?pro=1" className="mb-7 inline-flex">
-        <BrandLockup size={40} />
+        <BrandLockup size={40} accent="#5b3fd1" />
       </Link>
       <div className="w-full max-w-[400px]">{children}</div>
     </div>

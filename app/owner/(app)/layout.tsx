@@ -41,10 +41,10 @@ export default async function OwnerLayout({
 
   const planChip =
     cafe.plan === "pro"
-      ? { text: "Pro", cls: "bg-[#6d4ae6] text-white" }
+      ? { text: "Pro", cls: "bg-[#5b3fd1] text-white" }
       : left.expired
-        ? { text: "Expiré", cls: "bg-[#ff6b6b]/12 text-[#ff9a9a]" }
-        : { text: `Essai · ${left.label ?? ""}`.trim(), cls: "bg-[#ffd27a]/12 text-[#ffd27a]" };
+        ? { text: "Expiré", cls: "bg-[#e5484d]/12 text-[#e5484d]" }
+        : { text: `Essai · ${left.label ?? ""}`.trim(), cls: "bg-[#a06e00]/12 text-[#a06e00]" };
 
   return (
     /* Phone: one column, header on top, tabs at the bottom.
@@ -81,7 +81,7 @@ export default async function OwnerLayout({
       */}
 
       {owner.dev && (
-        <p className="border-b border-white/12 bg-[#ffd27a]/12 px-5 py-2 font-mono text-[10px] uppercase leading-relaxed tracking-[0.08em] text-[#ffd27a]">
+        <p className="border-b border-[var(--o-edge)] bg-[#a06e00]/12 px-5 py-2 font-mono text-[10px] uppercase leading-relaxed tracking-[0.08em] text-[#a06e00]">
           ⚠ Mode développement — aucune authentification
         </p>
       )}
@@ -92,8 +92,8 @@ export default async function OwnerLayout({
         why the QR stopped working.
       */}
       {!cafe.live && (
-        <div className="border-b border-[#ff6b6b]/35 bg-[#ff6b6b]/12 px-5 py-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#ff9a9a]">
+        <div className="border-b border-[#e5484d]/35 bg-[#e5484d]/12 px-5 py-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#e5484d]">
             ◆ Café hors ligne
           </p>
           {/*
@@ -107,19 +107,19 @@ export default async function OwnerLayout({
             tells the DINER "tes points sont conservés". The person paying was
             the one left guessing.
           */}
-          <p className="mt-0.5 text-[12px] leading-snug text-[#ff9a9a]">
+          <p className="mt-0.5 text-[12px] leading-snug text-[#e5484d]">
             {cafe.suspendedAt
               ? `Suspendu : ${cafe.suspendedReason ?? "contactez-nous"}`
               : "Votre abonnement a expiré — vos clients ne peuvent plus scanner."}
           </p>
-          <p className="mt-1 text-[12px] leading-snug text-white/55">
+          <p className="mt-1 text-[12px] leading-snug text-slate">
             Rien n&apos;est effacé : vos clients et leurs points vous attendent,
             intacts, le jour où vous rallumez.
           </p>
           {/* A dead end otherwise: the product told an owner their shop was dark
               and gave them nothing to press. */}
           {!cafe.suspendedAt && (
-            <Link href="/owner/reglages" className="mt-1.5 inline-block text-[12px] font-bold text-white underline underline-offset-2">
+            <Link href="/owner/reglages" className="mt-1.5 inline-block text-[12px] font-bold text-charcoal underline underline-offset-2">
               Renouveler mon abonnement →
             </Link>
           )}
@@ -127,7 +127,7 @@ export default async function OwnerLayout({
       )}
 
       {cafe.live && left.soon && !left.unlimited && (
-        <p className="border-b border-[#ffd27a]/30 bg-[#ffd27a]/12 px-5 py-2 text-[12px] leading-snug text-[#ffd27a]">
+        <p className="border-b border-[#a06e00]/30 bg-[#a06e00]/12 px-5 py-2 text-[12px] leading-snug text-[#a06e00]">
           Votre {cafe.plan === "trial" ? "essai" : "abonnement"} se termine dans{" "}
           <b>{left.label}</b>. Vos clients et leurs points sont conservés.{" "}
           <Link href="/owner/reglages" className="font-bold underline underline-offset-2">
@@ -141,10 +141,10 @@ export default async function OwnerLayout({
           key={n.id}
           className={`border-b-[1.5px] px-5 py-2.5 ${
             n.kind === "urgent"
-              ? "border-[#ff6b6b]/35 bg-[#ff6b6b]/12 text-[#ff9a9a]"
+              ? "border-[#e5484d]/35 bg-[#e5484d]/12 text-[#e5484d]"
               : n.kind === "warning"
-                ? "border-[#ffd27a]/30 bg-[#ffd27a]/12 text-[#ffd27a]"
-                : "border-white/12 bg-white/[0.06] text-white/70"
+                ? "border-[#a06e00]/30 bg-[#a06e00]/12 text-[#a06e00]"
+                : "border-[var(--o-edge)] bg-[var(--o-inset)] text-slate"
           }`}
         >
           <p className="text-[10px] font-semibold uppercase tracking-[0.06em] opacity-70">

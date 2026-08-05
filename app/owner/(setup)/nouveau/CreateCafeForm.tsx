@@ -90,25 +90,25 @@ export function CreateCafeForm() {
         the moment one was typed, so the same line meant two different things
         depending on a field further down the page.
       */}
-      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#2a1263] to-[#150a33] p-4">
+      <div className="rounded-2xl border border-[var(--o-edge)] bg-gradient-to-br from-[#2a1263] to-[#150a33] p-4">
         <div className="flex items-center gap-3">
-          <label className="group relative grid h-14 w-14 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-2xl bg-white/12 text-[22px]">
+          <label className="group relative grid h-14 w-14 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-2xl bg-[var(--o-inset)] text-[22px]">
             <input type="file" accept="image/*" onChange={pickLogo} className="hidden" />
             {logo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={logo} alt="" className="h-full w-full object-cover" />
             ) : (
-              <span className="text-white/70">+</span>
+              <span className="text-slate">+</span>
             )}
-            <span className="pointer-events-none absolute inset-0 grid place-items-center bg-black/45 text-[10px] font-bold uppercase tracking-[0.06em] text-white opacity-0 transition group-hover:opacity-100">
+            <span className="pointer-events-none absolute inset-0 grid place-items-center bg-black/45 text-[10px] font-bold uppercase tracking-[0.06em] text-charcoal opacity-0 transition group-hover:opacity-100">
               logo
             </span>
           </label>
           <span className="min-w-0">
-            <span className="block truncate text-[16px] font-extrabold text-white">
+            <span className="block truncate text-[16px] font-extrabold text-charcoal">
               {name.trim() || "Votre commerce"}
             </span>
-            <span className="block truncate font-mono text-[12px] text-white/50">
+            <span className="block truncate font-mono text-[12px] text-slate">
               pointili.online/{effective || "…"}
             </span>
           </span>
@@ -129,7 +129,7 @@ export function CreateCafeForm() {
         where tapping the square that shows it is the obvious way to change it.
       */}
       <label className="block">
-        <span className="mb-1.5 block text-[13px] font-semibold text-white">
+        <span className="mb-1.5 block text-[13px] font-semibold text-charcoal">
           Le nom de votre commerce
         </span>
         <input
@@ -145,7 +145,7 @@ export function CreateCafeForm() {
       </label>
 
       <div>
-        <span className="mb-1.5 block text-[13px] font-semibold text-white">
+        <span className="mb-1.5 block text-[13px] font-semibold text-charcoal">
           Ce que vous vendez
         </span>
         {/*
@@ -176,15 +176,15 @@ export function CreateCafeForm() {
         two fields tall until somebody asks for more.
       */}
       <details className="group">
-        <summary className="flex cursor-pointer list-none items-center gap-2 py-1.5 text-[13px] font-semibold text-white/50 transition hover:text-white/80 [&::-webkit-details-marker]:hidden">
+        <summary className="flex cursor-pointer list-none items-center gap-2 py-1.5 text-[13px] font-semibold text-slate transition hover:text-slate [&::-webkit-details-marker]:hidden">
           <span className="text-[15px] leading-none transition group-open:rotate-90">›</span>
           Adresse et téléphone
-          <span className="text-white/30">· facultatif</span>
+          <span className="text-slate">· facultatif</span>
         </summary>
 
         <div className="mt-2 space-y-3">
           <label className="block">
-            <span className="mb-1.5 block text-[13px] font-semibold text-white">
+            <span className="mb-1.5 block text-[13px] font-semibold text-charcoal">
               Adresse de la carte
             </span>
             <input
@@ -196,13 +196,13 @@ export function CreateCafeForm() {
               /* no shrinking below 16px: iOS zooms the page on any smaller field */
               className={`${field} font-mono`}
             />
-            <span className="mt-1.5 block text-[12px] leading-snug text-white/45">
+            <span className="mt-1.5 block text-[12px] leading-snug text-slate">
               Laissez vide pour reprendre le nom.
             </span>
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-[13px] font-semibold text-white">
+            <span className="mb-1.5 block text-[13px] font-semibold text-charcoal">
               Téléphone
             </span>
             <input
@@ -215,7 +215,7 @@ export function CreateCafeForm() {
               placeholder="25 123 456"
               className={field}
             />
-            <span className="mt-1.5 block text-[12px] leading-snug text-white/45">
+            <span className="mt-1.5 block text-[12px] leading-snug text-slate">
               Affiché sur la carte de vos clients.
             </span>
           </label>
@@ -224,7 +224,7 @@ export function CreateCafeForm() {
             <button
               type="button"
               onClick={() => setLogo(null)}
-              className="text-[12.5px] font-semibold text-white/45 hover:text-white/75"
+              className="text-[12.5px] font-semibold text-slate hover:text-slate"
             >
               Retirer le logo
             </button>
@@ -232,12 +232,12 @@ export function CreateCafeForm() {
         </div>
       </details>
 
-      {logoErr && <p className="text-[12.5px] text-[#ff9a9a]">{logoErr}</p>}
+      {logoErr && <p className="text-[12.5px] text-[#e5484d]">{logoErr}</p>}
 
       {state.error && (
         <p
           role="alert"
-          className="rounded-xl border border-[#ff6b6b]/35 bg-[#ff6b6b]/12 px-3.5 py-2.5 text-[13px] font-semibold text-[#ff9a9a]"
+          className="rounded-xl border border-[#e5484d]/35 bg-[#e5484d]/12 px-3.5 py-2.5 text-[13px] font-semibold text-[#e5484d]"
         >
           {state.error}
         </p>
@@ -248,7 +248,7 @@ export function CreateCafeForm() {
       <button
         type="submit"
         disabled={pending || !name.trim()}
-        className="!mt-5 w-full rounded-2xl bg-[#6d4ae6] py-4 text-[16px] font-bold text-white shadow-[0_16px_36px_-16px_rgba(109,74,230,1)] transition active:scale-[0.98] disabled:opacity-50 disabled:shadow-none"
+        className="!mt-5 w-full rounded-2xl bg-[#5b3fd1] py-4 text-[16px] font-bold text-white shadow-[0_16px_36px_-16px_rgba(109,74,230,1)] transition active:scale-[0.98] disabled:opacity-50 disabled:shadow-none"
       >
         {pending ? "· · ·" : "Créer ma carte"}
       </button>

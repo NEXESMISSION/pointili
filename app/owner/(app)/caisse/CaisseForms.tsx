@@ -119,7 +119,7 @@ function Keypad({ onKey, decimal = false }: { onKey: (k: string) => void; decima
             type="button"
             onClick={() => onKey(k)}
             className={`h-[58px] rounded-2xl text-[24px] font-bold tabular-nums transition active:scale-95 ${
-              k === "⌫" ? "bg-white/[0.06] text-white/70" : "bg-white/[0.11] text-white"
+              k === "⌫" ? "bg-[var(--o-inset)] text-slate" : "bg-[var(--o-inset)] text-charcoal"
             }`}
           >
             {k}
@@ -229,7 +229,7 @@ export function CaisseDesk({
       */}
       {stage === "scan" ? (
         <section>
-          <div className="overflow-hidden rounded-3xl border border-white/12">
+          <div className="overflow-hidden rounded-3xl border border-[var(--o-edge)]">
             {/* no camera on this device → drop straight back to the field */}
             <QrScanner
               key={scanNonce}
@@ -242,7 +242,7 @@ export function CaisseDesk({
           </div>
           {/* ONE lens, TWO jobs — say so, or half the shop never points it at a
               reward and keeps typing six characters by hand. */}
-          <p className="mt-3 text-center text-[13px] text-white/55">
+          <p className="mt-3 text-center text-[13px] text-slate">
             {busy ? "Recherche…" : "Pointez le QR — carte client ou récompense"}
           </p>
           <button type="button" onClick={() => setStage("keypad")} className="a-btn a-btn--ghost mt-3">
@@ -273,7 +273,7 @@ export function CaisseDesk({
 
           {/* ── this person is paying ─────────────────────────────── */}
           <section className="a-card p-4">
-            <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white/45">
+            <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
               Ajouter des points
             </p>
             {/* field + button on ONE row — the height the keypad used to eat
@@ -287,7 +287,7 @@ export function CaisseDesk({
                 placeholder="Code client ou numéro"
                 inputMode="text"
                 autoCapitalize="characters"
-                className="min-w-0 flex-1 rounded-2xl bg-white/[0.06] px-4 py-3.5 text-[18px] font-extrabold tracking-[0.05em] text-white outline-none placeholder:text-[14px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-white/35"
+                className="min-w-0 flex-1 rounded-2xl bg-[var(--o-inset)] px-4 py-3.5 text-[18px] font-extrabold tracking-[0.05em] text-charcoal outline-none placeholder:text-[14px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-slate"
               />
               <button
                 type="button"
@@ -301,7 +301,7 @@ export function CaisseDesk({
           </section>
 
           {error && (
-            <p role="alert" className="rounded-2xl bg-[#ff6b6b]/12 px-4 py-3 text-[13px] font-semibold text-[#ff9a9a]">
+            <p role="alert" className="rounded-2xl bg-[#e5484d]/12 px-4 py-3 text-[13px] font-semibold text-[#e5484d]">
               {error}
             </p>
           )}
@@ -326,18 +326,18 @@ export function CaisseDesk({
       */}
       <Link
         href="/owner/qr"
-        className="flex items-center gap-3 rounded-2xl border border-white/[0.1] bg-white/[0.04] px-4 py-3.5 transition active:bg-white/[0.07]"
+        className="flex items-center gap-3 rounded-2xl border border-[var(--o-edge)] bg-[var(--o-inset)] px-4 py-3.5 transition active:bg-[var(--o-inset)]"
       >
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/[0.08] text-white">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--o-inset)] text-charcoal">
           <QrIcon className="h-[18px] w-[18px]" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[15px] font-bold text-white">Mon QR</span>
-          <span className="block text-[12px] text-white/45">
+          <span className="block text-[15px] font-bold text-charcoal">Mon QR</span>
+          <span className="block text-[12px] text-slate">
             À poser sur les tables — c&apos;est lui qui crée les cartes.
           </span>
         </span>
-        <span className="shrink-0 text-[17px] leading-none text-white/30">›</span>
+        <span className="shrink-0 text-[17px] leading-none text-slate">›</span>
       </Link>
 
       {customer && (
@@ -529,7 +529,7 @@ function CustomerSheet({
       role="dialog"
       aria-modal="true"
       aria-label="Le client"
-      className="sheet-in fixed inset-0 z-50 flex flex-col bg-[#0a0614]/97 backdrop-blur-sm"
+      className="sheet-in fixed inset-0 z-50 flex flex-col bg-[#ffffff]/97 backdrop-blur-sm"
     >
       {/* The receipt, over the top of everything, closing itself after 4s. */}
       {/*
@@ -553,15 +553,15 @@ function CustomerSheet({
       )}
       <header className="mx-auto flex w-full max-w-[520px] items-start justify-between gap-3 px-5 pb-3 pt-5">
         <div className="min-w-0">
-          <p className="truncate text-[24px] font-extrabold leading-tight text-white">
+          <p className="truncate text-[24px] font-extrabold leading-tight text-charcoal">
             {customer.name ?? "Client"}
           </p>
           {customer.enrolled ? (
-            <p className="mt-0.5 font-mono text-[13px] font-bold tracking-[0.14em] text-white/55">
+            <p className="mt-0.5 font-mono text-[13px] font-bold tracking-[0.14em] text-slate">
               {customer.code}
             </p>
           ) : (
-            <p className="mt-0.5 text-[12px] font-semibold text-[#ffd27a]">
+            <p className="mt-0.5 text-[12px] font-semibold text-[#a06e00]">
               {/* "enrolled" means "has a card HERE" — they may well be a
                   Pointili member already, just not yours yet. */}
               Première visite ici — ses points l&apos;attendent
@@ -572,7 +572,7 @@ function CustomerSheet({
           type="button"
           onClick={onClose}
           aria-label="Fermer"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/[0.1] text-[20px] leading-none text-white active:scale-95"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--o-inset)] text-[20px] leading-none text-charcoal active:scale-95"
         >
           ×
         </button>
@@ -584,14 +584,14 @@ function CustomerSheet({
           to be a 30px number in its own tile, which read as the thing you had
           come here to do — so it is one quiet line now.
         */}
-        <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[13px] font-semibold text-white/50">
+        <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[13px] font-semibold text-slate">
           <span>
             Solde{" "}
-            <b className="text-[15px] font-extrabold tabular-nums text-[#b9a3ff]">{fmtPoints(balance)}</b> points
+            <b className="text-[15px] font-extrabold tabular-nums text-[#5b3fd1]">{fmtPoints(balance)}</b> points
           </span>
           {stampsEnabled && (
             <span>
-              · <b className="text-[15px] font-extrabold tabular-nums text-white">{stamps}</b>/
+              · <b className="text-[15px] font-extrabold tabular-nums text-charcoal">{stamps}</b>/
               {stampsRequired} tampons
             </span>
           )}
@@ -600,15 +600,15 @@ function CustomerSheet({
         {flash && (
           <div
             role="status"
-            className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-[#7ff0b0]/12 px-4 py-3"
+            className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-[#2f9e6e]/12 px-4 py-3"
           >
-            <p className="min-w-0 text-[13px] font-bold text-[#7ff0b0]">{flash.text}</p>
+            <p className="min-w-0 text-[13px] font-bold text-[#2f9e6e]">{flash.text}</p>
             {flash.undo !== undefined && (
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => undoCredit(flash.undo!, flash.amount)}
-                className="shrink-0 rounded-full bg-white/12 px-3.5 py-1.5 text-[12px] font-bold text-white active:scale-95"
+                className="shrink-0 rounded-full bg-[var(--o-inset)] px-3.5 py-1.5 text-[12px] font-bold text-charcoal active:scale-95"
               >
                 Annuler
               </button>
@@ -616,7 +616,7 @@ function CustomerSheet({
           </div>
         )}
         {err && (
-          <p role="alert" className="mt-3 rounded-2xl bg-[#ff6b6b]/12 px-4 py-3 text-[13px] font-semibold text-[#ff9a9a]">
+          <p role="alert" className="mt-3 rounded-2xl bg-[#e5484d]/12 px-4 py-3 text-[13px] font-semibold text-[#e5484d]">
             {err}
           </p>
         )}
@@ -630,9 +630,9 @@ function CustomerSheet({
             onKeyDown={(e) => e.key === "Enter" && credit()}
             placeholder="0"
             inputMode="decimal"
-            className="w-full rounded-2xl bg-white/[0.06] px-4 py-4 text-center text-[30px] font-extrabold tabular-nums text-white outline-none placeholder:text-white/25"
+            className="w-full rounded-2xl bg-[var(--o-inset)] px-4 py-4 text-center text-[30px] font-extrabold tabular-nums text-charcoal outline-none placeholder:text-slate"
           />
-          <p className="mt-1.5 text-center text-[12px] font-semibold text-white/45">
+          <p className="mt-1.5 text-center text-[12px] font-semibold text-slate">
             {/*
               THE UNIT NEVER LEAVES THE SCREEN.
 
@@ -690,13 +690,13 @@ function CustomerSheet({
         */}
         {stampsEnabled && (
           confirmStamp ? (
-            <div className="mt-2.5 rounded-2xl border border-[#ffd27a]/30 bg-[#ffd27a]/10 p-3.5">
-              <p className="text-[14px] font-bold leading-snug text-white">
+            <div className="mt-2.5 rounded-2xl border border-[#a06e00]/30 bg-[#a06e00]/10 p-3.5">
+              <p className="text-[14px] font-bold leading-snug text-charcoal">
                 Ajouter un tampon ?
               </p>
-              <p className="mt-0.5 text-[12px] leading-snug text-white/60">
+              <p className="mt-0.5 text-[12px] leading-snug text-slate">
                 {customer.name ?? customer.code ?? "Ce client"} passera à{" "}
-                <b className="font-extrabold text-white">
+                <b className="font-extrabold text-charcoal">
                   {Math.min(stamps + 1, stampsRequired)} / {stampsRequired}
                 </b>
                 {stamps + 1 >= stampsRequired && " — la carte sera pleine"}.
@@ -740,14 +740,14 @@ function CustomerSheet({
             setMore((v) => !v);
             if (history === null) start(async () => setHistory(await historyByCodeAction(customer.ref)));
           }}
-          className="mt-4 w-full py-2 text-center text-[12px] font-bold text-white/50"
+          className="mt-4 w-full py-2 text-center text-[12px] font-bold text-slate"
         >
           {more ? "Masquer" : "Corriger / Historique"}
         </button>
 
         {more && (
-          <div className="border-t border-white/10 pt-3">
-            <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-white/45">
+          <div className="border-t border-[var(--o-edge)] pt-3">
+            <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-slate">
               Corriger les points
             </p>
             <div className="mt-2 flex gap-2">
@@ -786,7 +786,7 @@ function CustomerSheet({
 
             {stampsEnabled && (
               <>
-                <p className="mt-3 text-[12px] font-bold uppercase tracking-[0.06em] text-white/45">
+                <p className="mt-3 text-[12px] font-bold uppercase tracking-[0.06em] text-slate">
                   Tampons (0 à {Math.max(0, stampsRequired - 1)})
                 </p>
                 <div className="mt-2 flex gap-2">
@@ -829,10 +829,10 @@ function CustomerSheet({
             */}
             {customer.enrolled && (
               <>
-                <p className="mt-4 text-[12px] font-bold uppercase tracking-[0.06em] text-white/45">
+                <p className="mt-4 text-[12px] font-bold uppercase tracking-[0.06em] text-slate">
                   Code secret oublié
                 </p>
-                <p className="mt-1 text-[12px] leading-snug text-white/45">
+                <p className="mt-1 text-[12px] leading-snug text-slate">
                   Le client choisit un nouveau code à 4 chiffres et vous le tapez ici.
                 </p>
                 <div className="mt-2 flex items-center gap-2">
@@ -866,23 +866,23 @@ function CustomerSheet({
               </>
             )}
 
-            <p className="mt-4 text-[12px] font-bold uppercase tracking-[0.06em] text-white/45">Activité</p>
+            <p className="mt-4 text-[12px] font-bold uppercase tracking-[0.06em] text-slate">Activité</p>
             {history === null ? (
-              <p className="mt-1 text-[12px] text-white/45">Chargement…</p>
+              <p className="mt-1 text-[12px] text-slate">Chargement…</p>
             ) : history.length === 0 ? (
-              <p className="mt-1 text-[12px] text-white/45">Aucune activité.</p>
+              <p className="mt-1 text-[12px] text-slate">Aucune activité.</p>
             ) : (
-              <ul className="mt-1 divide-y divide-white/10">
+              <ul className="mt-1 divide-y divide-[var(--o-edge)]">
                 {history.slice(0, 8).map((a, i) => (
                   <li key={i} className="flex items-center justify-between gap-2 py-2">
-                    <span className="min-w-0 truncate text-[12px] text-white/90">
+                    <span className="min-w-0 truncate text-[12px] text-slate">
                       {a.reason === "collected" ? `Récupéré · ${a.label ?? ""}` : ACT[a.reason]}
                     </span>
-                    <span className="shrink-0 text-[12px] text-white/40">{ago(a.at)}</span>
+                    <span className="shrink-0 text-[12px] text-slate">{ago(a.at)}</span>
                     {a.reason !== "collected" && (
                       <span
                         className={`w-10 shrink-0 text-right text-[12px] font-bold tabular-nums ${
-                          a.delta > 0 ? "text-[#7ff0b0]" : "text-white/45"
+                          a.delta > 0 ? "text-[#2f9e6e]" : "text-slate"
                         }`}
                       >
                         {a.delta > 0 ? "+" : ""}
@@ -966,18 +966,18 @@ function ValidateInner({ scanned, onReset }: { scanned?: Scanned | null; onReset
     <section className="a-card p-5">
       {/* same label treatment as "Ajouter des points" above — the two blocks
           are siblings on one screen and their headings must say so */}
-      <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-white/45">
+      <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
         Valider une récompense
       </h2>
 
       {done ? (
         <>
-          <div role="status" className="mt-4 rounded-2xl bg-[#7ff0b0]/12 px-4 py-6 text-center">
-            <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#7ff0b0] text-[#062b18]">
+          <div role="status" className="mt-4 rounded-2xl bg-[#2f9e6e]/12 px-4 py-6 text-center">
+            <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#2f9e6e] text-white">
               <CheckIcon className="h-7 w-7" />
             </span>
-            <p className="mt-3 text-[17px] font-extrabold text-white">{done.label}</p>
-            <p className="mt-0.5 font-mono text-[13px] font-bold text-[#7ff0b0]">{done.code} · collecté</p>
+            <p className="mt-3 text-[17px] font-extrabold text-charcoal">{done.label}</p>
+            <p className="mt-0.5 font-mono text-[13px] font-bold text-[#2f9e6e]">{done.code} · collecté</p>
           </div>
           <button type="button" onClick={onReset} className="a-btn a-btn--ghost mt-3">
             Nouveau code
@@ -987,22 +987,22 @@ function ValidateInner({ scanned, onReset }: { scanned?: Scanned | null; onReset
         <>
           <div
             className={`mt-4 rounded-2xl px-4 py-5 text-center ${
-              peek.status === "valid" ? "bg-white/[0.08]" : "bg-[#ff6b6b]/12"
+              peek.status === "valid" ? "bg-[var(--o-inset)]" : "bg-[#e5484d]/12"
             }`}
           >
-            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-white/50">
+            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate">
               {peek.kind === "stamp" ? "Carte pleine" : peek.kind === "win" ? "Gain" : "Récompense"}
             </p>
             <p
               className={`mt-1.5 text-[20px] font-extrabold ${
-                peek.status === "valid" ? "text-white" : "text-[#ff9a9a]"
+                peek.status === "valid" ? "text-charcoal" : "text-[#e5484d]"
               }`}
             >
               {peek.label}
             </p>
-            <p className="mt-1 font-mono text-[13px] font-bold tracking-[0.12em] text-white/55">{peek.code}</p>
+            <p className="mt-1 font-mono text-[13px] font-bold tracking-[0.12em] text-slate">{peek.code}</p>
             {peek.status !== "valid" && (
-              <p className="mt-2 text-[13px] font-semibold text-[#ff9a9a]">
+              <p className="mt-2 text-[13px] font-semibold text-[#e5484d]">
                 {STATUS_MSG[peek.status as "expired" | "claimed"]}
               </p>
             )}
@@ -1035,7 +1035,7 @@ function ValidateInner({ scanned, onReset }: { scanned?: Scanned | null; onReset
               maxLength={6}
               autoCapitalize="characters"
               placeholder="A1B2C3"
-              className="min-w-0 flex-1 rounded-2xl bg-white/[0.06] px-4 py-3.5 text-[18px] font-extrabold uppercase tracking-[0.16em] text-white outline-none placeholder:text-white/25"
+              className="min-w-0 flex-1 rounded-2xl bg-[var(--o-inset)] px-4 py-3.5 text-[18px] font-extrabold uppercase tracking-[0.16em] text-charcoal outline-none placeholder:text-slate"
             />
             <button type="button" onClick={check} disabled={busy} className="a-btn !w-auto shrink-0 px-5">
               {busy ? "· · ·" : "Vérifier"}
@@ -1043,14 +1043,14 @@ function ValidateInner({ scanned, onReset }: { scanned?: Scanned | null; onReset
           </div>
           {/* The camera is the fast path and it is one block up, so this line
               points at it instead of only describing the field it sits under. */}
-          <p className="mt-2 text-[12px] text-white/45">
+          <p className="mt-2 text-[12px] text-slate">
             Scannez le QR du client — ou tapez ses 6 caractères ici.
           </p>
         </>
       )}
 
       {err && (
-        <p role="alert" className="mt-3 rounded-2xl bg-[#ff6b6b]/12 px-4 py-3 text-[13px] font-semibold text-[#ff9a9a]">
+        <p role="alert" className="mt-3 rounded-2xl bg-[#e5484d]/12 px-4 py-3 text-[13px] font-semibold text-[#e5484d]">
           {err}
         </p>
       )}

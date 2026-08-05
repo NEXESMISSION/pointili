@@ -43,16 +43,16 @@ export function BusinessTypePicker({
     return (
       <div className="flex items-center gap-2.5">
         <input type="hidden" name={name} value={effective} />
-        <span className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-white/12 bg-white/[0.06] px-3.5 py-2.5">
+        <span className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--o-edge)] bg-[var(--o-inset)] px-3.5 py-2.5">
           <span className="text-[18px]">{current?.emoji ?? "✨"}</span>
-          <span className="truncate text-[14px] font-bold text-white">
+          <span className="truncate text-[14px] font-bold text-charcoal">
             {current?.label ?? "Autre"}
           </span>
         </span>
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="shrink-0 rounded-xl border border-white/12 bg-white/[0.06] px-3.5 py-2.5 text-[12.5px] font-bold text-[#c4b5fd]"
+          className="shrink-0 rounded-xl border border-[var(--o-edge)] bg-[var(--o-inset)] px-3.5 py-2.5 text-[12.5px] font-bold text-[#5b3fd1]"
         >
           Changer
         </button>
@@ -74,14 +74,14 @@ export function BusinessTypePicker({
               aria-pressed={active}
               className={`flex flex-col items-center gap-1 rounded-xl border px-1.5 py-2.5 text-center transition active:scale-[0.97] ${
                 active
-                  ? "border-[#8b6bff] bg-[#8b6bff]/20 ring-1 ring-[#8b6bff]/40"
-                  : "border-white/12 bg-white/[0.06] hover:bg-white/[0.1]"
+                  ? "border-[#5b3fd1] bg-[#5b3fd1]/20 ring-1 ring-[#5b3fd1]/40"
+                  : "border-[var(--o-edge)] bg-[var(--o-inset)] hover:bg-[var(--o-inset)]"
               }`}
             >
               <span className="text-[20px] leading-none">{t.emoji}</span>
               <span
                 className={`text-[10.5px] font-semibold leading-tight ${
-                  active ? "text-[#c4b5fd]" : "text-white/55"
+                  active ? "text-[#5b3fd1]" : "text-slate"
                 }`}
               >
                 {t.label}
