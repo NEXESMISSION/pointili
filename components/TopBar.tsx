@@ -27,7 +27,6 @@ const TITLES: Record<string, string> = {
   boutique: "Récompenses",
   codes: "Mes codes",
   scanner: "Mon code",
-  notifications: "Notifications",
 };
 
 export function TopBar({
@@ -66,7 +65,7 @@ export function TopBar({
         otherwise. A badge that is always lit teaches people to ignore it.
       */}
       <Link
-        href={`/${slug}/notifications`}
+        href={`/${slug}/historique`}
         aria-label={
           pendingCodes > 0
             ? `${pendingCodes} récompense${pendingCodes > 1 ? "s" : ""} à récupérer`

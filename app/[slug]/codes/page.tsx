@@ -48,12 +48,13 @@ export default async function Codes({
 
   return (
     <div className="flex flex-1 flex-col px-5 pb-6">
-      <section className="pb-4 pt-3">
-        <h1 className="text-[21px] font-extrabold text-charcoal">Mes codes</h1>
-        <p className="mt-0.5 text-[13px] text-slate">
-          Fais scanner le QR au comptoir — rien à dicter.
-        </p>
-      </section>
+      {/* The bar above already says "Mes codes". Repeating it in a 21px H1
+          sixty pixels below is the same word twice and a wasted band on a
+          screen whose whole content is meant to be held up to a camera. What
+          is left is the one line the bar cannot carry: what to DO with these. */}
+      <p className="pb-4 pt-3 text-[13px] text-slate">
+        Fais scanner le QR au comptoir — rien à dicter.
+      </p>
 
       {codes.length === 0 ? (
         <div className="d-card px-6 py-12 text-center">

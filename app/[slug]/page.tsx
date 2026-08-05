@@ -223,7 +223,7 @@ export default async function Carte({
           </Link>
 
           <Link
-            href={`/${slug}/notifications`}
+            href={`/${slug}/historique`}
             aria-label={
               pending > 0 ? `${pending} récompense${pending > 1 ? "s" : ""} à récupérer` : "Mes codes"
             }
@@ -282,50 +282,18 @@ export default async function Carte({
           <span className="pb-1.5 text-[15px] font-bold opacity-75">points</span>
         </div>
 
-        {/* how far — one track, and the line under it NAMES the prize */}
-        {program.stampsEnabled ? (
-          <div className="mt-5">
-            <div
-              className="flex w-fit flex-wrap gap-1.5 rounded-2xl px-3 py-2.5"
-              style={{ background: "color-mix(in oklab, var(--cafe-ink) 12%, transparent)" }}
-            >
-              {Array.from({ length: program.stampsRequired }).map((_, i) => {
-                const filled = i < stampView.shown;
-                const isReward = i === program.stampsRequired - 1;
-                return (
-                  <span
-                    key={i}
-                    className="grid h-6 w-6 place-items-center rounded-full"
-                    style={
-                      filled
-                        ? { background: "var(--cafe-ink)", color: "var(--cafe)" }
-                        : {
-                            border: "1px dashed color-mix(in oklab, var(--cafe-ink) 45%, transparent)",
-                            color: "color-mix(in oklab, var(--cafe-ink) 55%, transparent)",
-                          }
-                    }
-                  >
-                    {filled ? (
-                      <Sparkle className="h-3 w-3" />
-                    ) : isReward ? (
-                      <GiftIcon className="h-3 w-3" />
-                    ) : null}
-                  </span>
-                );
-              })}
-            </div>
-            <p className="mt-3 text-[12.5px] leading-snug opacity-85">
-              {stampsLeft <= 0 ? (
-                <b className="font-extrabold">{program.stampReward} t&apos;attend 🎉</b>
-              ) : (
-                <>
-                  Encore <b className="font-extrabold">{stampsLeft} visite{stampsLeft > 1 ? "s" : ""}</b>{" "}
-                  pour <b className="font-extrabold">{program.stampReward}</b>
-                </>
-              )}
-            </p>
-          </div>
-        ) : nudge ? (
+        {/*
+          ── HOW FAR, FOR EVERY CURRENCY THE SHOP RUNS ──────────────────
+          The two mechanics used to be an either/or: with stamps switched on,
+          the points nudge was not rendered at all. So a customer looked at
+          "121 points" and then at a stamp track counting toward a DIFFERENT
+          reward, and nothing on the screen said what the points were near —
+          while the card below it said "3 récompenses à ta portée".
+
+          Both, when both exist. The points line is the primary one (it is the
+          number in 52px directly above), the stamp track follows.
+        */}
+        {nudge ? (
           <div className="mt-5">
             <span
               className="block h-[7px] overflow-hidden rounded-full"
@@ -347,8 +315,58 @@ export default async function Carte({
               pour <b className="font-extrabold">{nudge.target.label}</b>
             </p>
           </div>
+        ) : readyCount > 0 ? (
+          /* Nothing left to save for — say THAT rather than falling through to
+             the earning rate, which reads as a shrug when you can already
+             afford the best thing on the menu. */
+          <p className="mt-5 text-[12.5px] leading-snug opacity-85">
+            Tu peux prendre <b className="font-extrabold">n&apos;importe quelle récompense</b> ici.
+          </p>
         ) : (
           <p className="mt-5 text-[12.5px] leading-snug opacity-85">{rateLabel(program.pointsPerTnd)}</p>
+        )}
+
+        {/* the stamp card, when the shop runs one — a second, slower mechanic
+            under the first, never instead of it */}
+        {program.stampsEnabled && (
+          <div className="mt-4 flex items-center gap-3">
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from({ length: program.stampsRequired }).map((_, i) => {
+                const filled = i < stampView.shown;
+                const isReward = i === program.stampsRequired - 1;
+                return (
+                  <span
+                    key={i}
+                    className="grid h-[22px] w-[22px] place-items-center rounded-full"
+                    style={
+                      filled
+                        ? { background: "var(--cafe-ink)", color: "var(--cafe)" }
+                        : {
+                            border: "1px dashed color-mix(in oklab, var(--cafe-ink) 45%, transparent)",
+                            color: "color-mix(in oklab, var(--cafe-ink) 55%, transparent)",
+                          }
+                    }
+                  >
+                    {filled ? (
+                      <Sparkle className="h-[11px] w-[11px]" />
+                    ) : isReward ? (
+                      <GiftIcon className="h-[11px] w-[11px]" />
+                    ) : null}
+                  </span>
+                );
+              })}
+            </div>
+            <p className="min-w-0 flex-1 text-[11.5px] leading-snug opacity-80">
+              {stampsLeft <= 0 ? (
+                <b className="font-extrabold">{program.stampReward} t&apos;attend 🎉</b>
+              ) : (
+                <>
+                  {stampsLeft} visite{stampsLeft > 1 ? "s" : ""} pour{" "}
+                  <b className="font-extrabold">{program.stampReward}</b>
+                </>
+              )}
+            </p>
+          </div>
         )}
       </section>
 
@@ -403,22 +421,27 @@ export default async function Carte({
       ) : null}
 
       {/* ══ THE REST ════════════════════════════════════════════════════ */}
-      <section className="mt-3 grid grid-cols-2 gap-2.5 px-4">
-        <Tile
-          href={`/${slug}/codes`}
-          label="Mes codes"
-          value={pending > 0 ? `${pending} en attente` : "aucun"}
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]">
-              <rect x="3" y="7" width="18" height="12" rx="2.5" />
-              <path d="M7 11h4M7 15h2" />
-            </svg>
-          }
-        />
+      {/*
+        ONE ROW, NOT TWO TILES.
+
+        It was "Mes codes · aucun" beside "Historique · mes points" — a tile
+        whose value was the word for nothing, and a tile whose value was filler.
+        Two thirds of that row said nothing on the most-opened screen in the
+        product, directly under an errand card that already covers the codes
+        when there are any.
+
+        So: one row, to the one screen behind it, carrying a number that is
+        true — how many movements are on this card.
+      */}
+      <section className="mt-3 px-4">
         <Tile
           href={`/${slug}/historique`}
-          label="Historique"
-          value="mes points"
+          label="Mon activité"
+          value={
+            pending > 0
+              ? `${pending} code${pending > 1 ? "s" : ""} · mes points`
+              : "points, visites, récompenses"
+          }
           icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]">
               <circle cx="12" cy="12" r="9" />
@@ -459,7 +482,7 @@ export default async function Carte({
             {ladder.slice(0, 6).map((r) => {
               const affordable = r.pointsCost <= diner.balance;
               return (
-                <li key={r.id} className="w-[132px] shrink-0 snap-start">
+                <li key={r.id} className="w-[148px] shrink-0 snap-start">
                   <Link href={`/${slug}/boutique`} className="d-card block overflow-hidden active:scale-[0.98]">
                     <span
                       className="relative grid h-[86px] w-full place-items-center"
@@ -490,7 +513,10 @@ export default async function Carte({
                       )}
                     </span>
                     <span className="block px-3 py-2.5">
-                      <span className="block truncate text-[12.5px] font-bold text-charcoal">
+                      {/* two lines, not an ellipsis: "Cappuccino off…" and
+                          "Pâtisserie du jo…" name nothing, and naming the thing
+                          is the entire job of this row */}
+                      <span className="block text-[12.5px] font-bold leading-snug text-charcoal line-clamp-2 min-h-[2.4em]">
                         {r.label}
                       </span>
                       <span

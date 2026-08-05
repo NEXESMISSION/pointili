@@ -70,7 +70,17 @@ const scanTxt = await d.locator("main").innerText();
 check("Ma carte shows the code (QR never gets an empty input)", scanTxt.includes(cardA.code), cardA.code);
 check("Ma carte never shows the phone number", !scanTxt.includes(LOCAL) && !scanTxt.includes(NORM));
 
-for (const [path, needle] of [["/codes", "Mes codes"], ["/historique", "Historique"], ["/profil", "Client"]]) {
+/*
+  Needles that are not the page's own TITLE. /codes used to be checked for the
+  words "Mes codes", which the top bar already says and the page then repeated
+  in an H1 — so removing that duplication broke a passing test on a page that
+  works. Each needle here is a sentence the screen exists to say.
+*/
+for (const [path, needle] of [
+  ["/codes", "comptoir"],
+  ["/historique", "points gagnés"],
+  ["/profil", "Client"],
+]) {
   await d.goto(`${BASE}/${TEST_SLUG}${path}`, { waitUntil: "networkidle" });
   const txt = await d.locator("main").innerText().catch(() => "");
   check(`${path} renders`, d.url().includes(path) && txt.includes(needle), d.url().replace(BASE, ""));

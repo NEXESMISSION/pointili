@@ -452,6 +452,12 @@ export type Activity = {
   reason: "earn" | "redeem" | "welcome" | "adjust" | "expire" | "collected" | "spin";
   /** Set for 'collected' rows — the prize/reward the diner picked up. */
   label: string | null;
+  /**
+   * What the customer actually paid, for a purchase — null for everything
+   * else. A welcome bonus and a correction have no ticket, and "0 TND" beside
+   * them would be worse than silence. See 0034.
+   */
+  amount: number | null;
   at: string;
 };
 
