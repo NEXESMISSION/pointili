@@ -116,7 +116,7 @@ export default async function Codes({
 
               {/* the pass zone — white, because that is the polarity every
                   decoder is promised, and because it reads as "detachable" */}
-              <div className="flex items-center gap-4 bg-white px-4 py-4">
+              <div className="d-pass flex items-center gap-4 !rounded-none px-4 py-4">
                 <div
                   className="w-[86px] shrink-0 [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
                   dangerouslySetInnerHTML={{ __html: c.qr }}

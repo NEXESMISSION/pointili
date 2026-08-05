@@ -488,23 +488,90 @@ h4 {
 
    Everything below is neutral on purpose. No lavender tints: a grey that leans
    purple would put OUR hue back on a screen we just handed over. */
+/*
+  ── THE SURFACE TOKENS ───────────────────────────────────────────────────
+  Six values, and every client screen is built out of them. They exist so the
+  shop can choose a LIGHT or a DARK card without a second implementation of
+  every page: .surface-dark below redefines these six and the app follows.
+
+  --color-charcoal and --color-slate are Tailwind's own theme variables, which
+  is why text-charcoal / text-slate flip too. Utilities in v4 compile to
+  var(--color-*), so redefining them inside this scope re-colours every piece of
+  type in the subtree without touching a single className. The owner app is not
+  inside .d-shell and is unaffected.
+*/
 .d-shell {
-  background: #f6f6f8;
-  color: #17121f;
+  --surface: #f6f6f8;
+  --panel: #ffffff;
+  --panel-2: #f2f1f5;
+  --edge: #ebe9ef;
+  --edge-2: #f0eef4;
+  --track: #eceaf1;
+  --muted: #8b8598;
+  --line-strong: #d8d4e2;
+
+  background: var(--surface);
+  color: var(--color-charcoal);
+  /* the shop's typeface, both already loaded by the root layout */
+  font-family: var(--card-font, var(--font-inter), system-ui, sans-serif);
 }
-/* the primary surface — white, lifted off the page rather than outlined */
+
+.d-shell.surface-dark {
+  --surface: #0e0c15;
+  --panel: #17141f;
+  --panel-2: #1d1926;
+  --edge: #272233;
+  --edge-2: #211d2c;
+  --track: #272233;
+  --muted: #918ba3;
+  --line-strong: #322c40;
+
+  /* the two Tailwind text tokens — see the note above */
+  --color-charcoal: #f3f1f8;
+  --color-slate: #a9a3ba;
+}
+
+/* the primary surface — lifted off the page rather than outlined */
 .d-card {
-  background: #fff;
-  border: 1px solid #ebe9ef;
-  border-radius: 22px;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  /* the shop's chosen roundness, everywhere at once */
+  border-radius: var(--card-radius, 22px);
   box-shadow: 0 1px 2px rgba(23, 18, 31, 0.04), 0 10px 26px -20px rgba(23, 18, 31, 0.35);
+}
+/* On dark, a drop shadow under a dark card is invisible; separation has to come
+   from the border instead, or every card dissolves into the page. */
+.surface-dark .d-card {
+  box-shadow: none;
+  border-color: var(--edge);
 }
 /* a panel nested inside a card, or a quiet row on the page */
 .d-soft {
-  background: #f2f1f5;
-  border: 1px solid #eceaf1;
-  border-radius: 16px;
+  background: var(--panel-2);
+  border: 1px solid var(--edge-2);
+  border-radius: calc(var(--card-radius, 22px) * 0.72);
 }
+/*
+  THE PASS ZONE IS WHITE ON EVERY THEME, AND THAT IS NOT A STYLE.
+
+  The QR is drawn with dark modules, because dark-on-light is the polarity the
+  spec promises decoders will read. On the dark theme the card behind it went
+  dark too and the code became a black square on a black card — unreadable by
+  the till, on the one element the whole product exists to hand over.
+
+  So the plate keeps its own white and its own quiet zone regardless of the
+  shop's theme, and the code beside it is charcoal rather than the themed ink.
+*/
+.d-pass {
+  background: #ffffff;
+  border-radius: calc(var(--card-radius, 22px) * 0.7);
+}
+.surface-dark .d-pass {
+  /* a hair of separation from the white plate, so it reads as an object placed
+     on the card rather than a hole cut in it */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
 /* a filled loyalty stamp — the shop's colour, with text it can carry */
 .d-stamp {
   background: var(--cafe, #5b3fd1);
@@ -551,9 +618,53 @@ h4 {
 /* The one coloured surface: the shop's banner, falling from its own colour into
    a darker end of the same hue so it reads as a printed card and not a flat
    swatch. --cafe-deep is computed, never guessed. */
+/*
+  THE BANNER, IN ITS THREE FORMS.
+
+  Flat, a gradient derived from the shop's own colour, or their photograph. The
+  gradient is DERIVED rather than picked from a list of ready-made ramps: a shop
+  chooses one colour, and a preset ramp would put somebody else's hues next to
+  their logo. The choice is how much, not which.
+*/
 .d-banner {
+  background-color: var(--cafe);
   background-image: linear-gradient(168deg, var(--cafe) 0%, var(--cafe-deep) 100%);
   color: var(--cafe-ink);
+}
+.d-banner--flat {
+  background-image: none;
+}
+/*
+  A PHOTOGRAPH, WITH A SCRIM THAT IS NOT OPTIONAL.
+
+  The shop's own picture behind their name and balance — and every one of those
+  is --cafe-ink, which was computed against the COLOUR, not against a
+  photograph. A dark scrim in the shop's own hue is what keeps that promise
+  true: it holds the type legible over a bright counter or a dark room, and it
+  keeps the banner recognisably theirs rather than a stock image with words on
+  it. The photo itself is set inline by the page (it needs the URL).
+*/
+.d-banner--photo {
+  background-color: var(--cafe-deep);
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+}
+.d-banner--photo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    170deg,
+    color-mix(in oklab, var(--cafe-deep), transparent 22%) 0%,
+    color-mix(in oklab, #000, transparent 25%) 100%
+  );
+  pointer-events: none;
+}
+/* everything in the banner sits above the scrim */
+.d-banner--photo > * {
+  position: relative;
+  z-index: 1;
 }
 
 /*

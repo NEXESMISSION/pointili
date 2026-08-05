@@ -1,4 +1,5 @@
 import { BRAND_COLOR } from "./brand";
+import type { CardTheme } from "./types";
 
 /**
  * THE SHOP'S OWN COLOUR, MADE SAFE.
@@ -89,16 +90,70 @@ export function inkOn(color: string): string {
 export function textOnWhite(color: string, against: string = WHITE): string {
   let rgb = parseHex(color) ?? parseHex(BRAND_COLOR)!;
   const bg = parseHex(against) ?? parseHex(WHITE)!;
-  const black: [number, number, number] = [0, 0, 0];
-  for (let i = 0; i < 24 && contrast(rgb, bg) < 4.5; i++) rgb = mix(rgb, black, 0.06);
+  /*
+    TOWARDS BLACK OR TOWARDS WHITE — whichever the background asks for.
+
+    This only ever darkened, which is right on a white card and exactly wrong on
+    a dark one: a shop that chose the dark app got its own colour pushed further
+    into the background it was supposed to stand out from, and the balance
+    figure disappeared. The direction is decided by the background's own
+    luminance, once, before the loop.
+  */
+  const towards: [number, number, number] = luminance(bg) > 0.45 ? [0, 0, 0] : [255, 255, 255];
+  for (let i = 0; i < 24 && contrast(rgb, bg) < 4.5; i++) rgb = mix(rgb, towards, 0.06);
   return toHex(rgb);
 }
 
-/** Every custom property the client app themes on, as an inline style object. */
-export function cafeVars(primary: string | null | undefined): Record<string, string> {
+/** Corner roundness, in the three sizes the owner can choose between. */
+const RADIUS: Record<CardTheme["radius"], string> = { s: "10px", m: "22px", l: "30px" };
+
+/**
+ * Everything the customer's app needs to wear a shop's theme.
+ *
+ * One object, computed once per request in the layout: the colour tokens above,
+ * plus the roundness and the typeface. The surface (light/dark) is NOT here —
+ * it is a class, because it switches whole rules rather than one value.
+ */
+export function themeVars(
+  primary: string | null | undefined,
+  theme: Pick<CardTheme, "radius" | "font" | "surface">,
+): Record<string, string> {
+  return {
+    /* The tint and the accent are measured against the surface they will be
+       DRAWN on — white cards or dark ones. Passing the panel colour here is
+       what makes the dark theme legible rather than merely dark. */
+    ...cafeVars(primary, theme.surface === "dark" ? DARK_PANEL : WHITE),
+    "--card-radius": RADIUS[theme.radius] ?? RADIUS.m,
+    /*
+      Both faces are already loaded by the root layout for every page in the
+      product, so switching between them costs nothing — no extra request, no
+      FOUT. That is the entire reason the choice is two and not ten.
+    */
+    "--card-font":
+      theme.font === "poppins"
+        ? "var(--font-poppins-var), var(--font-inter), sans-serif"
+        : "var(--font-inter), system-ui, sans-serif",
+  };
+}
+
+/** The dark theme's card colour — kept in step with .surface-dark's --panel. */
+const DARK_PANEL = "#17141f";
+
+/**
+ * Every custom property the client app themes on, as an inline style object.
+ *
+ * `panel` is the surface these tokens will sit on: white on the light theme,
+ * the dark card on the dark one. It is not decoration — --cafe-soft is a blend
+ * TOWARDS it and --cafe-text is measured AGAINST it, so getting it wrong is how
+ * you end up with a bright lavender chip glowing on a black page.
+ */
+export function cafeVars(
+  primary: string | null | undefined,
+  panel: string = WHITE,
+): Record<string, string> {
   const cafe = safeColor(primary);
   const rgb = parseHex(cafe)!;
-  const white = parseHex(WHITE)!;
+  const white = parseHex(panel) ?? parseHex(WHITE)!;
 
   /*
     THE TINT IS THE HARDER BACKGROUND, SO IT IS THE ONE WE MEASURE AGAINST.
@@ -146,5 +201,7 @@ export const BRAND_SWATCHES = [
   { name: "Brique", hex: "#b0341f" },
   { name: "Terre", hex: "#7a4a25" },
   { name: "Prune", hex: "#7a2b56" },
+  { name: "Turquoise", hex: "#0e7c86" },
+  { name: "Ardoise", hex: "#475569" },
   { name: "Olive", hex: "#4d6027" },
 ] as const;

@@ -3,10 +3,44 @@
  * Keep them in sync with 0001_init.sql.
  */
 
+/**
+ * How the CUSTOMER's card looks — chosen by the shop, in Réglages › Le thème.
+ *
+ * Everything here is presentation and nothing here can break the programme: a
+ * card with an unreadable theme would still credit points correctly. That is
+ * why it lives in design_settings (jsonb, tiny, no migration per knob) while
+ * the photograph — the only heavy part — lives in its own column.
+ *
+ * WHAT IS DELIBERATELY NOT OFFERED:
+ *   · a free gradient with its own two colours. A shop picks ONE colour; the
+ *     gradient is derived from it, so a green shop cannot end up with a purple
+ *     ramp fighting its own logo. The choice is how strong, not which hue.
+ *   · a third typeface. Inter and Poppins are already loaded for every page in
+ *     the product; a third family is a real font file on a real phone on 3G,
+ *     charged to the customer, to change the shape of a heading.
+ */
+export type CardTheme = {
+  /** flat colour, a derived gradient, or the shop's own photograph. */
+  banner: "flat" | "gradient" | "photo";
+  /** The customer's app: white, or dark. */
+  surface: "light" | "dark";
+  /** Corner roundness, applied to every card the customer sees. */
+  radius: "s" | "m" | "l";
+  /** Both are already loaded by the root layout — see the note above. */
+  font: "inter" | "poppins";
+  /**
+   * Cache-buster for the cover photograph, bumped whenever one is saved.
+   * The bytes live in businesses.cover_url and are served by /api/cover/[slug];
+   * this is what lets that response be immutable for a year.
+   */
+  coverAt: string | null;
+};
+
 export type DesignSettings = {
   loyaltyEnabled: boolean;
   showEngagement: boolean;
   pointsExpiryMonths: number | null;
+  theme: CardTheme;
 };
 
 export type Cafe = {

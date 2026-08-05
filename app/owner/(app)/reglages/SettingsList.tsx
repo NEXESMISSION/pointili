@@ -7,6 +7,26 @@ import { fmtPoints } from "@/lib/points";
 import { visitsForPoints, type Ticket } from "@/lib/rewards";
 import type { Cafe, Game, LoyaltyProgram, Reward } from "@/lib/types";
 import { CafeForm, EarnForm, PrizesEditor, RewardsEditor, StampsForm, WheelForm } from "./SettingsForms";
+import { ThemeForm } from "./ThemeForm";
+
+/** What the row says the theme currently is, without opening it. */
+const THEME_VALUE: Record<string, string> = {
+  flat: "couleur unie",
+  gradient: "dégradé",
+  photo: "photo",
+};
+
+/** Three swatches on a page — enough to say "this row is about how it looks". */
+function PaletteIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.8-1.7H16a5 5 0 0 0 5-5c0-3.9-4-7.2-9-7.2Z" />
+      <circle cx="7.5" cy="11.5" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="11" cy="7.5" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="15.5" cy="9" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
 
 /*
   Réglages as a SETTINGS LIST, not a page of forms.
@@ -21,7 +41,7 @@ import { CafeForm, EarnForm, PrizesEditor, RewardsEditor, StampsForm, WheelForm 
   things you did not come here to touch.
 */
 
-type PanelId = "points" | "rewards" | "stamps" | "wheel" | "shop";
+type PanelId = "points" | "rewards" | "stamps" | "wheel" | "shop" | "theme";
 
 export function SettingsList({
   cafe,
@@ -93,6 +113,11 @@ export function SettingsList({
       title: "Ma vitrine",
       sub: "Le logo, le nom et le type que voient vos clients.",
       body: <div className="mx-auto w-full max-w-[560px]"><CafeForm cafe={cafe} /></div>,
+    },
+    theme: {
+      title: "Le thème",
+      sub: "La couleur, l'en-tête et le style de la carte de vos clients.",
+      body: <div className="mx-auto w-full max-w-[560px]"><ThemeForm cafe={cafe} /></div>,
     },
   };
 
@@ -197,6 +222,12 @@ export function SettingsList({
           label="Nom, logo & type"
           value={typeLabel}
           onClick={() => setOpen("shop")}
+        />
+        <Row
+          icon={<PaletteIcon className="h-[18px] w-[18px]" />}
+          label="Le thème"
+          value={THEME_VALUE[cafe.designSettings.theme.banner] ?? "dégradé"}
+          onClick={() => setOpen("theme")}
         />
         {/*
           NOT EDITABLE — changing it would break every printed QR in the shop —

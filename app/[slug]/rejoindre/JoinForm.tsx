@@ -34,12 +34,12 @@ export function JoinForm({ slug }: { slug: string }) {
   const box =
     /* 16px is a FLOOR, not a taste: any input under 16px makes iOS zoom the
        whole page the moment it is focused. Shrink everything else, never this. */
-    "w-full rounded-2xl border border-[#ddd9e6] bg-white px-4 py-3.5 text-[16px] font-medium text-charcoal outline-none transition-colors placeholder:font-normal placeholder:text-slate/60 focus:border-[var(--cafe)]";
+    "w-full rounded-2xl border border-[var(--line-strong)] bg-white px-4 py-3.5 text-[16px] font-medium text-charcoal outline-none transition-colors placeholder:font-normal placeholder:text-slate/60 focus:border-[var(--cafe)]";
 
   return (
     <div>
       {/* new vs returning — so signing in is a first-class, obvious path */}
-      <div className="mb-5 grid grid-cols-2 gap-1 rounded-2xl bg-[#eceaf1] p-1">
+      <div className="mb-5 grid grid-cols-2 gap-1 rounded-2xl bg-[var(--track)] p-1">
         <button type="button" onClick={() => setReturning(false)} className={tab(!returning)}>
           Nouveau compte
         </button>
@@ -68,7 +68,7 @@ export function JoinForm({ slug }: { slug: string }) {
             offer.
           */}
           <div className="flex items-stretch gap-2">
-            <span className="flex shrink-0 items-center gap-1.5 rounded-2xl border border-[#ddd9e6] bg-white px-3 text-[14px] font-semibold text-charcoal">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-2xl border border-[var(--line-strong)] bg-white px-3 text-[14px] font-semibold text-charcoal">
               <span aria-hidden>🇹🇳</span>
               +216
             </span>

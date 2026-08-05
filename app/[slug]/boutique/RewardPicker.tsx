@@ -127,13 +127,13 @@ export function RewardPicker({
                   <span className="block truncate text-[14px] font-bold text-charcoal">{r.label}</span>
                   <span
                     className="mt-0.5 block text-[13px] font-extrabold"
-                    style={{ color: affordable ? "var(--cafe-text)" : "#8b8598" }}
+                    style={{ color: affordable ? "var(--cafe-text)" : "var(--muted)" }}
                   >
                     {r.pointsCost} points
                   </span>
                   {!affordable && (
                     <>
-                      <span className="mt-1.5 block h-[4px] w-full overflow-hidden rounded-full bg-[#eceaf1]">
+                      <span className="mt-1.5 block h-[4px] w-full overflow-hidden rounded-full bg-[var(--track)]">
                         <span
                           className="block h-full rounded-full"
                           style={{
@@ -155,7 +155,7 @@ export function RewardPicker({
                   style={
                     on
                       ? { borderColor: "var(--cafe)", background: "var(--cafe)", color: "var(--cafe-ink)" }
-                      : { borderColor: "#d8d4e2" }
+                      : { borderColor: "var(--line-strong)" }
                   }
                 >
                   {on && (

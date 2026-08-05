@@ -53,8 +53,14 @@ type BusinessRow = {
 const CAFE_COLS =
   "id, name, slug, status, primary_color, logo_url, phone, business_type, design_settings, plan, plan_expires_at, suspended_at, suspended_reason";
 
+/** One of `allowed`, or the fallback — never whatever the column happened to hold. */
+function pick<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
+  return allowed.includes(value as T) ? (value as T) : fallback;
+}
+
 function toCafe(b: BusinessRow): Cafe {
   const d = b.design_settings ?? {};
+  const t = (d.theme ?? {}) as Record<string, unknown>;
   // Mirrors cafe_is_live() in 0007_platform.sql. Kept in the app too so a page
   // can explain WHY a café is dark instead of just 404-ing at a paying customer.
   const live =
@@ -75,6 +81,22 @@ function toCafe(b: BusinessRow): Cafe {
       loyaltyEnabled: (d.loyaltyEnabled as boolean) ?? true,
       showEngagement: (d.showEngagement as boolean) ?? true,
       pointsExpiryMonths: (d.pointsExpiryMonths as number | null) ?? null,
+      /*
+        Every field defaulted individually, not `?? DEFAULT_THEME`.
+
+        A shop that saved a theme before a knob existed has a partial object,
+        and spreading a default over it would be right while replacing it
+        wholesale would silently reset the colour of a shop that had chosen
+        one. Read field by field and a half-written theme is simply a theme
+        with defaults in the gaps.
+      */
+      theme: {
+        banner: pick(t.banner, ["flat", "gradient", "photo"], "gradient"),
+        surface: pick(t.surface, ["light", "dark"], "light"),
+        radius: pick(t.radius, ["s", "m", "l"], "m"),
+        font: pick(t.font, ["inter", "poppins"], "inter"),
+        coverAt: typeof t.coverAt === "string" ? t.coverAt : null,
+      },
     },
     plan: b.plan ?? "trial",
     planExpiresAt: b.plan_expires_at,

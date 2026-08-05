@@ -3,7 +3,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { CafeClosed } from "@/components/CafeClosed";
 import { TopBar } from "@/components/TopBar";
-import { cafeVars } from "@/lib/theme";
+import { themeVars } from "@/lib/theme";
 import { getCafe, getMember } from "@/lib/data";
 
 export default async function CafeLayout({
@@ -47,8 +47,10 @@ export default async function CafeLayout({
       table, so a phone is the honest shape.
     */
     <div
-      className="app-shell app-shell--light d-shell flex min-h-dvh flex-col"
-      style={cafeVars(cafe.primaryColor)}
+      className={`app-shell app-shell--light d-shell flex min-h-dvh flex-col${
+        cafe.designSettings.theme.surface === "dark" ? " surface-dark" : ""
+      }`}
+      style={themeVars(cafe.primaryColor, cafe.designSettings.theme)}
     >
       <TopBar slug={cafe.slug} pendingCodes={diner?.codes.length ?? 0} />
 

@@ -130,7 +130,7 @@ function Row({
   );
 
   return href ? (
-    <Link href={href} className="block transition active:bg-[#f4f3f7]">
+    <Link href={href} className="block transition active:bg-[var(--panel-2)]">
       {inner}
     </Link>
   ) : (
@@ -142,7 +142,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <section className="px-4 pt-6">
       <h2 className="mb-3 text-[16.5px] font-extrabold text-charcoal">{title}</h2>
-      <ul className="d-card divide-y divide-[#f0eef4] overflow-hidden">{children}</ul>
+      <ul className="d-card divide-y divide-[var(--edge-2)] overflow-hidden">{children}</ul>
     </section>
   );
 }
@@ -275,7 +275,7 @@ export default async function Notifications({
               Historique
             </Link>
           </div>
-          <ul className="d-card divide-y divide-[#f0eef4] overflow-hidden">
+          <ul className="d-card divide-y divide-[var(--edge-2)] overflow-hidden">
             {activity.map((a, i) => {
               const d = describe(a, cafe.name);
               return (

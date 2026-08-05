@@ -97,6 +97,28 @@ export default async function Carte({
      code, never the phone number. */
   const qr = await codeQr(diner.code);
 
+  /*
+    The banner's dress.
+
+    `photo` is only honoured when a photograph has actually been saved —
+    theme.coverAt is what proves that, and it doubles as the cache key on the
+    URL. A shop that chose photo and then removed the picture falls back to the
+    gradient rather than to a black rectangle.
+
+    The bytes are NOT here: /api/cover serves them with a year-long cache (see
+    that route). This page emits a forty-character URL.
+  */
+  const theme = cafe.designSettings.theme;
+  const coverUrl =
+    theme.banner === "photo" && theme.coverAt
+      ? `/api/cover/${slug}?v=${encodeURIComponent(theme.coverAt)}`
+      : null;
+  const bannerClass = coverUrl
+    ? "d-banner--photo"
+    : theme.banner === "flat"
+      ? "d-banner--flat"
+      : "";
+
   return (
     /* data-carte is a landmark for the suites, not styling — a test should break
        when the BEHAVIOUR breaks, never when the wording improves. */
@@ -115,8 +137,15 @@ export default async function Carte({
         />
       )}
 
-      {/* ══ THE BANNER — the shop's, not ours ═══════════════════════════ */}
-      <section className="d-banner safe-t relative rounded-b-[30px] px-5 pb-14 [--safe-pt:0.75rem]">
+      {/* ══ THE BANNER — the shop's, not ours ═══════════════════════════
+          Flat, a gradient off their own colour, or their photograph. The photo
+          is a background-image rather than an <img> because it is a SURFACE,
+          not content: nothing should announce it to a screen reader, and it has
+          to sit under the scrim that keeps the name and the balance legible. */}
+      <section
+        className={`d-banner ${bannerClass} safe-t relative overflow-hidden rounded-b-[30px] px-5 pb-14 [--safe-pt:0.75rem]`}
+        style={coverUrl ? { backgroundImage: `url(${coverUrl})` } : undefined}
+      >
         {/*
           The header lives INSIDE the colour.
 
@@ -332,8 +361,10 @@ export default async function Carte({
           card and clips the QR. */}
       <section className="relative z-10 -mt-9 px-4">
         <div className="d-card flex items-center gap-4 px-4 py-4">
+          {/* .d-pass keeps its own white on the dark theme — see globals. The QR
+              is dark-on-light or it is not scannable. */}
           <div
-            className="w-[86px] shrink-0 [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+            className="d-pass w-[98px] shrink-0 p-1.5 [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
             dangerouslySetInnerHTML={{ __html: qr }}
           />
           <div className="min-w-0 flex-1">

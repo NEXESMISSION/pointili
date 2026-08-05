@@ -52,14 +52,14 @@ function TabBody({ label, Icon, active }: { label: string; Icon: typeof CardIcon
         }`}
         style={{
           background: lit ? "var(--cafe-soft)" : undefined,
-          color: lit ? "var(--cafe-text)" : "#8b8598",
+          color: lit ? "var(--cafe-text)" : "var(--muted)",
         }}
       >
         <Icon className="h-[21px] w-[21px]" />
       </span>
       <span
         className="text-[10.5px] font-bold transition-colors"
-        style={{ color: lit ? "var(--cafe-text)" : "#8b8598" }}
+        style={{ color: lit ? "var(--cafe-text)" : "var(--muted)" }}
       >
         {label}
       </span>
@@ -75,7 +75,7 @@ export function BottomNav({ slug }: { slug: string }) {
   if (pathname === `${base}/rejoindre`) return null;
 
   return (
-    <nav className="sticky bottom-0 z-20 border-t border-[#ebe9ef] bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+    <nav className="sticky bottom-0 z-20 border-t border-[var(--edge)] bg-[var(--panel)]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
       <ul className="flex">
         {tabs.map(({ key, label, Icon, href }) => {
           const to = `${base}${href}`;

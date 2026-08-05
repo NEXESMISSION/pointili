@@ -57,7 +57,7 @@ export default async function Historique({
           Rien pour l&apos;instant — tes points et tes récompenses s&apos;afficheront ici.
         </p>
       ) : (
-        <ul className="d-card divide-y divide-[#f0eef4] px-4">
+        <ul className="d-card divide-y divide-[var(--edge-2)] px-4">
           {activity.map((a, i) => (
             <li key={i} className="flex items-center justify-between gap-3 py-3">
               <span className="min-w-0">
@@ -74,7 +74,7 @@ export default async function Historique({
                    apart, and green is not this app's colour to spend. */
                 <span
                   className="shrink-0 text-[14px] font-extrabold tabular-nums"
-                  style={{ color: a.delta > 0 ? "var(--cafe-text)" : "#8b8598" }}
+                  style={{ color: a.delta > 0 ? "var(--cafe-text)" : "var(--muted)" }}
                 >
                   {a.delta > 0 ? "+" : ""}
                   {fmtPoints(a.delta)}

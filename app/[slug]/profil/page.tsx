@@ -138,7 +138,7 @@ export default async function Profil({
       <form action={logoutDinerAction.bind(null, slug)} className="mt-6">
         <button
           type="submit"
-          className="w-full rounded-2xl border border-[#ddd9e6] py-3 text-[13px] font-bold text-slate active:scale-[0.99]"
+          className="w-full rounded-2xl border border-[var(--line-strong)] py-3 text-[13px] font-bold text-slate active:scale-[0.99]"
         >
           Changer de compte
         </button>

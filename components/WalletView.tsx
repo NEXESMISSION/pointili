@@ -430,7 +430,7 @@ function CardRow({
 
           {nudge && (
             <>
-              <span className="mt-2 block h-[5px] overflow-hidden rounded-full bg-[#eceaf1]">
+              <span className="mt-2 block h-[5px] overflow-hidden rounded-full bg-[var(--track)]">
                 <span
                   className="block h-full rounded-full"
                   style={{

@@ -161,7 +161,7 @@ export default async function Rejoindre({
               </span>
             )}
             <span
-              className="absolute -bottom-0.5 -right-0.5 grid h-7 w-7 place-items-center rounded-full ring-4 ring-[#f6f6f8]"
+              className="absolute -bottom-0.5 -right-0.5 grid h-7 w-7 place-items-center rounded-full ring-4 ring-[var(--surface)]"
               style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden>

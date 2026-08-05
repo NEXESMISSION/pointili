@@ -530,3 +530,137 @@ export async function deletePrizeAction(prizeId: string): Promise<SettingsState>
   revalidatePath(`/${cafe.slug}/boutique`);
   return { saved: "Lot retiré" };
 }
+
+/* ── the theme ──────────────────────────────────────────────────────────── */
+
+/**
+ * How the customer's card looks. Presentation only — nothing here can change a
+ * balance, a price or a code, which is why it is one small write into
+ * design_settings rather than a form with a confirmation.
+ *
+ * Every field is validated against its own list rather than stored as given:
+ * this object ends up as CSS custom properties and class names on a public
+ * page, and "whatever the client posted" is not something to put there.
+ */
+const BANNERS = ["flat", "gradient", "photo"] as const;
+const SURFACES = ["light", "dark"] as const;
+const RADII = ["s", "m", "l"] as const;
+const FONTS = ["inter", "poppins"] as const;
+
+function one<T extends string>(v: FormDataEntryValue | null, allowed: readonly T[], fallback: T): T {
+  const s = String(v ?? "");
+  return (allowed as readonly string[]).includes(s) ? (s as T) : fallback;
+}
+
+export async function saveThemeAction(
+  _prev: SettingsState,
+  formData: FormData,
+): Promise<SettingsState> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { error: "Non autorisé." };
+
+  const rawColor = String(formData.get("primaryColor") ?? "").trim();
+  const primaryColor = HEX.test(rawColor) ? rawColor.toLowerCase() : cafe.primaryColor;
+
+  const theme = {
+    ...cafe.designSettings.theme,
+    banner: one(formData.get("banner"), BANNERS, "gradient"),
+    surface: one(formData.get("surface"), SURFACES, "light"),
+    radius: one(formData.get("radius"), RADII, "m"),
+    font: one(formData.get("font"), FONTS, "inter"),
+  };
+
+  const db = await createClient();
+  const { data, error } = await db
+    .from("businesses")
+    .update({
+      primary_color: primaryColor,
+      design_settings: { ...cafe.designSettings, theme },
+    })
+    .eq("id", cafe.id)
+    .select("id");
+
+  const failed = assertWrote(data, error);
+  if (failed) return failed;
+
+  revalidatePath("/owner/reglages");
+  revalidatePath(`/${cafe.slug}`);
+  return { saved: "Thème" };
+}
+
+/**
+ * The banner photograph.
+ *
+ * Saved on its own, instantly, like the logo — a picture is not something you
+ * pick and then press Enregistrer for, and holding 60 KB of base64 in a form
+ * field until submit is a good way to lose it.
+ *
+ * coverAt is stamped in the same write. It is the version on the URL the card
+ * renders, and it is what lets /api/cover answer "immutable" honestly: a new
+ * photograph is a new URL, so no browser is ever holding a stale one.
+ */
+const COVER_MAX_CHARS = 160_000; // ~118 KB decoded — a 900px WebP lands far under
+
+export async function saveCoverAction(dataUri: string): Promise<SettingsState> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { error: "Non autorisé." };
+
+  if (typeof dataUri !== "string" || !LOGO_PREFIX.test(dataUri)) {
+    return { error: "Image invalide (PNG, JPG ou WebP)." };
+  }
+  if (dataUri.length > COVER_MAX_CHARS) {
+    return { error: "Photo trop lourde — choisissez-en une plus petite." };
+  }
+  const b64 = dataUri.slice(dataUri.indexOf(",") + 1);
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) return { error: "Image invalide." };
+
+  const db = await createClient();
+  const { data, error } = await db
+    .from("businesses")
+    .update({
+      cover_url: dataUri,
+      design_settings: {
+        ...cafe.designSettings,
+        theme: {
+          ...cafe.designSettings.theme,
+          banner: "photo",
+          coverAt: Date.now().toString(36),
+        },
+      },
+    })
+    .eq("id", cafe.id)
+    .select("id");
+
+  const failed = assertWrote(data, error);
+  if (failed) return failed;
+
+  revalidatePath("/owner/reglages");
+  revalidatePath(`/${cafe.slug}`);
+  return { saved: "Photo" };
+}
+
+export async function removeCoverAction(): Promise<SettingsState> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { error: "Non autorisé." };
+
+  const db = await createClient();
+  const { data, error } = await db
+    .from("businesses")
+    .update({
+      cover_url: null,
+      /* back to the gradient, not to a banner that quietly has no picture */
+      design_settings: {
+        ...cafe.designSettings,
+        theme: { ...cafe.designSettings.theme, banner: "gradient", coverAt: null },
+      },
+    })
+    .eq("id", cafe.id)
+    .select("id");
+
+  const failed = assertWrote(data, error);
+  if (failed) return failed;
+
+  revalidatePath("/owner/reglages");
+  revalidatePath(`/${cafe.slug}`);
+  return { saved: "Photo retirée" };
+}

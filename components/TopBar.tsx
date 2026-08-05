@@ -50,7 +50,7 @@ export function TopBar({
 
   return (
     /* safe-t: installed, the status bar sits on top of this row. */
-    <header className="safe-t sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-[#ebe9ef] bg-[#f6f6f8]/92 px-4 pb-2.5 backdrop-blur [--safe-pt:0.9rem]">
+    <header className="safe-t sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-[var(--edge)] bg-[var(--surface)]/92 px-4 pb-2.5 backdrop-blur [--safe-pt:0.9rem]">
       <span className="grid h-10 w-10 place-items-center">
         <BackLink fallback={`/${slug}`} />
       </span>
@@ -80,7 +80,7 @@ export function TopBar({
         </svg>
         {pendingCodes > 0 && (
           <span
-            className="absolute right-[9px] top-[8px] h-[9px] w-[9px] rounded-full ring-2 ring-[#f6f6f8]"
+            className="absolute right-[9px] top-[8px] h-[9px] w-[9px] rounded-full ring-2 ring-[var(--surface)]"
             style={{ background: "var(--cafe)" }}
           />
         )}

@@ -85,7 +85,7 @@ export default async function Scanner({
 
       {/* ── the thing the cashier points a camera at ── */}
       <div className="d-card mt-5 px-6 pb-5 pt-6 text-center">
-        <div className="mx-auto w-[182px] [&>svg]:h-auto [&>svg]:w-full">
+        <div className="d-pass mx-auto w-[198px] p-2 [&>svg]:h-auto [&>svg]:w-full">
           <div dangerouslySetInnerHTML={{ __html: qr }} />
         </div>
 

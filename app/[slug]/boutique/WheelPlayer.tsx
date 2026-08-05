@@ -218,7 +218,7 @@ export function WheelPlayer({
               </g>
             );
           })}
-          <circle cx={C} cy={C} r="17" fill="#fff" stroke="#ebe9ef" strokeWidth="2" />
+          <circle cx={C} cy={C} r="17" fill="#fff" stroke="var(--edge)" strokeWidth="2" />
         </svg>
       </div>
 
