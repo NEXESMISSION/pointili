@@ -86,11 +86,11 @@ export function inkOn(color: string): string {
  * on a white card, rather than a figure nobody over forty can see. Shops with an
  * already-dark brand are returned untouched — the loop simply never runs.
  */
-export function textOnWhite(color: string): string {
+export function textOnWhite(color: string, against: string = WHITE): string {
   let rgb = parseHex(color) ?? parseHex(BRAND_COLOR)!;
-  const white = parseHex(WHITE)!;
+  const bg = parseHex(against) ?? parseHex(WHITE)!;
   const black: [number, number, number] = [0, 0, 0];
-  for (let i = 0; i < 24 && contrast(rgb, white) < 4.5; i++) rgb = mix(rgb, black, 0.06);
+  for (let i = 0; i < 24 && contrast(rgb, bg) < 4.5; i++) rgb = mix(rgb, black, 0.06);
   return toHex(rgb);
 }
 
@@ -98,12 +98,35 @@ export function textOnWhite(color: string): string {
 export function cafeVars(primary: string | null | undefined): Record<string, string> {
   const cafe = safeColor(primary);
   const rgb = parseHex(cafe)!;
+  const white = parseHex(WHITE)!;
+
+  /*
+    THE TINT IS THE HARDER BACKGROUND, SO IT IS THE ONE WE MEASURE AGAINST.
+
+    --cafe-text was computed to clear 4.5:1 on WHITE, and then used on --cafe-soft
+    — a tint of the same hue. Same-hue-on-same-hue is the worst case there is:
+    the tint lifts the background AND shares the text's chroma, so a figure that
+    measured 4.6 on white measured about 4.0 where it was actually drawn. Every
+    "purple on lavender" on the card — the errand card's title, the reward
+    prices, the icons in their tiles — was sitting just under the line. Nothing
+    looked broken; everything looked slightly washed, which is exactly the
+    complaint.
+
+    Measuring against the tint fixes all of them at once, and costs a shade of
+    darkness on white, where there was margin to spare.
+
+    The tint itself is a step stronger too (86% white, was 90%): at 90% a filled
+    icon tile was barely distinguishable from the card it sat on, so the tiles
+    read as floating glyphs rather than as objects.
+  */
+  const soft = toHex(mix(rgb, white, 0.86));
+
   return {
     "--cafe": cafe,
     "--cafe-ink": inkOn(cafe),
-    "--cafe-text": textOnWhite(cafe),
-    "--cafe-soft": toHex(mix(rgb, parseHex(WHITE)!, 0.9)),
-    "--cafe-line": toHex(mix(rgb, parseHex(WHITE)!, 0.78)),
+    "--cafe-text": textOnWhite(cafe, soft),
+    "--cafe-soft": soft,
+    "--cafe-line": toHex(mix(rgb, white, 0.72)),
     "--cafe-deep": toHex(mix(rgb, [0, 0, 0], 0.28)),
   };
 }

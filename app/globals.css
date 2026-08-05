@@ -516,6 +516,38 @@ h4 {
   color: #a9a3b8;
 }
 
+/*
+  ── THE CARD SWITCHER, FANNING OUT ──────────────────────────────────────
+  The other shops' marks in the banner header (app/[slug]/page.tsx) start
+  stacked on top of one another and spread into their overlap, like a hand of
+  cards being opened.
+
+  ONCE, on arrival. The rule this file already keeps — nothing loops in the
+  reader's periphery — matters more here than anywhere: this sits in the corner
+  of the one screen a customer holds up at a counter, and a control that
+  shuffles forever is an advert. Each mark sets its own --fan index, so they
+  arrive in sequence rather than together.
+
+  transform and opacity only, so it costs nothing on the cheap Android this
+  actually runs on.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  .fan-in {
+    animation: fan-in 0.5s cubic-bezier(0.16, 0.9, 0.3, 1) both;
+    animation-delay: calc(0.45s + var(--fan, 0) * 90ms);
+  }
+}
+@keyframes fan-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--fan, 0) * -14px)) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* The one coloured surface: the shop's banner, falling from its own colour into
    a darker end of the same hue so it reads as a printed card and not a flat
    swatch. --cafe-deep is computed, never guessed. */

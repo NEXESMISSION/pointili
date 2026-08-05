@@ -6,7 +6,6 @@ import { useMemo, useState } from "react";
 import { businessType } from "@/lib/businessTypes";
 import type { WalletCafe } from "@/lib/db";
 import { fmtPoints } from "@/lib/points";
-import { GoChevron } from "@/components/GoChevron";
 import { StampIcon } from "@/components/icons";
 import { cafeVars } from "@/lib/theme";
 
@@ -28,6 +27,27 @@ const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
 
 /** Below this many cards, a search box is just noise. */
 const SEARCH_FROM = 6;
+
+type FilterKey = "all" | "pending" | "close";
+
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: "all", label: "Toutes" },
+  { key: "pending", label: "À récupérer" },
+  { key: "close", label: "Presque" },
+];
+
+/**
+ * "Presque" — within a third of the next reward.
+ *
+ * A threshold rather than a sort, because the question is "can I get something
+ * on my next visit or two?", not "which card is furthest along". A card with no
+ * nudge left (they can already afford the top reward) is not "presque" — it is
+ * done, and it shows up under À récupérer the moment they take it.
+ */
+function isClose(card: WalletCafe, nudge: Nudge): boolean {
+  if (!nudge || nudge.cost <= 0) return false;
+  return card.balance / nudge.cost >= 0.66;
+}
 
 /** How close this card is to its next reward, resolved by app/cartes/page.tsx. */
 /**
@@ -57,6 +77,7 @@ export function WalletView({
 }) {
   const router = useRouter();
   const [q, setQ] = useState("");
+  const [filter, setFilter] = useState<FilterKey>("all");
 
   // …and it must be a shop this diner actually holds a card at, so the arrow
   // can never point at an arbitrary route either.
@@ -65,9 +86,20 @@ export function WalletView({
       ? currentSlug
       : null;
 
+  /* How many cards each filter would show — the chip carries the number, so a
+     filter is never a control you press to find out it was empty. */
+  const counts = useMemo(
+    () => ({
+      all: cards.length,
+      pending: cards.filter((c) => c.pendingWins + c.pendingRewards > 0).length,
+      close: cards.filter((c) => isClose(c, nudges[c.businessId] ?? null)).length,
+    }),
+    [cards, nudges],
+  );
+
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const list = needle
+    let list = needle
       ? cards.filter(
           (c) =>
             c.name.toLowerCase().includes(needle) ||
@@ -75,13 +107,16 @@ export function WalletView({
         )
       : [...cards];
 
+    if (filter === "pending") list = list.filter((c) => c.pendingWins + c.pendingRewards > 0);
+    if (filter === "close") list = list.filter((c) => isClose(c, nudges[c.businessId] ?? null));
+
     return list.sort((a, b) => {
       // the card they're on leads, then most recently opened
       if (a.slug === backSlug) return -1;
       if (b.slug === backSlug) return 1;
       return new Date(b.lastOpenedAt ?? 0).getTime() - new Date(a.lastOpenedAt ?? 0).getTime();
     });
-  }, [cards, q, backSlug]);
+  }, [cards, q, backSlug, filter, nudges]);
 
   return (
     // full height so the merchant link sits at the BOTTOM instead of floating
@@ -131,6 +166,41 @@ export function WalletView({
         {code && <CodePanel code={code} />}
       </header>
 
+      {/*
+        ── FILTERS ────────────────────────────────────────────────────────
+        Two questions a wallet is actually asked — "what is waiting for me?"
+        and "where am I nearly there?" — and the way back to everything.
+
+        They appear from two cards, because that is the point at which the
+        wallet stops being a list you read and starts being one you search.
+        Each chip states its own count, so pressing one can never be how you
+        discover it was empty; a chip that would show nothing is not rendered
+        at all.
+      */}
+      {cards.length >= 2 && (
+        <div className="mb-3 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {FILTERS.filter((f) => counts[f.key] > 0 || f.key === "all").map((f) => {
+            const on = filter === f.key;
+            return (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setFilter(f.key)}
+                aria-pressed={on}
+                className={`shrink-0 rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition active:scale-[0.97] ${
+                  on ? "bg-charcoal text-white" : "d-card text-slate"
+                }`}
+              >
+                {f.label}
+                <span className={`ml-1.5 tabular-nums ${on ? "opacity-70" : "opacity-55"}`}>
+                  {counts[f.key]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {cards.length >= SEARCH_FROM && (
         <div className="relative mb-4">
           <input
@@ -153,10 +223,19 @@ export function WalletView({
         <p className="d-card mt-4 px-6 py-12 text-center text-[13.5px] leading-relaxed text-slate">
           {q
             ? "Aucune boutique ne correspond."
-            : "Scanne le QR d'un commerce pour ajouter ta première carte."}
+            : filter === "pending"
+              ? "Rien à récupérer pour le moment."
+              : filter === "close"
+                ? "Aucune carte proche de sa récompense."
+                : "Scanne le QR d'un commerce pour ajouter ta première carte."}
         </p>
       ) : (
-        <ul className="stagger space-y-2.5">
+        /* TWO PER ROW. One card per line made a three-shop wallet a page you
+           scroll, and every card was 100px of mostly-empty white under a
+           balance. Two columns fit a real wallet on one screen — which is the
+           only way the screen answers "which of my cards is this?" at a
+           glance. */
+        <ul className="stagger grid grid-cols-2 gap-2.5">
           {shown.map((c, i) => (
             <CardRow
               key={c.businessId}
@@ -287,63 +366,71 @@ function CardRow({
           There is no aspect-ratio here any more — the card is as tall as it
           needs to be — but the width stays explicit so it cannot come back.
         */
-        className="d-card group relative block w-full overflow-hidden transition active:scale-[0.985]"
+        /* The whole card is the target now — the chevron went with the row
+           layout, and at half width a 36px arrow was competing with the
+           balance for the same corner. */
+        className="d-card group relative block h-full w-full overflow-hidden transition active:scale-[0.985]"
         /* The card you are currently inside is outlined in its own colour —
            the only difference between cards, since every one of them is already
            wearing a different hue. */
         style={current ? { borderColor: "var(--cafe)", boxShadow: "0 0 0 1px var(--cafe)" } : undefined}
       >
-        {/* ── the shop, on its own colour ── */}
-        <div className="d-banner flex items-start gap-3.5 px-4 py-3.5">
+        {/*
+          ── THE SHOP, ON ITS OWN COLOUR ────────────────────────────────
+          Half the width now, so everything that was a row is a stack: the
+          mark centred over the name rather than beside it, the balance under
+          it rather than across from it. Nothing was dropped — a wallet card
+          answers "whose, how much, anything waiting?" and all three survive
+          at 175px.
+        */}
+        <div className="d-banner relative px-3 pb-3 pt-3.5">
+          {current && (
+            /* A dot, not a pill: "ACTUELLE" spelled out took the whole width a
+               shop name needs at this size. The ring is the tell. */
+            <span
+              aria-label="Carte actuelle"
+              className="absolute right-2.5 top-2.5 h-2.5 w-2.5 rounded-full"
+              style={{ background: "var(--cafe-ink)" }}
+            />
+          )}
+
           {card.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
             <img
               src={card.logoUrl}
               alt=""
-              className="h-[42px] w-[42px] shrink-0 rounded-full object-cover"
+              className="h-[38px] w-[38px] rounded-full object-cover"
               style={{ boxShadow: "0 0 0 2px color-mix(in oklab, var(--cafe-ink) 28%, transparent)" }}
             />
           ) : (
             <span
-              className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full text-[19px]"
+              className="grid h-[38px] w-[38px] place-items-center rounded-full text-[17px]"
               style={{ background: "color-mix(in oklab, var(--cafe-ink) 16%, transparent)" }}
             >
               {t.emoji}
             </span>
           )}
 
-          <span className="min-w-0 flex-1 pt-0.5">
-            {/* wraps rather than truncating: the ACTUELLE pill takes the room a
-                shop name needs, and "Café El M…" identifies nothing — which is
-                the one job this screen has */}
-            <span className="block text-[16px] font-extrabold leading-tight line-clamp-2">
-              {card.name}
-            </span>
-            <span className="block truncate text-[11.5px] font-medium opacity-70">{t.label}</span>
+          <span className="mt-2 block text-[14px] font-extrabold leading-tight line-clamp-2">
+            {card.name}
           </span>
-
-          {current && (
-            <span
-              className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1"
-              style={{ background: "var(--cafe-ink)", color: "var(--cafe)" }}
-            >
-              <span className="text-[9.5px] font-extrabold uppercase tracking-[0.05em]">Actuelle</span>
-            </span>
-          )}
+          <span className="block truncate text-[11px] font-medium opacity-70">{t.label}</span>
         </div>
 
-        <div className="px-4 pb-3.5 pt-3">
-          {/*
-            How close they are, then the bar. Named prize, not "ta récompense" —
-            the whole reason to open this card is the thing at the end of it.
-          */}
+        <div className="px-3 pb-3 pt-2.5">
+          <span className="flex items-baseline gap-1.5">
+            <span
+              className="text-[24px] font-extrabold leading-none tabular-nums tracking-[-0.03em]"
+              style={{ color: "var(--cafe-text)" }}
+            >
+              {fmtPoints(card.balance)}
+            </span>
+            <span className="text-[11.5px] font-bold text-slate">points</span>
+          </span>
+
           {nudge && (
-            <div className="mb-3">
-              <p className="truncate text-[13px] text-slate">
-                Encore <b className="font-extrabold text-charcoal">{fmtPoints(nudge.needed)}</b> pour{" "}
-                {nudge.label.toLowerCase()}
-              </p>
-              <span className="mt-1.5 block h-[6px] overflow-hidden rounded-full bg-[#eceaf1]">
+            <>
+              <span className="mt-2 block h-[5px] overflow-hidden rounded-full bg-[#eceaf1]">
                 <span
                   className="block h-full rounded-full"
                   style={{
@@ -352,51 +439,32 @@ function CardRow({
                   }}
                 />
               </span>
-            </div>
+              {/* two lines allowed: the prize is the reason to open this card,
+                  and "Encore 155 pour brunch com…" names nothing */}
+              <span className="mt-1.5 block text-[11px] leading-snug text-slate line-clamp-2">
+                Encore <b className="font-extrabold text-charcoal">{fmtPoints(nudge.needed)}</b> pour{" "}
+                {nudge.label.toLowerCase()}
+              </span>
+            </>
           )}
 
-          {/* ── the balance, which is the only reason to open this card ── */}
-          <div className="flex items-end justify-between gap-3">
-            <span className="min-w-0">
-              <span className="flex items-baseline gap-2">
-                <span
-                  className="text-[28px] font-extrabold leading-none tabular-nums tracking-[-0.03em]"
-                  style={{ color: "var(--cafe-text)" }}
-                >
-                  {fmtPoints(card.balance)}
-                </span>
-                <span className="text-[12px] font-bold text-slate">points</span>
-              </span>
-
-              {/*
-                The stamp count as ONE line, not a row of dots.
-
-                Ten dots belong on the card screen where they are the mechanic you
-                are watching fill. Here they were ten more objects on a list that
-                already has three shops competing for attention, and the wallet
-                only has to answer "how am I doing here" — a number does that.
-              */}
-              {card.stampsEnabled && card.stamps > 0 && (
-                <span className="mt-1.5 flex items-center gap-1.5 text-[11.5px] text-slate">
-                  <StampIcon className="h-[14px] w-[14px]" />
-                  <b className="font-extrabold text-charcoal">{card.stamps}</b> tampon
-                  {card.stamps > 1 ? "s" : ""}
-                </span>
-              )}
-
-              {pending > 0 && (
-                <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gold-soft px-2.5 py-[3px] text-[10.5px] font-extrabold text-gold-deep">
-                  🎁 {pending} à récupérer
-                </span>
-              )}
+          {/*
+            The stamp count as ONE line, not a row of dots — the wallet only has
+            to answer "how am I doing here", and a number does that.
+          */}
+          {card.stampsEnabled && card.stamps > 0 && (
+            <span className="mt-1.5 flex items-center gap-1 text-[11px] text-slate">
+              <StampIcon className="h-[13px] w-[13px]" />
+              <b className="font-extrabold text-charcoal">{card.stamps}</b> tampon
+              {card.stamps > 1 ? "s" : ""}
             </span>
+          )}
 
-            {/* GoChevron, not a plain arrow: it turns into a spinner while the
-                card is loading. There is no loading.tsx under /[slug] — every page
-                there redirects, and a redirect inside a streamed Suspense boundary
-                stops being an HTTP one — so this is the only tap feedback. */}
-            <GoChevron size={36} />
-          </div>
+          {pending > 0 && (
+            <span className="mt-2 flex w-full items-center justify-center gap-1 rounded-full bg-gold-soft px-2 py-1 text-[10.5px] font-extrabold text-gold-deep">
+              🎁 {pending} à récupérer
+            </span>
+          )}
         </div>
       </Link>
     </li>

@@ -4,7 +4,7 @@ import { businessType } from "@/lib/businessTypes";
 import { notFound, redirect } from "next/navigation";
 import { GiftIcon, Sparkle, UserIcon } from "@/components/icons";
 import { getCafe, getLoyaltyProgram, getMember, getRewards, nextRewardNudge } from "@/lib/data";
-import { balanceSinceLastOpen } from "@/lib/db";
+import { balanceSinceLastOpen, dinerWallet } from "@/lib/db";
 import type { LoyaltyProgram } from "@/lib/types";
 import { CardArrived } from "@/components/CardArrived";
 import { CountUp } from "@/components/CountUp";
@@ -12,6 +12,7 @@ import { RewardUnlocked } from "@/components/RewardUnlocked";
 import { MarkOpened } from "@/components/MarkOpened";
 import { fmtPoints } from "@/lib/points";
 import { codeQr } from "@/lib/qr";
+import { inkOn, safeColor } from "@/lib/theme";
 
 /**
  * Ma carte — the shop's own card, in the shop's own colour.
@@ -60,7 +61,16 @@ export default async function Carte({
   */
   const seen = await balanceSinceLastOpen(cafe.id, diner.phone);
 
-  const [program, rewards] = await Promise.all([getLoyaltyProgram(cafe.id), getRewards(cafe.id)]);
+  /* The wallet, for the switcher in the banner — the other shops' marks are
+     what make it read as a control with something behind it. One indexed RPC,
+     in parallel with the two it already ran. */
+  const [program, rewards, wallet] = await Promise.all([
+    getLoyaltyProgram(cafe.id),
+    getRewards(cafe.id),
+    dinerWallet(diner.phone),
+  ]);
+  /* Up to three OTHER shops: this one is already the whole screen. */
+  const others = wallet.filter((c) => c.slug !== slug).slice(0, 3);
 
   /*
     A reward is worth taking over the screen for only if it crossed the line
@@ -125,17 +135,61 @@ export default async function Carte({
             <UserIcon className="h-[21px] w-[21px]" />
           </Link>
 
-          {/* A CONTROL, not a caption: on the card screen the thing people most
-              often want is the OTHER card, and a pill with a chevron says so on
-              sight. */}
+          {/*
+            THE SWITCHER SHOWS THE CARDS IT SWITCHES TO.
+
+            It was a small pill reading "Mes cartes ⌄" — a label, sitting on a
+            screen that never says how many cards you have or what they are, so
+            nothing about it suggested there was anything behind it. Somebody
+            with three shops had no reason to press it.
+
+            Now it carries the actual wallet: the other shops' marks, stacked
+            and overlapping the way cards do in a hand, with the count. It is
+            wider (it takes the room the header had going spare), it is a real
+            object rather than a caption, and it fans out once on arrival —
+            once, because a control that moves forever in the corner of the eye
+            is an advert. See .fan-in.
+          */}
           <Link
             href={`/cartes?from=${slug}`}
-            className="flex min-w-0 items-center gap-1.5 rounded-full py-1.5 pl-4 pr-3 transition active:scale-[0.97]"
-            style={{ background: "color-mix(in oklab, var(--cafe-ink) 14%, transparent)" }}
+            aria-label={`Mes cartes — ${wallet.length} boutique${wallet.length > 1 ? "s" : ""}`}
+            className="flex min-w-0 flex-1 items-center justify-center gap-2.5 rounded-full py-2 pl-3 pr-3.5 transition active:scale-[0.97]"
+            style={{ background: "color-mix(in oklab, var(--cafe-ink) 15%, transparent)" }}
           >
-            <span className="truncate text-[14px] font-extrabold">Mes cartes</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0 opacity-75" aria-hidden>
-              <path d="m6 9 6 6 6-6" />
+            {others.length > 0 && (
+              <span className="flex shrink-0 -space-x-2.5">
+                {others.map((c, i) => (
+                  <span
+                    key={c.businessId}
+                    className="fan-in grid h-7 w-7 place-items-center overflow-hidden rounded-full text-[12px] font-extrabold"
+                    style={{
+                      background: safeColor(c.primaryColor),
+                      color: inkOn(safeColor(c.primaryColor)),
+                      boxShadow: "0 0 0 2px var(--cafe)",
+                      zIndex: others.length - i,
+                      ["--fan" as string]: String(i),
+                    }}
+                  >
+                    {c.logoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
+                      <img src={c.logoUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      businessType(c.businessType).emoji
+                    )}
+                  </span>
+                ))}
+              </span>
+            )}
+            <span className="min-w-0">
+              <span className="block truncate text-[14.5px] font-extrabold leading-tight">
+                Mes cartes
+              </span>
+              <span className="block text-[11px] font-semibold leading-tight opacity-75">
+                {wallet.length} boutique{wallet.length > 1 ? "s" : ""}
+              </span>
+            </span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0 opacity-80" aria-hidden>
+              <path d="m9 6 6 6-6 6" />
             </svg>
           </Link>
 
