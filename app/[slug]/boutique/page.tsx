@@ -63,15 +63,6 @@ export default async function Recompenses({
           )}
         </section>
 
-        {game && (
-          <WheelPlayer
-            slug={slug}
-            prizes={game.prizes}
-            spinCost={game.spinCost}
-            balance={diner.balance}
-          />
-        )}
-
         {ladder.length === 0 ? (
           <div className="d-card px-5 py-10 text-center">
             <span
@@ -89,6 +80,25 @@ export default async function Recompenses({
           <RewardPicker slug={slug} rewards={ladder} balance={diner.balance} />
         )}
       </div>
+
+      {/*
+        ══ THE WHEEL, OUT OF THE WAY ══════════════════════════════════════
+        It used to open this screen: a 240px wheel above the rewards, so the
+        first thing a customer saw on "Choisis ta récompense" was a game they
+        had to scroll past to reach the thing they came for. The rewards are the
+        product; the wheel is a diversion an owner can switch on.
+
+        A floating button keeps it one tap away and returns the screen to the
+        list. Only rendered when the shop actually runs one.
+      */}
+      {game && (
+        <WheelPlayer
+          slug={slug}
+          prizes={game.prizes}
+          spinCost={game.spinCost}
+          balance={diner.balance}
+        />
+      )}
     </div>
   );
 }

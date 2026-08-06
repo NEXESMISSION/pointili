@@ -84,6 +84,8 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
   const [surface, setSurface] = useState<"light" | "dark">(t.surface);
   const [radius, setRadius] = useState<(typeof RADII)[number]["key"]>(t.radius);
   const [font, setFont] = useState<(typeof FONTS)[number]["key"]>(t.font);
+  const [round, setRound] = useState(t.bannerRound);
+  const [scrim, setScrim] = useState(t.scrim);
 
   /* The cover is saved on its own, the moment it is chosen — see saveCoverAction. */
   const [cover, setCover] = useState<string | null>(t.coverAt ? `/api/cover/${cafe.slug}?v=${t.coverAt}` : null);
@@ -131,6 +133,9 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
       <input type="hidden" name="surface" value={surface} />
       <input type="hidden" name="radius" value={radius} />
       <input type="hidden" name="font" value={font} />
+      {/* checkboxes post "on"/absent, which is what saveThemeAction reads */}
+      <input type="checkbox" name="bannerRound" checked={round} readOnly hidden />
+      <input type="checkbox" name="scrim" checked={scrim} readOnly hidden />
 
       {/* ══ THE PREVIEW — their card, not a swatch ═══════════════════════ */}
       <Preview
@@ -229,6 +234,25 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
         </p>
       )}
 
+      <div className="mt-3 space-y-1">
+        <Switch
+          label="Coins arrondis en bas"
+          hint="L'en-tête s'arrondit dans la page, ou s'arrête net."
+          on={round}
+          onChange={setRound}
+        />
+        {/* only means anything with a photograph — a scrim over a flat colour
+            is a darker flat colour, which is what the colour picker is for */}
+        {banner === "photo" && (
+          <Switch
+            label="Assombrir la photo"
+            hint="Gardez-le si votre nom ou votre solde passe sur une zone claire."
+            on={scrim}
+            onChange={setScrim}
+          />
+        )}
+      </div>
+
       {/* ══ SURFACE ═════════════════════════════════════════════════════ */}
       <Label>Style de l&apos;app</Label>
       <Segmented
@@ -267,6 +291,45 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
 }
 
 /* ── pieces ───────────────────────────────────────────────────────────── */
+
+/** A labelled switch, in the owner app's voice. */
+function Switch({
+  label,
+  hint,
+  on,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  on: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!on)}
+      aria-pressed={on}
+      className="flex w-full items-start justify-between gap-3 rounded-2xl px-1 py-2 text-left"
+    >
+      <span className="min-w-0">
+        <span className="block text-[13px] font-semibold text-charcoal">{label}</span>
+        <span className="mt-0.5 block text-[11.5px] leading-snug text-slate">{hint}</span>
+      </span>
+      <span
+        className="mt-0.5 h-[24px] w-[42px] shrink-0 rounded-full border p-[3px] transition-colors"
+        style={{
+          background: on ? "var(--o-accent)" : "var(--o-inset)",
+          borderColor: on ? "var(--o-accent)" : "var(--o-edge)",
+        }}
+      >
+        <span
+          className="block h-[16px] w-[16px] rounded-full bg-white shadow-sm transition-transform"
+          style={{ transform: on ? "translateX(18px)" : "none" }}
+        />
+      </span>
+    </button>
+  );
+}
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
@@ -375,7 +438,7 @@ function Preview({
               className="grid h-9 w-9 place-items-center rounded-full text-[16px]"
               style={{ background: "color-mix(in oklab, currentColor 16%, transparent)" }}
             >
-              {emoji}
+              <span className="shop-mark">{emoji}</span>
             </span>
           )}
           <span className="min-w-0">

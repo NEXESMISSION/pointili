@@ -201,6 +201,15 @@ const redeemBtn = diner.locator('button:has-text("Échanger")').first();
 let redeemCode = "";
 if (await redeemBtn.count()) {
   await redeemBtn.click();
+  /*
+    ANSWER THE CONFIRMATION.
+
+    Spending points asks first now — "Échanger 40 points contre Espresso
+    offert ?" with the arithmetic — because a redeem debits a month of coffees
+    and has no undo on the customer's side. The trigger opens the question; the
+    button inside it is the one that submits.
+  */
+  await diner.locator('button:has-text("Oui, échanger")').click({ timeout: 15000 });
   // Poll for the issued code rather than sleeping — same Zurich round-trip.
   const gotCode = await diner
     .waitForFunction(

@@ -598,6 +598,30 @@ h4 {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
 }
 
+/*
+  A SHOP MARK WITH NO LOGO IS GREY, NOT RAINBOW.
+
+  Where a shop has uploaded nothing, its business-type emoji stands in — ☕ 🥖
+  🍸 — and an emoji is a full-colour picture. On a card themed in the shop's own
+  green or brown, a beige-and-orange coffee cup is the loudest thing in the
+  banner and it belongs to nobody: not the shop, not us. Desaturated it reads as
+  a placeholder mark, which is what it is, and the only colour left in the
+  header is the one the owner chose.
+
+  grayscale, not opacity: fading it would make it a WEAK picture rather than a
+  neutral one, and the shape still has to be recognisable at 46px.
+*/
+.shop-mark {
+  filter: grayscale(1);
+  opacity: 0.85;
+}
+/* on a coloured banner the mark sits on the ink colour, so it needs to be
+   light rather than mid-grey — invert-free, just brighter */
+.d-banner .shop-mark {
+  filter: grayscale(1) brightness(1.6);
+  opacity: 0.9;
+}
+
 /* a filled loyalty stamp — the shop's colour, with text it can carry */
 .d-stamp {
   background: var(--cafe, #5b3fd1);
@@ -691,6 +715,20 @@ h4 {
 .d-banner--photo > * {
   position: relative;
   z-index: 1;
+}
+/*
+  THE PHOTOGRAPH, UNDARKENED.
+
+  For a shop whose picture is already dark and quiet, the scrim is a veil over
+  work they did themselves. Off, the image is theirs untouched — and the type
+  keeps a shadow instead, because "no scrim" is a licence to show the photo, not
+  a licence to make the balance unreadable over a white cup.
+*/
+.d-banner--bare::before {
+  display: none;
+}
+.d-banner--bare {
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 /*

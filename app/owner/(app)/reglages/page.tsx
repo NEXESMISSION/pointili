@@ -47,29 +47,77 @@ export default async function Reglages() {
         <BackLink fallback="/owner" />
       </div>
 
-      {/* ── who you are ────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-1">
-        {/* Logo, or the shop's initial — never the business-type emoji. The
-            "Autre" fallback is ✨, so every untyped shop wore a sparkle on its
-            own admin screens as if it were branding. The initial is what the
-            sidebar already uses; same identity, same treatment. */}
-        {cafe.logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-          <img src={cafe.logoUrl} alt="" className="h-12 w-12 shrink-0 rounded-2xl object-cover" />
-        ) : (
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#5b3fd1] text-[18px] font-extrabold text-white">
-            {cafe.name.charAt(0).toUpperCase()}
+      {/*
+        ── ONE CARD THAT ANSWERS "IS MY SHOP RUNNING?" ────────────────────
+        The screen used to open with a bare identity ROW — logo, name, address —
+        and then jump straight into knobs, while the state of the account (live?
+        expiring? which plan?) sat at the very bottom under everything an owner
+        might scroll past. So the first thing Réglages said was "here is your
+        name", and the thing an owner actually opens it to check was last.
+
+        Identity and state are one fact: this is your shop, and this is whether
+        your customers can use it today.
+      */}
+      <section className="a-card overflow-hidden">
+        <div className="flex items-center gap-3 px-4 pb-3.5 pt-4">
+          {/* Logo, or the shop's initial — never the business-type emoji. The
+              "Autre" fallback is ✨, so every untyped shop wore a sparkle on its
+              own admin screens as if it were branding. */}
+          {cafe.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
+            <img src={cafe.logoUrl} alt="" className="h-12 w-12 shrink-0 rounded-2xl object-cover" />
+          ) : (
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#5b3fd1] text-[18px] font-extrabold text-white">
+              {cafe.name.charAt(0).toUpperCase()}
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-[19px] font-extrabold leading-tight text-charcoal">
+              {cafe.name}
+            </h1>
+            <p className="truncate text-[12px] text-slate">
+              {type.label} · pointili.online/{cafe.slug}
+            </p>
+          </div>
+          <span
+            className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold ${
+              cafe.live ? "bg-ok/10 text-[#2f9e6e]" : "bg-[#e5484d]/12 text-[#e5484d]"
+            }`}
+          >
+            {cafe.live ? "En ligne" : "Hors ligne"}
           </span>
-        )}
-        <div className="min-w-0">
-          <h1 className="truncate text-[20px] font-extrabold leading-tight text-charcoal">
-            {cafe.name}
-          </h1>
-          <p className="truncate text-[12px] text-slate">
-            {type.label} · pointili.online/{cafe.slug}
-          </p>
         </div>
-      </div>
+
+        {/* the plan, on the same card — a shop's state is one sentence, not two
+            sections a screen apart */}
+        <div className="flex items-center justify-between gap-3 border-t border-[var(--o-edge)] px-4 py-3">
+          <span className="min-w-0 text-[13px] text-slate">
+            Formule{" "}
+            <b className="font-bold text-charcoal">{PLAN_LABEL[cafe.plan] ?? cafe.plan}</b>
+            {cafe.planExpiresAt && (
+              <>
+                {" · "}
+                {left.expired ? "expirée le " : "jusqu'au "}
+                {new Date(cafe.planExpiresAt).toLocaleDateString("fr-FR", {
+                  day: "2-digit",
+                  month: "long",
+                })}
+              </>
+            )}
+          </span>
+          <span
+            className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[12px] font-bold ${
+              left.expired
+                ? "bg-[#e5484d]/12 text-[#e5484d]"
+                : left.soon && !left.unlimited
+                  ? "bg-[#a06e00]/12 text-[#a06e00]"
+                  : "bg-[var(--o-inset)] text-slate"
+            }`}
+          >
+            {left.label}
+          </span>
+        </div>
+      </section>
 
       <SettingsList
         cafe={cafe}
@@ -79,70 +127,6 @@ export default async function Reglages() {
         typeLabel={type.label}
         ticket={ticket}
       />
-
-      {/*
-        ── THE ACCOUNT, IN ONE ROW AND A FOOTNOTE ─────────────────────────
-        This was four full rows — Formule, Expire le, Identifiant, Site public
-        — carrying as much of the screen as the entire loyalty programme above
-        it. Every one of them is a fact you READ, never a thing you change, and
-        nobody opens their own settings to look up their own email address.
-
-        Formule and "Expire le" were always one sentence pretending to be two
-        rows: "Pro" means nothing without the date and the date means nothing
-        without the plan. They are one line now, and the chip keeps its colour
-        so an expiring shop still shouts.
-
-        Identifiant and the public link drop to a footnote under the card: still
-        there for the day somebody needs them, no longer taking a row each.
-      */}
-      <section>
-        <h2 className="mb-1.5 px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-slate">
-          Votre compte
-        </h2>
-        <div className="a-card overflow-hidden">
-          <div className="flex items-center justify-between gap-3 px-4 py-3.5">
-            <span className="min-w-0">
-              <span className="block text-[15px] font-semibold text-charcoal">
-                {PLAN_LABEL[cafe.plan] ?? cafe.plan}
-              </span>
-              {cafe.planExpiresAt && (
-                <span className="mt-0.5 block text-[12px] text-slate">
-                  {left.expired ? "expiré le " : "jusqu'au "}
-                  {new Date(cafe.planExpiresAt).toLocaleDateString("fr-FR", {
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </span>
-              )}
-            </span>
-            <span
-              className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[12px] font-bold ${
-                left.expired
-                  ? "bg-[#e5484d]/12 text-[#e5484d]"
-                  : left.soon && !left.unlimited
-                    ? "bg-[#a06e00]/12 text-[#a06e00]"
-                    : "bg-ok/10 text-[#2f9e6e]"
-              }`}
-            >
-              {left.label}
-            </span>
-          </div>
-        </div>
-
-        {/*
-          ?pro=1, because "/" sends a signed-in owner back to their till. The
-          sidebar carries this too, but the sidebar is laptop-only and most
-          owners never see one.
-        */}
-        <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 px-1.5 text-[11.5px] text-slate">
-          <span className="truncate font-mono">{owner?.email ?? "—"}</span>
-          <span className="text-slate">·</span>
-          <Link href="/?pro=1" className="font-bold text-slate underline underline-offset-2">
-            site public
-          </Link>
-        </p>
-      </section>
 
       {/*
         The prices, in the product — but not in the way.
@@ -218,6 +202,19 @@ export default async function Reglages() {
         >
           Se déconnecter
         </button>
+        {/*
+          The identifier and the public link, as a footnote under the exit —
+          they were a row each in an account section that no longer exists.
+          Nobody opens their own settings to look up their own email address,
+          but the day support asks for it, it is here.
+        */}
+        <p className="mt-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-slate">
+          <span className="truncate font-mono">{owner?.email ?? "—"}</span>
+          <span>·</span>
+          <Link href="/?pro=1" className="font-bold underline underline-offset-2">
+            site public
+          </Link>
+        </p>
       </form>
     </div>
   );

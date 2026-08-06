@@ -113,11 +113,15 @@ export default async function Carte({
     theme.banner === "photo" && theme.coverAt
       ? `/api/cover/${slug}?v=${encodeURIComponent(theme.coverAt)}`
       : null;
-  const bannerClass = coverUrl
-    ? "d-banner--photo"
-    : theme.banner === "flat"
-      ? "d-banner--flat"
-      : "";
+  /* photo · flat · gradient, plus the two switches the shop owns: whether the
+     banner curves into the page, and whether a photograph gets darkened. */
+  const bannerClass = [
+    coverUrl ? "d-banner--photo" : theme.banner === "flat" ? "d-banner--flat" : "",
+    coverUrl && !theme.scrim ? "d-banner--bare" : "",
+    theme.bannerRound ? "rounded-b-[30px]" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     /* data-carte is a landmark for the suites, not styling — a test should break
@@ -143,7 +147,7 @@ export default async function Carte({
           not content: nothing should announce it to a screen reader, and it has
           to sit under the scrim that keeps the name and the balance legible. */}
       <section
-        className={`d-banner ${bannerClass} safe-t relative overflow-hidden rounded-b-[30px] px-5 pb-14 [--safe-pt:0.75rem]`}
+        className={`d-banner ${bannerClass} safe-t relative overflow-hidden px-5 pb-14 [--safe-pt:0.75rem]`}
         style={coverUrl ? { backgroundImage: `url(${coverUrl})` } : undefined}
       >
         {/*
@@ -261,7 +265,7 @@ export default async function Carte({
               className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-full text-[20px]"
               style={{ background: "color-mix(in oklab, var(--cafe-ink) 16%, transparent)" }}
             >
-              {type.emoji}
+              <span className="shop-mark">{type.emoji}</span>
             </span>
           )}
           <span className="min-w-0">
@@ -326,10 +330,18 @@ export default async function Carte({
           <p className="mt-5 text-[12.5px] leading-snug opacity-85">{rateLabel(program.pointsPerTnd)}</p>
         )}
 
-        {/* the stamp card, when the shop runs one — a second, slower mechanic
-            under the first, never instead of it */}
+        {/*
+          The stamp card, when the shop runs one — a second, slower mechanic
+          under the first, never instead of it.
+
+          STACKED, NOT SIDE BY SIDE. The dots and the sentence shared a row, and
+          a ten-stamp card takes the whole width — so the text was squeezed into
+          a 70px column and wrapped one word per line: "10 / visites / pour /
+          express / for free". The dots are a picture and the sentence is a
+          caption; a caption goes underneath.
+        */}
         {program.stampsEnabled && (
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4">
             <div className="flex flex-wrap gap-1.5">
               {Array.from({ length: program.stampsRequired }).map((_, i) => {
                 const filled = i < stampView.shown;
@@ -356,7 +368,7 @@ export default async function Carte({
                 );
               })}
             </div>
-            <p className="min-w-0 flex-1 text-[11.5px] leading-snug opacity-80">
+            <p className="mt-2 text-[11.5px] leading-snug opacity-80">
               {stampsLeft <= 0 ? (
                 <b className="font-extrabold">{program.stampReward} t&apos;attend 🎉</b>
               ) : (
@@ -478,7 +490,17 @@ export default async function Carte({
             </Link>
           </div>
 
-          <ul className="mt-2.5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {/*
+            THE ROW KEEPS THE PAGE'S MARGIN ON BOTH SIDES.
+
+            px-4 puts a margin at the start and, because a scroll container's
+            padding collapses at the far end in every browser, NOTHING at the
+            finish — so the last card ran flush into the screen edge while the
+            first sat neatly inset. The scroll-padding keeps the snap honest and
+            a spacer li restores the right-hand margin, which is the only thing
+            that actually works across Safari and Chrome.
+          */}
+          <ul className="mt-2.5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-1 [scroll-padding-left:1rem] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {ladder.slice(0, 6).map((r) => {
               const affordable = r.pointsCost <= diner.balance;
               return (
@@ -532,6 +554,8 @@ export default async function Carte({
                 </li>
               );
             })}
+            {/* the right-hand margin — see the note above */}
+            <li aria-hidden className="w-3 shrink-0" />
           </ul>
         </section>
       )}

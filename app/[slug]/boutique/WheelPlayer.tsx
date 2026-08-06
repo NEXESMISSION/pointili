@@ -78,6 +78,11 @@ export function WheelPlayer({
     {},
   );
 
+  /* Closed until asked for — see the note on the trigger below. */
+  const [open, setOpen] = useState(false);
+  /* A spin costs points too — same rule as a reward: nothing is debited on one
+     tap. See the confirmation under the wheel. */
+  const [confirming, setConfirming] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [revealed, setRevealed] = useState<SpinState["ok"] | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -163,7 +168,48 @@ export function WheelPlayer({
   const spinning = pending || (state.ok != null && revealed == null);
 
   return (
-    <section className="d-card mb-4 px-5 py-6 text-center">
+    <>
+      {/*
+        ── THE TRIGGER ────────────────────────────────────────────────────
+        A floating button, above the tab bar, thumb-height on the right.
+
+        The wheel used to be the first thing on "Choisis ta récompense" — a
+        240px game the customer had to scroll past to reach the rewards they
+        came for. It is a diversion the shop switched on, not the point of the
+        screen, so it waits to be asked for.
+      */}
+      {!open && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label={`La roue — ${fmtPoints(spinCost)} points le tour`}
+          className="fixed bottom-[86px] right-4 z-30 grid h-[62px] w-[62px] place-items-center rounded-full shadow-[0_12px_28px_-8px_rgba(23,18,31,.5)] transition active:scale-95"
+          style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
+        >
+          <WheelMark />
+        </button>
+      )}
+
+      {open && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="La roue"
+          className="fixed inset-0 z-40 flex items-end justify-center bg-black/45 px-3 pb-3 backdrop-blur-sm"
+          onClick={() => !spinning && setOpen(false)}
+        >
+          <div
+            className="d-card relative w-full max-w-[420px] px-5 py-6 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => !spinning && setOpen(false)}
+              aria-label="Fermer"
+              className="absolute right-6 top-6 grid h-9 w-9 place-items-center rounded-full bg-[var(--panel-2)] text-slate"
+            >
+              ×
+            </button>
       <h2 className="text-[15.5px] font-extrabold text-charcoal">La roue</h2>
       <p className="mx-auto mt-1 max-w-[30ch] text-[13px] text-slate">
         {spinCost > 0
@@ -253,23 +299,71 @@ export function WheelPlayer({
         </div>
       ) : (
         <form action={formAction} className="mt-5">
-          <button
-            type="submit"
-            disabled={spinning || !affordable}
-            className="w-full rounded-2xl py-3.5 text-[14px] font-extrabold transition active:scale-[0.98] disabled:opacity-45"
-            style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
-          >
-            {spinning
-              ? "La roue tourne…"
-              : affordable
-                ? `Tourner · ${fmtPoints(spinCost)} points`
-                : `Il te faut ${fmtPoints(spinCost)} points`}
-          </button>
+          {confirming ? (
+            <div
+              className="rounded-2xl px-4 py-3.5"
+              style={{ background: "var(--cafe-soft)", border: "1px solid var(--cafe-line)" }}
+            >
+              <p className="text-[13.5px] font-extrabold leading-snug text-charcoal">
+                Dépenser {fmtPoints(spinCost)} points pour un tour ?
+              </p>
+              <p className="mt-1 text-[12px] leading-snug text-slate">
+                Il te restera{" "}
+                <b className="font-bold text-charcoal">{fmtPoints(balance - spinCost)} points</b>.
+                Tout le monde repart avec quelque chose.
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirming(false)}
+                  className="d-card min-h-[46px] text-[13.5px] font-bold text-charcoal active:scale-[0.99]"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={spinning}
+                  className="min-h-[46px] rounded-2xl text-[13.5px] font-extrabold transition active:scale-[0.98] disabled:opacity-50"
+                  style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
+                >
+                  {spinning ? "· · ·" : "Oui, tourner"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              disabled={spinning || !affordable}
+              className="w-full rounded-2xl py-3.5 text-[14px] font-extrabold transition active:scale-[0.98] disabled:opacity-45"
+              style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
+            >
+              {spinning
+                ? "La roue tourne…"
+                : affordable
+                  ? `Tourner · ${fmtPoints(spinCost)} points`
+                  : `Il te faut ${fmtPoints(spinCost)} points`}
+            </button>
+          )}
           {state.error && (
             <p className="mt-2 text-[13px] font-semibold text-seal">{state.error}</p>
           )}
         </form>
       )}
-    </section>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/** A wheel, drawn small — the trigger has to say "game" without a caption. */
+function WheelMark() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-7 w-7" aria-hidden>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 3.5v17M3.5 12h17M6 6l12 12M18 6 6 18" strokeLinecap="round" opacity=".8" />
+      <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none" />
+    </svg>
   );
 }

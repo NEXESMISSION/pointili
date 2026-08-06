@@ -407,7 +407,7 @@ function CardRow({
               className="grid h-[38px] w-[38px] place-items-center rounded-full text-[17px]"
               style={{ background: "color-mix(in oklab, var(--cafe-ink) 16%, transparent)" }}
             >
-              {t.emoji}
+              <span className="shop-mark">{t.emoji}</span>
             </span>
           )}
 

@@ -568,6 +568,8 @@ export async function saveThemeAction(
     surface: one(formData.get("surface"), SURFACES, "light"),
     radius: one(formData.get("radius"), RADII, "m"),
     font: one(formData.get("font"), FONTS, "inter"),
+    bannerRound: formData.get("bannerRound") === "on",
+    scrim: formData.get("scrim") === "on",
   };
 
   const db = await createClient();

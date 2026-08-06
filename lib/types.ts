@@ -26,6 +26,22 @@ export type CardTheme = {
   surface: "light" | "dark";
   /** Corner roundness, applied to every card the customer sees. */
   radius: "s" | "m" | "l";
+  /**
+   * Does the banner curve into the page, or meet it square?
+   *
+   * The rounded bottom reads as a card laid on the screen; square reads as a
+   * header the page hangs from. Both are defensible and it is the shop's
+   * building, so it is the shop's call.
+   */
+  bannerRound: boolean;
+  /**
+   * Only meaningful with a photograph: darken it, or show it as it is.
+   *
+   * ON is the safe default and stays the default — the name and the balance are
+   * drawn over this picture. An owner whose photo is already dark and quiet can
+   * turn it off and get their own image untouched.
+   */
+  scrim: boolean;
   /** Both are already loaded by the root layout — see the note above. */
   font: "inter" | "poppins";
   /**

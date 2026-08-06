@@ -47,11 +47,26 @@ export function TopBar({
   const leaf = pathname.replace(`/${slug}`, "").replace("/", "");
   const title = TITLES[leaf] ?? "Ma carte";
 
+  /*
+    TWO SCREENS HAVE ONE RIGHT PARENT, whatever route somebody arrived by.
+
+    The profile is above the shop, not inside it — it is the account, and the
+    account's world is the wallet, so its way out is Mes cartes. And the
+    big-code screen exists only as the profile's "Mon code en grand", so its way
+    out is the profile. Everywhere else, back means back: the rewards list, the
+    codes and the history all return you to the scroll position you left.
+  */
+  const EXACT: Record<string, string> = {
+    profil: "/cartes",
+    scanner: `/${slug}/profil`,
+  };
+  const exactTo = EXACT[leaf];
+
   return (
     /* safe-t: installed, the status bar sits on top of this row. */
     <header className="safe-t sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-[var(--edge)] bg-[var(--surface)]/92 px-4 pb-2.5 backdrop-blur [--safe-pt:0.9rem]">
       <span className="grid h-10 w-10 place-items-center">
-        <BackLink fallback={`/${slug}`} />
+        <BackLink fallback={exactTo ?? `/${slug}`} exact={Boolean(exactTo)} />
       </span>
 
       <h1 className="min-w-0 truncate text-[16.5px] font-extrabold text-charcoal">{title}</h1>

@@ -67,7 +67,7 @@ export default async function Scanner({
               className="relative grid h-[74px] w-[74px] place-items-center rounded-full text-[34px]"
               style={{ background: "var(--cafe-soft)" }}
             >
-              {type.emoji}
+              <span className="shop-mark">{type.emoji}</span>
             </span>
           )}
         </span>

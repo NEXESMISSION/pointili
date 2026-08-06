@@ -66,7 +66,6 @@ export function SettingsList({
      masked reward is not something any customer is working towards. */
   const shown = rewards.filter((r) => r.active);
   const cheapest = [...shown].sort((a, b) => a.pointsCost - b.pointsCost)[0];
-  const visible = shown.length;
 
   /*
     Is each optional mechanic actually running? Computed as the VALUE LINE
@@ -131,19 +130,45 @@ export function SettingsList({
           onClick={() => setOpen("points")}
         />
         <Row
-          icon={<GiftIcon className="h-[18px] w-[18px]" />}
+          /*
+            THE ROW SHOWS THE REWARDS IT MANAGES.
+
+            "4 · dès 16 visites" is accurate and says nothing about what those
+            four ARE — and the reward ladder is the thing an owner opens this
+            screen to change. The photographs are already in the database; three
+            of them on the row turn a count into the actual menu.
+          */
+          bare={shown.some((r) => r.imageUrl)}
+          icon={
+            shown.some((r) => r.imageUrl) ? (
+              <span className="flex -space-x-2">
+                {shown
+                  .filter((r) => r.imageUrl)
+                  .slice(0, 3)
+                  .map((r) => (
+                    // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
+                    <img
+                      key={r.id}
+                      src={r.imageUrl!}
+                      alt=""
+                      className="h-7 w-7 rounded-full object-cover ring-2 ring-[var(--o-panel)]"
+                    />
+                  ))}
+              </span>
+            ) : (
+              <GiftIcon className="h-[18px] w-[18px]" />
+            )
+          }
           label="Les récompenses"
           /* "dès 3 visites" rather than "dès 40 pts" — the row has to answer
              the same question the editor now asks, or the two disagree about
              what a reward even costs. */
+          /* The COUNT left this line when the thumbnails arrived: three faces
+             plus "4 · dès 16 visites" did not fit, and it truncated to "dès 16
+             v…", losing the half that carries the meaning. The pictures say how
+             many there are; the value says the one thing they cannot. */
           value={
-            cheapest
-              /* "6 · dès 5 visites", not "6 visibles · dès 5 visites": the long
-                 form did not fit the row and truncated to "dès 5 …", losing the
-                 half that carries the meaning. The count needs no noun — it sits
-                 against a label that already says what is being counted. */
-              ? `${visible} · dès ${visitsForPoints(cheapest.pointsCost, ticket)} visites`
-              : "aucune"
+            cheapest ? `dès ${visitsForPoints(cheapest.pointsCost, ticket)} visites` : "aucune"
           }
           warn={!cheapest}
           onClick={() => setOpen("rewards")}
@@ -328,6 +353,7 @@ function Group({ label, children }: { label: string; children: ReactNode }) {
 
 function Row({
   icon,
+  bare = false,
   label,
   value,
   onClick,
@@ -336,6 +362,8 @@ function Row({
   mono = false,
 }: {
   icon?: ReactNode;
+  /** Render the icon as-is, without the brand tile behind it. */
+  bare?: boolean;
   label: string;
   value: string;
   onClick?: () => void;
@@ -345,10 +373,16 @@ function Row({
 }) {
   const inner = (
     <>
+      {/* `bare` skips the purple tile: a row whose icon IS a photograph (the
+          reward thumbnails) must not have it crushed inside a 32px swatch. */}
       {icon ? (
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-[#5b3fd1] text-white">
-          {icon}
-        </span>
+        bare ? (
+          <span className="shrink-0">{icon}</span>
+        ) : (
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-[#5b3fd1] text-white">
+            {icon}
+          </span>
+        )
       ) : (
         <span className="w-8 shrink-0" />
       )}

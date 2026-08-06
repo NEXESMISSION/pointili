@@ -23,10 +23,21 @@ export function BackLink({
   fallback,
   label = "Retour",
   className = "",
+  exact = false,
 }: {
   fallback: string;
   label?: string;
   className?: string;
+  /**
+   * Always go to `fallback`, never to whatever the browser remembers.
+   *
+   * For most screens "back" means back — you return to the scroll position you
+   * left. But two screens have ONE right parent whatever route you arrived by:
+   * the profile belongs above the shop (its way out is the wallet), and the
+   * big-code screen is only reachable from the profile. Popping history there
+   * lands people somewhere that merely happens to be behind them.
+   */
+  exact?: boolean;
 }) {
   const router = useRouter();
 
@@ -35,7 +46,7 @@ export function BackLink({
       type="button"
       aria-label={label}
       onClick={() => {
-        if (typeof window !== "undefined" && window.history.length > 1) router.back();
+        if (!exact && typeof window !== "undefined" && window.history.length > 1) router.back();
         else router.push(fallback);
       }}
       className={`-ml-1.5 grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate transition hover:bg-[var(--track)] active:scale-[0.95] ${className}`}

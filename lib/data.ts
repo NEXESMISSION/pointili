@@ -94,6 +94,8 @@ function toCafe(b: BusinessRow): Cafe {
         banner: pick(t.banner, ["flat", "gradient", "photo"], "gradient"),
         surface: pick(t.surface, ["light", "dark"], "light"),
         radius: pick(t.radius, ["s", "m", "l"], "m"),
+        bannerRound: t.bannerRound !== false,
+        scrim: t.scrim !== false,
         font: pick(t.font, ["inter", "poppins"], "inter"),
         coverAt: typeof t.coverAt === "string" ? t.coverAt : null,
       },

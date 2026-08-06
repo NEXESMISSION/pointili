@@ -157,7 +157,7 @@ export default async function Rejoindre({
                 className="grid h-[84px] w-[84px] place-items-center rounded-full text-[36px]"
                 style={{ background: "var(--cafe-soft)" }}
               >
-                {type.emoji}
+                <span className="shop-mark">{type.emoji}</span>
               </span>
             )}
             <span

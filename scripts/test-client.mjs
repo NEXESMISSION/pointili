@@ -174,7 +174,16 @@ await d.goto(`${BASE}/${TEST_SLUG}/boutique`, { waitUntil: "networkidle" });
   reveal → "Échanger autre chose" → back to the picker → commit again.
 */
 const buyOnce = async () => {
-  await d.locator('form[data-redeem] button[type="submit"]').first().click();
+  await d.locator('form[data-redeem] button:has-text("Échanger")').first().click();
+  /*
+    ANSWER THE CONFIRMATION.
+
+    Spending points asks first now — "Échanger 40 points contre Espresso
+    offert ?" with the arithmetic — because a redeem debits a month of coffees
+    and has no undo on the customer's side. The trigger opens the question; the
+    button inside it is the one that submits.
+  */
+  await d.locator('button:has-text("Oui, échanger")').click({ timeout: 15000 });
   await d
     .waitForFunction(
       () => /\b[A-Z2-9]{6}\b/.test(document.querySelector("main")?.innerText ?? ""),
@@ -201,7 +210,7 @@ check(
 
 // back to the picker, then buy again — a diner with points may stack codes
 await d.locator('button:has-text("Échanger autre chose")').click();
-await d.locator('form[data-redeem] button[type="submit"]').first().waitFor({ timeout: 10000 });
+await d.locator('form[data-redeem] button:has-text("Échanger")').first().waitFor({ timeout: 10000 });
 /* A reward is never consumed: it stays in the ladder and can be bought again.
    NOT asserted on the button label — after spending, it correctly reads
    "Encore N points" until the balance recovers. */

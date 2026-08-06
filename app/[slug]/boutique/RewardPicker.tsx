@@ -49,13 +49,35 @@ export function RewardPicker({
     rewards.find((r) => balance >= r.pointsCost)?.id ?? null,
   );
 
+  /*
+    NOTHING IS SPENT WITHOUT A SECOND TAP.
+
+    Échanger debited the balance on one press. Points are a month of coffees and
+    the transaction has no undo on the customer's side — the code is minted, the
+    points are gone, and if they picked the wrong row they find out on the next
+    screen. The confirmation names the reward, the cost and what is left after,
+    which is the arithmetic somebody would otherwise be doing in their head at
+    a counter.
+  */
+  const [confirming, setConfirming] = useState(false);
+
   /* The issued code must OUTLIVE the next run of useActionState, which replaces
      its whole value — a later rejection would otherwise erase a code the diner
      genuinely paid for. */
   const [issued, setIssued] = useState<{ code: string; label: string; qr: string } | null>(null);
   useEffect(() => {
+    if (!state.ok) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (state.ok) setIssued({ code: state.ok.code, label: state.ok.label, qr: state.ok.qr });
+    setIssued({ code: state.ok.code, label: state.ok.label, qr: state.ok.qr });
+    /*
+      AND CLOSE THE QUESTION. It is answered.
+
+      The submit button cannot close it (removing itself mid-click cancels the
+      submit — see below), so the success has to. Without this, "Échanger autre
+      chose" came back to the list with the previous purchase's confirmation
+      still open over it, swallowing every tap on the reward rows.
+    */
+    setConfirming(false);
   }, [state.ok]);
 
   // A buy changed the balance — re-read so every row's affordability is honest.
@@ -179,8 +201,10 @@ export function RewardPicker({
         </p>
       )}
 
+      {/* type=button: it opens the question, it does not submit the form */}
       <button
-        type="submit"
+        type="button"
+        onClick={() => setConfirming(true)}
         disabled={busy || !canBuy}
         className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[14.5px] font-bold transition active:scale-[0.98] disabled:opacity-40"
         style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
@@ -193,6 +217,82 @@ export function RewardPicker({
               ? `Échanger ${chosen.pointsCost} points`
               : `Encore ${fmtPoints(chosen.pointsCost - balance)} points`}
       </button>
+
+      {confirming && chosen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirmer l'échange"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 px-3 pb-3 backdrop-blur-sm"
+          onClick={() => !busy && setConfirming(false)}
+        >
+          <div
+            className="d-card w-full max-w-[420px] px-5 py-6 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[12.5px] font-bold uppercase tracking-[0.08em] text-slate">
+              Confirmer
+            </p>
+            <p className="mt-2 text-[19px] font-extrabold leading-snug text-charcoal">
+              Échanger {chosen.pointsCost} points contre {chosen.label} ?
+            </p>
+
+            {/* the arithmetic, done for them */}
+            <div
+              className="mt-4 flex items-center justify-center gap-2 rounded-2xl px-4 py-3"
+              style={{ background: "var(--cafe-soft)" }}
+            >
+              <span className="text-[13px] font-semibold text-slate">
+                {fmtPoints(balance)}
+              </span>
+              <span className="text-[13px] text-slate">−</span>
+              <span className="text-[13px] font-semibold text-slate">
+                {chosen.pointsCost}
+              </span>
+              <span className="text-[13px] text-slate">=</span>
+              <span
+                className="text-[17px] font-extrabold"
+                style={{ color: "var(--cafe-text)" }}
+              >
+                {fmtPoints(balance - chosen.pointsCost)}
+              </span>
+              <span className="text-[12px] font-semibold text-slate">points</span>
+            </div>
+            <p className="mt-2 text-[12px] leading-snug text-slate">
+              Les points sont débités tout de suite. Le code, lui, n&apos;expire
+              jamais.
+            </p>
+
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                className="d-card min-h-[50px] text-[14px] font-bold text-charcoal active:scale-[0.99]"
+              >
+                Annuler
+              </button>
+              {/*
+                NO onClick THAT CLOSES THIS DIALOG.
+
+                It had one, and it swallowed the purchase: setConfirming(false)
+                unmounts the button inside its own click handler, and a submit
+                button removed from the DOM mid-click never submits its form.
+                The screen simply went back to the list and nothing was bought.
+                The dialog does not need closing — a successful redeem replaces
+                the whole picker with the code.
+              */}
+              <button
+                type="submit"
+                disabled={busy}
+                className="min-h-[50px] rounded-2xl text-[14px] font-extrabold transition active:scale-[0.98] disabled:opacity-50"
+                style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
+              >
+                {busy ? "· · ·" : "Oui, échanger"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
