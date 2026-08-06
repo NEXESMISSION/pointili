@@ -192,7 +192,7 @@ export function InstallPrompt({
       {/* iOS: the Share-sheet route, spelled out. There is no API to call. */}
       {howTo && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 px-3 pb-5"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 px-3 pb-5 lg:items-center lg:pb-5"
           onClick={() => setHowTo(false)}
         >
           <div

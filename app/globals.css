@@ -190,6 +190,28 @@ h4 {
 }
 
 /*
+  ── AND ON A LAPTOP, THE COLUMN OPENS ────────────────────────────────────
+  The 480px cap is what makes the phone shape honest, and it is exactly what
+  made a desktop window look broken: a narrow strip with five hundred pixels of
+  grey either side. From lg the shell takes a page's width and hands it to a
+  rail plus a reading column (app/[slug]/layout).
+
+  The surround goes away with it: there is no phone-shaped object to frame any
+  more, so painting a field around it would be framing the page itself.
+*/
+@media (min-width: 1024px) {
+  /* 960, not 1120: a 264px rail and a 560px reading column leave 300px of void
+     on the right at the wider cap. This puts the gutters either side of the
+     card instead. */
+  .app-shell--light {
+    max-width: 960px;
+  }
+  body:has(.app-shell--light) {
+    background: var(--surface, #f6f6f8);
+  }
+}
+
+/*
   The one owner screen that earns a wider column.
 
   The owner layout caps its content at 680px, which is right for the till — a
@@ -794,15 +816,29 @@ h4 {
    Without this the BODY behind the page stays light, which shows as a pale
    flash on overscroll and behind the fold on short viewports. :has() scopes it
    to the one route that opts in, so no layout needs to know about it. */
-body:has(.landing-dark) {
-  background: #070510;
-  color: #fff;
+/*
+  THE LANDING PAGE IS LIGHT, like the rest of the product.
+
+  It was the last dark surface left: the till, the settings and the QR screen
+  all moved to white, so the one page a shop owner sees BEFORE signing up was
+  also the one page that looked like a different product. Same palette as the
+  owner app now — charcoal on white, --o-edge hairlines, royal for anything
+  that acts.
+*/
+body:has(.landing-light) {
+  background: #ffffff;
+  color: var(--color-charcoal);
 }
 
-/* ── landing: the things that stop a dark page looking generated ────────
-   Flat #070510 with a clean radial blob is the giveaway. Real dark surfaces
-   have grain, and light that falls off unevenly. */
+/* ── landing texture ──────────────────────────────────────────────────
+   The grain existed because flat #070510 with a clean radial blob is the
+   giveaway of a generated dark page. On white it does the opposite: an
+   overlay-blended noise layer over a light surface reads as a dirty screen,
+   so it is off, and the light-fall-off work is done by the wash instead. */
 .grain::before {
+  content: none;
+}
+.grain--dark::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -816,7 +852,8 @@ body:has(.landing-dark) {
    wireframe, this reads as a seam. */
 .seam {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.09) 22%, rgba(255,255,255,.09) 78%, transparent);
+  /* dark hairline now — the same fade, inverted for a white page */
+  background: linear-gradient(90deg, transparent, rgba(26,19,48,.13) 22%, rgba(26,19,48,.13) 78%, transparent);
 }
 
 /* ══ landing motion ═══════════════════════════════════════════════════════

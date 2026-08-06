@@ -126,7 +126,17 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
   }
 
   return (
-    <form action={action} className="px-4 py-3">
+    /*
+      One column on a phone: preview, then the knobs under it, and you scroll
+      between them. On a laptop that same stack pushed the preview off the top
+      the moment you reached "Police" — you were choosing a typeface for a card
+      you could no longer see. At lg the card sticks to the left and every
+      control lives beside it, so nothing you change happens off screen.
+    */
+    <form
+      action={action}
+      className="px-4 py-3 lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-7"
+    >
       {/* what actually gets written */}
       <input type="hidden" name="primaryColor" value={colour} />
       <input type="hidden" name="banner" value={banner} />
@@ -138,6 +148,7 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
       <input type="checkbox" name="scrim" checked={scrim} readOnly hidden />
 
       {/* ══ THE PREVIEW — their card, not a swatch ═══════════════════════ */}
+      <div className="lg:sticky lg:top-0">
       <Preview
         cafe={cafe}
         emoji={type.emoji}
@@ -150,7 +161,9 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
         px={px}
         font={FONTS.find((f) => f.key === font)?.css ?? FONTS[0].css}
       />
+      </div>
 
+      <div className="min-w-0">
       {/* ══ COLOUR ══════════════════════════════════════════════════════ */}
       <Label>Couleur principale</Label>
       <div className="flex flex-wrap gap-2">
@@ -286,6 +299,7 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
       <button type="submit" disabled={pending} className="a-btn mt-4">
         {pending ? "· · ·" : "Enregistrer le thème"}
       </button>
+      </div>
     </form>
   );
 }

@@ -11,7 +11,7 @@ import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo"
 import { ShopArt } from "./LandingArt";
 
 /**
- * The landing page, dark.
+ * The landing page, light — same palette as the till and the settings.
  *
  * Built to a supplied mockup, and structured around ONE argument: you already
  * have regulars — you just cannot count them. Everything on the page either
@@ -140,7 +140,7 @@ export default async function Landing({
 
   return (
     <AudienceProvider>
-    <div className="landing-dark min-h-dvh bg-[#070510] text-white">
+    <div className="landing-light min-h-dvh bg-white text-charcoal">
       {/*
         Server-rendered schema.org, so a crawler that runs no JavaScript still
         sees it — which is most AI crawlers. Deliberately no aggregateRating: we
@@ -190,7 +190,7 @@ export default async function Landing({
         <ForOwner>
           <Link
             href={ownerHere ? "/owner" : "/owner/login"}
-            className="shrink-0 whitespace-nowrap text-[13px] font-bold text-white/70 transition hover:text-white"
+            className="shrink-0 whitespace-nowrap text-[13px] font-bold text-charcoal/70 transition hover:text-charcoal"
           >
             {ownerHere ? "Ma caisse" : "Espace café"}
           </Link>
@@ -198,7 +198,7 @@ export default async function Landing({
         <ForCustomer>
           <Link
             href="/moi"
-            className="shrink-0 whitespace-nowrap text-[13px] font-bold text-white/70 transition hover:text-white"
+            className="shrink-0 whitespace-nowrap text-[13px] font-bold text-charcoal/70 transition hover:text-charcoal"
           >
             Mes cartes
           </Link>
@@ -211,12 +211,23 @@ export default async function Landing({
         runs past the right edge. A centred two-up with equal halves is the
         shape every generated page has.
       */}
-      <section className="grain relative overflow-hidden">
-        {/* two lights, not one blob — a warm core and a cold rim */}
-        <div aria-hidden className="pointer-events-none absolute right-[-14%] top-[-24%] h-[620px] w-[620px] rounded-full opacity-70 blur-[100px]"
-          style={{ background: "radial-gradient(circle, #7c3aed 0%, rgba(124,58,237,.15) 45%, transparent 68%)" }} />
-        <div aria-hidden className="pointer-events-none absolute left-[-18%] top-[38%] h-[420px] w-[420px] rounded-full opacity-40 blur-[110px]"
-          style={{ background: "radial-gradient(circle, #3b1d8f 0%, transparent 70%)" }} />
+      <section className="relative overflow-hidden">
+        {/*
+          A WASH, NOT TWO LAMPS.
+
+          On black those were light sources — a warm core and a cold rim,
+          carrying the whole atmosphere of the page. Kept at that strength on
+          white they stop being light and become paint: a saturated violet
+          bruise behind the headline, with the text fighting it.
+
+          What a white page needs from the same idea is far less: one soft
+          lilac wash falling off the top-right, enough that the hero is not a
+          plain rectangle, faint enough that nothing on it loses contrast.
+        */}
+        <div aria-hidden className="pointer-events-none absolute right-[-18%] top-[-28%] h-[640px] w-[640px] rounded-full blur-[110px]"
+          style={{ background: "radial-gradient(circle, rgba(123,97,255,.20) 0%, rgba(123,97,255,.06) 45%, transparent 70%)" }} />
+        <div aria-hidden className="pointer-events-none absolute left-[-20%] top-[42%] h-[440px] w-[440px] rounded-full blur-[120px]"
+          style={{ background: "radial-gradient(circle, rgba(91,63,209,.10) 0%, transparent 70%)" }} />
 
         <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-5 pb-14 pt-6 md:grid-cols-12 md:gap-10 md:px-8 md:pb-16 md:pt-12">
           <div className="md:col-span-7">
@@ -237,13 +248,13 @@ export default async function Landing({
               <h1 className="text-[34px] font-extrabold leading-[1.03] tracking-[-0.03em] md:text-[42px] lg:text-[48px]">
                 Vos habitués reviennent.
                 <br />
-                <span className="bg-gradient-to-r from-[#a78bfa] via-[#8b5cf6] to-[#6d28d9] bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#7b61ff] via-[#5b3fd1] to-[#3b2a8f] bg-clip-text text-transparent">
                   Vous saurez enfin lesquels.
                 </span>
               </h1>
-              <p className="mt-5 max-w-[42ch] text-[15px] leading-[1.6] text-white/55">
+              <p className="mt-5 max-w-[42ch] text-[15px] leading-[1.6] text-charcoal/55">
                 La carte de fidélité de votre commerce, dans le téléphone de vos
-                clients. <span className="font-semibold text-white">Aucune application</span>{" "}
+                clients. <span className="font-semibold text-charcoal">Aucune application</span>{" "}
                 — ni pour eux, ni pour vous.
               </p>
             </ForOwner>
@@ -252,13 +263,13 @@ export default async function Landing({
               <h1 className="text-[34px] font-extrabold leading-[1.03] tracking-[-0.03em] md:text-[42px] lg:text-[48px]">
                 Vos points,
                 <br />
-                <span className="bg-gradient-to-r from-[#a78bfa] via-[#8b5cf6] to-[#6d28d9] bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#7b61ff] via-[#5b3fd1] to-[#3b2a8f] bg-clip-text text-transparent">
                   dans tous vos commerces.
                 </span>
               </h1>
-              <p className="mt-5 max-w-[42ch] text-[15px] leading-[1.6] text-white/55">
+              <p className="mt-5 max-w-[42ch] text-[15px] leading-[1.6] text-charcoal/55">
                 Un numéro, un code secret, et vos cartes sont là.{" "}
-                <span className="font-semibold text-white">Rien à installer.</span>
+                <span className="font-semibold text-charcoal">Rien à installer.</span>
               </p>
             </ForCustomer>
 
@@ -266,24 +277,24 @@ export default async function Landing({
               <ForOwner>
                 <Link
                   href={cta.href}
-                  className="group inline-flex items-center gap-2.5 rounded-full bg-[#7c3aed] px-7 py-4 text-[15px] font-bold text-white shadow-[0_20px_50px_-18px_rgba(124,58,237,1)] transition hover:bg-[#8b5cf6] active:scale-[0.98]"
+                  className="group inline-flex items-center gap-2.5 rounded-full bg-royal px-7 py-4 text-[15px] font-bold text-white shadow-[0_20px_50px_-18px_rgba(124,58,237,1)] transition hover:bg-[#6d4ae6] active:scale-[0.98]"
                 >
                   {cta.label}
                   <span className="transition-transform group-hover:translate-x-0.5"><Arrow /></span>
                 </Link>
-                <p className="text-[12.5px] text-white/35">{cta.note}</p>
+                <p className="text-[12.5px] text-charcoal/35">{cta.note}</p>
               </ForOwner>
 
               {/* A customer here is looking for their card, not for a pitch. */}
               <ForCustomer>
                 <Link
                   href="/moi"
-                  className="group inline-flex items-center gap-2.5 rounded-full bg-[#7c3aed] px-7 py-4 text-[15px] font-bold text-white shadow-[0_20px_50px_-18px_rgba(124,58,237,1)] transition hover:bg-[#8b5cf6] active:scale-[0.98]"
+                  className="group inline-flex items-center gap-2.5 rounded-full bg-royal px-7 py-4 text-[15px] font-bold text-white shadow-[0_20px_50px_-18px_rgba(124,58,237,1)] transition hover:bg-[#6d4ae6] active:scale-[0.98]"
                 >
                   Ouvrir mes cartes
                   <span className="transition-transform group-hover:translate-x-0.5"><Arrow /></span>
                 </Link>
-                <p className="text-[12.5px] text-white/35">
+                <p className="text-[12.5px] text-charcoal/35">
                   Ou scannez le QR posé sur votre table.
                 </p>
               </ForCustomer>
@@ -305,11 +316,11 @@ export default async function Landing({
       <section className="mx-auto max-w-6xl px-5 md:px-8">
         <div className="seam" />
         <ul className="flex flex-wrap items-center justify-center gap-x-9 gap-y-5 py-8">
-          <li className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/25">
+          <li className="text-[11px] font-semibold uppercase tracking-[0.18em] text-charcoal/25">
             Utilisé par
           </li>
           {TRADES.map(({ Icon, label }) => (
-            <li key={label} className="flex items-center gap-2.5 text-white/45 transition hover:text-white/80">
+            <li key={label} className="flex items-center gap-2.5 text-charcoal/45 transition hover:text-charcoal">
               <Icon className="h-[19px] w-[19px]" />
               <span className="text-[14px] font-medium">{label}</span>
             </li>
@@ -323,20 +334,20 @@ export default async function Landing({
         {/* A headline, not a fourth uppercase eyebrow. Repeating the same
             label treatment at every section is what flattens a page. */}
         <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] md:text-[38px]">
-          Comment <span className="text-[#8b5cf6]">ça marche</span>
+          Comment <span className="text-royal">ça marche</span>
         </h2>
 
         {/* The clips are the strongest thing on this page, so the lede says what
             they are — and now says WHOSE screens are about to play, because the
             page has an audience and can finally admit it. */}
-        <p className="mt-3 max-w-[54ch] text-[15px] leading-relaxed text-white/55">
+        <p className="mt-3 max-w-[54ch] text-[15px] leading-relaxed text-charcoal/55">
           Rien n&apos;est dessiné ici. Chaque écran ci-dessous est le vrai produit,
           filmé en train de faire ce qu&apos;il dit.{" "}
           <ForOwner>
-            <span className="font-semibold text-white/80">Voici votre caisse.</span>
+            <span className="font-semibold text-charcoal">Voici votre caisse.</span>
           </ForOwner>
           <ForCustomer>
-            <span className="font-semibold text-white/80">Voici votre téléphone.</span>
+            <span className="font-semibold text-charcoal">Voici votre téléphone.</span>
           </ForCustomer>
         </p>
 
@@ -360,7 +371,7 @@ export default async function Landing({
           {FEATURES.map(({ Icon, title, text }, i) => (
             <li
               key={title}
-              className={`rise card-lift group flex flex-col rounded-3xl border border-white/[0.07] bg-white/[0.02] p-7 hover:border-white/[0.16] hover:bg-white/[0.04] ${
+              className={`rise card-lift group flex flex-col rounded-3xl border border-[var(--o-edge)] bg-[var(--o-panel)] p-7 hover:border-[var(--o-edge)] hover:bg-[var(--o-panel)] ${
                 i === 0
                   ? "md:col-span-5 md:row-span-2 md:justify-end md:p-9"
                   : "md:col-span-7"
@@ -378,7 +389,7 @@ export default async function Landing({
               />
 
               <span
-                className={`tile relative flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] text-white shadow-[0_10px_26px_-12px_rgba(124,58,237,.9)] ${
+                className={`tile relative flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-royal to-[#3f2a9e] text-white shadow-[0_10px_26px_-12px_rgba(124,58,237,.9)] ${
                   i === 0 ? "h-14 w-14 md:mb-auto" : "h-12 w-12"
                 }`}
               >
@@ -386,14 +397,14 @@ export default async function Landing({
               </span>
 
               <p
-                className={`relative mt-6 font-bold tracking-[-0.015em] text-white ${
+                className={`relative mt-6 font-bold tracking-[-0.015em] text-charcoal ${
                   i === 0 ? "text-[22px]" : "text-[16.5px]"
                 }`}
               >
                 {title}
               </p>
               <p
-                className={`relative mt-2 leading-relaxed text-white/45 ${
+                className={`relative mt-2 leading-relaxed text-charcoal/45 ${
                   i === 0 ? "max-w-[26ch] text-[15px]" : "text-[13.5px]"
                 }`}
               >
@@ -403,7 +414,7 @@ export default async function Landing({
               {/* the card's underline, drawn on hover */}
               <span
                 aria-hidden
-                className="mt-5 block h-px w-0 bg-gradient-to-r from-[#a78bfa] to-transparent transition-all duration-500 group-hover:w-full"
+                className="mt-5 block h-px w-0 bg-gradient-to-r from-royal to-transparent transition-all duration-500 group-hover:w-full"
               />
             </li>
           ))}
@@ -429,26 +440,36 @@ export default async function Landing({
           {/* keeps the copy legible wherever the artwork happens to be bright */}
           <div aria-hidden className="absolute inset-0 -z-10 bg-[#0d0722]/35" />
 
-          <div className="relative grid gap-8 md:grid-cols-2 md:items-center">
+          {/*
+            A DARK ISLAND ON A LIGHT PAGE — so its ink stays white.
+
+            The surface here is artwork (panel-glow.png) under a scrim, not a
+            colour, so it did not match the gradient signature the rest of the
+            light conversion keyed on: the page went white around it and this
+            block kept its dark backdrop while its text turned charcoal. The
+            headline and all three proof lines were dark-on-dark, effectively
+            invisible.
+          */}
+          <div className="relative grid gap-8 text-white md:grid-cols-2 md:items-center">
             <h2 className="text-[32px] font-extrabold leading-[1.06] tracking-[-0.03em] md:text-[40px]">
               Vos clients
               <br />
               reviennent déjà.
               <br />
-              <span className="text-[#a78bfa]">La question est :</span>
+              <span className="text-[#b79cff]">La question est :</span>
               <br />
-              <span className="text-[#a78bfa]">savez-vous combien&nbsp;?</span>
+              <span className="text-[#b79cff]">savez-vous combien&nbsp;?</span>
             </h2>
 
             <ul className="space-y-5">
               {PROOF.map(({ title, text }) => (
                 <li key={title} className="flex items-start gap-3.5">
-                  <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#7c3aed] text-white">
+                  <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-royal text-white">
                     <Check />
                   </span>
                   <span>
                     <span className="block text-[14.5px] font-bold text-white">{title}</span>
-                    <span className="mt-0.5 block text-[13px] text-white/55">{text}</span>
+                    <span className="mt-0.5 block text-[13px] text-white/70">{text}</span>
                   </span>
                 </li>
               ))}
@@ -462,16 +483,16 @@ export default async function Landing({
       <ForOwner>
       <section className="mx-auto max-w-6xl px-5 pb-16 md:px-8 md:pb-24">
         <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] md:text-[38px]">
-          Un prix <span className="text-[#8b5cf6]">simple.</span>
+          Un prix <span className="text-royal">simple.</span>
         </h2>
-        <p className="mt-3 max-w-[42ch] text-[14.5px] leading-relaxed text-white/45">
+        <p className="mt-3 max-w-[42ch] text-[14.5px] leading-relaxed text-charcoal/45">
           Pas de commission sur vos ventes. Pas de limite de clients.
         </p>
 
         <div className="rise mt-7 grid gap-3 md:grid-cols-[1.6fr_1fr]">
           {/* the year */}
-          <div className="relative overflow-hidden rounded-3xl border border-[#7c3aed]/40 bg-gradient-to-br from-[#3b1a86] via-[#2a1263] to-[#1a0f3d] p-7 md:p-8">
-            <span className="inline-block rounded-md bg-[#7c3aed] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
+          <div className="relative overflow-hidden rounded-3xl border border-[#7c3aed]/40 bg-gradient-to-br from-[#3b1a86] via-[#2a1263] to-[#1a0f3d] text-white p-7 md:p-8">
+            <span className="inline-block rounded-md bg-royal px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
               Meilleure offre
             </span>
 
@@ -479,18 +500,18 @@ export default async function Landing({
               <div>
                 <p className="text-[64px] font-extrabold leading-[0.85] tracking-[-0.04em] tabular-nums">
                   80
-                  <span className="ml-1.5 align-super text-[14px] font-bold tracking-normal text-white/50">
+                  <span className="ml-1.5 align-super text-[14px] font-bold tracking-normal text-white/70">
                     TND / an
                   </span>
                 </p>
-                <p className="mt-3 max-w-[24ch] text-[13.5px] leading-relaxed text-white/55">
+                <p className="mt-3 max-w-[24ch] text-[13.5px] leading-relaxed text-white/70">
                   Tout ce dont vous avez besoin pour fidéliser vos clients.
                 </p>
               </div>
 
               <ul className="space-y-2.5">
                 {INCLUDED.map((f) => (
-                  <li key={f} className="flex items-center gap-2.5 text-[13.5px] text-white/85">
+                  <li key={f} className="flex items-center gap-2.5 text-[13.5px] text-white">
                     <span className="text-[#a78bfa]">
                       <Check className="h-3.5 w-3.5" />
                     </span>
@@ -502,29 +523,29 @@ export default async function Landing({
 
             <Link
               href={cta.href}
-              className="mt-7 flex flex-col items-center rounded-2xl bg-[#7c3aed] px-6 py-4 text-center shadow-[0_16px_38px_-16px_rgba(124,58,237,.9)] transition active:scale-[0.99]"
+              className="mt-7 flex flex-col items-center rounded-2xl bg-royal px-6 py-4 text-center shadow-[0_16px_38px_-16px_rgba(124,58,237,.9)] transition active:scale-[0.99]"
             >
               <span className="flex items-center gap-2 text-[15px] font-bold text-white">
                 {cta.label} <Arrow />
               </span>
-              <span className="mt-1 text-[11.5px] text-white/65">{cta.note}</span>
+              <span className="mt-1 text-[11.5px] text-white/70">{cta.note}</span>
             </Link>
           </div>
 
           {/* the half-year */}
-          <div className="flex flex-col rounded-3xl border border-white/[0.07] bg-white/[0.025] p-7">
-            <p className="text-[40px] font-extrabold leading-[0.9] tracking-[-0.03em] tabular-nums text-white/85">
+          <div className="flex flex-col rounded-3xl border border-[var(--o-edge)] bg-[var(--o-panel)] p-7">
+            <p className="text-[40px] font-extrabold leading-[0.9] tracking-[-0.03em] tabular-nums text-charcoal">
               65
-              <span className="ml-1.5 align-super text-[12.5px] font-bold tracking-normal text-white/40">
+              <span className="ml-1.5 align-super text-[12.5px] font-bold tracking-normal text-charcoal/40">
                 TND / 6 mois
               </span>
             </p>
-            <p className="mt-3 text-[13.5px] leading-relaxed text-white/55">
+            <p className="mt-3 text-[13.5px] leading-relaxed text-charcoal/55">
               Parfait pour commencer.
             </p>
             <Link
               href={cta.href}
-              className="mt-auto rounded-2xl border border-white/15 px-5 py-3.5 text-center text-[14px] font-bold text-white transition hover:bg-white/[0.05] active:scale-[0.99]"
+              className="mt-auto rounded-2xl border border-[var(--o-edge)] px-5 py-3.5 text-center text-[14px] font-bold text-charcoal transition hover:bg-[var(--o-panel)] active:scale-[0.99]"
             >
               {ownerHere ? "Ma caisse" : "Choisir cette offre"}
             </Link>
@@ -535,7 +556,7 @@ export default async function Landing({
 
       {/* ── closing ──────────────────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-5 pb-12 md:px-8">
-        <div className="relative overflow-hidden rounded-3xl border border-[#7c3aed]/30 bg-gradient-to-br from-[#3b1a86] via-[#2a1263] to-[#1a0f3d] px-7 py-8 md:px-10">
+        <div className="relative overflow-hidden rounded-3xl border border-[#7c3aed]/30 bg-gradient-to-br from-[#3b1a86] via-[#2a1263] to-[#1a0f3d] text-white px-7 py-8 md:px-10">
           <div className="grid items-center gap-7 md:grid-cols-[auto_1fr_auto]">
             <ShopArt className="mx-auto w-[180px] md:mx-0" />
 
@@ -545,7 +566,7 @@ export default async function Landing({
                 <br />
                 commence <span className="text-[#a78bfa]">aujourd&apos;hui.</span>
               </h2>
-              <p className="mt-3 text-[13.5px] leading-relaxed text-white/60">
+              <p className="mt-3 text-[13.5px] leading-relaxed text-white/70">
                 Installez Pointili en quelques minutes.
                 <br />
                 Aucun matériel. Aucun engagement.
@@ -559,7 +580,7 @@ export default async function Landing({
               >
                 {ownerHere ? "Ma caisse" : "Créer ma boutique"} <Arrow />
               </Link>
-              <p className="mt-2.5 text-[11.5px] leading-relaxed text-white/55">
+              <p className="mt-2.5 text-[11.5px] leading-relaxed text-white/70">
                 {ownerHere ? (
                   "Vous êtes déjà connecté"
                 ) : (
@@ -583,16 +604,16 @@ export default async function Landing({
       </ForOwner>
 
       {/* ── footer ───────────────────────────────────────────────── */}
-      <footer className="mx-auto flex max-w-6xl flex-col gap-4 border-t border-white/[0.07] px-5 py-7 md:flex-row md:items-center md:justify-between md:px-8">
+      <footer className="mx-auto flex max-w-6xl flex-col gap-4 border-t border-[var(--o-edge)] px-5 py-7 md:flex-row md:items-center md:justify-between md:px-8">
         <div>
           <Brand />
-          <p className="mt-2 text-[12px] text-white/40">Produit tunisien 🇹🇳</p>
+          <p className="mt-2 text-[12px] text-charcoal/40">Produit tunisien 🇹🇳</p>
         </div>
         {/* Real links now — both pages exist. "Contact" stays plain text until
             there is an address to put behind it. */}
-        <nav className="flex flex-wrap gap-x-7 gap-y-2 text-[13px] text-white/40">
-          <Link href="/confidentialite" className="hover:text-white/70">Confidentialité</Link>
-          <Link href="/conditions" className="hover:text-white/70">Conditions</Link>
+        <nav className="flex flex-wrap gap-x-7 gap-y-2 text-[13px] text-charcoal/40">
+          <Link href="/confidentialite" className="hover:text-charcoal/70">Confidentialité</Link>
+          <Link href="/conditions" className="hover:text-charcoal/70">Conditions</Link>
           <span>Contact</span>
         </nav>
       </footer>
@@ -661,7 +682,7 @@ function HeroStage() {
       <div
         aria-hidden
         className="halo pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[112%] w-[112%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[64px]"
-        style={{ background: "radial-gradient(circle, rgba(124,58,237,.7) 0%, rgba(124,58,237,.14) 46%, transparent 68%)" }}
+        style={{ background: "radial-gradient(circle, rgba(123,97,255,.30) 0%, rgba(123,97,255,.08) 46%, transparent 68%)" }}
       />
 
       {/* a ring, turning slowly */}

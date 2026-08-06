@@ -86,9 +86,20 @@ check("admin RPC refuses a non-super-admin", !!direct.error, direct.error?.code 
   The console is a sortable TABLE now: click the café's row, and act inside the
   drawer that opens. Returns the drawer so every form is scoped to it.
 */
-const openCafe = async (name = "Café Test") => {
+/*
+  BY SLUG, NEVER BY NAME.
+
+  This used to click `tr:has-text("Café Test")`.first(). A real café in the
+  database is also called "Café Test" — /coffeelain — and it sorts above the
+  fixture, so every run of this suite granted plans to, suspended, and messaged
+  somebody's live shop while asserting against /e2etest, which never changed.
+  Six checks failed for the right reason and the wrong café paid for it.
+
+  A slug is unique by definition and the table prints it under the name.
+*/
+const openCafe = async (slug = SLUG) => {
   await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
-  await sa.locator(`tr:has-text("${name}")`).first().click();
+  await sa.locator(`tr:has-text("/${slug}")`).first().click();
   const drawer = sa.locator('[role="dialog"]');
   await drawer.waitFor({ timeout: 15000 });
   return drawer;

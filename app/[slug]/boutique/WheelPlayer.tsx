@@ -183,7 +183,11 @@ export function WheelPlayer({
           type="button"
           onClick={() => setOpen(true)}
           aria-label={`La roue — ${fmtPoints(spinCost)} points le tour`}
-          className="fixed bottom-[86px] right-4 z-30 grid h-[62px] w-[62px] place-items-center rounded-full shadow-[0_12px_28px_-8px_rgba(23,18,31,.5)] transition active:scale-95"
+          /* 86px up on a phone clears the tab bar. There is no tab bar at lg,
+             and pinning it to the window edge left it floating alone in the
+             right-hand gutter, a quarter of a screen from the rewards it
+             belongs to — so it tracks the shell's right edge instead. */
+          className="fixed bottom-[86px] right-4 z-30 grid h-[62px] w-[62px] place-items-center rounded-full shadow-[0_12px_28px_-8px_rgba(23,18,31,.5)] transition active:scale-95 lg:bottom-8 lg:right-[max(1rem,calc(50vw-464px))]"
           style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
         >
           <WheelMark />
@@ -195,7 +199,7 @@ export function WheelPlayer({
           role="dialog"
           aria-modal="true"
           aria-label="La roue"
-          className="fixed inset-0 z-40 flex items-end justify-center bg-black/45 px-3 pb-3 backdrop-blur-sm"
+          className="fixed inset-0 z-40 flex items-end justify-center bg-black/45 px-3 pb-3 backdrop-blur-sm lg:items-center lg:pb-3"
           onClick={() => !spinning && setOpen(false)}
         >
           <div

@@ -157,8 +157,13 @@ export default async function Carte({
           (profile, card switcher, bell) — but stacking a white strip above a
           coloured banner put two rows of chrome on the one screen that should
           open with the shop's name. TopBar returns null here for that reason.
+
+          It goes away at lg, where the rail already IS these three controls —
+          profile, wallet, activity — permanently, in the same window. Two
+          copies of the same navigation a hundred pixels apart is not a
+          shortcut, it is a question about which one is the real one.
         */}
-        <header className="flex items-center justify-between gap-2">
+        <header className="flex items-center justify-between gap-2 lg:hidden">
           <Link
             href={`/${slug}/profil`}
             aria-label="Mon profil"
@@ -500,11 +505,18 @@ export default async function Carte({
             a spacer li restores the right-hand margin, which is the only thing
             that actually works across Safari and Chrome.
           */}
-          <ul className="mt-2.5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-1 [scroll-padding-left:1rem] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {/*
+            A SCROLLER ON A PHONE, A GRID ON A LAPTOP.
+
+            Cutting the row off at the screen edge is what invites the swipe —
+            and a swipe is not a gesture anybody performs with a mouse. With the
+            room to show three at once, showing three at once is the answer.
+          */}
+          <ul className="mt-2.5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-1 [scroll-padding-left:1rem] [scrollbar-width:none] lg:grid lg:grid-cols-3 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
             {ladder.slice(0, 6).map((r) => {
               const affordable = r.pointsCost <= diner.balance;
               return (
-                <li key={r.id} className="w-[148px] shrink-0 snap-start">
+                <li key={r.id} className="w-[148px] shrink-0 snap-start lg:w-auto">
                   <Link href={`/${slug}/boutique`} className="d-card block overflow-hidden active:scale-[0.98]">
                     <span
                       className="relative grid h-[86px] w-full place-items-center"
@@ -555,7 +567,7 @@ export default async function Carte({
               );
             })}
             {/* the right-hand margin — see the note above */}
-            <li aria-hidden className="w-3 shrink-0" />
+            <li aria-hidden className="w-3 shrink-0 lg:hidden" />
           </ul>
         </section>
       )}

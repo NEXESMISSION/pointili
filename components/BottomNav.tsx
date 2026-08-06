@@ -75,7 +75,7 @@ export function BottomNav({ slug }: { slug: string }) {
   if (pathname === `${base}/rejoindre`) return null;
 
   return (
-    <nav className="sticky bottom-0 z-20 border-t border-[var(--edge)] bg-[var(--panel)]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+    <nav className="sticky bottom-0 z-20 border-t lg:hidden border-[var(--edge)] bg-[var(--panel)]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
       <ul className="flex">
         {tabs.map(({ key, label, Icon, href }) => {
           const to = `${base}${href}`;

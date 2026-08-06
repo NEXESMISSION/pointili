@@ -235,7 +235,7 @@ export function WalletView({
            balance. Two columns fit a real wallet on one screen — which is the
            only way the screen answers "which of my cards is this?" at a
            glance. */
-        <ul className="stagger grid grid-cols-2 gap-2.5">
+        <ul className="stagger grid grid-cols-2 gap-2.5 lg:grid-cols-3">
           {shown.map((c, i) => (
             <CardRow
               key={c.businessId}

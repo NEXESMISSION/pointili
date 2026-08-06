@@ -73,8 +73,8 @@ export function AudienceTabs({
         aria-pressed={on}
         className={`relative flex-1 whitespace-nowrap rounded-full px-4 py-2.5 text-[13.5px] font-extrabold transition sm:px-6 sm:py-3 sm:text-[14.5px] ${
           on
-            ? "bg-[#7c3aed] text-white shadow-[0_10px_28px_-10px_rgba(124,58,237,1)]"
-            : "text-white/60 hover:bg-white/[0.06] hover:text-white"
+            ? "bg-royal text-white shadow-[0_10px_28px_-10px_rgba(91,63,209,.55)]"
+            : "text-slate hover:bg-white hover:text-charcoal"
         }`}
       >
         {full ? long : (
@@ -98,7 +98,7 @@ export function AudienceTabs({
       display; this owns everything else.
     */
     <div
-      className={`items-center gap-1 rounded-full bg-black/40 p-1 ring-1 ring-white/15 ${className}`}
+      className={`items-center gap-1 rounded-full bg-[var(--o-inset)] p-1 ring-1 ring-[var(--o-edge)] ${className}`}
     >
       {tab("owner", "Pour mon commerce", "Commerce")}
       {tab("customer", "Je suis client", "Client")}

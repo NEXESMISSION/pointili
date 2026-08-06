@@ -215,24 +215,24 @@ function Row({ shot, flip }: { shot: Shot; flip: boolean }) {
         {/* No "whose screen" badge any more. The switch at the top of the page
             has already answered that, and repeating it here was the tell that
             the page had not chosen an audience. */}
-        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#a78bfa]">
+        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-royal">
           {shot.eyebrow}
         </span>
 
         <h3 className="mt-3 text-[26px] font-extrabold leading-[1.12] tracking-[-0.02em] md:text-[32px]">
           {shot.title}
         </h3>
-        <p className="mt-3 max-w-[46ch] text-[15.5px] leading-relaxed text-white/60">
+        <p className="mt-3 max-w-[46ch] text-[15.5px] leading-relaxed text-charcoal/60">
           {shot.lede}
         </p>
 
         <ul className="mt-6 space-y-2.5">
           {shot.facts.map((f) => (
             <li key={f} className="flex items-start gap-3">
-              <span className="mt-[3px] grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-[#7c3aed]/20 text-[#a78bfa]">
+              <span className="mt-[3px] grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-royal/12 text-royal">
                 <CheckIcon className="h-3 w-3" />
               </span>
-              <span className="text-[14.5px] leading-snug text-white/75">{f}</span>
+              <span className="text-[14.5px] leading-snug text-charcoal">{f}</span>
             </li>
           ))}
         </ul>

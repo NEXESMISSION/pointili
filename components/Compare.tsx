@@ -115,7 +115,7 @@ export function Compare() {
         <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] md:text-[38px]">
           Pourquoi Pointili plutôt qu&apos;un carnet ?
         </h2>
-        <p className="mt-3 max-w-[54ch] text-[15.5px] leading-relaxed text-white/60">
+        <p className="mt-3 max-w-[54ch] text-[15.5px] leading-relaxed text-charcoal/60">
           La carte en carton a fait tourner des milliers de commerces et elle
           marche encore. Voilà simplement là où elle s&apos;arrête.
         </p>
@@ -130,17 +130,17 @@ export function Compare() {
         */}
         <ul className="mt-8 space-y-3 md:hidden">
           {ROWS.map((r) => (
-            <li key={r.label} className="rounded-[18px] bg-white/[0.03] p-4 ring-1 ring-white/10">
-              <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-white/45">
+            <li key={r.label} className="rounded-[18px] bg-[var(--o-panel)] p-4 ring-1 ring-[var(--o-edge)]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-charcoal/45">
                 {r.label}
               </p>
 
-              <div className="mt-3 rounded-xl bg-[#7c3aed]/[0.14] px-3.5 py-3 ring-1 ring-[#7c3aed]/30">
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#c4b5fd]">
+              <div className="mt-3 rounded-xl bg-royal/[0.07] px-3.5 py-3 ring-1 ring-royal/25">
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-royal">
                   Pointili
                 </p>
-                <p className="mt-1 flex gap-2 text-[14px] font-semibold leading-snug text-white">
-                  <Check className="mt-[3px] h-[13px] w-[13px] shrink-0 text-[#4ade9f]" />
+                <p className="mt-1 flex gap-2 text-[14px] font-semibold leading-snug text-charcoal">
+                  <Check className="mt-[3px] h-[13px] w-[13px] shrink-0 text-[#2f9e6e]" />
                   {r.us}
                 </p>
               </div>
@@ -151,10 +151,10 @@ export function Compare() {
                   { who: "Autres plateformes", what: r.other },
                 ].map(({ who, what }) => (
                   <div key={who} className="px-1">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-white/35">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-charcoal/35">
                       {who}
                     </p>
-                    <p className="mt-0.5 text-[13.5px] leading-snug text-white/60">{what}</p>
+                    <p className="mt-0.5 text-[13.5px] leading-snug text-charcoal/60">{what}</p>
                   </div>
                 ))}
               </div>
@@ -163,42 +163,42 @@ export function Compare() {
         </ul>
 
         {/* ── TABLET AND UP: the real table ─────────────────────────────── */}
-        <div className="mt-8 hidden overflow-x-auto rounded-[22px] ring-1 ring-white/12 md:block">
+        <div className="mt-8 hidden overflow-x-auto rounded-[22px] ring-1 ring-[var(--o-edge)] md:block">
           <table className="w-full min-w-[720px] border-collapse text-left">
             <thead>
-              <tr className="bg-white/[0.04]">
-                <th className="p-4 text-[11px] font-bold uppercase tracking-[0.09em] text-white/45" />
-                <th className="p-4 text-[13px] font-extrabold text-white">
+              <tr className="bg-[var(--o-panel)]">
+                <th className="p-4 text-[11px] font-bold uppercase tracking-[0.09em] text-charcoal/45" />
+                <th className="p-4 text-[13px] font-extrabold text-charcoal">
                   Pointili
                 </th>
-                <th className="p-4 text-[13px] font-bold text-white/55">
+                <th className="p-4 text-[13px] font-bold text-charcoal/55">
                   Carte en carton
                 </th>
-                <th className="p-4 text-[13px] font-bold text-white/55">
+                <th className="p-4 text-[13px] font-bold text-charcoal/55">
                   Autres plateformes
                 </th>
               </tr>
             </thead>
             <tbody>
               {ROWS.map((r) => (
-                <tr key={r.label} className="border-t border-white/10">
-                  <td className="p-4 align-top text-[13px] font-bold text-white/50">
+                <tr key={r.label} className="border-t border-[var(--o-edge)]">
+                  <td className="p-4 align-top text-[13px] font-bold text-charcoal/50">
                     {r.label}
                   </td>
-                  <td className="bg-[#7c3aed]/[0.09] p-4 align-top text-[14px] font-semibold leading-snug text-white">
+                  <td className="bg-royal/[0.05] p-4 align-top text-[14px] font-semibold leading-snug text-charcoal">
                     <span className="flex gap-2.5">
-                      <Check className="mt-[3px] h-[14px] w-[14px] shrink-0 text-[#4ade9f]" />
+                      <Check className="mt-[3px] h-[14px] w-[14px] shrink-0 text-[#2f9e6e]" />
                       {r.us}
                     </span>
                   </td>
-                  <td className="p-4 align-top text-[14px] leading-snug text-white/55">{r.paper}</td>
-                  <td className="p-4 align-top text-[14px] leading-snug text-white/55">{r.other}</td>
+                  <td className="p-4 align-top text-[14px] leading-snug text-charcoal/55">{r.paper}</td>
+                  <td className="p-4 align-top text-[14px] leading-snug text-charcoal/55">{r.other}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="mt-3 text-[12.5px] text-white/35">
+        <p className="mt-3 text-[12.5px] text-charcoal/35">
           « Autres plateformes » décrit ce qui est courant sur ce marché, pas un
           concurrent en particulier — leurs offres changent, la nôtre aussi.
         </p>
@@ -209,7 +209,7 @@ export function Compare() {
         <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] md:text-[38px]">
           Les questions qu&apos;on nous pose
         </h2>
-        <p className="mt-3 max-w-[54ch] text-[15.5px] leading-relaxed text-white/60">
+        <p className="mt-3 max-w-[54ch] text-[15.5px] leading-relaxed text-charcoal/60">
           Les vraies, celles du comptoir.
         </p>
 
@@ -219,17 +219,17 @@ export function Compare() {
                screens of answers, and so it works with JavaScript off */
             <details
               key={q}
-              className="group rounded-[18px] bg-white/[0.04] px-5 ring-1 ring-white/10 transition open:bg-white/[0.06] open:ring-white/20"
+              className="group rounded-[18px] bg-[var(--o-panel)] px-5 ring-1 ring-[var(--o-edge)] transition open:bg-[var(--o-panel)] open:ring-[var(--o-edge)]"
             >
               <summary className="flex cursor-pointer list-none items-start gap-3 py-4 text-[15.5px] font-bold leading-snug marker:hidden [&::-webkit-details-marker]:hidden">
-                <span className="mt-[2px] grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-[#7c3aed]/25 text-[#c4b5fd] transition group-open:rotate-45">
+                <span className="mt-[2px] grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-royal/12 text-royal transition group-open:rotate-45">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" className="h-2.5 w-2.5" aria-hidden>
                     <path d="M12 5v14M5 12h14" />
                   </svg>
                 </span>
                 <span className="flex-1">{q}</span>
               </summary>
-              <p className="pb-5 pl-[30px] text-[14.5px] leading-relaxed text-white/65">{a}</p>
+              <p className="pb-5 pl-[30px] text-[14.5px] leading-relaxed text-charcoal/65">{a}</p>
             </details>
           ))}
         </div>

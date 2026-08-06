@@ -116,7 +116,9 @@ export function SettingsList({
     theme: {
       title: "Le thème",
       sub: "La couleur, l'en-tête et le style de la carte de vos clients.",
-      body: <div className="mx-auto w-full max-w-[560px]"><ThemeForm cafe={cafe} /></div>,
+      /* wider than the other editors: at lg the form is preview + controls side
+         by side (see ThemeForm), and 560 would squeeze both into nothing */
+      body: <div className="mx-auto w-full max-w-[560px] lg:max-w-[820px]"><ThemeForm cafe={cafe} /></div>,
     },
   };
 
@@ -447,11 +449,27 @@ function Sheet({
     trip react-hooks/set-state-in-effect anyway.
   */
   return createPortal(
+    /*
+      A SHEET ON A PHONE, A DIALOG ON A MONITOR.
+
+      Full-bleed white is the right answer at 390px: the editor IS the screen.
+      At 1440 it was a wall — the whole display painted over to change one
+      number, with the list you were working through gone. So at lg the same
+      markup sits in a centred panel with the page dimmed behind it, and you
+      can still see what you came from. Tapping the dim closes it, like every
+      other dialog anyone has used.
+    */
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-[70] flex lg:items-center lg:justify-center lg:bg-[#1a1128]/30 lg:p-8 lg:backdrop-blur-[2px]"
+    >
     <section
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="sheet-in fixed inset-0 z-[70] flex flex-col bg-[#ffffff]"
+      className="sheet-in flex min-h-0 flex-1 flex-col overflow-hidden bg-[#ffffff] lg:max-h-[86vh] lg:w-full lg:max-w-[860px] lg:flex-none lg:rounded-[28px] lg:shadow-[0_30px_80px_rgba(26,17,40,0.28)]"
     >
       {/* safe-t, or the title sits under the notch in the installed app */}
       <header className="safe-t border-b border-[var(--o-edge)] px-3 pb-3 [--safe-pt:0.75rem]">
@@ -486,7 +504,8 @@ function Sheet({
       <div className="safe-b mx-auto min-h-0 w-full max-w-[900px] flex-1 overflow-y-auto [--safe-pb:2.5rem]">
         {children}
       </div>
-    </section>,
+    </section>
+    </div>,
     document.body,
   );
 }

@@ -59,7 +59,7 @@ export default async function Cartes({
     /* No --cafe here on purpose: this screen belongs to no single shop. Each
        card carries its own colour (see WalletView), and the page around them
        stays the same white as the rest of the client app. */
-    <div className="safe-t safe-b app-shell app-shell--light d-shell min-h-dvh px-5 [--safe-pb:2.5rem] [--safe-pt:1.5rem]">
+    <div className="safe-t safe-b app-shell app-shell--light d-shell min-h-dvh px-5 lg:max-w-[880px] [--safe-pb:2.5rem] [--safe-pt:1.5rem]">
       {/* The wallet is the only shop-neutral diner screen, which makes it the
           right home for a code that is the same at every shop. */}
       <WalletView

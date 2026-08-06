@@ -40,13 +40,22 @@ export default async function Reglages() {
   const type = businessType(cafe.businessType);
 
   return (
-    <div className="space-y-4">
+    /*
+      data-owner-wide: on a laptop this screen was a 680px ribbon of rows with
+      half the display empty beside it, and the account — plan, prices, the way
+      out — was below the fold under every knob. Two columns at lg put the
+      settings on the left and the account on the right, both above the fold.
+      The phone is untouched; the widening rule is a min-width:1024px query.
+    */
+    <div data-owner-wide className="space-y-4">
       {/* Phone only: at md+ the sidebar is the way back, and a chevron beside a
           permanent nav is noise. */}
       <div className="px-1 md:hidden">
         <BackLink fallback="/owner" />
       </div>
 
+      <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1fr)_324px] lg:items-start lg:gap-5 lg:space-y-0">
+      <div className="space-y-4">
       {/*
         ── ONE CARD THAT ANSWERS "IS MY SHOP RUNNING?" ────────────────────
         The screen used to open with a bare identity ROW — logo, name, address —
@@ -127,7 +136,10 @@ export default async function Reglages() {
         typeLabel={type.label}
         ticket={ticket}
       />
+      </div>
 
+      {/* the account column — what you pay, and the way out */}
+      <div className="space-y-4">
       {/*
         The prices, in the product — but not in the way.
 
@@ -216,6 +228,8 @@ export default async function Reglages() {
           </Link>
         </p>
       </form>
+      </div>
+      </div>
     </div>
   );
 }

@@ -223,7 +223,7 @@ export function RewardPicker({
           role="dialog"
           aria-modal="true"
           aria-label="Confirmer l'échange"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 px-3 pb-3 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 px-3 pb-3 backdrop-blur-sm lg:items-center lg:pb-3"
           onClick={() => !busy && setConfirming(false)}
         >
           <div

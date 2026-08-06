@@ -210,7 +210,17 @@ export function CaisseDesk({
   }
 
   return (
-    <div className="space-y-4">
+    /*
+      data-owner-wide (globals.css) — but ONLY the cap moves.
+
+      The till is a one-handed terminal and every phone pixel of it stays where
+      it is. What changed is the laptop on the back counter: three cards down a
+      680px ribbon with seven hundred pixels of empty screen beside them, and
+      the collect field below the fold. At lg the two jobs sit side by side —
+      the person paying on the left, the person collecting on the right — so
+      neither one is a scroll away when there is a queue.
+    */
+    <div data-owner-wide className="space-y-4">
       {/*
         NO TABS AND NO KEYPAD — the whole till on one screen.
 
@@ -250,7 +260,8 @@ export function CaisseDesk({
           </button>
         </section>
       ) : (
-        <>
+        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
+          <div className="space-y-4">
           {/*
             THE SCANNER SITS ABOVE BOTH JOBS, because it now does both.
 
@@ -306,9 +317,11 @@ export function CaisseDesk({
             </p>
           )}
 
+          </div>
+
           {/* ── this person is collecting ─────────────────────────── */}
           <ValidateForm scanned={voucher} />
-        </>
+        </div>
       )}
 
       {/*
