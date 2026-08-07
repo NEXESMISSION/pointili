@@ -26,9 +26,55 @@ import { signSession, verifySession } from "@/lib/auth/crypto";
  * on the Node runtime — edge is not supported here.
  */
 export async function proxy(request: NextRequest) {
+  /* A URL that cannot match a café, but obviously means one. Cheap, and first:
+     there is no point refreshing a session for a request we are redirecting. */
+  const tidy = tidyUrl(request);
+  if (tidy) return NextResponse.redirect(tidy, 308);
+
   const res = await withSession(request, (req) => NextResponse.next({ request: req }));
   rollDinerSession(request, res);
   return res;
+}
+
+/**
+ * ── A 404 THAT IS REALLY A TYPO ───────────────────────────────────────────
+ *
+ * Café slugs are lower case and [a-z0-9-] — the RPC that creates one enforces
+ * it. So a path with a capital in it, or with a full stop stuck to the end,
+ * cannot be a café that exists, and 404 is a lie about what went wrong.
+ *
+ * Both happen constantly and neither is the customer's fault:
+ *
+ *   · iOS capitalises the first letter of anything typed into a field, so a
+ *     number read off a poster arrives as /CafeElManar.
+ *   · Every messaging app on earth swallows the punctuation after a link:
+ *     "passe par pointili.online/cafe-el-manar." linkifies WITH the full stop.
+ *   · A copied link often arrives wrapped in a bracket or a comma.
+ *
+ * Fixed here rather than in the page, because this is the only place that sees
+ * the whole URL — a layout knows its own segment and nothing about the rest of
+ * the path, so a redirect from there would drop /boutique on the floor.
+ *
+ * 308, not 307: the tidy URL is the canonical one and a browser may remember
+ * that. Returns null — the common case — when there is nothing to fix.
+ */
+function tidyUrl(request: NextRequest): URL | null {
+  const { pathname } = request.nextUrl;
+  if (pathname.startsWith("/_next") || pathname.startsWith("/api")) return null;
+
+  /* trailing punctuation a link picked up on its way here, and the trailing
+     slash that turns /cafe-el-manar/ into a segment that matches nothing */
+  let fixed = pathname.replace(/[.,;:!?)\]}'"«»]+$/g, "");
+  if (fixed.length > 1) fixed = fixed.replace(/\/+$/, "");
+  /* Case. Only the path — a query string can hold a code, and codes are upper
+     case (see /rejoindre?c=…). */
+  if (/[A-Z]/.test(fixed)) fixed = fixed.toLowerCase();
+
+  if (fixed === pathname || fixed === "") return null;
+
+  const url = request.nextUrl.clone();
+  url.pathname = fixed;
+  return url;
 }
 
 /**

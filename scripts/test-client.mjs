@@ -321,6 +321,35 @@ const { count: cards } = await admin
 check("no second card was created", cards === 1, `${cards} card(s)`);
 check("the balance survived the lost session", /\d/.test(reopened));
 
+/*
+  ── THE 404s THAT ARE REALLY TYPOS ──────────────────────────────────────
+  iOS capitalises the first letter of anything typed into a field, messaging
+  apps swallow the punctuation after a link, and a copied address arrives with
+  a bracket on it. None of those can match a slug — they are lower case and
+  [a-z0-9-] — so the product answered a one-character mistake with "ce café
+  n'existe pas". proxy.ts tidies the URL instead.
+*/
+for (const [label, path] of [
+  ["a capitalised address", `/${TEST_SLUG.toUpperCase()}`],
+  ["a link with a full stop stuck to it", `/${TEST_SLUG}.`],
+  ["a trailing slash", `/${TEST_SLUG}/`],
+  ["a bracket a chat app left behind", `/${TEST_SLUG})`],
+]) {
+  await d.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" });
+  check(`${label} still reaches the café`,
+    new URL(d.url()).pathname.startsWith(`/${TEST_SLUG}`),
+    new URL(d.url()).pathname);
+}
+
+/* and a genuinely dead address sends a cardholder to their own cards, never
+   to the sales page — the mistake this app has already made once, in /cartes */
+await d.goto(`${BASE}/pas-un-cafe-du-tout`, { waitUntil: "networkidle" });
+const dead = await d.locator("body").innerText();
+check("a dead address offers the wallet", /Mes cartes/i.test(dead),
+  dead.split(String.fromCharCode(10)).find((l) => /cartes/i.test(l)) ?? "");
+check("a dead address never offers the sales page",
+  (await d.locator('a[href="/"]').count()) === 0);
+
 await browser.close();
 
 /* ── clean up: this runs against the REAL database ─────────────────── */
