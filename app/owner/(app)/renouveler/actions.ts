@@ -1,0 +1,69 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { currentOwner, ownerCafe } from "@/lib/auth/owner";
+import { offer, method } from "@/lib/billing";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export type RenewState = { ok?: string; error?: string };
+
+/**
+ * Send a renewal for review.
+ *
+ * Everything that decides money is resolved HERE, from the offer id: the
+ * months and the amount are read out of lib/billing, never off the form. A
+ * form that carried its own price would let anyone renew for a year at 1 TND
+ * by editing one hidden field, and the operator approving it would have no way
+ * to notice — the console shows what the row says.
+ */
+export async function submitRenewalAction(
+  _prev: RenewState,
+  formData: FormData,
+): Promise<RenewState> {
+  const [me, cafe] = await Promise.all([currentOwner(), ownerCafe()]);
+  if (!me || !cafe) return { error: "Non autorisé." };
+
+  const chosen = offer(String(formData.get("offer") ?? ""));
+  const pay = method(String(formData.get("method") ?? ""));
+  if (!chosen) return { error: "Choisissez une formule." };
+  if (!pay) return { error: "Choisissez un moyen de paiement." };
+
+  const proof = String(formData.get("proof") ?? "");
+  if (!proof.startsWith("data:image/")) {
+    return { error: "Ajoutez la photo de votre reçu." };
+  }
+  /* ~500 KB. The browser downscales before this, so hitting it means either a
+     very odd image or somebody posting by hand. */
+  if (proof.length > 700_000) {
+    return { error: "Image trop lourde — reprenez la photo." };
+  }
+
+  const note = String(formData.get("note") ?? "").trim().slice(0, 300);
+
+  const db = createAdminClient();
+  const { data, error } = await db.rpc("submit_renewal_request", {
+    p_owner: me.id, // the session's id, never the form's
+    p_business_id: cafe.id,
+    p_offer: chosen.id,
+    p_months: chosen.months,
+    p_amount: chosen.price,
+    p_method: pay.id,
+    p_proof: proof,
+    p_note: note || null,
+  });
+
+  const res = data as { ok?: boolean; reason?: string } | null;
+  if (error || !res?.ok) {
+    if (res?.reason === "already_pending") {
+      return { error: "Une demande est déjà en cours de vérification." };
+    }
+    if (res?.reason === "too_big") return { error: "Image trop lourde — reprenez la photo." };
+    if (res?.reason === "no_proof") return { error: "Ajoutez la photo de votre reçu." };
+    return { error: "Envoi impossible pour le moment." };
+  }
+
+  revalidatePath("/owner/renouveler");
+  revalidatePath("/owner/reglages");
+  revalidatePath("/admin");
+  return { ok: "Demande envoyée. On vérifie et on prolonge votre compte." };
+}

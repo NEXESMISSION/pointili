@@ -1,9 +1,10 @@
-import { activeNotices, adminOverview, platformStats, recentActions, remaining, traffic } from "@/lib/platform";
+import { activeNotices, adminOverview, platformStats, recentActions, remaining, renewalQueue, traffic } from "@/lib/platform";
 import { Traffic } from "./Traffic";
 import type { AdminCafe } from "@/lib/platform";
 import { dismissNoticeAction, quickRenewAction, quickUnsuspendAction } from "./actions";
 import { BroadcastForm } from "./CafeControls";
 import { CafeTable } from "./CafeTable";
+import { Renewals } from "./Renewals";
 
 const KIND_LABEL: Record<string, string> = { info: "Info", warning: "Attention", urgent: "Urgent" };
 
@@ -31,12 +32,13 @@ export const metadata = { title: "Console" };
  * console working correctly.
  */
 export default async function AdminPage() {
-  const [stats, cafes, actions, notices, trafficData] = await Promise.all([
+  const [stats, cafes, actions, notices, trafficData, renewals] = await Promise.all([
     platformStats(),
     adminOverview(),
     recentActions(12),
     activeNotices(),
     traffic(30),
+    renewalQueue(),
   ]);
 
   const cafeName = new Map(cafes.map((c) => [c.id, c.name]));
@@ -86,6 +88,12 @@ export default async function AdminPage() {
           </ul>
         )}
       </section>
+
+      {/* ── 1b. the money queue ──────────────────────────────────────
+              Above the table and below the alerts: a shop that has PAID and is
+              waiting is more urgent than one that is merely expiring, and it is
+              the only thing here somebody is actively waiting on. */}
+      <Renewals rows={renewals} />
 
       {/* ── 2. everything else ───────────────────────────────────────── */}
       {cafes.length > 0 && (

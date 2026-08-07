@@ -233,3 +233,52 @@ export async function quickRenewAction(formData: FormData): Promise<void> {
 export async function quickUnsuspendAction(formData: FormData): Promise<void> {
   await setSuspendedAction({}, formData);
 }
+
+/**
+ * Approve or refuse a renewal — and, on approve, extend the plan in the same
+ * transaction (admin_decide_renewal does both).
+ *
+ * The duration is NOT in this form. It comes off the request row, which was
+ * written from the price list the owner was shown. An operator who could type
+ * a number here would eventually type the wrong one, and the shop would be paid
+ * up for six months against a twelve-month transfer with nothing to compare.
+ */
+export async function decideRenewalAction(
+  _prev: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  let me;
+  try {
+    me = await requireElevatedSuperAdmin();
+  } catch (e) {
+    return { error: guardMessage(e) };
+  }
+
+  const id = String(formData.get("id") ?? "");
+  const approve = formData.get("approve") === "1";
+  const note = String(formData.get("note") ?? "").trim().slice(0, 200);
+  if (!id) return { error: "Demande introuvable." };
+  // Refusing is the one that reaches a person as bad news — never namelessly.
+  if (!approve && !note) return { error: "Dites pourquoi : le café verra cette raison." };
+
+  const db = createAdminClient();
+  const { data, error } = await db.rpc("admin_decide_renewal", {
+    p_actor: me.id,
+    p_id: id,
+    p_approve: approve,
+    p_note: note || null,
+  });
+  const res = data as { ok?: boolean; reason?: string; plan?: PostState } | null;
+  if (error || !res?.ok) {
+    if (res?.reason === "already_decided") return { error: "Déjà traitée." };
+    return { error: "Impossible de traiter la demande." };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/owner");
+  revalidatePath("/owner/renouveler");
+  revalidatePath("/owner/reglages");
+  return {
+    ok: approve && res.plan ? verdict(res.plan, "Renouvellement validé") : "Demande refusée.",
+  };
+}

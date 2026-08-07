@@ -184,9 +184,24 @@ export default async function Reglages() {
           </div>
           <p className="mt-3 text-[12px] leading-relaxed text-slate">
             Tout est compris : points, récompenses, tampons, analyses et le kit QR
-            pour vos tables. Écrivez-nous pour renouveler — on active votre compte
-            le jour même.
+            pour vos tables.
           </p>
+
+          {/*
+            "Écrivez-nous pour renouveler" is what this said, which put the one
+            action on this screen outside the product: an owner had to find a
+            number, explain who they were, and send a photograph into a chat
+            thread that knew nothing about their shop. Now it is a button, and
+            what comes out the other end is a row in the console with the
+            amount, the method and the receipt attached to THIS café.
+          */}
+          <Link
+            href="/owner/renouveler"
+            className="mt-3 flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-royal text-[14px] font-bold text-white transition active:scale-[0.99]"
+          >
+            Renouveler mon abonnement
+            <span className="text-[15px] leading-none">→</span>
+          </Link>
           {/*
             The question an owner asks at exactly this moment, answered here
             instead of only in the small print. The answer is true and already

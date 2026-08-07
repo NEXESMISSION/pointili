@@ -119,7 +119,9 @@ export default async function OwnerLayout({
           {/* A dead end otherwise: the product told an owner their shop was dark
               and gave them nothing to press. */}
           {!cafe.suspendedAt && (
-            <Link href="/owner/reglages" className="mt-1.5 inline-block text-[12px] font-bold text-charcoal underline underline-offset-2">
+            /* straight to the flow, not to the settings screen it lives on:
+               a shop that is dark has one thing to do */
+            <Link href="/owner/renouveler" className="mt-1.5 inline-block text-[12px] font-bold text-charcoal underline underline-offset-2">
               Renouveler mon abonnement →
             </Link>
           )}
@@ -130,8 +132,8 @@ export default async function OwnerLayout({
         <p className="border-b border-[#a06e00]/30 bg-[#a06e00]/12 px-5 py-2 text-[12px] leading-snug text-[#a06e00]">
           Votre {cafe.plan === "trial" ? "essai" : "abonnement"} se termine dans{" "}
           <b>{left.label}</b>. Vos clients et leurs points sont conservés.{" "}
-          <Link href="/owner/reglages" className="font-bold underline underline-offset-2">
-            Voir les formules
+          <Link href="/owner/renouveler" className="font-bold underline underline-offset-2">
+            Renouveler
           </Link>
         </p>
       )}

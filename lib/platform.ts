@@ -206,3 +206,68 @@ export async function traffic(days = 30): Promise<Traffic> {
   if (!d || d.ok === false) return NO_TRAFFIC;
   return { ...NO_TRAFFIC, ...d };
 }
+
+/* -------------------------------------------------------------------------- */
+/* Renewals — a shop asking to be turned back on, with a receipt attached      */
+/* -------------------------------------------------------------------------- */
+
+export type RenewalRequest = {
+  id: string;
+  offer: "6m" | "12m";
+  months: number;
+  amount: number;
+  method: "d17" | "flouci" | "rib";
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+  decidedAt: string | null;
+  decidedNote?: string | null;
+};
+
+/** An owner's own recent requests — no receipt bytes, see the RPC. */
+export async function myRenewals(ownerId: string, businessId: string): Promise<RenewalRequest[]> {
+  const db = createAdminClient();
+  const { data } = await db.rpc("my_renewal_requests", {
+    p_owner: ownerId,
+    p_business_id: businessId,
+  });
+  return ((data ?? []) as Record<string, unknown>[]).map(mapRenewal);
+}
+
+export type AdminRenewal = RenewalRequest & {
+  businessId: string;
+  name: string;
+  slug: string;
+  plan: string;
+  planExpiresAt: string | null;
+  note: string | null;
+};
+
+/** The console's queue: pending first, then what was decided recently. */
+export async function renewalQueue(limit = 30): Promise<AdminRenewal[]> {
+  const me = await requireElevatedSuperAdmin();
+  const db = createAdminClient();
+  const { data } = await db.rpc("admin_renewal_requests", { p_actor: me.id, p_limit: limit });
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    ...mapRenewal(r),
+    businessId: String(r.business_id),
+    name: String(r.name),
+    slug: String(r.slug),
+    plan: String(r.plan),
+    planExpiresAt: (r.plan_expires_at as string | null) ?? null,
+    note: (r.note as string | null) ?? null,
+  }));
+}
+
+function mapRenewal(r: Record<string, unknown>): RenewalRequest {
+  return {
+    id: String(r.id),
+    offer: r.offer as RenewalRequest["offer"],
+    months: Number(r.months),
+    amount: Number(r.amount),
+    method: r.method as RenewalRequest["method"],
+    status: r.status as RenewalRequest["status"],
+    createdAt: String(r.created_at),
+    decidedAt: (r.decided_at as string | null) ?? null,
+    decidedNote: (r.decided_note as string | null) ?? null,
+  };
+}
