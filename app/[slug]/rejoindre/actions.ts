@@ -7,10 +7,9 @@ import {
   NO_SUCH_ACCOUNT_HASH,
   isValidPin,
   normalisePhone,
-  signSession,
   verifyPin,
 } from "@/lib/auth/crypto";
-import { setDinerSession } from "@/lib/auth/diner";
+import { forgetDevice, lastDinerPhone, startDinerSession } from "@/lib/auth/diner";
 import { getCafe, getLoyaltyProgram } from "@/lib/data";
 import {
   createAccount,
@@ -36,11 +35,23 @@ export async function joinAction(
   _prev: JoinState,
   formData: FormData,
 ): Promise<JoinState> {
-  const rawPhone = String(formData.get("phone") ?? "");
   const pin = String(formData.get("pin") ?? "");
   const name = String(formData.get("name") ?? "").trim().slice(0, 40) || null;
 
-  const phone = normalisePhone(rawPhone);
+  /*
+    "return" is the one-field path: the device remembers whose it is, so the
+    screen asked for the secret code and nothing else.
+
+    The number comes from the COOKIE, not from the form — it is never printed
+    into the page. Somebody holding an unlocked phone could read it off the
+    card anyway, but there is no reason to hand it to a script, and a hidden
+    field would be one more thing to validate.
+  */
+  const remembered = String(formData.get("mode") ?? "") === "return"
+    ? await lastDinerPhone()
+    : null;
+
+  const phone = remembered ?? normalisePhone(String(formData.get("phone") ?? ""));
   if (!isValidPhone(phone)) return { error: "Numéro de téléphone invalide." };
   if (!isValidPin(pin)) return { error: "Le code secret doit contenir 4 chiffres." };
 
@@ -54,8 +65,11 @@ export async function joinAction(
   }
 
   // Which tab did they submit? "login" means they told us they already have a
-  // card, so an unknown phone is a TYPO — never a silent new signup.
-  const mode = String(formData.get("mode") ?? "");
+  // card, so an unknown phone is a TYPO — never a silent new signup. "return"
+  // is the same promise, made by the device rather than typed.
+  const mode = String(formData.get("mode") ?? "") === "return"
+    ? "login"
+    : String(formData.get("mode") ?? "");
 
   let existing = await getAccount(phone);
 
@@ -124,8 +138,19 @@ export async function joinAction(
     await creditPoints(cafe.id, phone, 0); // no purchase — welcome only
   }
 
-  await setDinerSession(signSession(phone));
+  await startDinerSession(phone);
   /* ?nouveau is what tells the card screen to play the arrival once. The card
      page strips it immediately, so it never survives a refresh or a share. */
   redirect(`/${slug}?nouveau=1`);
+}
+
+/**
+ * "Ce n'est pas moi" — forget which number this device belongs to.
+ *
+ * The ONLY thing that clears the hint. Signing out does not: you sign out to
+ * hand your phone to a friend for a minute, and being greeted by name when you
+ * come back is right. This is the person saying the greeting is wrong.
+ */
+export async function forgetDeviceAction() {
+  await forgetDevice();
 }

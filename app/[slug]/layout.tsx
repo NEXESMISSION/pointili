@@ -8,6 +8,7 @@ import { SideRail } from "@/components/SideRail";
 import { businessType } from "@/lib/businessTypes";
 import { themeVars } from "@/lib/theme";
 import { getCafe, getMember } from "@/lib/data";
+import { currentLang, dir } from "@/lib/i18n";
 import { dinerWallet } from "@/lib/db";
 
 export default async function CafeLayout({
@@ -41,6 +42,11 @@ export default async function CafeLayout({
      joined yet — they have no wallet and the rail is not rendered for them. */
   const cards = diner ? (await dinerWallet(diner.phone)).length : 0;
 
+  /* French or Tunisian — a preference of the person, in a cookie. `dir` flips
+     the whole subtree, so every flex row, every margin and every chevron in
+     here reverses without a single rtl: variant being written. */
+  const lang = await currentLang();
+
   return (
     /*
       A white app that belongs to the SHOP, not to us.
@@ -69,9 +75,12 @@ export default async function CafeLayout({
       Anything interpolated goes in the array, where it cannot touch a name.
     */
     <div
+      lang={lang === "tn" ? "ar-TN" : "fr"}
+      dir={dir(lang)}
       className={[
         "app-shell app-shell--light d-shell flex min-h-dvh flex-col lg:flex-row",
         cafe.designSettings.theme.surface === "dark" ? "surface-dark" : "",
+        lang === "tn" ? "lang-tn" : "",
       ].join(" ")}
       style={themeVars(cafe.primaryColor, cafe.designSettings.theme)}
     >
@@ -82,16 +91,17 @@ export default async function CafeLayout({
         logoUrl={cafe.logoUrl}
         emoji={businessType(cafe.businessType).emoji}
         cards={cards}
+        lang={lang}
       />
 
       {/* The content column keeps a phone's measure even on a monitor: a
           loyalty card read across 900px would be a table, not a card. */}
       <div className="flex min-w-0 flex-1 flex-col lg:mx-auto lg:w-full lg:max-w-[560px]">
-        <TopBar slug={cafe.slug} pendingCodes={diner?.codes.length ?? 0} />
+        <TopBar slug={cafe.slug} pendingCodes={diner?.codes.length ?? 0} lang={lang} />
 
         <main className="flex flex-1 flex-col">{children}</main>
 
-        <BottomNav slug={cafe.slug} />
+        <BottomNav slug={cafe.slug} lang={lang} />
       </div>
 
       {/* the customer's card is the thing worth keeping one tap away */}

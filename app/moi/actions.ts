@@ -1,13 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { currentDiner, setDinerSession } from "@/lib/auth/diner";
+import { currentDiner, startDinerSession } from "@/lib/auth/diner";
 import {
   isValidPhone,
   isValidPin,
   normalisePhone,
   NO_SUCH_ACCOUNT_HASH,
-  signSession,
   verifyPin,
 } from "@/lib/auth/crypto";
 import { getAccount, pinClear, pinFail, pinLockedFor } from "@/lib/db";
@@ -70,7 +69,7 @@ export async function signInAction(_prev: SignInState, formData: FormData): Prom
   }
 
   await pinClear(phone);
-  await setDinerSession(signSession(phone));
+  await startDinerSession(phone);
   redirect("/cartes");
 }
 

@@ -706,6 +706,59 @@ h4 {
 .d-banner--flat {
   background-image: none;
 }
+
+/*
+  ── THE TWO CORNERS UNDER THE SHOP'S HEADER ─────────────────────────────
+  It used to be a switch: square, or a 30px curve somebody else picked. But
+  these two corners are one of the few things that make a card read as a brand
+  instead of a template, so the shop chooses the AMOUNT. `none` is a header the
+  page hangs from; `l` is a card laid on the screen.
+*/
+.d-banner--round-s { border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; }
+.d-banner--round-m { border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; }
+.d-banner--round-l { border-bottom-left-radius: 46px; border-bottom-right-radius: 46px; }
+
+/*
+  ── A TEXTURE, DRAWN FROM THE SHOP'S OWN INK ────────────────────────────
+  Dots, stripes or a grid at 8–10% of --cafe-ink: it costs no bytes, sits over
+  a flat colour and a gradient alike, and cannot fight the type because it is
+  made of the same colour the type is.
+
+  Layered with background-image, so it composes with the gradient underneath
+  rather than replacing it. A photograph brings its own texture and gets none
+  of this — see the page, which drops the class when a cover is set.
+*/
+.d-banner--dots {
+  background-image:
+    radial-gradient(color-mix(in oklab, var(--cafe-ink) 16%, transparent) 1.5px, transparent 1.6px),
+    linear-gradient(168deg, var(--cafe) 0%, var(--cafe-deep) 100%);
+  background-size: 14px 14px, auto;
+}
+.d-banner--dots.d-banner--flat {
+  background-image: radial-gradient(color-mix(in oklab, var(--cafe-ink) 16%, transparent) 1.5px, transparent 1.6px);
+  background-size: 14px 14px;
+}
+.d-banner--stripes {
+  background-image:
+    repeating-linear-gradient(135deg, color-mix(in oklab, var(--cafe-ink) 10%, transparent) 0 2px, transparent 2px 12px),
+    linear-gradient(168deg, var(--cafe) 0%, var(--cafe-deep) 100%);
+}
+.d-banner--stripes.d-banner--flat {
+  background-image: repeating-linear-gradient(135deg, color-mix(in oklab, var(--cafe-ink) 10%, transparent) 0 2px, transparent 2px 12px);
+}
+.d-banner--grid {
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--cafe-ink) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--cafe-ink) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(168deg, var(--cafe) 0%, var(--cafe-deep) 100%);
+  background-size: 22px 22px, 22px 22px, auto;
+}
+.d-banner--grid.d-banner--flat {
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--cafe-ink) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--cafe-ink) 10%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
 /*
   A PHOTOGRAPH, WITH A SCRIM THAT IS NOT OPTIONAL.
 
@@ -1293,4 +1346,31 @@ body:has(.landing-light) {
 @keyframes card-sheen {
   from { transform: translateX(-130%) skewX(-16deg); }
   to   { transform: translateX(330%) skewX(-16deg); }
+}
+
+/*
+  ── TUNISIAN, IN ARABIC SCRIPT ──────────────────────────────────────────
+  The subtree carries dir="rtl", which reverses every flex row, margin and
+  chevron in the customer app for free. Two things it does NOT do:
+
+    · pick a face that has Arabic glyphs. Inter and Poppins do not, so the
+      browser falls back per-glyph and the result is a different typeface on
+      every other word. The system Arabic UI faces are the right answer here —
+      they are already on the device, they cost nothing to load, and they are
+      what every other app on that phone uses.
+
+    · leave the numbers alone. Balances, prices and codes stay Latin digits
+      (font-variant-numeric + the mono stack elsewhere) because that is what is
+      printed on the till receipt and on the shop's own menu.
+
+  Slightly larger and looser: Arabic script sits lower and needs the leading.
+*/
+.lang-tn {
+  font-family: "SF Arabic", "Geeza Pro", "Noto Naskh Arabic",
+    "Noto Sans Arabic", Tahoma, "Segoe UI", var(--font-body);
+  line-height: 1.75;
+}
+.lang-tn .font-mono,
+.lang-tn [class*="tabular"] {
+  font-family: var(--font-mono);
 }

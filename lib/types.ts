@@ -27,13 +27,34 @@ export type CardTheme = {
   /** Corner roundness, applied to every card the customer sees. */
   radius: "s" | "m" | "l";
   /**
-   * Does the banner curve into the page, or meet it square?
+   * HOW MUCH the banner curves into the page — not whether.
    *
-   * The rounded bottom reads as a card laid on the screen; square reads as a
-   * header the page hangs from. Both are defensible and it is the shop's
-   * building, so it is the shop's call.
+   * This was a switch, and a switch was the wrong instrument: the two corners
+   * under a shop's own header are one of the few things that make a card look
+   * like a brand rather than a template, and "on" was a 30px curve somebody
+   * else chose. Four steps, from a header the page hangs from (`none`) to a
+   * card laid on the screen (`l`).
+   *
+   * Old rows hold `true`/`false` — lib/data maps them to "m"/"none" on read, so
+   * nothing needs migrating and no shop wakes up looking different.
    */
-  bannerRound: boolean;
+  bannerRound: "none" | "s" | "m" | "l";
+  /**
+   * How tall the shop's own colour is before the card begins.
+   *
+   * A photograph of a room needs the height to be a room; a wordmark on a flat
+   * colour usually wants less. It changes the whole weight of the screen, which
+   * is why it belongs to the shop.
+   */
+  bannerHeight: "s" | "m" | "l";
+  /**
+   * A texture over the banner colour — dots, stripes, a grid, or nothing.
+   *
+   * Drawn in CSS from the shop's own ink at low opacity, so it costs no bytes,
+   * works over a flat colour AND a gradient, and can never fight the type.
+   * Skipped entirely on a photograph, which has its own texture.
+   */
+  pattern: "none" | "dots" | "stripes" | "grid";
   /**
    * Only meaningful with a photograph: darken it, or show it as it is.
    *

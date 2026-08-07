@@ -3,6 +3,7 @@
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { CardIcon, GiftIcon } from "./icons";
+import { translator, type Lang } from "@/lib/dict";
 
 /**
  * The diner's bottom nav — TWO tabs, white, with the shop's colour marking the
@@ -67,7 +68,8 @@ function TabBody({ label, Icon, active }: { label: string; Icon: typeof CardIcon
   );
 }
 
-export function BottomNav({ slug }: { slug: string }) {
+export function BottomNav({ slug, lang = "fr" }: { slug: string; lang?: Lang }) {
+  const t = translator(lang);
   const pathname = usePathname();
   const base = `/${slug}`;
 
@@ -98,7 +100,7 @@ export function BottomNav({ slug }: { slug: string }) {
                 aria-current={active ? "page" : undefined}
                 className="flex min-h-[62px] flex-col items-center justify-center gap-0.5 py-2"
               >
-                <TabBody label={label} Icon={Icon} active={active} />
+                <TabBody label={t(label)} Icon={Icon} active={active} />
               </Link>
             </li>
           );

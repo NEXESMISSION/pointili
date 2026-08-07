@@ -284,6 +284,43 @@ check("the wallet still holds both shops", /Deuxième Boutique/.test(backTxt) &&
 check("/moi never signs up — no account was invented for the unknown number",
   !/inscription|créer/i.test(await d.locator("body").innerText()));
 
+/*
+  ── A LOST SESSION IS NOT A LOST CARD ───────────────────────────────────
+  The complaint this guards: "I'm sure the card was added, but I open the link
+  again later and it makes me add it AGAIN." The session had ended — scanning
+  from a different browser, a cleared history, a dropped cookie — and the only
+  screen the product had for that was a signup form.
+
+  Simulate it exactly: keep the device (and its hint), drop the session cookie.
+*/
+const jar = d.context();
+const kept = (await jar.cookies()).filter((c) => c.name !== "pointili_diner");
+await jar.clearCookies();
+await jar.addCookies(kept);
+
+await d.goto(`${BASE}/${TEST_SLUG}`, { waitUntil: "networkidle" });
+const lost = await d.locator("main").innerText();
+check("a returning customer is greeted, not asked to sign up", /Bon retour/i.test(lost),
+  lost.split(String.fromCharCode(10)).find((l) => /retour|compte/i.test(l)) ?? "");
+check("it says the card is still there", /toujours là|t'attend/i.test(lost));
+check("it does not offer a new account", !/Nouveau compte/i.test(lost));
+
+await d.fill('input[name="pin"]', PIN);
+await d.locator('button[type="submit"]').first().click();
+await d.waitForURL((u) => u.pathname === `/${TEST_SLUG}`, { timeout: 20000 }).catch(() => {});
+const reopened = await d.locator("main").innerText();
+check("the secret code alone reopens the card", new URL(d.url()).pathname === `/${TEST_SLUG}`,
+  new URL(d.url()).pathname);
+
+/* and the points are the same ones — nothing was re-created */
+const { count: cards } = await admin
+  .from("diner_cafes")
+  .select("phone", { count: "exact", head: true })
+  .eq("phone", NORM)
+  .eq("business_id", cafeA);
+check("no second card was created", cards === 1, `${cards} card(s)`);
+check("the balance survived the lost session", /\d/.test(reopened));
+
 await browser.close();
 
 /* ── clean up: this runs against the REAL database ─────────────────── */

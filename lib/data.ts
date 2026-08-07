@@ -94,7 +94,15 @@ function toCafe(b: BusinessRow): Cafe {
         banner: pick(t.banner, ["flat", "gradient", "photo"], "gradient"),
         surface: pick(t.surface, ["light", "dark"], "light"),
         radius: pick(t.radius, ["s", "m", "l"], "m"),
-        bannerRound: t.bannerRound !== false,
+        /* was a boolean; a saved `true` means the 30px curve it used to draw */
+        bannerRound:
+          t.bannerRound === true
+            ? "m"
+            : t.bannerRound === false
+              ? "none"
+              : pick(t.bannerRound, ["none", "s", "m", "l"], "m"),
+        bannerHeight: pick(t.bannerHeight, ["s", "m", "l"], "m"),
+        pattern: pick(t.pattern, ["none", "dots", "stripes", "grid"], "none"),
         scrim: t.scrim !== false,
         font: pick(t.font, ["inter", "poppins"], "inter"),
         coverAt: typeof t.coverAt === "string" ? t.coverAt : null,

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CardIcon, GiftIcon, UserIcon } from "@/components/icons";
+import { translator, type Lang } from "@/lib/dict";
 
 /**
  * ── THE CLIENT APP ON A MONITOR ───────────────────────────────────────────
@@ -33,16 +34,20 @@ export function SideRail({
   logoUrl,
   emoji,
   cards,
+  lang = "fr",
 }: {
   slug: string;
   name: string;
   logoUrl: string | null;
+  /** French or Tunisian — see lib/dict. */
+  lang?: Lang;
   /** The business-type mark, for a shop that has uploaded no logo. */
   emoji: string;
   /** How many cards this person holds — the switcher's whole point. */
   cards: number;
 }) {
   const pathname = usePathname();
+  const t = translator(lang);
   const base = `/${slug}`;
 
   // Pre-account: the join screen is a single task, with no navigation at all.
@@ -69,7 +74,7 @@ export function SideRail({
           <span className="block truncate text-[15px] font-extrabold leading-tight text-charcoal">
             {name}
           </span>
-          <span className="block text-[11.5px] text-slate">Ma carte de fidélité</span>
+          <span className="block text-[11.5px] text-slate">{t("Ma carte de fidélité")}</span>
         </span>
       </Link>
 
@@ -93,7 +98,7 @@ export function SideRail({
               }
             >
               <Icon className="h-[19px] w-[19px]" />
-              {label}
+              {t(label)}
             </Link>
           );
         })}
@@ -111,7 +116,7 @@ export function SideRail({
           <CardIcon className="h-[18px] w-[18px]" />
         </span>
         <span className="min-w-0">
-          <span className="block truncate text-[13px] font-extrabold text-charcoal">Mes cartes</span>
+          <span className="block truncate text-[13px] font-extrabold text-charcoal">{t("Mes cartes")}</span>
           <span className="block text-[11px] text-slate">
             {cards} boutique{cards > 1 ? "s" : ""}
           </span>

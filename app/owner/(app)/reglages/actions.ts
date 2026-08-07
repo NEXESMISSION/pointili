@@ -546,6 +546,9 @@ const BANNERS = ["flat", "gradient", "photo"] as const;
 const SURFACES = ["light", "dark"] as const;
 const RADII = ["s", "m", "l"] as const;
 const FONTS = ["inter", "poppins"] as const;
+const CURVES = ["none", "s", "m", "l"] as const;
+const HEIGHTS = ["s", "m", "l"] as const;
+const PATTERNS = ["none", "dots", "stripes", "grid"] as const;
 
 function one<T extends string>(v: FormDataEntryValue | null, allowed: readonly T[], fallback: T): T {
   const s = String(v ?? "");
@@ -568,7 +571,10 @@ export async function saveThemeAction(
     surface: one(formData.get("surface"), SURFACES, "light"),
     radius: one(formData.get("radius"), RADII, "m"),
     font: one(formData.get("font"), FONTS, "inter"),
-    bannerRound: formData.get("bannerRound") === "on",
+    /* was a checkbox ("on"/absent), is now an amount — see CardTheme */
+    bannerRound: one(formData.get("bannerRound"), CURVES, "m"),
+    bannerHeight: one(formData.get("bannerHeight"), HEIGHTS, "m"),
+    pattern: one(formData.get("pattern"), PATTERNS, "none"),
     scrim: formData.get("scrim") === "on",
   };
 

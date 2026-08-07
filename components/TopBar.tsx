@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BackLink } from "./BackLink";
+import { translator, type Lang } from "@/lib/dict";
 
 /**
  * The header on every diner screen EXCEPT the card.
@@ -32,12 +33,16 @@ const TITLES: Record<string, string> = {
 export function TopBar({
   slug,
   pendingCodes = 0,
+  lang = "fr",
 }: {
   slug: string;
+  /** French or Tunisian — see lib/dict. */
+  lang?: Lang;
   /** Rewards bought and not yet collected — what the bell's dot is about. */
   pendingCodes?: number;
 }) {
   const pathname = usePathname();
+  const t = translator(lang);
 
   // Pre-account (just scanned the QR): no card yet — keep that screen on joining.
   if (pathname === `/${slug}/rejoindre`) return null;
@@ -69,7 +74,7 @@ export function TopBar({
         <BackLink fallback={exactTo ?? `/${slug}`} exact={Boolean(exactTo)} />
       </span>
 
-      <h1 className="min-w-0 truncate text-[16.5px] font-extrabold text-charcoal">{title}</h1>
+      <h1 className="min-w-0 truncate text-[16.5px] font-extrabold text-charcoal">{t(title)}</h1>
 
       {/*
         A real bell, not a decorative one.

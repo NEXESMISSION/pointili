@@ -3,6 +3,8 @@ import { CafeClosed } from "@/components/CafeClosed";
 import { notFound, redirect } from "next/navigation";
 import { getCafe, getMember } from "@/lib/data";
 import { logoutDinerAction } from "../actions";
+import { LangSwitch } from "@/components/LangSwitch";
+import { currentLang } from "@/lib/i18n";
 
 export const metadata = { title: "Profil" };
 
@@ -37,6 +39,8 @@ export default async function Profil({
   if (!cafe.live) return <CafeClosed name={cafe.name} />;
 
   const diner = await getMember(cafe.id);
+
+  const lang = await currentLang();
   if (!diner) redirect(`/${slug}/rejoindre`);
 
   return (
@@ -99,6 +103,13 @@ export default async function Profil({
         </span>
         <span className="shrink-0 text-[17px] leading-none text-slate">›</span>
       </Link>
+
+      {/* Language lives HERE, not in a settings screen that does not exist.
+          It is a property of the person, like their code and their number, and
+          this is the only diner screen that is about the person. */}
+      <div className="mt-2.5">
+        <LangSwitch current={lang} />
+      </div>
 
       <form action={logoutDinerAction.bind(null, slug)} className="mt-auto pt-8">
         <button

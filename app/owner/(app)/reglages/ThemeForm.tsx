@@ -41,6 +41,29 @@ const FONTS = [
   { key: "poppins", label: "Poppins", css: "var(--font-poppins-var), sans-serif" },
 ] as const;
 
+/* The two corners under the shop's header — an AMOUNT, not a switch. */
+const CURVES = [
+  { key: "none", label: "Net" },
+  { key: "s", label: "Léger" },
+  { key: "m", label: "Doux" },
+  { key: "l", label: "Rond" },
+] as const;
+
+/* How much of the shop's colour there is before the card begins. */
+const HEIGHTS = [
+  { key: "s", label: "Compact" },
+  { key: "m", label: "Normal" },
+  { key: "l", label: "Ample" },
+] as const;
+
+/* A texture drawn from the shop's own ink. Never over a photograph. */
+const PATTERNS = [
+  { key: "none", label: "Aucun" },
+  { key: "dots", label: "Pois" },
+  { key: "stripes", label: "Rayures" },
+  { key: "grid", label: "Grille" },
+] as const;
+
 const BANNERS = [
   { key: "flat", label: "Uni" },
   { key: "gradient", label: "Dégradé" },
@@ -85,6 +108,8 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
   const [radius, setRadius] = useState<(typeof RADII)[number]["key"]>(t.radius);
   const [font, setFont] = useState<(typeof FONTS)[number]["key"]>(t.font);
   const [round, setRound] = useState(t.bannerRound);
+  const [height, setHeight] = useState(t.bannerHeight);
+  const [pattern, setPattern] = useState(t.pattern);
   const [scrim, setScrim] = useState(t.scrim);
 
   /* The cover is saved on its own, the moment it is chosen — see saveCoverAction. */
@@ -143,8 +168,10 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
       <input type="hidden" name="surface" value={surface} />
       <input type="hidden" name="radius" value={radius} />
       <input type="hidden" name="font" value={font} />
+      <input type="hidden" name="bannerRound" value={round} />
+      <input type="hidden" name="bannerHeight" value={height} />
+      <input type="hidden" name="pattern" value={pattern} />
       {/* checkboxes post "on"/absent, which is what saveThemeAction reads */}
-      <input type="checkbox" name="bannerRound" checked={round} readOnly hidden />
       <input type="checkbox" name="scrim" checked={scrim} readOnly hidden />
 
       {/* ══ THE PREVIEW — their card, not a swatch ═══════════════════════ */}
@@ -160,6 +187,9 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
         dark={dark}
         px={px}
         font={FONTS.find((f) => f.key === font)?.css ?? FONTS[0].css}
+        curve={round}
+        height={height}
+        pattern={pattern}
       />
       </div>
 
@@ -247,13 +277,24 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
         </p>
       )}
 
+      {/* ══ THE BANNER'S OWN SHAPE ══════════════════════════════════════
+          Three levers that do more for "this looks like my shop" than the
+          colour picker does, and none of them can break legibility. */}
+      <Label>Coins du bandeau</Label>
+      <Segmented options={CURVES} value={round} onChange={(v) => setRound(v)} />
+
+      <Label>Hauteur du bandeau</Label>
+      <Segmented options={HEIGHTS} value={height} onChange={(v) => setHeight(v)} />
+
+      {/* a photograph brings its own texture — a pattern on top is noise */}
+      {banner !== "photo" && (
+        <>
+          <Label>Motif</Label>
+          <Segmented options={PATTERNS} value={pattern} onChange={(v) => setPattern(v)} />
+        </>
+      )}
+
       <div className="mt-3 space-y-1">
-        <Switch
-          label="Coins arrondis en bas"
-          hint="L'en-tête s'arrondit dans la page, ou s'arrête net."
-          on={round}
-          onChange={setRound}
-        />
         {/* only means anything with a photograph — a scrim over a flat colour
             is a darker flat colour, which is what the colour picker is for */}
         {banner === "photo" && (
@@ -409,6 +450,9 @@ function Preview({
   dark,
   px,
   font,
+  curve,
+  height,
+  pattern,
 }: {
   cafe: Cafe;
   emoji: string;
@@ -420,6 +464,10 @@ function Preview({
   dark: boolean;
   px: number;
   font: string;
+  /** The banner's own three: its corners, its height, its texture. */
+  curve: "none" | "s" | "m" | "l";
+  height: "s" | "m" | "l";
+  pattern: "none" | "dots" | "stripes" | "grid";
 }) {
   const soft = mixHex(colour, dark ? "#17141f" : "#ffffff", 0.86);
   const usePhoto = banner === "photo" && cover;
@@ -430,17 +478,30 @@ function Preview({
       style={{ background: dark ? "#0e0c15" : "#f6f6f8", fontFamily: font }}
     >
       <div
-        className="relative px-4 pb-5 pt-4"
+        className={`relative px-4 pt-4 ${{ s: "pb-3", m: "pb-5", l: "pb-8" }[height]}`}
         style={{
           color: usePhoto ? "#fff" : ink,
           backgroundColor: usePhoto ? mixHex(colour, "#000", 0.28) : colour,
-          backgroundImage: usePhoto
-            ? `linear-gradient(170deg, ${mixHex(colour, "#000", 0.28)}cc, #000000bf), url(${cover})`
-            : banner === "flat"
+          /* the preview draws the SAME layers the real banner does — the
+             texture over the gradient, in the ink's own colour */
+          backgroundImage: [
+            usePhoto ? null : !usePhoto && pattern !== "none" ? patternLayer(pattern, ink) : null,
+            usePhoto
+              ? `linear-gradient(170deg, ${mixHex(colour, "#000", 0.28)}cc, #000000bf), url(${cover})`
+              : banner === "flat"
+                ? null
+                : `linear-gradient(168deg, ${colour} 0%, ${mixHex(colour, "#000", 0.28)} 100%)`,
+          ]
+            .filter(Boolean)
+            .join(", ") || undefined,
+          backgroundSize: usePhoto
+            ? "cover"
+            : pattern === "none"
               ? undefined
-              : `linear-gradient(168deg, ${colour} 0%, ${mixHex(colour, "#000", 0.28)} 100%)`,
-          backgroundSize: "cover",
+              : patternSize(pattern),
           backgroundPosition: "center",
+          borderBottomLeftRadius: CURVE_PX[curve],
+          borderBottomRightRadius: CURVE_PX[curve],
         }}
       >
         <div className="flex items-center gap-2.5">
@@ -511,4 +572,23 @@ function mixHex(a: string, b: string, amount: number): string {
   const [x, y] = [p(a), p(b)];
   const c = x.map((v, i) => Math.round(v + (y[i] - v) * amount));
   return `#${c.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** Same three numbers the stylesheet uses (globals.css, .d-banner--round-*). */
+const CURVE_PX: Record<"none" | "s" | "m" | "l", number> = { none: 0, s: 16, m: 30, l: 46 };
+
+/** Tile sizes for those layers, in the same order patternLayer emits them. */
+function patternSize(kind: "dots" | "stripes" | "grid"): string {
+  if (kind === "dots") return "14px 14px, auto";
+  if (kind === "stripes") return "auto, auto";
+  return "22px 22px, 22px 22px, auto";
+}
+
+/** The texture, as an inline layer — the preview cannot borrow a class. */
+function patternLayer(kind: "dots" | "stripes" | "grid", ink: string): string {
+  const tint = `color-mix(in oklab, ${ink} 14%, transparent)`;
+  if (kind === "dots") return `radial-gradient(${tint} 1.5px, transparent 1.6px)`;
+  if (kind === "stripes")
+    return `repeating-linear-gradient(135deg, ${tint} 0 2px, transparent 2px 12px)`;
+  return `linear-gradient(${tint} 1px, transparent 1px), linear-gradient(90deg, ${tint} 1px, transparent 1px)`;
 }

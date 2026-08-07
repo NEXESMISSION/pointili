@@ -13,6 +13,7 @@ import { MarkOpened } from "@/components/MarkOpened";
 import { fmtPoints } from "@/lib/points";
 import { codeQr } from "@/lib/qr";
 import { inkOn, safeColor } from "@/lib/theme";
+import { t as translation } from "@/lib/i18n";
 
 /**
  * Ma carte — the shop's own card, in the shop's own colour.
@@ -100,6 +101,10 @@ export default async function Carte({
      code, never the phone number. */
   const qr = await codeQr(diner.code);
 
+  /* French or Tunisian. `t(fr)` returns the French unchanged in French, so the
+     sentences below stay readable as the thing the customer sees. */
+  const t = await translation();
+
   /*
     The banner's dress.
 
@@ -121,10 +126,18 @@ export default async function Carte({
   const bannerClass = [
     coverUrl ? "d-banner--photo" : theme.banner === "flat" ? "d-banner--flat" : "",
     coverUrl && !theme.scrim ? "d-banner--bare" : "",
-    theme.bannerRound ? "rounded-b-[30px]" : "",
+    /* the two corners, at the amount the shop chose (globals.css) */
+    theme.bannerRound === "none" ? "" : `d-banner--round-${theme.bannerRound}`,
+    /* a texture over the colour — never over a photograph, which has its own */
+    !coverUrl && theme.pattern !== "none" ? `d-banner--${theme.pattern}` : "",
   ]
     .filter(Boolean)
     .join(" ");
+
+  /* How much colour there is before the card starts. The header and the balance
+     sit inside this, so it is padding rather than a height — the banner still
+     grows if a shop has a long name. */
+  const bannerPad = { s: "pb-9", m: "pb-14", l: "pb-20" }[theme.bannerHeight];
 
   return (
     /* data-carte is a landmark for the suites, not styling — a test should break
@@ -150,7 +163,7 @@ export default async function Carte({
           not content: nothing should announce it to a screen reader, and it has
           to sit under the scrim that keeps the name and the balance legible. */}
       <section
-        className={`d-banner ${bannerClass} safe-t relative overflow-hidden px-5 pb-14 [--safe-pt:0.75rem]`}
+        className={`d-banner ${bannerClass} ${bannerPad} safe-t relative overflow-hidden px-5 [--safe-pt:0.75rem]`}
         style={coverUrl ? { backgroundImage: `url(${coverUrl})` } : undefined}
       >
         {/*
@@ -223,13 +236,13 @@ export default async function Carte({
             )}
             <span className="min-w-0">
               <span className="block truncate text-[14.5px] font-extrabold leading-tight">
-                Mes cartes
+                {t("Mes cartes")}
               </span>
               <span className="block text-[11px] font-semibold leading-tight opacity-75">
-                {wallet.length} boutique{wallet.length > 1 ? "s" : ""}
+                {wallet.length} {t(wallet.length > 1 ? "boutiques" : "boutique")}
               </span>
             </span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0 opacity-80" aria-hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0 opacity-80 rtl:-scale-x-100" aria-hidden>
               <path d="m9 6 6 6-6 6" />
             </svg>
           </Link>
@@ -291,7 +304,7 @@ export default async function Carte({
             to={diner.balance}
             className="text-[52px] font-extrabold leading-[0.9] tabular-nums tracking-[-0.04em]"
           />
-          <span className="pb-1.5 text-[15px] font-bold opacity-75">points</span>
+          <span className="pb-1.5 text-[15px] font-bold opacity-75">{t("points")}</span>
         </div>
 
         {/*
@@ -320,11 +333,11 @@ export default async function Carte({
               />
             </span>
             <p className="mt-2.5 text-[12.5px] leading-snug opacity-85">
-              Encore{" "}
+              {t("Encore")}{" "}
               <b className="font-extrabold">
-                {fmtPoints(nudge.needed)} point{nudge.needed >= 2 ? "s" : ""}
+                {fmtPoints(nudge.needed)} {t(nudge.needed >= 2 ? "points" : "point")}
               </b>{" "}
-              pour <b className="font-extrabold">{nudge.target.label}</b>
+              {t("pour")} <b className="font-extrabold">{nudge.target.label}</b>
             </p>
           </div>
         ) : readyCount > 0 ? (
@@ -332,7 +345,8 @@ export default async function Carte({
              the earning rate, which reads as a shrug when you can already
              afford the best thing on the menu. */
           <p className="mt-5 text-[12.5px] leading-snug opacity-85">
-            Tu peux prendre <b className="font-extrabold">n&apos;importe quelle récompense</b> ici.
+            {t("Tu peux prendre")}{" "}
+            <b className="font-extrabold">{t("n'importe quelle récompense")}</b> {t("ici.")}
           </p>
         ) : (
           <p className="mt-5 text-[12.5px] leading-snug opacity-85">{rateLabel(program.pointsPerTnd)}</p>
@@ -407,7 +421,7 @@ export default async function Carte({
           />
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate">
-              Mon code client
+              {t("Mon code client")}
             </p>
             <p
               className="mt-1 font-mono text-[30px] font-extrabold leading-none tracking-[0.14em]"
@@ -416,7 +430,7 @@ export default async function Carte({
               {diner.code}
             </p>
             <p className="mt-1.5 text-[11.5px] leading-snug text-slate">
-              Le serveur le scanne — pas besoin de ton numéro.
+              {t("Le serveur le scanne — pas besoin de ton numéro.")}
             </p>
           </div>
         </div>
@@ -436,7 +450,7 @@ export default async function Carte({
         <Waiting
           href={`/${slug}/boutique`}
           title={`${readyCount} récompense${readyCount > 1 ? "s" : ""} à ta portée`}
-          hint="Tu as assez de points — choisis la tienne."
+          hint={t("Tu as assez de points — choisis la tienne.")}
         />
       ) : null}
 
@@ -456,11 +470,11 @@ export default async function Carte({
       <section className="mt-3 px-4">
         <Tile
           href={`/${slug}/historique`}
-          label="Mon activité"
+          label={t("Mon activité")}
           value={
             pending > 0
               ? `${pending} code${pending > 1 ? "s" : ""} · mes points`
-              : "points, visites, récompenses"
+              : t("points, visites, récompenses")
           }
           icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]">
@@ -488,13 +502,13 @@ export default async function Carte({
       {ladder.length > 0 && (
         <section className="mt-5">
           <div className="flex items-baseline justify-between px-4">
-            <h2 className="text-[14.5px] font-extrabold text-charcoal">À gagner ici</h2>
+            <h2 className="text-[14.5px] font-extrabold text-charcoal">{t("À gagner ici")}</h2>
             <Link
               href={`/${slug}/boutique`}
               className="text-[12px] font-bold"
               style={{ color: "var(--cafe-text)" }}
             >
-              Tout voir
+              {t("Tout voir")}
             </Link>
           </div>
 
@@ -561,7 +575,7 @@ export default async function Carte({
                         style={{ color: affordable ? "var(--cafe-text)" : undefined }}
                       >
                         <span className={affordable ? "" : "text-slate"}>
-                          {affordable ? "à prendre" : `${fmtPoints(r.pointsCost)} points`}
+                          {affordable ? t("à prendre") : `${fmtPoints(r.pointsCost)} ${t("points")}`}
                         </span>
                       </span>
                     </span>

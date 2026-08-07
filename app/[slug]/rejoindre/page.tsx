@@ -1,10 +1,11 @@
 import { notFound, redirect } from "next/navigation";
-import { currentDiner } from "@/lib/auth/diner";
+import { currentDiner, lastDinerPhone } from "@/lib/auth/diner";
 import { businessType } from "@/lib/businessTypes";
 import { getCafe, getLoyaltyProgram } from "@/lib/data";
-import { creditPoints, enrollDiner, getAccount } from "@/lib/db";
+import { creditPoints, enrollDiner, getAccount, getBalance } from "@/lib/db";
 import { JsonLd, localBusinessType, SITE_URL } from "@/lib/seo";
 import { JoinForm } from "./JoinForm";
+import { WelcomeBack } from "./WelcomeBack";
 
 /**
  * Per-shop metadata. This is where the platform's SEO actually compounds.
@@ -82,6 +83,20 @@ export default async function Rejoindre({
   }
 
   const type = businessType(cafe.businessType);
+
+  /*
+    ── DOES THIS DEVICE ALREADY BELONG TO SOMEBODY? ──────────────────────
+    A lost session is not a lost customer. If the phone remembers whose it is
+    and that account still exists, the screen becomes "bon retour" and one
+    field instead of a signup form — see WelcomeBack for why that matters.
+
+    The account is re-read rather than trusted: an account can be deleted, and
+    greeting somebody by the name of an account that no longer exists would
+    strand them on a form that cannot succeed.
+  */
+  const hinted = phone ? null : await lastDinerPhone();
+  const known = hinted ? await getAccount(hinted) : null;
+  const heldPoints = known ? await getBalance(cafe.id, known.phone) : null;
 
   return (
     <div className="relative flex flex-1 flex-col overflow-hidden px-5 pb-8 pt-7">
@@ -171,8 +186,13 @@ export default async function Rejoindre({
           </span>
 
           <p className="mt-4 text-[15.5px] font-extrabold text-charcoal">{cafe.name}</p>
+          {/* A returning customer is not being offered a signup bonus, and
+              telling them about one is how a screen starts to feel like it has
+              forgotten them. */}
           <p className="mt-0.5 text-[13px] text-slate">
-            {program.active && program.welcomePoints > 0 ? (
+            {known ? (
+              <>Ta carte de fidélité</>
+            ) : program.active && program.welcomePoints > 0 ? (
               <>
                 <b className="font-bold" style={{ color: "var(--cafe-text)" }}>
                   {program.welcomePoints} points offerts
@@ -192,7 +212,7 @@ export default async function Rejoindre({
             page's JSON-LD, which is for crawlers, not for the person deciding
             whether to type their phone number in.
           */}
-          {program.active && program.pointsPerTnd > 0 && (
+          {!known && program.active && program.pointsPerTnd > 0 && (
             <p className="mt-1.5 text-[12px] text-slate">
               {program.pointsPerTnd >= 1
                 ? `1 dinar dépensé = ${Math.round(program.pointsPerTnd * 100) / 100} point${program.pointsPerTnd > 1 ? "s" : ""}`
@@ -202,20 +222,32 @@ export default async function Rejoindre({
           )}
         </div>
 
-        <div className="mt-7">
-          <JoinForm slug={slug} />
-        </div>
+        {known ? (
+          <WelcomeBack
+            slug={slug}
+            masked={`••• ${known.phone.slice(-3)}`}
+            name={known.name ?? null}
+            points={heldPoints}
+            cafeName={cafe.name}
+          />
+        ) : (
+          <div className="mt-7">
+            <JoinForm slug={slug} />
+          </div>
+        )}
 
         {/*
           True since the code moved to the account: one identity, every shop.
           It is also the answer to the question this screen actually raises —
           "do I have to do this again at the next place?".
         */}
-        <p className="mt-9 text-center text-[14px] font-extrabold leading-snug text-charcoal">
-          Un seul compte.
-          <br />
-          Utilisable <span style={{ color: "var(--cafe-text)" }}>partout</span>.
-        </p>
+        {!known && (
+          <p className="mt-9 text-center text-[14px] font-extrabold leading-snug text-charcoal">
+            Un seul compte.
+            <br />
+            Utilisable <span style={{ color: "var(--cafe-text)" }}>partout</span>.
+          </p>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { DINER_COOKIE } from "@/lib/auth/diner";
+import { signSession, verifySession } from "@/lib/auth/crypto";
 
 /**
  * One job: refresh the owner's Supabase session on every navigation.
@@ -24,8 +26,63 @@ import { NextResponse, type NextRequest } from "next/server";
  * on the Node runtime — edge is not supported here.
  */
 export async function proxy(request: NextRequest) {
-  return withSession(request, (req) => NextResponse.next({ request: req }));
+  const res = await withSession(request, (req) => NextResponse.next({ request: req }));
+  rollDinerSession(request, res);
+  return res;
 }
+
+/**
+ * KEEP A CUSTOMER SIGNED IN FOR AS LONG AS THEY KEEP COMING BACK.
+ *
+ * The diner cookie was written once, at signup, and never touched again: 90
+ * days from the day they joined, not 90 days from their last coffee. Somebody
+ * who scans the QR every week was still logged out three months later, and what
+ * the product then showed them was a signup form — which is why "it added my
+ * card again" is a thing people say. Nothing was ever added twice; the app just
+ * stopped recognising them and had only one screen for that.
+ *
+ * So the token is re-signed once it is past its first third. It costs one HMAC
+ * — no database, no network — and it means the session dies only after 30 quiet
+ * days, which is a real absence rather than a calendar accident.
+ *
+ * Deliberately in the proxy: a Server Component cannot write a cookie, and this
+ * has to happen on plain page views, not only on the rare form submit.
+ */
+function rollDinerSession(request: NextRequest, response: NextResponse) {
+  const token = request.cookies.get(DINER_COOKIE)?.value;
+  if (!token) return;
+
+  const phone = verifySession(token);
+  if (!phone) return; // expired or forged — let the app send them to sign in
+
+  const age = sessionAge(token);
+  if (age === null || age < ROLL_AFTER_S) return;
+
+  response.cookies.set(DINER_COOKIE, signSession(phone), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 90 * 86400,
+  });
+}
+
+/** Seconds since the token was issued, or null if it cannot be read. */
+function sessionAge(token: string): number | null {
+  try {
+    const body = token.split(".")[0];
+    const { iat } = JSON.parse(
+      Buffer.from(body.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString(),
+    ) as { iat?: number };
+    return typeof iat === "number" ? Math.floor(Date.now() / 1000) - iat : null;
+  } catch {
+    return null;
+  }
+}
+
+/** A third of the 90-day life. Re-signing on every request would be pointless
+    churn; waiting until the last day would miss anyone who visits monthly. */
+const ROLL_AFTER_S = 30 * 86400;
 
 /**
  * Refresh the owner's Supabase cookies onto whatever response we already chose.
