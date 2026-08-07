@@ -173,21 +173,28 @@ export function Showcase() {
   const want = side === "owner" ? "Votre caisse" : "Le téléphone du client";
   const shots = SHOTS.filter((s) => s.side === want);
   return (
-    <div className="space-y-16 md:space-y-24">
+    <div className="space-y-14 md:space-y-20">
       {shots.map((s, i) => (
-        <Row key={s.clip} shot={s} flip={i % 2 === 1} />
+        <Row key={s.clip} shot={s} index={i + 1} flip={i % 2 === 1} />
       ))}
     </div>
   );
 }
 
-function Row({ shot, flip }: { shot: Shot; flip: boolean }) {
+function Row({ shot, index, flip }: { shot: Shot; index: number; flip: boolean }) {
   return (
-    <section className="grid items-center gap-8 md:grid-cols-2 md:gap-14">
+    /* Ruled off at the top, catalogue-fashion. The rows used to float in
+       whitespace with nothing marking where one ended and the next began,
+       which is fine for two and formless for six. */
+    <section className="grid items-center gap-8 border-t border-hair pt-10 md:grid-cols-2 md:gap-14 md:pt-12">
       {/* the phone */}
       <div className={flip ? "md:order-2" : ""}>
         <div className="mx-auto w-full max-w-[286px]">
-          <div className="relative overflow-hidden rounded-[36px] border-[7px] border-[#1b1430] bg-[#0b0616] shadow-[0_34px_90px_-34px_rgba(0,0,0,.95)]">
+          {/* The bezel stays round — it is a phone. Only the shadow changed:
+              it was a 90px black bloom that made the device hover over the
+              page, which is the same "floating card" effect the rest of this
+              redesign took out. */}
+          <div className="relative overflow-hidden rounded-[36px] border-[7px] border-[#1b1430] bg-[#0b0616] shadow-[0_16px_44px_-24px_rgba(36,18,59,.55)]">
             {/*
               autoPlay + muted + playsInline is the only combination every mobile
               browser will start on its own; without muted, iOS refuses, and
@@ -214,24 +221,29 @@ function Row({ shot, flip }: { shot: Shot; flip: boolean }) {
       <div className={flip ? "md:order-1" : ""}>
         {/* No "whose screen" badge any more. The switch at the top of the page
             has already answered that, and repeating it here was the tell that
-            the page had not chosen an audience. */}
-        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-royal">
-          {shot.eyebrow}
-        </span>
+            the page had not chosen an audience.
 
-        <h3 className="mt-3 text-[26px] font-extrabold leading-[1.12] tracking-[-0.02em] md:text-[32px]">
-          {shot.title}
-        </h3>
-        <p className="mt-3 max-w-[46ch] text-[15.5px] leading-relaxed text-charcoal/60">
+            Numbered — № 01, the house style — so six sections read as a
+            sequence you are working through rather than six pitches. */}
+        <p className="flex items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
+          <span className="tabular-nums">{String(index).padStart(2, "0")}</span>
+          <span aria-hidden className="h-px w-6 bg-royal/40" />
+          {shot.eyebrow}
+        </p>
+
+        <h3 className="mt-4 text-[27px] md:text-[33px]">{shot.title}</h3>
+        <p className="mt-4 max-w-[46ch] text-[15.5px] leading-relaxed text-slate">
           {shot.lede}
         </p>
 
-        <ul className="mt-6 space-y-2.5">
+        {/* Hairline rows, not tinted circle-check bubbles. A round badge behind
+            every tick is decoration repeated three times per section, eighteen
+            times down the page; the rule already separates the facts and costs
+            nothing to read. */}
+        <ul className="mt-7 border-t border-hair">
           {shot.facts.map((f) => (
-            <li key={f} className="flex items-start gap-3">
-              <span className="mt-[3px] grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-royal/12 text-royal">
-                <CheckIcon className="h-3 w-3" />
-              </span>
+            <li key={f} className="flex items-start gap-3 border-b border-hair py-3">
+              <CheckIcon className="mt-[5px] h-3 w-3 shrink-0 text-royal" />
               <span className="text-[14.5px] leading-snug text-charcoal">{f}</span>
             </li>
           ))}

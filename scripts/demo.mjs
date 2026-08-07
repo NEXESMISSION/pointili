@@ -51,6 +51,25 @@
  */
 import { randomBytes, scrypt as _scrypt } from "node:crypto";
 import { shopLogo } from "./shop-logo.mjs";
+import sharp from "sharp";
+import { readFile } from "node:fs/promises";
+
+/**
+ * The shop's own photograph, as the owner's upload would arrive.
+ *
+ * Same shape as the real thing: downscaled to banner width and stored as a
+ * WebP data URI in businesses.cover_url, which /api/cover serves as bytes. The
+ * source is our own licensed hero image — nothing here is a stock photo we do
+ * not hold a licence for (public/rewards/CREDITS.json for the rest).
+ */
+async function coverPhoto() {
+  const buf = await readFile("public/hero-barista.png");
+  const webp = await sharp(buf)
+    .resize(1080, 720, { fit: "cover", position: "centre" })
+    .webp({ quality: 78 })
+    .toBuffer();
+  return `data:image/webp;base64,${webp.toString("base64")}`;
+}
 import { promisify } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import { connect, env } from "./db.mjs";
@@ -112,6 +131,38 @@ const RATE = 1;
 const WELCOME = 10;
 
 const DEMO_BRAND = "#7a4a25"; // a roaster's brown
+
+/*
+  ── A SHOP THAT HAS ACTUALLY BEEN DRESSED ─────────────────────────────────
+
+  Everything below is a knob a real owner turns in Réglages, and until now the
+  demo turned none of them: the card in every screenshot was the DEFAULT card,
+  which is exactly the "it looks like a template" verdict we kept getting from
+  our own marketing page. A shop with a photograph of its own room, a curve it
+  chose and a font it chose is what the product actually produces on day two.
+
+  Photo banner + scrim: the picture is the thing that says "this is the place
+  you are standing in", and the scrim is what keeps the balance readable over
+  it. Ample height because a room needs room. Poppins because a café is not a
+  bank.
+*/
+const DEMO_DESIGN = {
+  loyaltyEnabled: true,
+  showEngagement: true,
+  pointsExpiryMonths: null,
+  theme: {
+    banner: "photo",
+    surface: "light",
+    radius: "m",
+    bannerRound: "l",
+    bannerHeight: "l",
+    pattern: "none",
+    scrim: true,
+    font: "poppins",
+    /* the cache key on /api/cover — a fixed string is fine for a fixture */
+    coverAt: "demo",
+  },
+};
 
 const REWARDS = [
   ["Thé à la menthe", 40, "/rewards/the-a-la-menthe.webp"],
@@ -225,9 +276,19 @@ const { rows: bizRows } = await sql.query(
      screenshot taken from it showed the customer's card with an emoji circle
      where the shop's identity goes — which is not what a real café looks like
      and is not what we should be judging the design against. */
-  `insert into businesses (owner_id, name, slug, status, primary_color, logo_url, business_type, plan, plan_expires_at, created_at)
-   values ($1,$2,$3,'active',$4,$5,'cafe','pro',$6,$7) returning id`,
-  [ownerId, NAME, SLUG, DEMO_BRAND, await shopLogo(NAME, DEMO_BRAND), new Date(now + 300 * DAY), opened],
+  `insert into businesses (owner_id, name, slug, status, primary_color, logo_url, cover_url, design_settings, business_type, plan, plan_expires_at, created_at)
+   values ($1,$2,$3,'active',$4,$5,$6,$7,'cafe','pro',$8,$9) returning id`,
+  [
+    ownerId,
+    NAME,
+    SLUG,
+    DEMO_BRAND,
+    await shopLogo(NAME, DEMO_BRAND),
+    await coverPhoto(),
+    JSON.stringify(DEMO_DESIGN),
+    new Date(now + 300 * DAY),
+    opened,
+  ],
 );
 const biz = bizRows[0].id;
 

@@ -8,21 +8,47 @@ import { Compare } from "@/components/Compare";
 import { AudienceProvider, AudienceTabs, ForCustomer, ForOwner } from "@/components/Audience";
 import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
-import { ShopArt } from "./LandingArt";
 
 /**
- * The landing page, light — same palette as the till and the settings.
+ * The landing page, set like printed matter.
  *
- * Built to a supplied mockup, and structured around ONE argument: you already
- * have regulars — you just cannot count them. Everything on the page either
- * states the mechanic (how a card is born and how points are credited) or
- * answers a shop owner's next objection. Nothing here claims Pointili *causes*
- * a customer to return; the product has no SMS, no notification and no reminder,
- * so that promise would be one the software cannot keep.
+ * WHAT THIS PAGE USED TO BE, and why it stopped working: Poppins ExtraBold
+ * with a violet gradient clipped into the second line of the headline, two
+ * blurred radial blobs behind it, a phone breathing inside a rotating ring
+ * with particles drifting past, and below that a run of rounded-3xl cards
+ * floating on white under violet glow. Every one of those is a signature of a
+ * generated page, and having all of them at once made a real product — nine
+ * clips of software that genuinely works — look like a template with the
+ * copy filled in.
  *
- * This root is also the BUSINESS front door. A diner who lands here already has
- * a card, so they are sent to their wallet — the two audiences never share a
- * screen. See /moi for the customer's own door.
+ * components/icons.tsx has stated the actual house style since the beginning:
+ * "speaks in type, not iconography — features are numbered (№ 01) rather than
+ * badged." This page is that, finally: FRAUNCES for display (loaded in
+ * layout.tsx since the first commit and until now used by nothing), Inter for
+ * reading, Space Mono for anything countable. Flat ink, hard-edged colour
+ * fields, hairline rules. No gradient text, no blur, no ambient motion.
+ *
+ * THE ORDER CHANGED TOO, and that mattered more than the pixels:
+ *
+ *   was: hero → fake logo strip → clips → 3 abstract feature cards → a dark
+ *        panel making the SAME argument as the hero → price → closing CTA →
+ *        comparison table → FAQ
+ *
+ *   now: hero → who it is for → the mechanic (01/02/03) → what you learn →
+ *        the clips → the comparison → the FAQ → the price → closing CTA
+ *
+ * Three things fixed by that. The hero's argument was being restated twice
+ * more in different card shapes, so the two restatements are gone and the one
+ * survivor says something new. The objections — the carton comparison and the
+ * eight counter questions — used to sit AFTER the closing call to action,
+ * which asks for the sale before answering why; they now come before the
+ * price. And the mechanic ("he gives his number, you type dinars, the server
+ * counts") was buried four screens down behind three adjectives; it is now
+ * the first thing after the hero, because it is the first thing anyone asks.
+ *
+ * This root is also the BUSINESS front door. A diner who lands here already
+ * has a card, so they are sent to their wallet — the two audiences never share
+ * a screen. See /moi for the customer's own door.
  */
 
 export const metadata = {
@@ -31,40 +57,91 @@ export const metadata = {
   alternates: { canonical: "/" },
 };
 
-/* ── icons, local to this page ────────────────────────────────────────── */
-type I = { className?: string };
+/* ── the only two marks left on the page ──────────────────────────────────
+   The stroke-icon set that used to live here (cup, burger, scissors, bag,
+   lipstick, phone, star, bar chart) is gone with the sections that held it:
+   five of them dressed a category list up as a customer logo strip, and three
+   sat in gradient tiles above copy that said nothing. What is left is an
+   arrow that means "go" and a tick that means "included". */
 const S = (p: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden {...p} />
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden {...p} />
 );
-const Cup = ({ className = "h-6 w-6" }: I) => <S className={className}><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Z" /><path d="M17 9.5h1.5a2.5 2.5 0 0 1 0 5H17" /><path d="M7.5 3v2M11 3v2M14.5 3v2" /></S>;
-const Burger = ({ className = "h-6 w-6" }: I) => <S className={className}><path d="M4 9a8 8 0 0 1 16 0Z" /><path d="M3.5 13h17" /><path d="M4 16.5h16a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3Z" /></S>;
-const Scissors = ({ className = "h-6 w-6" }: I) => <S className={className}><circle cx="6" cy="18" r="2.6" /><circle cx="18" cy="18" r="2.6" /><path d="M7.8 16.2 18 4M16.2 16.2 6 4" /></S>;
-const Bag = ({ className = "h-6 w-6" }: I) => <S className={className}><path d="M5 8h14l-1 12H6Z" /><path d="M9 8V6a3 3 0 0 1 6 0v2" /></S>;
-const Lipstick = ({ className = "h-6 w-6" }: I) => <S className={className}><path d="M9.5 10V6.5a2 2 0 0 1 2-2l3 1.2v4.3" /><rect x="8.5" y="10" width="7" height="10" rx="1.5" /></S>;
-const Phone = ({ className = "h-6 w-6" }: I) => <S className={className}><rect x="6" y="2.5" width="12" height="19" rx="3" /><path d="M11 18.5h2" /></S>;
-const Star = ({ className = "h-6 w-6" }: I) => <S className={className}><path d="m12 3.5 2.6 5.6 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.9l6-.8Z" /></S>;
-const Chart = ({ className = "h-6 w-6" }: I) => <S className={className}><path d="M5 20V11M10 20V4M15 20v-6M20 20V8" /></S>;
-const Arrow = ({ className = "h-4 w-4" }: I) => <S className={className} strokeWidth="2.2"><path d="M5 12h13M12 6l6 6-6 6" /></S>;
-const Check = ({ className = "h-3.5 w-3.5" }: I) => <S className={className} strokeWidth="3"><path d="m5 12.5 4.5 4.5L19 7" /></S>;
+const Arrow = ({ className = "h-4 w-4" }: { className?: string }) => (
+  <S className={className} strokeWidth="2.4"><path d="M5 12h13M12 6l6 6-6 6" /></S>
+);
+const Check = ({ className = "h-3.5 w-3.5" }: { className?: string }) => (
+  <S className={className} strokeWidth="3"><path d="m5 12.5 4.5 4.5L19 7" /></S>
+);
 
-const TRADES = [
-  { Icon: Cup, label: "Cafés" },
-  { Icon: Burger, label: "Restaurants" },
-  { Icon: Scissors, label: "Barbiers" },
-  { Icon: Bag, label: "Boutiques" },
-  { Icon: Lipstick, label: "Salons" },
+/*
+  "FAIT POUR", not "UTILISÉ PAR" — and that is a correction, not a rewrite.
+
+  This row sits in the slot a reader's eye reads as social proof, and it was
+  filled with the names of TRADES. Nobody in that list is a customer; they are
+  categories. Claiming otherwise in the one place a visitor looks for evidence
+  is the fastest way to lose them, and dressing each one in a little outlined
+  icon made it look even more like a logo wall.
+
+  So it says what it actually is — the shops this is built for — set as one
+  line of type, which is also all a category list deserves.
+*/
+const TRADES = ["Cafés", "Restaurants", "Barbiers", "Boutiques", "Salons"];
+
+/*
+  THE MECHANIC, in the order it happens at the counter.
+
+  This replaces three cards that read "Sans application / Fidélité automatique
+  / Analyse réelle" — three abstract nouns and a gloss each, which is what a
+  page writes when it has nothing concrete to say. Everything below is a
+  checkable claim about what the software does, lifted from the same source of
+  truth the demo clips are captured against.
+*/
+const STEPS_OWNER = [
+  {
+    title: "Il donne son numéro",
+    text: "Pas de carte à sortir, rien à ouvrir. Huit chiffres — ou son code à quatre caractères, s'il l'a devant lui.",
+  },
+  {
+    title: "Vous tapez des dinars",
+    text: "Le montant de l'addition, comme sur votre calculette. Jamais des points : vous n'avez rien à convertir.",
+  },
+  {
+    title: "Le serveur compte",
+    text: "Le calcul se fait chez nous, à votre taux. Personne au comptoir n'invente un solde, et personne ne peut le corriger en douce.",
+  },
 ];
 
-const FEATURES = [
-  { Icon: Phone, title: "Sans application", text: "Vos clients scannent simplement un QR code." },
-  { Icon: Star, title: "Fidélité automatique", text: "Points et récompenses gérés automatiquement." },
-  { Icon: Chart, title: "Analyse réelle", text: "Voyez combien de clients reviennent." },
+const STEPS_CUSTOMER = [
+  {
+    title: "Vous scannez le QR",
+    text: "Celui qui est posé sur la table ou collé à la caisse. Votre carte s'ouvre dans le navigateur.",
+  },
+  {
+    title: "Un numéro, un code secret",
+    text: "Pas d'e-mail, pas de mot de passe à retenir, rien à télécharger. Le bonus de bienvenue arrive tout de suite.",
+  },
+  {
+    title: "Vos points vous attendent",
+    text: "Une carte par commerce, toutes dans le même téléphone. Ils n'expirent pas.",
+  },
 ];
 
-const PROOF = [
-  { title: "Retours clients", text: "Voyez qui revient, quand et combien." },
-  { title: "Chiffre généré", text: "Mesurez l'impact de votre fidélité." },
-  { title: "Récompenses utilisées", text: "Suivez ce qui motive vos clients." },
+/*
+  WHAT THE ANALYTICS SCREEN ACTUALLY SHOWS.
+
+  The old version of this section was a dark panel headed "Vos clients
+  reviennent déjà. La question est : savez-vous combien ?" — which is the hero
+  headline again, one screen later — over three lines as vague as the cards
+  above it ("Chiffre généré. Mesurez l'impact de votre fidélité.").
+
+  These are the four figures on the real screen, named the way the screen
+  names them. A shop owner can check every one of them inside the trial.
+*/
+const LEARN = [
+  { term: "Taux de retour", def: "La part de vos clients qui sont revenus. Sur 7 jours, 30 jours, ou depuis le début — avec l'écart par rapport à la période d'avant." },
+  { term: "Visites", def: "Combien de passages ce mois-ci, et combien de clients différents les ont faits." },
+  { term: "Nouveaux clients", def: "Combien de cartes créées, et à quel rythme elles arrivent." },
+  { term: "Récompenses utilisées", def: "Laquelle marche vraiment, et laquelle dort depuis trois mois." },
 ];
 
 const INCLUDED = [
@@ -99,12 +176,6 @@ export default async function Landing({
       diner cookie  their wallet.
       otherwise     the sales page.
 
-    THE OWNER BRANCH IS NEW AND IT WAS THE BUG. The owner cookie was already
-    read here, but only to STOP the diner bounce — so a signed-in owner fell
-    through to the marketing page, and an owner who had installed the app opened
-    it every morning onto a "Commencer gratuitement" button. Winning the tiebreak
-    is not the same as being sent somewhere.
-
     Both checks are by cookie PRESENCE, not verification: this is routing, not
     authorisation, and currentOwner() would cost a getUser() round trip on every
     anonymous hit of the busiest public page. Neither destination trusts it.
@@ -119,13 +190,8 @@ export default async function Landing({
   /*
     ?pro=1 is how a SIGNED-IN owner reaches this page — it is the escape hatch
     the app links to from the sidebar, Réglages and the login screen. So this
-    page has to stop selling to somebody who already bought.
-
-    It used to offer them "Espace café → /owner/login" and five "Commencer
-    gratuitement → /owner/signup" buttons: a free trial they are already past,
-    and a sign-in form they are already through. Every one of them bounced
-    straight back to /owner, so nothing was broken exactly — it just made no
-    sense, which is worse on the one page meant to explain the product.
+    page has to stop selling to somebody who already bought: no free trial they
+    are already past, no sign-in form they are already through.
 
     Cookie presence, not verification, same as the redirect above: this decides
     WORDING, and both destinations re-check properly.
@@ -164,185 +230,264 @@ export default async function Landing({
           ],
         }}
       />
-      {/* ── top bar ──────────────────────────────────────────────── */}
-      {/*
-        The audience switch sits here, first, the way Earnly does it. It used to
-        be two headings inside a hamburger menu — "Je suis client" / "Je suis
-        commerçant" — which meant the page's most important question was asked
-        behind a tap, after the hero had already picked a side by accident.
-      */}
-      <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5 md:px-8">
-        <Brand />
-        <AudienceTabs className="hidden sm:flex" />
-        {/*
-          The hamburger is GONE, and taking it out was the point.
 
-          It held two headings — "Je suis client" and "Je suis commerçant" —
-          which is the same question the switch now asks in the open. Keeping
-          both meant two audience controls on one header, and on a 390px screen
-          the menu hung 45 pixels off the right edge and made the whole page
-          scroll sideways.
-
-          What is left is the one thing the switch cannot do: the way in. It
-          follows the audience, because a customer has no use for "Espace café"
-          and an owner has none for "Mes cartes".
-        */}
-        <ForOwner>
-          <Link
-            href={ownerHere ? "/owner" : "/owner/login"}
-            className="shrink-0 whitespace-nowrap text-[13px] font-bold text-charcoal/70 transition hover:text-charcoal"
-          >
-            {ownerHere ? "Ma caisse" : "Espace café"}
-          </Link>
-        </ForOwner>
-        <ForCustomer>
-          <Link
-            href="/moi"
-            className="shrink-0 whitespace-nowrap text-[13px] font-bold text-charcoal/70 transition hover:text-charcoal"
-          >
-            Mes cartes
-          </Link>
-        </ForCustomer>
+      {/* ── masthead ─────────────────────────────────────────────────
+          A rule under the header, the way a printed page rules off its
+          masthead. It also does a real job: it draws the top edge of the
+          hero's colour field, so the field reads as a panel that was placed
+          rather than a tint that leaked. */}
+      <header className="border-b border-hair">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 md:px-8">
+          <Brand />
+          <AudienceTabs className="hidden sm:flex" />
+          <ForOwner>
+            <Link
+              href={ownerHere ? "/owner" : "/owner/login"}
+              className="shrink-0 whitespace-nowrap font-mono text-[11.5px] font-bold uppercase tracking-[0.12em] text-slate transition hover:text-charcoal"
+            >
+              {ownerHere ? "Ma caisse" : "Espace café"}
+            </Link>
+          </ForOwner>
+          <ForCustomer>
+            <Link
+              href="/moi"
+              className="shrink-0 whitespace-nowrap font-mono text-[11.5px] font-bold uppercase tracking-[0.12em] text-slate transition hover:text-charcoal"
+            >
+              Mes cartes
+            </Link>
+          </ForCustomer>
+        </div>
       </header>
 
-      {/* ── hero ─────────────────────────────────────────────────── */}
-      {/*
-        Asymmetric on purpose: 7 columns of type against 5 of art, and the art
-        runs past the right edge. A centred two-up with equal halves is the
-        shape every generated page has.
-      */}
-      <section className="relative overflow-hidden">
-        {/*
-          A WASH, NOT TWO LAMPS.
+      {/* ── hero ─────────────────────────────────────────────────────
+          Type on paper, art in a colour field with a hard left edge that lines
+          up exactly with the grid column. What was here before was a violet
+          wash bleeding out of two 640px blurred circles — soft everywhere, so
+          nothing had an edge and the headline sat in a bruise. */}
+      <section className="relative overflow-hidden border-b border-hair">
+        <div className="mx-auto grid max-w-6xl items-stretch px-5 md:grid-cols-12 md:px-8">
+          <div className="pb-12 pt-12 md:col-span-7 md:pb-24 md:pr-12 md:pt-24">
+            {/* the switch, again, on phones — where the header version is
+                hidden. Full width and full labels: here it has the column. */}
+            <AudienceTabs full className="mb-9 flex w-full sm:hidden" />
 
-          On black those were light sources — a warm core and a cold rim,
-          carrying the whole atmosphere of the page. Kept at that strength on
-          white they stop being light and become paint: a saturated violet
-          bruise behind the headline, with the text fighting it.
-
-          What a white page needs from the same idea is far less: one soft
-          lilac wash falling off the top-right, enough that the hero is not a
-          plain rectangle, faint enough that nothing on it loses contrast.
-        */}
-        <div aria-hidden className="pointer-events-none absolute right-[-18%] top-[-28%] h-[640px] w-[640px] rounded-full blur-[110px]"
-          style={{ background: "radial-gradient(circle, rgba(123,97,255,.20) 0%, rgba(123,97,255,.06) 45%, transparent 70%)" }} />
-        <div aria-hidden className="pointer-events-none absolute left-[-20%] top-[42%] h-[440px] w-[440px] rounded-full blur-[120px]"
-          style={{ background: "radial-gradient(circle, rgba(91,63,209,.10) 0%, transparent 70%)" }} />
-
-        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-5 pb-14 pt-6 md:grid-cols-12 md:gap-10 md:px-8 md:pb-16 md:pt-12">
-          <div className="md:col-span-7">
-            {/* the switch, again, on phones — where the header version is hidden.
-                Full width and full labels: here it has the whole column. */}
-            <AudienceTabs full className="mb-7 flex w-full sm:hidden" />
+            <p className="flex items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
+              <span aria-hidden className="h-px w-7 bg-royal" />
+              Fait en Tunisie, pour la Tunisie
+            </p>
 
             {/*
-              THE HERO NOW ADDRESSES THE PERSON WHO WAS CHOSEN.
-
-              It used to read "Une seule carte. / Toutes vos récompenses." over
-              "Scannez. Cumulez des points." — which is spoken to a CUSTOMER, on
-              a page whose own comment said it sells to shop owners. The single
-              largest block on the site was talking to the wrong person, and
-              every section beneath it spent its energy recovering.
+              THE HEADLINE ADDRESSES THE PERSON WHO WAS CHOSEN, and it does it
+              in one colour. The second line used to be filled with a
+              three-stop gradient clipped through the glyphs — the single most
+              recognisable tell of a generated page, and on a serif it would be
+              worse. Royal is a colour the rest of the product already uses to
+              mean "this is the point".
             */}
             <ForOwner>
-              <h1 className="text-[34px] font-extrabold leading-[1.03] tracking-[-0.03em] md:text-[42px] lg:text-[48px]">
+              <h1 className="mt-6 text-[38px] md:text-[52px] lg:text-[58px]">
                 Vos habitués reviennent.
                 <br />
-                <span className="bg-gradient-to-r from-[#7b61ff] via-[#5b3fd1] to-[#3b2a8f] bg-clip-text text-transparent">
-                  Vous saurez enfin lesquels.
-                </span>
+                <span className="text-royal">Vous saurez enfin lesquels.</span>
               </h1>
-              <p className="mt-5 max-w-[42ch] text-[15px] leading-[1.6] text-charcoal/55">
+              <p className="mt-6 max-w-[44ch] text-[16px] leading-[1.65] text-slate">
                 La carte de fidélité de votre commerce, dans le téléphone de vos
-                clients. <span className="font-semibold text-charcoal">Aucune application</span>{" "}
+                clients.{" "}
+                <span className="font-semibold text-charcoal">
+                  Aucune application
+                </span>{" "}
                 — ni pour eux, ni pour vous.
               </p>
             </ForOwner>
 
             <ForCustomer>
-              <h1 className="text-[34px] font-extrabold leading-[1.03] tracking-[-0.03em] md:text-[42px] lg:text-[48px]">
+              <h1 className="mt-6 text-[38px] md:text-[52px] lg:text-[58px]">
                 Vos points,
                 <br />
-                <span className="bg-gradient-to-r from-[#7b61ff] via-[#5b3fd1] to-[#3b2a8f] bg-clip-text text-transparent">
-                  dans tous vos commerces.
-                </span>
+                <span className="text-royal">dans tous vos commerces.</span>
               </h1>
-              <p className="mt-5 max-w-[42ch] text-[15px] leading-[1.6] text-charcoal/55">
+              <p className="mt-6 max-w-[44ch] text-[16px] leading-[1.65] text-slate">
                 Un numéro, un code secret, et vos cartes sont là.{" "}
-                <span className="font-semibold text-charcoal">Rien à installer.</span>
+                <span className="font-semibold text-charcoal">
+                  Rien à installer.
+                </span>
               </p>
             </ForCustomer>
 
-            <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3">
+            {/* A block, not a pill with a glow under it. Printed matter sets a
+                call to action as a solid rectangle of ink; the halo shadow was
+                doing the same job the gradient was — making a button look
+                expensive instead of making it look pressable. */}
+            <div className="mt-10">
               <ForOwner>
                 <Link
                   href={cta.href}
-                  className="group inline-flex items-center gap-2.5 rounded-full bg-royal px-7 py-4 text-[15px] font-bold text-white shadow-[0_20px_50px_-18px_rgba(124,58,237,1)] transition hover:bg-[#6d4ae6] active:scale-[0.98]"
+                  className="group inline-flex items-center gap-3 rounded-[3px] bg-royal px-8 py-4 text-[15px] font-bold text-white transition hover:bg-[#4c33b4] active:translate-y-px"
                 >
                   {cta.label}
-                  <span className="transition-transform group-hover:translate-x-0.5"><Arrow /></span>
+                  <Arrow className="cta-arrow h-4 w-4" />
                 </Link>
-                <p className="text-[12.5px] text-charcoal/35">{cta.note}</p>
+                <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.14em] text-slate">
+                  {cta.note}
+                </p>
               </ForOwner>
 
               {/* A customer here is looking for their card, not for a pitch. */}
               <ForCustomer>
                 <Link
                   href="/moi"
-                  className="group inline-flex items-center gap-2.5 rounded-full bg-royal px-7 py-4 text-[15px] font-bold text-white shadow-[0_20px_50px_-18px_rgba(124,58,237,1)] transition hover:bg-[#6d4ae6] active:scale-[0.98]"
+                  className="group inline-flex items-center gap-3 rounded-[3px] bg-royal px-8 py-4 text-[15px] font-bold text-white transition hover:bg-[#4c33b4] active:translate-y-px"
                 >
                   Ouvrir mes cartes
-                  <span className="transition-transform group-hover:translate-x-0.5"><Arrow /></span>
+                  <Arrow className="cta-arrow h-4 w-4" />
                 </Link>
-                <p className="text-[12.5px] text-charcoal/35">
-                  Ou scannez le QR posé sur votre table.
+                <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.14em] text-slate">
+                  Ou scannez le QR posé sur votre table
                 </p>
               </ForCustomer>
             </div>
           </div>
 
-          {/* No bleed. The art ran off the right edge to feel expansive and only
-              managed to feel oversized; centred in its half it reads as an
-              object on the page rather than a wall. */}
-          <div className="md:col-span-5">
-            <HeroStage />
+          {/*
+            The colour field is a child of the ART COLUMN, not of the section,
+            so its left edge is the grid line — exactly where the type column
+            ends — at every viewport, with no percentage guessing. It bleeds
+            right past the container into the section's overflow-hidden, and on
+            phones -left-5 cancels the container padding so it becomes a plain
+            full-bleed band with the phone in it.
+          */}
+          <div className="relative md:col-span-5">
+            <div aria-hidden className="absolute -left-5 inset-y-0 right-[-50vw] bg-lilac md:left-0" />
+            <div className="relative flex justify-center pt-10 md:h-full md:items-end md:pt-0">
+              <HeroPhone />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── used by ──────────────────────────────────────────────── */}
-      {/* One line, not five cards. This is a credential, not a feature — giving
-          it the same visual weight as the pricing was the mistake. */}
-      <section className="mx-auto max-w-6xl px-5 md:px-8">
-        <div className="seam" />
-        <ul className="flex flex-wrap items-center justify-center gap-x-9 gap-y-5 py-8">
-          <li className="text-[11px] font-semibold uppercase tracking-[0.18em] text-charcoal/25">
-            Utilisé par
-          </li>
-          {TRADES.map(({ Icon, label }) => (
-            <li key={label} className="flex items-center gap-2.5 text-charcoal/45 transition hover:text-charcoal">
-              <Icon className="h-[19px] w-[19px]" />
-              <span className="text-[14px] font-medium">{label}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="seam" />
+      {/* ── who it is for ────────────────────────────────────────────
+          One ruled line. It used to be five outlined icons in the social-proof
+          slot under the words "Utilisé par", which promised customers and
+          delivered a taxonomy. */}
+      <section className="border-b border-hair">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-6 md:flex-row md:items-baseline md:gap-10 md:px-8">
+          <p className="shrink-0 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-slate">
+            Fait pour
+          </p>
+          <ul className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[15px] text-charcoal">
+            {TRADES.map((t, i) => (
+              <li key={t} className="flex items-baseline gap-2">
+                {i > 0 && <span aria-hidden className="text-royal">·</span>}
+                {t}
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
-      {/* ── how it works ─────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-14 md:px-8 md:py-20">
-        {/* A headline, not a fourth uppercase eyebrow. Repeating the same
-            label treatment at every section is what flattens a page. */}
-        <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] md:text-[38px]">
-          Comment <span className="text-royal">ça marche</span>
-        </h2>
+      {/* ── the mechanic ─────────────────────────────────────────────
+          A field of deep ink, full bleed, numbered. This is the answer to the
+          first question anybody has about a loyalty product — what happens at
+          the till — and it used to be four screens down. */}
+      <section className="bg-deep text-white">
+        <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-lavender">
+            <ForOwner>Au comptoir</ForOwner>
+            <ForCustomer>Sur votre téléphone</ForCustomer>
+          </p>
+          <h2 className="mt-5 max-w-[20ch] text-[32px] text-white md:text-[44px]">
+            <ForOwner>Trois gestes, cinq secondes.</ForOwner>
+            <ForCustomer>Trois gestes, une seule fois.</ForCustomer>
+          </h2>
+          <p className="mt-5 max-w-[52ch] text-[15.5px] leading-relaxed text-white/60">
+            <ForOwner>
+              Pendant que vous rendez la monnaie. Pas de matériel, pas de
+              lecteur, pas de caisse à changer — votre téléphone suffit.
+            </ForOwner>
+            <ForCustomer>
+              Après ça, votre carte est là à chaque passage : vous donnez votre
+              numéro, et c&apos;est tout.
+            </ForCustomer>
+          </p>
 
-        {/* The clips are the strongest thing on this page, so the lede says what
-            they are — and now says WHOSE screens are about to play, because the
-            page has an audience and can finally admit it. */}
-        <p className="mt-3 max-w-[54ch] text-[15px] leading-relaxed text-charcoal/55">
-          Rien n&apos;est dessiné ici. Chaque écran ci-dessous est le vrai produit,
-          filmé en train de faire ce qu&apos;il dit.{" "}
+          <ForOwner>
+            <Steps steps={STEPS_OWNER} />
+          </ForOwner>
+          <ForCustomer>
+            <Steps steps={STEPS_CUSTOMER} />
+          </ForCustomer>
+        </div>
+      </section>
+
+      {/* ── what you learn ───────────────────────────────────────────
+          Owner-only, and the one survivor of the three sections that all made
+          the hero's argument again. It survives because it stopped restating
+          the claim and started listing the evidence. */}
+      <ForOwner>
+        <section className="bg-lilac">
+          <div className="mx-auto grid max-w-6xl gap-12 px-5 py-16 md:grid-cols-12 md:px-8 md:py-24">
+            <div className="md:col-span-5">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
+                Ce que vous ne savez pas
+              </p>
+              <h2 className="mt-5 text-[30px] md:text-[40px]">
+                Vous connaissez vos habitués. Vous ne savez pas combien sont
+                revenus.
+              </h2>
+              <p className="mt-5 max-w-[42ch] text-[15.5px] leading-relaxed text-charcoal/65">
+                Le carton ne compte pas, et personne n&apos;a jamais tenu ce
+                registre à la main. Voilà les quatre chiffres qui apparaissent
+                dans votre espace, sans que vous ayez rien à saisir.
+              </p>
+            </div>
+
+            <ul className="border-t border-charcoal/15 md:col-span-7">
+              {LEARN.map(({ term, def }, i) => (
+                <li
+                  key={term}
+                  className="grid grid-cols-[auto_1fr] gap-x-5 border-b border-charcoal/15 py-5"
+                >
+                  <span className="mt-[3px] font-mono text-[12px] font-bold tabular-nums text-royal">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span>
+                    <span className="block text-[16px] font-bold text-charcoal">
+                      {term}
+                    </span>
+                    <span className="mt-1 block text-[14.5px] leading-relaxed text-charcoal/65">
+                      {def}
+                    </span>
+                  </span>
+                </li>
+              ))}
+              {/*
+                THE LIMIT, PRINTED WITH THE FEATURE. This is the honest half of
+                an analytics claim and it is genuinely in the code — under five
+                customers the screen refuses to give a rate. Saying so here
+                costs nothing and is the difference between a number you can
+                trust and a number you were sold.
+              */}
+              <li className="pt-5 text-[13.5px] leading-relaxed text-charcoal/55">
+                En dessous de cinq clients, l&apos;écran affiche «&nbsp;Trop tôt
+                pour conclure&nbsp;» au lieu d&apos;un taux. Un chiffre sur
+                quatre passages ne veut rien dire, et nous préférons le dire.
+              </li>
+            </ul>
+          </div>
+        </section>
+      </ForOwner>
+
+      {/* ── the product, filmed ──────────────────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
+        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
+          Le produit, filmé
+        </p>
+        <h2 className="mt-5 max-w-[18ch] text-[32px] md:text-[44px]">
+          Rien n&apos;est dessiné ici.
+        </h2>
+        <p className="mt-5 max-w-[54ch] text-[15.5px] leading-relaxed text-slate">
+          Chaque écran ci-dessous est le vrai produit, filmé en train de faire
+          ce qu&apos;il dit.{" "}
           <ForOwner>
             <span className="font-semibold text-charcoal">Voici votre caisse.</span>
           </ForOwner>
@@ -356,266 +501,154 @@ export default async function Landing({
         </div>
       </section>
 
-      {/* ── three features ───────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 pb-4 md:px-8">
-        {/*
-          Deliberately unequal. Three identical cards in a row is the single most
-          generated-looking shape on the web; the first carries the claim that
-          matters and gets the room to say it.
-
-          Each card answers the cursor: it lifts, a sheen passes ONCE, the icon
-          tile tilts and lights, and a hairline draws itself in. Nothing loops —
-          a card shimmering forever in the corner of the eye reads as an advert.
-        */}
-        <ul className="grid gap-3.5 md:auto-rows-fr md:grid-cols-12">
-          {FEATURES.map(({ Icon, title, text }, i) => (
-            <li
-              key={title}
-              className={`rise card-lift group flex flex-col rounded-3xl border border-[var(--o-edge)] bg-[var(--o-panel)] p-7 hover:border-[var(--o-edge)] hover:bg-[var(--o-panel)] ${
-                i === 0
-                  ? "md:col-span-5 md:row-span-2 md:justify-end md:p-9"
-                  : "md:col-span-7"
-              }`}
-              style={{ animationDelay: `${i * 90}ms` }}
-            >
-              {/* the light each card sits under, brightest on the wide one */}
-              <span
-                aria-hidden
-                className="pointer-events-none absolute -right-20 -top-20 h-52 w-52 rounded-full blur-3xl transition-opacity duration-500 group-hover:opacity-70"
-                style={{
-                  background: "radial-gradient(circle,#7c3aed,transparent 70%)",
-                  opacity: i === 0 ? 0.34 : 0.16,
-                }}
-              />
-
-              <span
-                className={`tile relative flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-royal to-[#3f2a9e] text-white shadow-[0_10px_26px_-12px_rgba(124,58,237,.9)] ${
-                  i === 0 ? "h-14 w-14 md:mb-auto" : "h-12 w-12"
-                }`}
-              >
-                <Icon className={i === 0 ? "h-7 w-7" : "h-6 w-6"} />
-              </span>
-
-              <p
-                className={`relative mt-6 font-bold tracking-[-0.015em] text-charcoal ${
-                  i === 0 ? "text-[22px]" : "text-[16.5px]"
-                }`}
-              >
-                {title}
-              </p>
-              <p
-                className={`relative mt-2 leading-relaxed text-charcoal/45 ${
-                  i === 0 ? "max-w-[26ch] text-[15px]" : "text-[13.5px]"
-                }`}
-              >
-                {text}
-              </p>
-
-              {/* the card's underline, drawn on hover */}
-              <span
-                aria-hidden
-                className="mt-5 block h-px w-0 bg-gradient-to-r from-royal to-transparent transition-all duration-500 group-hover:w-full"
-              />
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* ── the argument ─────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
-        {/*
-          The panel artwork carries this section — light falls off across it in a
-          way a CSS gradient does not. object-cover on a 2.5:1 source, so it crops
-          rather than stretches when the box gets tall on a phone.
-        */}
-        <div className="rise relative overflow-hidden rounded-3xl px-7 py-9 md:px-10 md:py-12">
-          <Image
-            src="/panel-glow.png"
-            alt=""
-            aria-hidden
-            fill
-            sizes="(max-width: 768px) 100vw, 1152px"
-            className="-z-10 object-cover"
-          />
-          {/* keeps the copy legible wherever the artwork happens to be bright */}
-          <div aria-hidden className="absolute inset-0 -z-10 bg-[#0d0722]/35" />
-
-          {/*
-            A DARK ISLAND ON A LIGHT PAGE — so its ink stays white.
-
-            The surface here is artwork (panel-glow.png) under a scrim, not a
-            colour, so it did not match the gradient signature the rest of the
-            light conversion keyed on: the page went white around it and this
-            block kept its dark backdrop while its text turned charcoal. The
-            headline and all three proof lines were dark-on-dark, effectively
-            invisible.
-          */}
-          <div className="relative grid gap-8 text-white md:grid-cols-2 md:items-center">
-            <h2 className="text-[32px] font-extrabold leading-[1.06] tracking-[-0.03em] md:text-[40px]">
-              Vos clients
-              <br />
-              reviennent déjà.
-              <br />
-              <span className="text-[#b79cff]">La question est :</span>
-              <br />
-              <span className="text-[#b79cff]">savez-vous combien&nbsp;?</span>
-            </h2>
-
-            <ul className="space-y-5">
-              {PROOF.map(({ title, text }) => (
-                <li key={title} className="flex items-start gap-3.5">
-                  <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-royal text-white">
-                    <Check />
-                  </span>
-                  <span>
-                    <span className="block text-[14.5px] font-bold text-white">{title}</span>
-                    <span className="mt-0.5 block text-[13px] text-white/70">{text}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* ── pricing ──────────────────────────────────────────────── */}
-      {/* Owner-only, obviously: the customer never pays anything. */}
-      <ForOwner>
-      <section className="mx-auto max-w-6xl px-5 pb-16 md:px-8 md:pb-24">
-        <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] md:text-[38px]">
-          Un prix <span className="text-royal">simple.</span>
-        </h2>
-        <p className="mt-3 max-w-[42ch] text-[14.5px] leading-relaxed text-charcoal/45">
-          Pas de commission sur vos ventes. Pas de limite de clients.
-        </p>
-
-        <div className="rise mt-7 grid gap-3 md:grid-cols-[1.6fr_1fr]">
-          {/* the year */}
-          <div className="relative overflow-hidden rounded-3xl border border-[#7c3aed]/40 bg-gradient-to-br from-[#3b1a86] via-[#2a1263] to-[#1a0f3d] text-white p-7 md:p-8">
-            <span className="inline-block rounded-md bg-royal px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
-              Meilleure offre
-            </span>
-
-            <div className="mt-5 grid gap-7 sm:grid-cols-2 sm:items-start">
-              <div>
-                <p className="text-[64px] font-extrabold leading-[0.85] tracking-[-0.04em] tabular-nums">
-                  80
-                  <span className="ml-1.5 align-super text-[14px] font-bold tracking-normal text-white/70">
-                    TND / an
-                  </span>
-                </p>
-                <p className="mt-3 max-w-[24ch] text-[13.5px] leading-relaxed text-white/70">
-                  Tout ce dont vous avez besoin pour fidéliser vos clients.
-                </p>
-              </div>
-
-              <ul className="space-y-2.5">
-                {INCLUDED.map((f) => (
-                  <li key={f} className="flex items-center gap-2.5 text-[13.5px] text-white">
-                    <span className="text-[#a78bfa]">
-                      <Check className="h-3.5 w-3.5" />
-                    </span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <Link
-              href={cta.href}
-              className="mt-7 flex flex-col items-center rounded-2xl bg-royal px-6 py-4 text-center shadow-[0_16px_38px_-16px_rgba(124,58,237,.9)] transition active:scale-[0.99]"
-            >
-              <span className="flex items-center gap-2 text-[15px] font-bold text-white">
-                {cta.label} <Arrow />
-              </span>
-              <span className="mt-1 text-[11.5px] text-white/70">{cta.note}</span>
-            </Link>
-          </div>
-
-          {/* the half-year */}
-          <div className="flex flex-col rounded-3xl border border-[var(--o-edge)] bg-[var(--o-panel)] p-7">
-            <p className="text-[40px] font-extrabold leading-[0.9] tracking-[-0.03em] tabular-nums text-charcoal">
-              65
-              <span className="ml-1.5 align-super text-[12.5px] font-bold tracking-normal text-charcoal/40">
-                TND / 6 mois
-              </span>
-            </p>
-            <p className="mt-3 text-[13.5px] leading-relaxed text-charcoal/55">
-              Parfait pour commencer.
-            </p>
-            <Link
-              href={cta.href}
-              className="mt-auto rounded-2xl border border-[var(--o-edge)] px-5 py-3.5 text-center text-[14px] font-bold text-charcoal transition hover:bg-[var(--o-panel)] active:scale-[0.99]"
-            >
-              {ownerHere ? "Ma caisse" : "Choisir cette offre"}
-            </Link>
-          </div>
-        </div>
-      </section>
-      </ForOwner>
-
-      {/* ── closing ──────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 pb-12 md:px-8">
-        <div className="relative overflow-hidden rounded-3xl border border-[#7c3aed]/30 bg-gradient-to-br from-[#3b1a86] via-[#2a1263] to-[#1a0f3d] text-white px-7 py-8 md:px-10">
-          <div className="grid items-center gap-7 md:grid-cols-[auto_1fr_auto]">
-            <ShopArt className="mx-auto w-[180px] md:mx-0" />
-
-            <div>
-              <h2 className="text-[27px] font-extrabold leading-tight md:text-[30px]">
-                La fidélité
-                <br />
-                commence <span className="text-[#a78bfa]">aujourd&apos;hui.</span>
-              </h2>
-              <p className="mt-3 text-[13.5px] leading-relaxed text-white/70">
-                Installez Pointili en quelques minutes.
-                <br />
-                Aucun matériel. Aucun engagement.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <Link
-                href={cta.href}
-                className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-4 text-[15px] font-bold text-[#2a1263] transition active:scale-[0.98]"
-              >
-                {ownerHere ? "Ma caisse" : "Créer ma boutique"} <Arrow />
-              </Link>
-              <p className="mt-2.5 text-[11.5px] leading-relaxed text-white/70">
-                {ownerHere ? (
-                  "Vous êtes déjà connecté"
-                ) : (
-                  <>
-                    14 jours gratuits
-                    <br />
-                    Sans carte bancaire
-                  </>
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── pourquoi nous, et les questions du comptoir ──────────── */}
-      {/* Owner-only: a customer weighing Pointili against a paper punch card is
-          not a person who exists. They are here to find their points. */}
+      {/* ── the objections, then the price ───────────────────────────
+          Both of these used to sit AFTER the closing call to action — the page
+          asked for the sale, then explained why. Owner-only, obviously: a
+          customer weighing Pointili against a paper punch card is not a person
+          who exists, and they never pay anything. */}
       <ForOwner>
         <Compare />
+
+        <section className="border-t border-hair">
+          <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
+              Le prix
+            </p>
+            <h2 className="mt-5 text-[32px] md:text-[44px]">Un prix simple.</h2>
+            <p className="mt-5 max-w-[44ch] text-[15.5px] leading-relaxed text-slate">
+              Pas de commission sur vos ventes. Pas de limite de clients. Pas de
+              palier qui se déclenche le jour où ça marche.
+            </p>
+
+            <div className="mt-10 grid gap-5 md:grid-cols-[1.6fr_1fr]">
+              {/* the year — a block of ink, not a three-stop gradient */}
+              <div className="rounded-[3px] bg-deep p-7 text-white md:p-9">
+                <p className="inline-block bg-royal px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+                  Meilleure offre
+                </p>
+
+                <div className="mt-7 grid gap-8 sm:grid-cols-2 sm:items-start">
+                  <div>
+                    <p className="display text-[68px] leading-[0.85] tabular-nums">
+                      80
+                      <span className="ml-2 align-super font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-lavender">
+                        TND / an
+                      </span>
+                    </p>
+                    <p className="mt-4 max-w-[24ch] text-[14px] leading-relaxed text-white/60">
+                      Tout ce dont vous avez besoin pour fidéliser vos clients.
+                    </p>
+                  </div>
+
+                  <ul className="border-t border-white/15">
+                    {INCLUDED.map((f) => (
+                      <li
+                        key={f}
+                        className="flex items-center gap-3 border-b border-white/15 py-2.5 text-[14px] text-white"
+                      >
+                        <Check className="h-3.5 w-3.5 shrink-0 text-lavender" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <Link
+                  href={cta.href}
+                  className="group mt-8 flex flex-col items-center rounded-[3px] bg-royal px-6 py-4 text-center transition hover:bg-[#4c33b4] active:translate-y-px"
+                >
+                  <span className="flex items-center gap-2.5 text-[15px] font-bold text-white">
+                    {cta.label} <Arrow className="cta-arrow h-4 w-4" />
+                  </span>
+                  <span className="mt-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-white/65">
+                    {cta.note}
+                  </span>
+                </Link>
+              </div>
+
+              {/* the half-year */}
+              <div className="flex flex-col rounded-[3px] border border-hair p-7">
+                <p className="display text-[44px] leading-[0.85] tabular-nums text-charcoal">
+                  65
+                  <span className="ml-2 align-super font-mono text-[12px] font-bold uppercase tracking-[0.1em] text-slate">
+                    TND / 6 mois
+                  </span>
+                </p>
+                <p className="mt-4 text-[14px] leading-relaxed text-slate">
+                  Parfait pour commencer. Les mêmes fonctions, la même
+                  assistance — vous payez juste plus souvent.
+                </p>
+                <Link
+                  href={cta.href}
+                  className="mt-auto rounded-[3px] border border-charcoal px-5 py-3.5 text-center text-[14px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white active:translate-y-px"
+                >
+                  {ownerHere ? "Ma caisse" : "Choisir cette offre"}
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
       </ForOwner>
 
-      {/* ── footer ───────────────────────────────────────────────── */}
-      <footer className="mx-auto flex max-w-6xl flex-col gap-4 border-t border-[var(--o-edge)] px-5 py-7 md:flex-row md:items-center md:justify-between md:px-8">
-        <div>
-          <Brand />
-          <p className="mt-2 text-[12px] text-charcoal/40">Produit tunisien 🇹🇳</p>
+      {/* ── closing ──────────────────────────────────────────────────
+          The last field of ink, and the last word. The little drawn shop that
+          used to sit here called itself a placeholder in its own header and
+          read as clip art beside nine clips of the real thing, so it is gone
+          and its file with it — a closing argument is stronger set in type. */}
+      <section className="bg-deep text-white">
+        <div className="mx-auto grid max-w-6xl items-end gap-10 px-5 py-16 md:grid-cols-12 md:px-8 md:py-24">
+          <div className="md:col-span-7">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-lavender">
+              Commencer
+            </p>
+            <h2 className="mt-5 text-[34px] text-white md:text-[46px]">
+              La fidélité commence aujourd&apos;hui.
+            </h2>
+            <p className="mt-5 max-w-[46ch] text-[15.5px] leading-relaxed text-white/60">
+              Vous créez votre espace, vous réglez vos récompenses, vous
+              imprimez votre QR. Aucun matériel, aucun engagement, et vos
+              habitués n&apos;ont rien à installer.
+            </p>
+          </div>
+
+          <div className="md:col-span-5 md:justify-self-end md:text-right">
+            <Link
+              href={cta.href}
+              className="group inline-flex items-center gap-3 rounded-[3px] bg-white px-8 py-4 text-[15px] font-bold text-deep transition hover:bg-lilac active:translate-y-px"
+            >
+              {ownerHere ? "Ma caisse" : "Créer ma boutique"}
+              <Arrow className="cta-arrow h-4 w-4" />
+            </Link>
+            <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.14em] text-white/50">
+              {cta.note}
+            </p>
+          </div>
         </div>
-        {/* Real links now — both pages exist. "Contact" stays plain text until
-            there is an address to put behind it. */}
-        <nav className="flex flex-wrap gap-x-7 gap-y-2 text-[13px] text-charcoal/40">
-          <Link href="/confidentialite" className="hover:text-charcoal/70">Confidentialité</Link>
-          <Link href="/conditions" className="hover:text-charcoal/70">Conditions</Link>
-          <span>Contact</span>
-        </nav>
+      </section>
+
+      {/* ── footer ───────────────────────────────────────────────────
+          "Produit tunisien 🇹🇳" lost its flag on purpose: Windows ships no
+          regional-indicator glyphs, so on the desktop most of this audience
+          browses from it rendered as the two bare letters "TN" next to the
+          word — which reads as a rendering fault, not a credential. */}
+      <footer className="border-t border-hair">
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-8 md:flex-row md:items-center md:justify-between md:px-8">
+          <div>
+            <Brand />
+            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-slate">
+              Conçu et hébergé pour la Tunisie
+            </p>
+          </div>
+          <nav className="flex flex-wrap gap-x-8 gap-y-2 font-mono text-[11.5px] uppercase tracking-[0.1em] text-slate">
+            <Link href="/confidentialite" className="transition hover:text-charcoal">
+              Confidentialité
+            </Link>
+            <Link href="/conditions" className="transition hover:text-charcoal">
+              Conditions
+            </Link>
+            <span>Contact</span>
+          </nav>
+        </div>
       </footer>
     </div>
     </AudienceProvider>
@@ -623,123 +656,80 @@ export default async function Landing({
 }
 
 /**
- * The hero: a phone, and what happens around it.
+ * The numbered mechanic — № 01 rather than a badge, which is the house style
+ * components/icons.tsx wrote down and this page had drifted away from.
  *
- * The render on its own is a static object in a lot of empty space. These three
- * layers give it somewhere to be, and each one says something about the product
- * rather than just moving:
- *
- *   the HALO   — the light it sits in, breathing
- *   the RING   — slow rotation, so the frame is alive without being busy
- *   the POINTS — small marks drifting upward past the phone. This is the literal
- *                picture of "cumulez des points", which beats any abstract shape
- *                because it is what the thing actually does.
- *
- * All decoration is aria-hidden: a screen reader gets the phone's alt text and
- * nothing else. And it all stops dead under prefers-reduced-motion.
+ * Three columns ruled apart on desktop, three ruled rows on a phone. The rules
+ * are the layout: no cards, no borders that go all the way round, nothing
+ * floating. Extracted rather than inlined twice because the owner and the
+ * customer each get their own three steps and only the words differ.
  */
-function HeroStage() {
-  /* --hero-fade is set per breakpoint on the image, so one gradient serves both
-     crop depths. Two stops only: solid to true transparent at the box edge. */
+function Steps({ steps }: { steps: { title: string; text: string }[] }) {
+  return (
+    <ol className="mt-12 grid border-t border-white/20 md:mt-16 md:grid-cols-3">
+      {steps.map((s, i) => (
+        <li
+          key={s.title}
+          className="border-b border-white/20 py-7 md:border-b-0 md:border-r md:px-8 md:py-0 md:first:pl-0 md:last:border-r-0 md:last:pr-0"
+        >
+          <p className="font-mono text-[12px] font-bold tracking-[0.2em] text-lavender md:pt-8">
+            {String(i + 1).padStart(2, "0")}
+          </p>
+          <h3 className="mt-4 text-[23px] text-white md:text-[25px]">{s.title}</h3>
+          <p className="mt-3 text-[14.5px] leading-relaxed text-white/60">{s.text}</p>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
+ * The hero art: a phone, standing still.
+ *
+ * It used to sit inside three animated layers — a breathing radial halo, a
+ * conic ring rotating once every 46 seconds, and six violet dots drifting
+ * upward past it — plus a 7-second float on the device itself. All of it was
+ * carefully built, none of it said anything, and together they were the
+ * loudest thing on the page. Ambient motion in the corner of the eye is read
+ * as decoration; the only motion left on this page is the nine demo clips,
+ * which are the software running.
+ *
+ * THE CROP STAYS, because it was never decoration. The render is 585×1090, so
+ * any width that keeps the whole device makes it 1.86× as tall as it is wide.
+ * The image is a window onto the top of it — the shop, the name, 230 points,
+ * the full stamp card — dissolving below. Height drops ~40% while every pixel
+ * of the card renders at exactly the size it would have.
+ *
+ * The dissolve now lands on the lilac field rather than white, which is what
+ * makes it read as the phone continuing past the frame instead of a hard cut.
+ * A fade that stops short of true transparency looks like a rendering fault,
+ * so both stops are absolute.
+ */
+function HeroPhone() {
   const HERO_FADE =
     "linear-gradient(to bottom, #000 0%, #000 var(--hero-fade), transparent 100%)";
 
-  /* Deterministic, not random: a fresh layout every render would make the
-     server and client HTML disagree and hydration would complain. */
-  const points = [
-    { left: "6%",  bottom: "18%", size: 13, delay: "0s",   dur: "7.5s" },
-    { left: "16%", bottom: "42%", size: 9,  delay: "1.6s", dur: "6.4s" },
-    { left: "2%",  bottom: "62%", size: 11, delay: "3.1s", dur: "8.2s" },
-    { left: "84%", bottom: "26%", size: 10, delay: "0.9s", dur: "7.1s" },
-    { left: "92%", bottom: "54%", size: 14, delay: "2.4s", dur: "8.8s" },
-    { left: "76%", bottom: "72%", size: 8,  delay: "4.2s", dur: "6.9s" },
-  ];
-
-  /* Cropped, not shrunk — that distinction is the whole fix.
-
-     The render is 585×1090, a 0.537 aspect ratio, so ANY width that keeps the
-     whole device keeps it 1.86× as tall as it is wide. Two rounds of shrinking
-     made the art quieter and the product less legible at the same time, which
-     is the worst trade available: you pay in credibility for something a crop
-     gives away free.
-
-     So the width stays and the END moves. The image is a window onto the top of
-     the render — the shop, the name, 230 points, the full stamp card — and
-     dissolves below it. Height drops ~40% while every pixel of the card renders
-     at exactly the size it did before.
-
-     The fade is not decoration. A hard cut across a device reads as a broken
-     image; a dissolve reads as "the app continues", which is true. It has to
-     reach real transparency at the box edge — a fade that stops at 15% alpha
-     looks like a rendering fault.
-
-     Mobile crops harder (585/700) than desktop (585/900) for a different
-     reason: a phone-shaped object at 90% of a phone's width is a phone inside
-     a phone. Killing the portrait silhouette is what fixes that, not size. */
   return (
-    <div className="relative mx-auto w-full max-w-[250px] md:max-w-[280px] lg:max-w-[300px]">
-      {/* the light it sits in */}
-      <div
-        aria-hidden
-        className="halo pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[112%] w-[112%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[64px]"
-        style={{ background: "radial-gradient(circle, rgba(123,97,255,.30) 0%, rgba(123,97,255,.08) 46%, transparent 68%)" }}
-      />
-
-      {/* a ring, turning slowly */}
-      <div
-        aria-hidden
-        className="orbit pointer-events-none absolute left-1/2 top-1/2 -z-10 aspect-square w-[104%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+    <div className="w-full max-w-[250px] md:max-w-[290px] lg:max-w-[310px]">
+      <Image
+        src="/hero-phone-v2.png"
+        alt="La carte de fidélité Pointili sur un téléphone : Yassine a 230 points et 7 tampons sur 10 chez Café El Ali"
+        width={585}
+        height={1090}
+        priority
+        sizes="(max-width: 767px) 250px, (max-width: 1023px) 290px, 310px"
+        className="block aspect-[585/720] h-auto w-full object-cover object-top drop-shadow-[0_18px_40px_rgba(36,18,59,.22)] [--hero-fade:82%] md:aspect-[585/860] md:[--hero-fade:88%]"
         style={{
-          background:
-            "conic-gradient(from 0deg, transparent 0deg, rgba(167,139,250,.34) 40deg, transparent 110deg, transparent 250deg, rgba(124,58,237,.22) 300deg, transparent 350deg)",
-          maskImage: "radial-gradient(circle, transparent 61%, #000 62%, #000 63.4%, transparent 64.4%)",
-          WebkitMaskImage: "radial-gradient(circle, transparent 61%, #000 62%, #000 63.4%, transparent 64.4%)",
+          maskImage: HERO_FADE,
+          WebkitMaskImage: HERO_FADE,
+          maskSize: "100% 100%",
+          WebkitMaskSize: "100% 100%",
+          /* mask-repeat defaults to `repeat`: without this the gradient tiles
+             below the box and paints the shadow solid again. */
+          maskRepeat: "no-repeat",
+          WebkitMaskRepeat: "no-repeat",
         }}
       />
-
-      {/* points, rising past it */}
-      {points.map((p, i) => (
-        <span
-          key={i}
-          aria-hidden
-          className="spark pointer-events-none absolute -z-10 rounded-full bg-[#c4b5fd]"
-          style={{
-            left: p.left,
-            bottom: p.bottom,
-            width: p.size,
-            height: p.size,
-            animationDelay: p.delay,
-            animationDuration: p.dur,
-            boxShadow: "0 0 14px 3px rgba(167,139,250,.6)",
-          }}
-        />
-      ))}
-
-      {/* The float and the shadow live on the wrapper, not on the image.
-          `mask` is applied after `filter`, so a shadow set on the masked image
-          is eaten by its own mask; on the parent it reads the already-faded
-          alpha and dies out with the artwork. */}
-      <div className="float relative drop-shadow-[0_26px_60px_rgba(88,28,235,.45)]">
-        <Image
-          src="/hero-phone-v2.png"
-          alt="La carte de fidélité Pointili sur un téléphone : Yassine a 230 points et 7 tampons sur 10 chez Café El Ali"
-          width={585}
-          height={1090}
-          priority
-          sizes="(max-width: 767px) 250px, (max-width: 1023px) 280px, 300px"
-          className="block aspect-[585/700] h-auto w-full object-cover object-top [--hero-fade:80%] md:aspect-[585/900] md:[--hero-fade:85%]"
-          style={{
-            maskImage: HERO_FADE,
-            WebkitMaskImage: HERO_FADE,
-            maskSize: "100% 100%",
-            WebkitMaskSize: "100% 100%",
-            /* mask-repeat defaults to `repeat`: without this the gradient tiles
-               below the box and paints the shadow solid again. */
-            maskRepeat: "no-repeat",
-            WebkitMaskRepeat: "no-repeat",
-          }}
-        />
-      </div>
     </div>
   );
 }
@@ -747,7 +737,7 @@ function HeroStage() {
 function Brand() {
   return (
     <span className="inline-flex items-center gap-2.5">
-      <BrandLockup size={34} accent="#8b5cf6" />
+      <BrandLockup size={34} accent="#5b3fd1" />
     </span>
   );
 }

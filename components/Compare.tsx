@@ -111,11 +111,14 @@ export function Compare() {
   return (
     <>
       {/* ── le comparatif ─────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 pb-16 md:px-8 md:pb-24">
-        <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] md:text-[38px]">
-          Pourquoi Pointili plutôt qu&apos;un carnet ?
+      <section className="mx-auto max-w-6xl border-t border-hair px-5 py-16 md:px-8 md:py-24">
+        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
+          Le carton
+        </p>
+        <h2 className="mt-5 max-w-[22ch] text-[32px] md:text-[44px]">
+          Pourquoi Pointili plutôt qu&apos;un carnet&nbsp;?
         </h2>
-        <p className="mt-3 max-w-[54ch] text-[15.5px] leading-relaxed text-charcoal/60">
+        <p className="mt-5 max-w-[54ch] text-[15.5px] leading-relaxed text-slate">
           La carte en carton a fait tourner des milliers de commerces et elle
           marche encore. Voilà simplement là où elle s&apos;arrête.
         </p>
@@ -128,33 +131,36 @@ export function Compare() {
           Here the three answers stack under the question, and Pointili's is the
           one with the colour and the tick.
         */}
-        <ul className="mt-8 space-y-3 md:hidden">
+        {/* Ruled rows, and Pointili's answer marked the way a printed page
+            marks a pull-quote: a rule down its left edge and a tint, not a
+            rounded card inside a rounded card inside a rounded card. */}
+        <ul className="mt-10 border-t border-hair md:hidden">
           {ROWS.map((r) => (
-            <li key={r.label} className="rounded-[18px] bg-[var(--o-panel)] p-4 ring-1 ring-[var(--o-edge)]">
-              <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-charcoal/45">
+            <li key={r.label} className="border-b border-hair py-5">
+              <p className="font-mono text-[10.5px] font-bold uppercase tracking-[0.16em] text-slate">
                 {r.label}
               </p>
 
-              <div className="mt-3 rounded-xl bg-royal/[0.07] px-3.5 py-3 ring-1 ring-royal/25">
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-royal">
+              <div className="mt-3 border-l-2 border-royal bg-lilac-2 px-3.5 py-3">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-royal">
                   Pointili
                 </p>
-                <p className="mt-1 flex gap-2 text-[14px] font-semibold leading-snug text-charcoal">
-                  <Check className="mt-[3px] h-[13px] w-[13px] shrink-0 text-[#2f9e6e]" />
+                <p className="mt-1.5 flex gap-2 text-[14px] font-semibold leading-snug text-charcoal">
+                  <Check className="mt-[3px] h-[13px] w-[13px] shrink-0 text-ok" />
                   {r.us}
                 </p>
               </div>
 
-              <div className="mt-2.5 grid gap-2.5">
+              <div className="mt-3.5 grid gap-3">
                 {[
                   { who: "Carte en carton", what: r.paper },
                   { who: "Autres plateformes", what: r.other },
                 ].map(({ who, what }) => (
-                  <div key={who} className="px-1">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-charcoal/35">
+                  <div key={who}>
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-charcoal/40">
                       {who}
                     </p>
-                    <p className="mt-0.5 text-[13.5px] leading-snug text-charcoal/60">{what}</p>
+                    <p className="mt-0.5 text-[13.5px] leading-snug text-slate">{what}</p>
                   </div>
                 ))}
               </div>
@@ -163,73 +169,82 @@ export function Compare() {
         </ul>
 
         {/* ── TABLET AND UP: the real table ─────────────────────────────── */}
-        <div className="mt-8 hidden overflow-x-auto rounded-[22px] ring-1 ring-[var(--o-edge)] md:block">
+        {/* Ruled, not boxed. A heavy rule under the head and a hairline between
+            rows is how a table is set on paper; the 22px pill of a ring around
+            it was making a comparison look like a widget. */}
+        <div className="mt-10 hidden overflow-x-auto border-t border-hair md:block">
           <table className="w-full min-w-[720px] border-collapse text-left">
             <thead>
-              <tr className="bg-[var(--o-panel)]">
-                <th className="p-4 text-[11px] font-bold uppercase tracking-[0.09em] text-charcoal/45" />
-                <th className="p-4 text-[13px] font-extrabold text-charcoal">
+              <tr className="border-b-2 border-charcoal">
+                <th className="py-3 pr-4" />
+                <th className="bg-lilac-2 px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-royal">
                   Pointili
                 </th>
-                <th className="p-4 text-[13px] font-bold text-charcoal/55">
+                <th className="px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-slate">
                   Carte en carton
                 </th>
-                <th className="p-4 text-[13px] font-bold text-charcoal/55">
+                <th className="px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-slate">
                   Autres plateformes
                 </th>
               </tr>
             </thead>
             <tbody>
               {ROWS.map((r) => (
-                <tr key={r.label} className="border-t border-[var(--o-edge)]">
-                  <td className="p-4 align-top text-[13px] font-bold text-charcoal/50">
+                <tr key={r.label} className="border-b border-hair">
+                  <td className="py-4 pr-4 align-top font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-slate">
                     {r.label}
                   </td>
-                  <td className="bg-royal/[0.05] p-4 align-top text-[14px] font-semibold leading-snug text-charcoal">
+                  <td className="bg-lilac-2 px-4 py-4 align-top text-[14.5px] font-semibold leading-snug text-charcoal">
                     <span className="flex gap-2.5">
-                      <Check className="mt-[3px] h-[14px] w-[14px] shrink-0 text-[#2f9e6e]" />
+                      <Check className="mt-[4px] h-[14px] w-[14px] shrink-0 text-ok" />
                       {r.us}
                     </span>
                   </td>
-                  <td className="p-4 align-top text-[14px] leading-snug text-charcoal/55">{r.paper}</td>
-                  <td className="p-4 align-top text-[14px] leading-snug text-charcoal/55">{r.other}</td>
+                  <td className="px-4 py-4 align-top text-[14px] leading-snug text-slate">{r.paper}</td>
+                  <td className="px-4 py-4 align-top text-[14px] leading-snug text-slate">{r.other}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="mt-3 text-[12.5px] text-charcoal/35">
-          « Autres plateformes » décrit ce qui est courant sur ce marché, pas un
-          concurrent en particulier — leurs offres changent, la nôtre aussi.
+        <p className="mt-4 max-w-[62ch] text-[12.5px] leading-relaxed text-charcoal/45">
+          «&nbsp;Autres plateformes&nbsp;» décrit ce qui est courant sur ce
+          marché, pas un concurrent en particulier — leurs offres changent, la
+          nôtre aussi.
         </p>
       </section>
 
       {/* ── les questions ─────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 pb-16 md:px-8 md:pb-24">
-        <h2 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.025em] md:text-[38px]">
+      <section className="mx-auto max-w-6xl border-t border-hair px-5 py-16 md:px-8 md:py-24">
+        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
+          Le comptoir
+        </p>
+        <h2 className="mt-5 max-w-[20ch] text-[32px] md:text-[44px]">
           Les questions qu&apos;on nous pose
         </h2>
-        <p className="mt-3 max-w-[54ch] text-[15.5px] leading-relaxed text-charcoal/60">
+        <p className="mt-5 max-w-[54ch] text-[15.5px] leading-relaxed text-slate">
           Les vraies, celles du comptoir.
         </p>
 
-        <div className="mt-8 grid gap-3 md:grid-cols-2">
+        {/* Two ruled columns, gap-x only: with a vertical gap the hairlines
+            would stop and restart around every row and the whole thing would
+            go back to looking like eight little cards. */}
+        <div className="mt-10 grid md:grid-cols-2 md:gap-x-14">
           {QA.map(({ q, a }) => (
             /* <details> so a phone shows eight questions instead of four
-               screens of answers, and so it works with JavaScript off */
-            <details
-              key={q}
-              className="group rounded-[18px] bg-[var(--o-panel)] px-5 ring-1 ring-[var(--o-edge)] transition open:bg-[var(--o-panel)] open:ring-[var(--o-edge)]"
-            >
-              <summary className="flex cursor-pointer list-none items-start gap-3 py-4 text-[15.5px] font-bold leading-snug marker:hidden [&::-webkit-details-marker]:hidden">
-                <span className="mt-[2px] grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-royal/12 text-royal transition group-open:rotate-45">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" className="h-2.5 w-2.5" aria-hidden>
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                </span>
+               screens of answers, and so it works with JavaScript off.
+
+               The marker is a bare + at the trailing edge — no tinted circle
+               behind it. It still turns into a × when the answer is open,
+               which is the one piece of state this control has. */
+            <details key={q} className="group border-b border-hair first:border-t md:[&:nth-child(2)]:border-t">
+              <summary className="flex cursor-pointer list-none items-start gap-5 py-4 text-[15.5px] font-bold leading-snug marker:hidden [&::-webkit-details-marker]:hidden">
                 <span className="flex-1">{q}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="mt-[5px] h-3 w-3 shrink-0 text-royal transition-transform duration-200 group-open:rotate-45" aria-hidden>
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
               </summary>
-              <p className="pb-5 pl-[30px] text-[14.5px] leading-relaxed text-charcoal/65">{a}</p>
+              <p className="pb-5 pr-8 text-[14.5px] leading-relaxed text-slate">{a}</p>
             </details>
           ))}
         </div>

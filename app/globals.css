@@ -883,30 +883,60 @@ body:has(.landing-light) {
   color: var(--color-charcoal);
 }
 
-/* ── landing texture ──────────────────────────────────────────────────
-   The grain existed because flat #070510 with a clean radial blob is the
-   giveaway of a generated dark page. On white it does the opposite: an
-   overlay-blended noise layer over a light surface reads as a dirty screen,
-   so it is off, and the light-fall-off work is done by the wash instead. */
-.grain::before {
-  content: none;
-}
-.grain--dark::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.5;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
+/* ══ THE LANDING IS SET, NOT STYLED ═══════════════════════════════════════
+   The page had drifted into the shape every generated landing page has:
+   Poppins ExtraBold with a violet gradient clipped into the headline, two
+   blurred radial blobs behind it, a phone breathing inside a rotating ring
+   with particles floating past, and everything else a rounded-3xl card on
+   white with a violet glow under it.
+
+   None of that is a Pointili idea. components/icons.tsx has stated the real
+   one from the beginning — "speaks in type, not iconography: features are
+   numbered (№ 01) rather than badged" — and the landing was the one surface
+   that stopped listening.
+
+   So: FRAUNCES, flat ink, hard-edged colour fields, hairline rules and mono
+   numerals. Everything below is either the typeface switch or a deletion. */
+
+/* ── the display face ──────────────────────────────────────────────────
+   Fraunces has been loaded in app/layout.tsx since the first commit and used
+   by absolutely nothing — every page paid for the download and rendered
+   Poppins. It is the whole reason this page can stop looking generated
+   without adding a byte: a real old-style serif with weight in it, against
+   Inter for reading and Space Mono for anything countable.
+
+   SCOPED TO .landing-light, and that scope is load-bearing. The bare
+   `h1,h2,h3,h4 { font-family: var(--font-poppins) }` rule further up this
+   file is UNLAYERED, so it beats every Tailwind font utility (which live in
+   @layer utilities) no matter what a className says — the same cascade trap
+   documented on .safe-t. A class selector is the cheapest way to win it, and
+   it keeps the app itself on Poppins, which is correct: the till is a tool,
+   not a poster. */
+.landing-light h1,
+.landing-light h2,
+.landing-light h3 {
+  font-family: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  font-weight: 900;
+  /* A serif at display size wants far less negative tracking than a geometric
+     sans — Poppins was set at -0.03em, which on Fraunces closes the counters. */
+  letter-spacing: -0.015em;
+  line-height: 1.04;
 }
 
-/* A hairline that fades at both ends — a full-width 1px border reads as a
-   wireframe, this reads as a seam. */
+/* The same face on something that is not a heading — the prices, mostly.
+   A <p> takes no unlayered rule, so this only has to exist, not fight. */
+.landing-light .display {
+  font-family: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+/* A plain hairline, edge to edge. It used to fade out at both ends, which is
+   a soft effect for a soft page; printed matter rules its columns off and
+   lets the rule mean "this section ended". */
 .seam {
   height: 1px;
-  /* dark hairline now — the same fade, inverted for a white page */
-  background: linear-gradient(90deg, transparent, rgba(26,19,48,.13) 22%, rgba(26,19,48,.13) 78%, transparent);
+  background: rgba(26, 19, 48, 0.14);
 }
 
 /* ══ landing motion ═══════════════════════════════════════════════════════
@@ -940,91 +970,26 @@ body:has(.landing-light) {
   to   { opacity: 1; transform: none; }
 }
 
-/* The hero art breathes — very slowly, and only once the page is idle. */
-@media (prefers-reduced-motion: no-preference) {
-  .float {
-    animation: float-y 7s ease-in-out infinite;
-  }
-}
-@keyframes float-y {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-14px); }
-}
+/* ── what used to be here ──────────────────────────────────────────────
+   .float, .card-lift (+ its sheen and tilting .tile), .halo, .orbit and
+   .spark: a phone bobbing up and down inside a slowly rotating conic ring,
+   lit by a breathing radial glow, with six violet particles drifting past it,
+   over cards that lifted and flashed a diagonal sheen on hover.
 
-/* A card that answers the cursor. The sheen is a single pass on hover, not a
-   loop — a permanently shimmering card reads as an advert. */
-.card-lift {
-  position: relative;
-  overflow: hidden;
-  transition: transform .35s cubic-bezier(.2,.7,.3,1), border-color .35s, background-color .35s;
-}
-.card-lift::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(115deg, transparent 35%, rgba(167,139,250,.13) 50%, transparent 65%);
-  transform: translateX(-120%);
-  transition: transform .8s cubic-bezier(.2,.7,.3,1);
-  pointer-events: none;
-}
-@media (hover: hover) {
-  .card-lift:hover { transform: translateY(-4px); }
-  .card-lift:hover::after { transform: translateX(120%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .card-lift, .card-lift::after { transition: none; }
-  .card-lift:hover { transform: none; }
-}
+   Every one of them was well built and none of them said anything. Together
+   they were the page's loudest voice, and what they said was "template" —
+   ambient motion is the first thing the eye reads as decoration rather than
+   information. The page now moves in exactly two places: .rise on arrival,
+   and the nine demo clips, which are the product actually running.
 
-/* The icon tile lights up with its card. */
-.card-lift .tile {
-  transition: transform .35s cubic-bezier(.2,.7,.3,1), box-shadow .35s;
-}
-@media (hover: hover) {
-  .card-lift:hover .tile {
-    transform: scale(1.06) rotate(-3deg);
-    box-shadow: 0 12px 30px -10px rgba(124,58,237,.85);
-  }
-}
+   Deleted rather than disabled. A stylesheet full of rules kept alive by a
+   `content: none` is how the grain sat here for months. */
 
-/* ══ hero stage ═══════════════════════════════════════════════════════════
-   What sits BEHIND the phone. Three layers, each earning its place — this is
-   the first thing a visitor looks at, so it has to suggest the product rather
-   than just move.
-
-   Everything animates transform and opacity ONLY. Animating blur or box-shadow
-   would repaint a 600px area every frame and make a mid-range Android phone —
-   which is most of the audience — stutter on the one screen that matters. */
-
-/* the light the phone sits in, breathing slowly */
-@media (prefers-reduced-motion: no-preference) {
-  .halo { animation: halo-breathe 9s ease-in-out infinite; }
-}
-@keyframes halo-breathe {
-  0%, 100% { transform: scale(1);    opacity: .55; }
-  50%      { transform: scale(1.09); opacity: .8; }
-}
-
-/* a ring turning behind it — motion without noise, and slow enough that you
-   notice it only if you stop and look */
-@media (prefers-reduced-motion: no-preference) {
-  .orbit { animation: orbit-spin 46s linear infinite; }
-}
-@keyframes orbit-spin {
-  to { transform: rotate(360deg); }
-}
-
-/* points, rising. The literal picture of "cumulez des points" — which beats any
-   abstract shape, because it is what the product does. */
-@media (prefers-reduced-motion: no-preference) {
-  .spark { animation: spark-rise 7s ease-in-out infinite; opacity: 0; }
-}
-@keyframes spark-rise {
-  0%       { opacity: 0; transform: translateY(26px) scale(.7); }
-  18%      { opacity: .95; }
-  70%      { opacity: .5; }
-  100%     { opacity: 0; transform: translateY(-92px) scale(1.05); }
+/* One considered hover, kept: the arrow on a call to action nudges forward.
+   It answers the cursor on the element the cursor is actually over. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .cta-arrow { transition: transform .25s cubic-bezier(.2, .7, .3, 1); }
+  .group:hover .cta-arrow { transform: translateX(3px); }
 }
 
 

@@ -64,6 +64,20 @@ export function AudienceTabs({
     The labels also shorten below 400px rather than shrink — "Commerce" and
     "Client" stay readable where the full phrases would have to go to 10px.
   */
+  /*
+    A SECTION NAV, NOT A TOGGLE PILL.
+
+    This used to be a segmented control: a rounded-full rail with the active
+    side filled royal and lifted on a violet glow shadow. That shape is the
+    stock "switch" of every generated landing page, and it sat in the header —
+    the first component on the page, setting the register for everything under
+    it.
+
+    A newspaper marks the section you are reading with a rule under its name.
+    Same information, no chrome, and it matches the mono nav the brand
+    dictionary asked for from the start (components/icons.tsx: "speaks in
+    type, not iconography").
+  */
   const tab = (s: Side, long: string, short: string) => {
     const on = side === s;
     return (
@@ -71,11 +85,9 @@ export function AudienceTabs({
         type="button"
         onClick={() => setSide(s)}
         aria-pressed={on}
-        className={`relative flex-1 whitespace-nowrap rounded-full px-4 py-2.5 text-[13.5px] font-extrabold transition sm:px-6 sm:py-3 sm:text-[14.5px] ${
-          on
-            ? "bg-royal text-white shadow-[0_10px_28px_-10px_rgba(91,63,209,.55)]"
-            : "text-slate hover:bg-white hover:text-charcoal"
-        }`}
+        className={`relative whitespace-nowrap pb-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em] transition ${
+          full ? "flex-1 pt-1 text-center text-[11.5px]" : ""
+        } ${on ? "text-charcoal" : "text-slate hover:text-charcoal"}`}
       >
         {full ? long : (
           <>
@@ -84,6 +96,10 @@ export function AudienceTabs({
             <span className="sm:hidden">{short}</span>
           </>
         )}
+        {/* The mark, drawn ON the container's rule rather than under the label,
+            so the active side reads as part of the line instead of as a button
+            with an underline. -bottom-px lands it exactly over the hairline. */}
+        {on && <span aria-hidden className="absolute -bottom-px left-0 right-0 h-[2px] bg-royal" />}
       </button>
     );
   };
@@ -97,9 +113,7 @@ export function AudienceTabs({
       hidden, and pushed the header link 5px off the screen. The caller owns
       display; this owns everything else.
     */
-    <div
-      className={`items-center gap-1 rounded-full bg-[var(--o-inset)] p-1 ring-1 ring-[var(--o-edge)] ${className}`}
-    >
+    <div className={`items-end gap-7 border-b border-hair ${className}`}>
       {tab("owner", "Pour mon commerce", "Commerce")}
       {tab("customer", "Je suis client", "Client")}
     </div>
