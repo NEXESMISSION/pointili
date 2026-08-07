@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createAdminClient } from "./supabase/admin";
 import { DEFAULT_TICKET_INFO, MIN_TICKET_SAMPLE, type Ticket } from "./rewards";
 import type { ActiveCode } from "./types";
@@ -351,18 +352,21 @@ export async function balanceSinceLastOpen(
   phone: string,
 ): Promise<{ before: number; now: number; firstOpen: boolean }> {
   const db = createAdminClient();
-  const { data: card } = await db
-    .from("diner_cafes")
-    .select("last_opened_at")
-    .eq("business_id", businessId)
-    .eq("phone", phone)
-    .maybeSingle();
-
-  const { data: rows } = await db
-    .from("points_ledger")
-    .select("delta, created_at")
-    .eq("business_id", businessId)
-    .eq("customer_phone", phone);
+  /* Two independent reads — the mark and the ledger. They ran in series, which
+     made this the slowest thing on the card screen for no reason at all. */
+  const [{ data: card }, { data: rows }] = await Promise.all([
+    db
+      .from("diner_cafes")
+      .select("last_opened_at")
+      .eq("business_id", businessId)
+      .eq("phone", phone)
+      .maybeSingle(),
+    db
+      .from("points_ledger")
+      .select("delta, created_at")
+      .eq("business_id", businessId)
+      .eq("customer_phone", phone),
+  ]);
 
   const all = (rows ?? []) as { delta: number; created_at: string }[];
   const now = all.reduce((s, r) => s + Number(r.delta), 0);
@@ -433,11 +437,13 @@ export async function enrollDiner(cafeId: string, phone: string): Promise<string
  * is its own card with its own balance. This lets a diner see all their cards
  * and jump between them without re-scanning a QR.
  */
-export async function dinerWallet(phone: string): Promise<WalletCafe[]> {
+/* cache(): the shop layout counts the cards for the switcher and the card page
+   lists them for the same switcher — one RPC, asked twice, every render. */
+export const dinerWallet = cache(async function dinerWallet(phone: string): Promise<WalletCafe[]> {
   const db = createAdminClient();
   const { data } = await db.rpc("diner_wallet", { p_phone: phone });
   return (data as WalletCafe[] | null) ?? [];
-}
+});
 
 /* -------------------------------------------------------------------------- */
 /* Activity                                                                    */

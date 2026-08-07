@@ -213,14 +213,14 @@ if (await redeemBtn.count()) {
   // Poll for the issued code rather than sleeping — same Zurich round-trip.
   const gotCode = await diner
     .waitForFunction(
-      () => /\b[A-Z2-9]{6}\b/.test(document.querySelector("main")?.innerText ?? ""),
+      () => /\b[A-Z2-9]{6,8}\b/.test(document.querySelector("main")?.innerText ?? ""),
       undefined,
       { timeout: 20000 },
     )
     .then(() => true)
     .catch(() => false);
   const boutiqueTxt = await diner.locator("main").innerText();
-  redeemCode = boutiqueTxt.match(/\b[A-Z2-9]{6}\b/)?.[0] ?? "";
+  redeemCode = boutiqueTxt.match(/\b[A-Z2-9]{6,8}\b/)?.[0] ?? "";
   check("redeem debits points and issues a code", gotCode && !!redeemCode, redeemCode || "no code");
 
   /*
@@ -473,7 +473,7 @@ if (redeemCode) {
 
   await stamp(); // 1/2
   const full = await stamp(); // 2/2 → completes, issues a code
-  const stampCode = full.match(/code\s+([A-Z2-9]{6})/)?.[1] ?? "";
+  const stampCode = full.match(/code\s+([A-Z2-9]{6,8})/)?.[1] ?? "";
   check("a full stamp card completes and issues a code", /Carte pleine/i.test(full) && !!stampCode, stampCode || full.replace(/\n/g, " · ").slice(0, 60));
 
   // the diner can collect that code at the counter, exactly like any reward

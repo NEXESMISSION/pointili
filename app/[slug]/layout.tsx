@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { OwnerReturn } from "@/components/OwnerReturn";
 import { CafeClosed } from "@/components/CafeClosed";
 import { TopBar } from "@/components/TopBar";
 import { SideRail } from "@/components/SideRail";
@@ -95,6 +96,8 @@ export default async function CafeLayout({
 
       {/* the customer's card is the thing worth keeping one tap away */}
       <InstallPrompt audience="client" />
+      {/* owners only — the door back to the till, see OwnerReturn */}
+      <OwnerReturn />
     </div>
   );
 }

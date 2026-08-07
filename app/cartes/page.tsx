@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { OwnerReturn } from "@/components/OwnerReturn";
 import { WalletView } from "@/components/WalletView";
 import { currentDiner } from "@/lib/auth/diner";
 import { dinerWallet } from "@/lib/db";
@@ -24,10 +25,12 @@ export default async function Cartes({
   if (!phone) redirect("/moi");
 
   const { getAccount } = await import("@/lib/db");
-  const [{ from }, cards, account] = await Promise.all([
+  const { hasOwnerCookie } = await import("@/lib/auth/owner");
+  const [{ from }, cards, account, isOwner] = await Promise.all([
     searchParams,
     dinerWallet(phone),
     getAccount(phone),
+    hasOwnerCookie(),
   ]);
 
   /*
@@ -67,9 +70,12 @@ export default async function Cartes({
         currentSlug={from ?? null}
         code={account?.code ?? null}
         nudges={nudges}
+        isOwner={isOwner}
       />
       {/* the wallet is the customer's home base — the likeliest place to install from */}
       <InstallPrompt audience="client" />
+      {/* owners only — the door back to the till, see OwnerReturn */}
+      <OwnerReturn />
     </div>
   );
 }

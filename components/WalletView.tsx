@@ -67,11 +67,14 @@ export function WalletView({
   currentSlug,
   code,
   nudges = {},
+  isOwner = false,
 }: {
   cards: WalletCafe[];
   currentSlug: string | null;
   /** The diner's 4-char account code — the same one at every shop. */
   code?: string | null;
+  /** Signed in on the shop side too — they get a real way back, not a pitch. */
+  isOwner?: boolean;
   /** businessId → next reward, or null when they can already afford the top one. */
   nudges?: Record<string, Nudge>;
 }) {
@@ -249,13 +252,20 @@ export function WalletView({
       )}
 
       {/* The wallet is where a signed-in diner always lands, so it has to be the
-          one place that also leads OUT — to the shop-owner side. */}
-      <p className="mt-auto pt-10 text-center text-[11.5px] text-slate">
-        Vous êtes commerçant ?{" "}
-        <Link href="/?pro=1" className="font-semibold text-charcoal underline underline-offset-2">
-          Espace boutique
-        </Link>
-      </p>
+          one place that also leads OUT — to the shop-owner side.
+
+          NOT for somebody who is already a shop. This line goes to the SALES
+          page, and an owner who is signed in on both sides was being sold the
+          product they pay for while looking for the door back to their till.
+          They have that door now, on every customer screen: OwnerReturn. */}
+      {!isOwner && (
+        <p className="mt-auto pt-10 text-center text-[11.5px] text-slate">
+          Vous êtes commerçant ?{" "}
+          <Link href="/?pro=1" className="font-semibold text-charcoal underline underline-offset-2">
+            Espace boutique
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

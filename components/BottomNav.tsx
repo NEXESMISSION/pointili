@@ -84,6 +84,17 @@ export function BottomNav({ slug }: { slug: string }) {
             <li key={key} className="flex-1">
               <Link
                 href={to}
+                /*
+                  The rewards list is prefetched; THE CARD IS NOT.
+
+                  prefetch caches the payload for five minutes, and the card is
+                  the one screen in this product that must never be stale: the
+                  cashier credits points on their own device, so this phone has
+                  no way of knowing its balance changed. A customer who came
+                  back to "10 points" after being served would think the shop
+                  had not counted them. The rewards list has no such clock.
+                */
+                prefetch={href === "/boutique" ? true : undefined}
                 aria-current={active ? "page" : undefined}
                 className="flex min-h-[62px] flex-col items-center justify-center gap-0.5 py-2"
               >

@@ -368,7 +368,7 @@ export async function peekAction(
   if (!cafe) return { error: "Non autorisé." };
 
   const code = String(formData.get("code") ?? "").trim().toUpperCase();
-  if (!/^[A-Z0-9]{6}$/.test(code)) return { error: "Code à 6 caractères." };
+  if (!/^[A-Z0-9]{6,8}$/.test(code)) return { error: "Code invalide — 6 à 8 caractères." };
 
   const res = await peekCode(cafe.id, code);
   if (!res.found) return { error: "Code introuvable." };
@@ -387,7 +387,7 @@ export async function collectAction(
   if (!cafe) return { error: "Non autorisé." };
 
   const code = String(formData.get("code") ?? "").trim().toUpperCase();
-  if (!/^[A-Z0-9]{6}$/.test(code)) return { error: "Code à 6 caractères." };
+  if (!/^[A-Z0-9]{6,8}$/.test(code)) return { error: "Code invalide — 6 à 8 caractères." };
 
   const res = await claimCode(cafe.id, code);
   if (!res.ok) return { error: `Code ${res.reason}.` };

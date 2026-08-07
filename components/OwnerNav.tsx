@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { ChartIcon, SlidersIcon, TillIcon } from "./icons";
 
@@ -29,6 +29,22 @@ import { ChartIcon, SlidersIcon, TillIcon } from "./icons";
   Analyses; everybody wonders who has stopped coming in.
 */
 
+/*
+  prefetch on every tab, and it is `true`, not the default.
+
+  These three screens are DYNAMIC — they read the shop's own data on every
+  request — and Next's default only prefetches a dynamic route as far as its
+  nearest loading.js boundary. This app deliberately has none (see useLit
+  below), so the default prefetched nothing at all and each tab cost a full
+  server round trip after the tap. `prefetch` fetches the whole payload while
+  the tab sits in the thumb row, which is where it always sits, so switching
+  screens is a cache read.
+
+  It is safe to cache because everything that changes a shop's data goes through
+  a server action on this same device, and every one of them calls
+  revalidatePath (caisse/actions.ts, reglages/actions.ts) — which drops the
+  client cache for the path it just changed.
+*/
 /* Real paths. The host split does not rewrite them — see proxy.ts. */
 const TABS = [
   { label: "Caisse", Icon: TillIcon, href: "/owner" },
@@ -47,6 +63,26 @@ function isActive(pathname: string, href: string) {
     : pathname.startsWith(href);
 }
 
+/**
+ * THE TAB IS THE LOADING INDICATOR.
+ *
+ * There used to be a loading.tsx here that replaced the whole page with the
+ * Pointili mark and a sliding bar, on every single navigation. It answered
+ * "is this alive?" by throwing away the screen you were looking at — which
+ * made a 300ms move between two of your own tabs feel like a cold launch of a
+ * different app, and it is the reason routing felt slow.
+ *
+ * It is gone. The page you are on stays until the next one is ready, the way a
+ * native app behaves, and the ONE thing that changes on tap is the tab you
+ * pressed: it lights up immediately, then the screen arrives under it.
+ * useLinkStatus is what Next offers for exactly this (dynamic routes, no
+ * loading.js), and it costs a class name rather than a whole screen.
+ */
+function useLit(active: boolean) {
+  const { pending } = useLinkStatus();
+  return active || pending;
+}
+
 /* ── phone: thumb-height tabs at the bottom ───────────────────────────── */
 
 export function OwnerTabs() {
@@ -61,29 +97,71 @@ export function OwnerTabs() {
             <li key={href} className="flex-1">
               <Link
                 href={href}
+                prefetch
                 aria-current={active ? "page" : undefined}
                 className="flex min-h-[64px] flex-col items-center justify-center gap-1.5 px-1 py-2"
               >
-                <span
-                  className={`grid h-[30px] w-[30px] place-items-center rounded-full transition-colors ${
-                    active ? "bg-[#5b3fd1] text-white" : "text-slate"
-                  }`}
-                >
-                  <Icon className="h-[17px] w-[17px]" />
-                </span>
-                <span
-                  className={`text-[10px] font-semibold transition-colors ${
-                    active ? "text-charcoal" : "text-slate"
-                  }`}
-                >
-                  {label}
-                </span>
+                <TabBody label={label} Icon={Icon} active={active} />
               </Link>
             </li>
           );
         })}
       </ul>
     </nav>
+  );
+}
+
+/** The sidebar's row, lit the moment it is clicked. Same rule as TabBody. */
+function SideBody({
+  label,
+  Icon,
+  active,
+}: {
+  label: string;
+  Icon: typeof TillIcon;
+  active: boolean;
+}) {
+  const lit = useLit(active);
+  return (
+    <span
+      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-bold transition ${
+        lit ? "bg-[#5b3fd1] text-white" : "text-slate hover:bg-[var(--o-inset)]"
+      }`}
+    >
+      <Icon className="h-[18px] w-[18px]" />
+      {label}
+    </span>
+  );
+}
+
+/** Must live inside the <Link> — useLinkStatus reads the nearest one. */
+function TabBody({
+  label,
+  Icon,
+  active,
+}: {
+  label: string;
+  Icon: typeof TillIcon;
+  active: boolean;
+}) {
+  const lit = useLit(active);
+  return (
+    <>
+      <span
+        className={`grid h-[30px] w-[30px] place-items-center rounded-full transition-colors ${
+          lit ? "bg-[#5b3fd1] text-white" : "text-slate"
+        }`}
+      >
+        <Icon className="h-[17px] w-[17px]" />
+      </span>
+      <span
+        className={`text-[10px] font-semibold transition-colors ${
+          lit ? "text-charcoal" : "text-slate"
+        }`}
+      >
+        {label}
+      </span>
+    </>
   );
 }
 
@@ -125,15 +203,8 @@ export function OwnerSidebar({
             const active = isActive(pathname, href);
             return (
               <li key={href}>
-                <Link
-                  href={href}
-                  aria-current={active ? "page" : undefined}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-bold transition ${
-                    active ? "bg-[#5b3fd1] text-white" : "text-slate hover:bg-[var(--o-inset)]"
-                  }`}
-                >
-                  <Icon className="h-[18px] w-[18px]" />
-                  {label}
+                <Link href={href} prefetch aria-current={active ? "page" : undefined}>
+                  <SideBody label={label} Icon={Icon} active={active} />
                 </Link>
               </li>
             );

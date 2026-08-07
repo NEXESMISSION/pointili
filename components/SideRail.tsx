@@ -81,6 +81,9 @@ export function SideRail({
             <Link
               key={href}
               href={to}
+              /* rewards only — see the note in BottomNav: a cached card would
+                 show a balance the till has already changed */
+              prefetch={href === "/boutique" ? true : undefined}
               aria-current={active ? "page" : undefined}
               className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[14px] font-bold transition"
               style={

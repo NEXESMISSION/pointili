@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentDiner } from "@/lib/auth/diner";
+import { hasOwnerCookie } from "@/lib/auth/owner";
+import { OwnerReturn } from "@/components/OwnerReturn";
 import { cafeVars } from "@/lib/theme";
 import { SignInForm } from "./SignInForm";
 
@@ -27,6 +29,10 @@ export const metadata = { title: "Mes cartes" };
 export default async function Moi() {
   // Nothing to ask if the session is already good.
   if (await currentDiner()) redirect("/cartes");
+  /* An owner lands here whenever they open a customer screen without a diner
+     session of their own — following their own card link, say. Without this
+     they were offered the SALES page as the way out. */
+  const isOwner = await hasOwnerCookie();
 
   return (
     <div
@@ -60,14 +66,18 @@ export default async function Moi() {
           </p>
         </div>
 
-        <p className="mt-6 text-center text-[12px] text-slate">
-          Tu es commerçant ?{" "}
-          <Link href="/?pro=1" className="font-bold underline underline-offset-2"
-            style={{ color: "var(--cafe-text)" }}>
-            Espace café
-          </Link>
-        </p>
+        {!isOwner && (
+          <p className="mt-6 text-center text-[12px] text-slate">
+            Tu es commerçant ?{" "}
+            <Link href="/?pro=1" className="font-bold underline underline-offset-2"
+              style={{ color: "var(--cafe-text)" }}>
+              Espace café
+            </Link>
+          </p>
+        )}
       </div>
+      {/* owners only — the door back to the till, see OwnerReturn */}
+      <OwnerReturn />
     </div>
   );
 }

@@ -280,14 +280,23 @@ export async function getDiner(cafeId: string): Promise<Diner | null> {
   if (!phone) return null;
 
   const { getAccount, getBalance, getCodes, getStamps } = await import("./db");
-  const account = await getAccount(phone);
-  if (!account) return null;
+  /*
+    FOUR QUERIES, ONE ROUND TRIP'S WORTH OF WAITING.
 
-  const [balance, codes, stamps] = await Promise.all([
+    The account used to be awaited on its own before the other three started,
+    which put two trips to the database in series on the screen a customer
+    opens at the till. Nothing here needs the account row: balance, codes and
+    stamps are keyed on (cafeId, phone), and phone is already in hand. The only
+    thing the account decides is whether to return at all — which is just as
+    true after the fact as before it.
+  */
+  const [account, balance, codes, stamps] = await Promise.all([
+    getAccount(phone),
     getBalance(cafeId, phone),
     getCodes(cafeId, phone),
     getStamps(cafeId, phone),
   ]);
+  if (!account) return null;
 
   return {
     phone,
@@ -307,13 +316,17 @@ export async function getDiner(cafeId: string): Promise<Diner | null> {
 /**
  * The signed-in diner IF they hold a card at this café, else null.
  *
+ * cache(): the layout asks this to decide whether to draw the nav, and then the
+ * page asks the identical question — two round trips to the same table on every
+ * screen of the customer app. Deduped per request, like every getter here.
+ *
  * Being signed in is not the same as being a member HERE: the account is global
  * (one phone, many cafés) but a card is per café. Every diner page must use this
  * — checking only `getDiner()` let someone with a card at café A open café B's
  * pages, where the balance is a meaningless zero. Callers redirect to
  * /[slug]/rejoindre, which enrolls them properly.
  */
-export async function getMember(cafeId: string): Promise<Diner | null> {
+export const getMember = cache(async function getMember(cafeId: string): Promise<Diner | null> {
   const { currentDiner } = await import("./auth/diner");
   const phone = await currentDiner();
   if (!phone) return null;
@@ -333,7 +346,7 @@ export async function getMember(cafeId: string): Promise<Diner | null> {
   const { isCardholder } = await import("./db");
   const [diner, member] = await Promise.all([getDiner(cafeId), isCardholder(cafeId, phone)]);
   return diner && member ? diner : null;
-}
+});
 
 /**
  * "Always almost there" (§11 #2) — the goal-gradient nudge that drives returns.

@@ -134,7 +134,7 @@ const stampOnce = async () => {
 };
 await stampOnce();
 const full = await stampOnce();
-const stampCode = full.match(/code\s+([A-Z2-9]{6})/)?.[1] ?? "";
+const stampCode = full.match(/code\s+([A-Z2-9]{6,8})/)?.[1] ?? "";
 check("a full stamp card issues a code", /Carte pleine/i.test(full) && !!stampCode, stampCode || "none");
 
 /* ── 6. The counter validates that code exactly once ───────────────── */

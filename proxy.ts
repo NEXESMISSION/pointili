@@ -46,6 +46,29 @@ async function withSession(
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return build(request); // not configured → nothing to refresh
 
+  /*
+    ── DO NOT PAY FOR A REFRESH NOBODY NEEDS ──────────────────────────────
+
+    getUser() is a NETWORK CALL to the auth server, and this ran on every
+    navigation in the product — including every screen of the customer app,
+    which has no Supabase session at all. Measured from here, that round trip
+    is 90–230ms, spent before the page it is delaying even begins to render.
+
+    Two ways out, both of which keep the reason this file exists (an access
+    token that dies mid-shift must be rotated for us, because a Server
+    Component cannot write cookies):
+
+      · No auth cookie → there is no session to refresh. Every diner screen.
+      · A token with plenty of life left → nothing to rotate yet. The page's
+        own currentOwner() still verifies it against the auth server, so
+        skipping here removes a duplicate check, not a check.
+
+    Anything unparseable falls through to the refresh. The failure mode of
+    guessing wrong is an owner thrown out at the till, so the guess is only
+    ever made when the answer is unambiguous.
+  */
+  if (!needsRefresh(request)) return build(request);
+
   let response = build(request);
   const supabase = createServerClient(url, key, {
     cookies: {
@@ -102,6 +125,44 @@ async function withSession(
   await supabase.auth.getUser();
 
   return response;
+}
+
+/** How much life left in the access token still counts as "not yet". */
+const REFRESH_WINDOW_S = 300;
+
+/**
+ * Is there a session here that is close enough to expiry to be worth a round
+ * trip? Defaults to TRUE for anything it cannot read — see the note above.
+ */
+function needsRefresh(request: NextRequest): boolean {
+  /* @supabase/ssr chunks a long cookie as `<name>.0`, `<name>.1`, … and the
+     value is the concatenation in index order. */
+  const parts = request.cookies
+    .getAll()
+    .filter(
+      (c) =>
+        c.name.startsWith("sb-") &&
+        c.name.includes("auth-token") &&
+        !c.name.includes("code-verifier") &&
+        c.value.length > 0,
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
+  if (parts.length === 0) return false; // no session — the whole customer app
+
+  try {
+    const raw = parts.map((c) => c.value).join("");
+    const json = raw.startsWith("base64-")
+      ? Buffer.from(raw.slice(7), "base64").toString("utf8")
+      : decodeURIComponent(raw);
+    const token = JSON.parse(json)?.access_token;
+    const claims = JSON.parse(
+      Buffer.from(String(token).split(".")[1], "base64").toString("utf8"),
+    );
+    const left = Number(claims.exp) - Math.floor(Date.now() / 1000);
+    return !Number.isFinite(left) || left < REFRESH_WINDOW_S;
+  } catch {
+    return true;
+  }
 }
 
 export const config = {

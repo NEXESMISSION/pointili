@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,21 +18,42 @@ export function supabaseConfigured(): boolean {
 }
 
 /**
+ * The verified Supabase user — the single network hop, once per request.
+ *
+ * Split out of currentOwner() so that WHICH CAFÉ and WHAT ROLE stop being
+ * sequential. The café lookup only ever needed the user id; going through
+ * currentOwner() made it wait for the profiles SELECT first, so a page asking
+ * for both did three round trips in a row instead of one and then two at once.
+ */
+const authUser = cache(async function authUser() {
+  if (!supabaseConfigured()) return null;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user ?? null;
+});
+
+/**
  * The signed-in owner (Supabase Auth), or null.
  *
  * Uses getUser() rather than getSession(): getSession() reads the cookie without
  * revalidating it, so a forged cookie would pass. getUser() verifies against the
  * auth server. Never trust the cookie's contents for authorisation.
+ *
+ * cache(): getUser() is a NETWORK CALL to the auth server, and every owner
+ * screen asked the same question several times per request — the layout resolves
+ * the café, the page resolves it again, ownerHome() asks a third time, and each
+ * of those went through here plus a profiles SELECT. Measured on the till, that
+ * was five round trips to answer "who is this?" once. React's cache dedupes them
+ * within a single request and nothing else changes: a new request still
+ * revalidates the token from scratch, which is the security property.
  */
-export async function currentOwner(): Promise<OwnerSession | null> {
-  if (!supabaseConfigured()) return null;
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export const currentOwner = cache(async function currentOwner(): Promise<OwnerSession | null> {
+  const user = await authUser();
   if (!user) return null;
 
+  const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
@@ -43,7 +65,7 @@ export async function currentOwner(): Promise<OwnerSession | null> {
     email: user.email ?? null,
     role: (profile?.role as OwnerSession["role"]) ?? "owner",
   };
-}
+});
 
 /**
  * Is there an owner session cookie on this device? PRESENCE ONLY — this does
@@ -106,13 +128,15 @@ export type OwnerAccess = OwnerSession & { dev?: true };
  * In the dev bypass (no Supabase configured, dev build only) this falls back to
  * the first café so the caisse can be exercised locally.
  */
-export async function ownerCafe() {
+export const ownerCafe = cache(async function ownerCafe() {
   const { getOwnedCafe, getAnyCafe } = await import("@/lib/data");
-  const owner = await ownerAccess();
-  if (!owner) return null;
-  if (owner.dev) return getAnyCafe();
-  return getOwnedCafe(owner.id);
-}
+  /* authUser(), not ownerAccess(): the café is keyed on the user id alone, and
+     waiting for the role query first put a whole round trip in front of it. */
+  const user = await authUser();
+  if (user) return getOwnedCafe(user.id);
+  if (!supabaseConfigured() && process.env.NODE_ENV !== "production") return getAnyCafe();
+  return null;
+});
 
 /**
  * DEV-ONLY BYPASS. Lets the owner app (and the caisse) be exercised before a
@@ -124,7 +148,7 @@ export async function ownerCafe() {
  *
  * Returns null when the caller must send the visitor to /owner/login.
  */
-export async function ownerAccess(): Promise<OwnerAccess | null> {
+export const ownerAccess = cache(async function ownerAccess(): Promise<OwnerAccess | null> {
   const owner = await currentOwner();
   if (owner) return owner;
 
@@ -132,7 +156,7 @@ export async function ownerAccess(): Promise<OwnerAccess | null> {
     return { id: "dev-owner", email: "dev@local", role: "owner", dev: true };
   }
   return null;
-}
+});
 
 /**
  * Where a signed-in account belongs the moment it arrives.

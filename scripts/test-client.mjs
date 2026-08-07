@@ -186,7 +186,7 @@ const buyOnce = async () => {
   await d.locator('button:has-text("Oui, échanger")').click({ timeout: 15000 });
   await d
     .waitForFunction(
-      () => /\b[A-Z2-9]{6}\b/.test(document.querySelector("main")?.innerText ?? ""),
+      () => /\b[A-Z2-9]{6,8}\b/.test(document.querySelector("main")?.innerText ?? ""),
       undefined,
       { timeout: 20000 },
     )
@@ -197,7 +197,7 @@ const buyOnce = async () => {
 const offered = await d.locator("main").innerText();
 await buyOnce();
 const buy1 = await d.locator("main").innerText();
-const code1 = buy1.match(/\b[A-Z2-9]{6}\b/)?.[0] ?? "";
+const code1 = buy1.match(/\b[A-Z2-9]{6,8}\b/)?.[0] ?? "";
 check("buying issues a counter code", !!code1, code1 || "none");
 /* 0031 removed code expiry — a code keeps until it is used. The screen must
    SAY so, not merely omit the old countdown: silence would read as "we forgot

@@ -80,7 +80,19 @@ function extractCode(text: string): string {
  * whether the code arrived through the lens or through the wrong field.
  */
 function isVoucher(code: string): boolean {
-  return /^[A-Z0-9]{6}$/.test(code.toUpperCase());
+  const c = code.toUpperCase().trim();
+  /*
+    EIGHT DIGITS IS A PHONE NUMBER. It is the walk-in path — the cashier types
+    the number of somebody who has not signed up yet — and it is the one input
+    this test must never claim.
+
+    The range above says 6 TO 8 because peekAction accepts that much, and a
+    local number is exactly 8 characters drawn from the same [A-Z0-9] class. So
+    every walk-in lookup was answered with "Code introuvable.", from the
+    voucher panel, about a code the cashier never typed.
+  */
+  if (/^\d{8}$/.test(c)) return false;
+  return /^[A-Z0-9]{6,8}$/.test(c);
 }
 
 function ago(iso: string | null): string {
@@ -262,61 +274,60 @@ export function CaisseDesk({
       ) : (
         <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
           <div className="space-y-4">
-          {/*
-            THE SCANNER SITS ABOVE BOTH JOBS, because it now does both.
+            {/*
+              THE SCANNER SITS ABOVE BOTH JOBS, because it now does both.
 
-            It used to live inside the "Ajouter des points" card, which was true
-            when the only scannable thing was a customer's card. A reward code
-            is scannable too — so a button buried under that heading was a
-            button the cashier collecting a reward had no reason to read, and
-            they went on typing six characters while the queue waited.
+              It used to live inside the "Ajouter des points" card, which was true
+              when the only scannable thing was a customer's card. A reward code
+              is scannable too — so a button buried under that heading was a
+              button the cashier collecting a reward had no reason to read, and
+              they went on typing six characters while the queue waited.
 
-            One lens, at the top, before the two things you might reach for when
-            the camera is not the answer.
-          */}
-          <button
-            type="button"
-            onClick={() => setStage("scan")}
-            className="a-btn flex !min-h-[56px] items-center justify-center gap-2 !text-[16px]"
-          >
-            <QrIcon className="h-5 w-5" /> Scanner le QR
-          </button>
+              One lens, at the top, before the two things you might reach for when
+              the camera is not the answer.
+            */}
+            <button
+              type="button"
+              onClick={() => setStage("scan")}
+              className="a-btn flex !min-h-[56px] items-center justify-center gap-2 !text-[16px]"
+            >
+              <QrIcon className="h-5 w-5" /> Scanner le QR
+            </button>
 
-          {/* ── this person is paying ─────────────────────────────── */}
-          <section className="a-card p-4">
-            <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
-              Ajouter des points
-            </p>
-            {/* field + button on ONE row — the height the keypad used to eat
-                is what lets both jobs fit one screen */}
-            <div className="flex gap-2">
-              <input
-                name="customer"
-                value={typed}
-                onChange={(e) => setTyped(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && find(typed)}
-                placeholder="Code client ou numéro"
-                inputMode="text"
-                autoCapitalize="characters"
-                className="min-w-0 flex-1 rounded-2xl bg-[var(--o-inset)] px-4 py-3.5 text-[18px] font-extrabold tracking-[0.05em] text-charcoal outline-none placeholder:text-[14px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-slate"
-              />
-              <button
-                type="button"
-                onClick={() => find(typed)}
-                disabled={busy || !typed.trim()}
-                className="a-btn !w-auto shrink-0 px-5"
-              >
-                {busy ? "· · ·" : "Chercher"}
-              </button>
-            </div>
-          </section>
+            {/* ── this person is paying ─────────────────────────────── */}
+            <section className="a-card p-4">
+              <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
+                Ajouter des points
+              </p>
+              {/* field + button on ONE row — the height the keypad used to eat
+                  is what lets both jobs fit one screen */}
+              <div className="flex gap-2">
+                <input
+                  name="customer"
+                  value={typed}
+                  onChange={(e) => setTyped(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && find(typed)}
+                  placeholder="Code client ou numéro"
+                  inputMode="text"
+                  autoCapitalize="characters"
+                  className="min-w-0 flex-1 rounded-2xl bg-[var(--o-inset)] px-4 py-3.5 text-[18px] font-extrabold tracking-[0.05em] text-charcoal outline-none placeholder:text-[14px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-slate"
+                />
+                <button
+                  type="button"
+                  onClick={() => find(typed)}
+                  disabled={busy || !typed.trim()}
+                  className="a-btn !w-auto shrink-0 px-5"
+                >
+                  {busy ? "· · ·" : "Chercher"}
+                </button>
+              </div>
+            </section>
 
-          {error && (
-            <p role="alert" className="rounded-2xl bg-[#e5484d]/12 px-4 py-3 text-[13px] font-semibold text-[#e5484d]">
-              {error}
-            </p>
-          )}
-
+            {error && (
+              <p role="alert" className="rounded-2xl bg-[#e5484d]/12 px-4 py-3 text-[13px] font-semibold text-[#e5484d]">
+                {error}
+              </p>
+            )}
           </div>
 
           {/* ── this person is collecting ─────────────────────────── */}
@@ -953,7 +964,7 @@ function ValidateInner({ scanned, onReset }: { scanned?: Scanned | null; onReset
 
   function check() {
     const c = code.trim().toUpperCase();
-    if (!/^[A-Z0-9]{6}$/.test(c)) return setErr("Code à 6 caractères.");
+    if (!/^[A-Z0-9]{6,8}$/.test(c)) return setErr("Code invalide — 6 à 8 caractères.");
     setErr("");
     start(async () => {
       const fd = new FormData();
@@ -1045,7 +1056,7 @@ function ValidateInner({ scanned, onReset }: { scanned?: Scanned | null; onReset
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === "Enter" && check()}
-              maxLength={6}
+              maxLength={8}
               autoCapitalize="characters"
               placeholder="A1B2C3"
               className="min-w-0 flex-1 rounded-2xl bg-[var(--o-inset)] px-4 py-3.5 text-[18px] font-extrabold uppercase tracking-[0.16em] text-charcoal outline-none placeholder:text-slate"
@@ -1057,7 +1068,7 @@ function ValidateInner({ scanned, onReset }: { scanned?: Scanned | null; onReset
           {/* The camera is the fast path and it is one block up, so this line
               points at it instead of only describing the field it sits under. */}
           <p className="mt-2 text-[12px] text-slate">
-            Scannez le QR du client — ou tapez ses 6 caractères ici.
+            Scannez le QR du client — ou tapez son code ici.
           </p>
         </>
       )}

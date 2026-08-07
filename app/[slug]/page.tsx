@@ -59,12 +59,15 @@ export default async function Carte({
     the two balances have to be taken first or the diff is always empty and the
     customer is never told they have earned something.
   */
-  const seen = await balanceSinceLastOpen(cafe.id, diner.phone);
-
   /* The wallet, for the switcher in the banner — the other shops' marks are
      what make it read as a control with something behind it. One indexed RPC,
-     in parallel with the two it already ran. */
-  const [program, rewards, wallet] = await Promise.all([
+     in parallel with the three it already ran.
+
+     `seen` is IN this group rather than awaited before it: it depends on
+     nothing the others produce, and standing in front of them added its own
+     round trip to the slowest screen in the product for no reason. */
+  const [seen, program, rewards, wallet] = await Promise.all([
+    balanceSinceLastOpen(cafe.id, diner.phone),
     getLoyaltyProgram(cafe.id),
     getRewards(cafe.id),
     dinerWallet(diner.phone),
