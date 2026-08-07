@@ -60,24 +60,24 @@ export default async function AdminPage() {
   return (
     <div className="space-y-7">
       {/* ── context, deliberately one quiet line ─────────────────────── */}
-      <p className="font-mono text-[12px] text-[#5b6478]">
+      <p className="font-mono text-[12px] text-slate">
         {stats.cafes} café{stats.cafes === 1 ? "" : "s"}
-        <span className="text-[#343c4f]"> · </span>
+        <span className="text-slate/40"> · </span>
         {stats.live} en ligne
-        <span className="text-[#343c4f]"> · </span>
+        <span className="text-slate/40"> · </span>
         {stats.diners} diner{stats.diners === 1 ? "" : "s"}
-        <span className="text-[#343c4f]"> · </span>
+        <span className="text-slate/40"> · </span>
         {stats.pointsIssued.toLocaleString("fr-FR")} points émis
       </p>
 
       {/* ── 1. the work ──────────────────────────────────────────────── */}
       <section>
-        <h2 className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.1em] text-[#8b93a7]">
+        <h2 className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.1em] text-slate">
           À traiter{queue.length > 0 && ` (${queue.length})`}
         </h2>
 
         {queue.length === 0 ? (
-          <p className="rounded-lg border border-[#232838] bg-[#12151d] px-4 py-5 text-[13px] text-[#5b6478]">
+          <p className="rounded-lg border border-[var(--o-edge)] bg-[var(--o-panel)] px-4 py-5 text-[13px] text-slate">
             Rien à traiter. Aucun café expiré, suspendu, ni proche de l&apos;échéance.
           </p>
         ) : (
@@ -98,7 +98,7 @@ export default async function AdminPage() {
       {/* ── 2. everything else ───────────────────────────────────────── */}
       {cafes.length > 0 && (
         <section>
-          <h2 className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.1em] text-[#8b93a7]">
+          <h2 className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.1em] text-slate">
             Tous les cafés
           </h2>
           {/* remaining() is server-only, so each row carries its own verdict */}
@@ -121,23 +121,23 @@ export default async function AdminPage() {
             {notices.map((n) => (
               <li
                 key={n.id}
-                className="flex items-start justify-between gap-3 rounded-lg border border-[#232838] bg-[#0e1118] px-3.5 py-2.5"
+                className="flex items-start justify-between gap-3 rounded-lg border border-[var(--o-edge)] bg-[var(--o-inset)] px-3.5 py-2.5"
               >
                 <span className="min-w-0">
-                  <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#5b6478]">
+                  <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-slate">
                     {n.businessId ? (cafeName.get(n.businessId) ?? "café") : "tous les cafés"}
                     {" · "}
                     {KIND_LABEL[n.kind] ?? n.kind}
                   </span>
-                  <span className="mt-0.5 block text-[13px] text-[#e6e8ee]">{n.message}</span>
-                  <span className="mt-0.5 block text-[10.5px] text-[#5b6478]">
+                  <span className="mt-0.5 block text-[13px] text-charcoal">{n.message}</span>
+                  <span className="mt-0.5 block text-[10.5px] text-slate">
                     {n.expiresAt ? `expire dans ${remaining(n.expiresAt).label}` : "sans expiration"}
                   </span>
                 </span>
                 <form action={dismissNoticeAction.bind(null, n.id)} className="shrink-0">
                   <button
                     type="submit"
-                    className="rounded border border-[#232838] px-2.5 py-1.5 text-[11px] font-medium text-[#8b93a7] hover:text-[#e6e8ee]"
+                    className="rounded border border-[var(--o-edge)] px-2.5 py-1.5 text-[11px] font-medium text-slate hover:text-charcoal"
                   >
                     Retirer
                   </button>
@@ -150,21 +150,21 @@ export default async function AdminPage() {
 
       {actions.length > 0 && (
         <Drawer label={`Journal (${actions.length})`}>
-          <ul className="divide-y divide-[#232838]">
+          <ul className="divide-y divide-[var(--o-edge)]">
             {actions.map((a, i) => (
               <li key={i} className="flex items-baseline justify-between gap-2 py-2">
                 <span className="min-w-0">
-                  <span className="text-[12px] text-[#e6e8ee]">
+                  <span className="text-[12px] text-charcoal">
                     {actionLabel(a.action)}
                     {actionTarget(a.action, a.cafe) && (
-                      <span className="text-[#5b6478]">{" · "}{actionTarget(a.action, a.cafe)}</span>
+                      <span className="text-slate">{" · "}{actionTarget(a.action, a.cafe)}</span>
                     )}
                   </span>
-                  <span className="block truncate font-mono text-[10.5px] text-[#4b5163]">
+                  <span className="block truncate font-mono text-[10.5px] text-slate/60">
                     {a.actor ?? "—"}
                   </span>
                 </span>
-                <span className="shrink-0 font-mono text-[10.5px] text-[#4b5163]">
+                <span className="shrink-0 font-mono text-[10.5px] text-slate/60">
                   {new Date(a.at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
                 </span>
               </li>
@@ -199,10 +199,10 @@ function QueueRow({
 }) {
   const tone =
     kind === "suspended"
-      ? { dot: "bg-[#e5484d]", text: "text-[#e5484d]" }
+      ? { dot: "bg-[#c0341c]", text: "text-[#b3202f]" }
       : kind === "expired"
-        ? { dot: "bg-[#e5484d]", text: "text-[#e5484d]" }
-        : { dot: "bg-[#e0a52e]", text: "text-[#e0a52e]" };
+        ? { dot: "bg-[#c0341c]", text: "text-[#b3202f]" }
+        : { dot: "bg-[#e0a52e]", text: "text-[#8a5a00]" };
 
   const why =
     kind === "suspended"
@@ -212,15 +212,15 @@ function QueueRow({
         : `Expire dans ${row.left.label}`;
 
   return (
-    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-[#232838] bg-[#12151d] px-4 py-3">
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--o-edge)] bg-[var(--o-panel)] px-4 py-3">
       <span className={`h-2 w-2 shrink-0 rounded-full ${tone.dot}`} />
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[14px] font-semibold text-[#e6e8ee]">{row.name}</span>
+        <span className="block truncate text-[14px] font-semibold text-charcoal">{row.name}</span>
         <span className={`block truncate text-[11.5px] ${tone.text}`}>{why}</span>
       </span>
 
-      <span className="hidden shrink-0 font-mono text-[11px] text-[#4b5163] sm:block">
+      <span className="hidden shrink-0 font-mono text-[11px] text-slate/60 sm:block">
         /{row.slug}
       </span>
 
@@ -274,14 +274,14 @@ function Renew({
  *  it costs no JavaScript and remembers nothing — which is correct here. */
 function Drawer({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <details className="group rounded-lg border border-[#232838] bg-[#12151d]">
-      <summary className="cursor-pointer list-none px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#8b93a7] hover:text-[#e6e8ee] [&::-webkit-details-marker]:hidden">
-        <span className="inline-block w-3 text-[#4b5163] transition-transform group-open:rotate-90">
+    <details className="group rounded-lg border border-[var(--o-edge)] bg-[var(--o-panel)]">
+      <summary className="cursor-pointer list-none px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-slate hover:text-charcoal [&::-webkit-details-marker]:hidden">
+        <span className="inline-block w-3 text-slate/60 transition-transform group-open:rotate-90">
           ›
         </span>
         {label}
       </summary>
-      <div className="border-t border-[#232838] px-4 py-3.5">{children}</div>
+      <div className="border-t border-[var(--o-edge)] px-4 py-3.5">{children}</div>
     </details>
   );
 }

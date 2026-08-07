@@ -478,47 +478,68 @@ h4 {
 /* ── the super-admin console: deliberately NOT the owner app ──────────────
    A dark technical surface — flat, square-ish, monospace ids. You should be
    able to tell at a glance that you are somewhere that can suspend a café. */
+/* ══ the platform console ═════════════════════════════════════════════════
+   LIGHT, like everything else the operator uses.
+
+   This was the last dark surface in the product. The till, the settings, the QR
+   screen and the landing page all moved to white, so the console had become the
+   one screen that looked like a different application — and it is the screen a
+   platform operator sits in longest.
+
+   It borrows the owner app's tokens rather than inventing a third palette:
+   --o-panel / --o-inset / --o-edge, charcoal ink, royal for anything that acts.
+   A console is a dense table of facts; the job of the surface is to get out of
+   the way of the numbers. */
 .k-shell {
-  background: #0b0d12;
-  color: #e6e8ee;
+  background: var(--o-surface);
+  color: var(--color-charcoal);
+  /* the operator taps fast through a table; double-tap zoom is never wanted */
+  touch-action: manipulation;
 }
 .k-card {
-  background: #12151d;
-  border: 1px solid #232838;
-  border-radius: 10px;
+  background: var(--o-panel);
+  border: 1px solid var(--o-edge);
+  border-radius: 14px;
 }
 .k-field {
   width: 100%;
-  border-radius: 8px;
-  border: 1px solid #2b3145;
-  background: #0e1118;
-  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--o-edge);
+  background: var(--o-panel);
+  padding: 10px 12px;
   font-size: 16px; /* 16px so iOS never zooms on focus */
-  color: #e6e8ee;
+  color: var(--color-charcoal);
   font-family: var(--font-mono, ui-monospace), monospace;
 }
+.k-field::placeholder { color: color-mix(in oklab, var(--color-slate) 70%, transparent); }
 .k-field:focus {
   outline: none;
-  border-color: #6d4ae6;
+  border-color: var(--color-royal);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-royal) 14%, transparent);
 }
 .k-btn {
-  border-radius: 8px;
-  background: #6d4ae6;
+  border-radius: 10px;
+  background: var(--color-royal);
   color: #fff;
   font-weight: 700;
   font-size: 12.5px;
   padding: 9px 14px;
 }
 .k-btn--ghost {
-  background: #1a1f2b;
-  border: 1px solid #2b3145;
-  color: #c8cddb;
+  background: var(--o-inset);
+  border: 1px solid var(--o-edge);
+  color: var(--color-charcoal);
 }
 .k-btn--danger {
-  background: #3a1520;
-  border: 1px solid #7c2438;
-  color: #ff8fa3;
+  background: #fdeced;
+  border: 1px solid #f3c2c7;
+  color: #b3202f;
 }
+/* One row of a dense list. The console is mostly rows; they get a name. */
+.k-row {
+  border-top: 1px solid var(--o-edge);
+}
+.k-row:first-child { border-top: 0; }
 
 /* ══ the diner app, in white ══════════════════════════════════════════════
    WHY IT IS NOT DARK ANY MORE.

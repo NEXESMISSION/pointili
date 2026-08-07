@@ -103,7 +103,7 @@ export function CafeTable({ rows }: { rows: Row[] }) {
             setDesc(key !== "name"); // numbers are most useful biggest-first
           }
         }}
-        className={`uppercase tracking-[0.06em] ${sort === key ? "text-[#9d86ff]" : "text-[#8b93a7]"}`}
+        className={`uppercase tracking-[0.06em] ${sort === key ? "text-royal" : "text-slate"}`}
       >
         {label}
         {sort === key && <span className="ml-1">{desc ? "↓" : "↑"}</span>}
@@ -121,12 +121,15 @@ export function CafeTable({ rows }: { rows: Row[] }) {
             onClick={() => setFilter(f.id)}
             className={`rounded-md px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.05em] ${
               filter === f.id
-                ? "bg-[#6d4ae6] text-white"
-                : "border border-[#232838] bg-[#12151d] text-[#8b93a7]"
+                ? "bg-royal text-white"
+                : "border border-[var(--o-edge)] bg-[var(--o-panel)] text-slate"
             }`}
           >
             {f.label}
-            <span className={filter === f.id ? "ml-1.5 text-white/70" : "ml-1.5 text-[#5c6478]"}>
+            {/* The count must follow its chip. On the ACTIVE chip the fill is
+                royal, so slate ink lands at 1.2:1 — the number the operator is
+                reading is the one that disappears. */}
+            <span className={filter === f.id ? "ml-1.5 text-white/75" : "ml-1.5 text-slate"}>
               {counts[f.id]}
             </span>
           </button>
@@ -140,9 +143,9 @@ export function CafeTable({ rows }: { rows: Row[] }) {
         className="k-field mb-2 w-full"
       />
 
-      <div className="overflow-x-auto rounded-lg border border-[#232838] bg-[#12151d]">
+      <div className="overflow-x-auto rounded-lg border border-[var(--o-edge)] bg-[var(--o-panel)]">
         <table className="w-full min-w-[560px] border-collapse text-[12.5px]">
-          <thead className="border-b border-[#232838] text-[10px]">
+          <thead className="border-b border-[var(--o-edge)] text-[10px]">
             <tr>
               {head("name", "Café")}
               {head("customers", "Clients", true)}
@@ -153,7 +156,7 @@ export function CafeTable({ rows }: { rows: Row[] }) {
           <tbody className="divide-y divide-[#1b202c]">
             {shown.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-3 py-10 text-center text-[12.5px] text-[#8b93a7]">
+                <td colSpan={4} className="px-3 py-10 text-center text-[12.5px] text-slate">
                   Aucun café ne correspond.
                 </td>
               </tr>
@@ -162,21 +165,21 @@ export function CafeTable({ rows }: { rows: Row[] }) {
                 <tr
                   key={r.id}
                   onClick={() => setOpenId(r.id)}
-                  className="cursor-pointer transition hover:bg-[#171b26]"
+                  className="cursor-pointer transition hover:bg-[var(--o-inset)]"
                 >
                   <td className="px-3 py-2.5">
                     <span className="flex items-center gap-2">
                       <Dot cafe={r} />
                       <span className="min-w-0">
-                        <span className="block truncate font-bold text-[#e6e8ee]">{r.name}</span>
-                        <span className="block truncate font-mono text-[10.5px] text-[#8b93a7]">
+                        <span className="block truncate font-bold text-charcoal">{r.name}</span>
+                        <span className="block truncate font-mono text-[10.5px] text-slate">
                           /{r.slug}
                         </span>
                       </span>
                     </span>
                   </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums text-[#e6e8ee]">{r.customers}</td>
-                  <td className="px-3 py-2.5 text-right tabular-nums text-[#9d86ff]">{r.pointsIssued}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums text-charcoal">{r.customers}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums text-royal">{r.pointsIssued}</td>
                   <td className="px-3 py-2.5 text-right">
                     <Plan cafe={r} left={r.left} />
                   </td>
@@ -188,7 +191,7 @@ export function CafeTable({ rows }: { rows: Row[] }) {
       </div>
 
       {shown.length > 0 && (
-        <p className="mt-1.5 text-[10.5px] text-[#5c6478]">
+        <p className="mt-1.5 text-[10.5px] text-slate">
           {shown.length} sur {rows.length} · cliquez une ligne pour agir dessus
         </p>
       )}
@@ -208,18 +211,18 @@ function Drawer({ cafe, onClose }: { cafe: Row; onClose: () => void }) {
         aria-modal="true"
         aria-label={cafe.name}
         onClick={(e) => e.stopPropagation()}
-        className="flex h-full w-full max-w-[460px] flex-col overflow-y-auto border-l border-[#232838] bg-[#0f121a]"
+        className="flex h-full w-full max-w-[460px] flex-col overflow-y-auto border-l border-[var(--o-edge)] bg-[var(--o-inset)]"
       >
-        <header className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-[#232838] bg-[#0f121a] px-4 py-3">
+        <header className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-[var(--o-edge)] bg-[var(--o-inset)] px-4 py-3">
           <div className="min-w-0">
             <p className="flex items-center gap-2">
               <Dot cafe={cafe} />
-              <span className="truncate text-[16px] font-bold text-[#e6e8ee]">{cafe.name}</span>
+              <span className="truncate text-[16px] font-bold text-charcoal">{cafe.name}</span>
             </p>
-            <p className="mt-0.5 truncate font-mono text-[10.5px] text-[#8b93a7]">
+            <p className="mt-0.5 truncate font-mono text-[10.5px] text-slate">
               /{cafe.slug} · {cafe.ownerEmail ?? "—"}
             </p>
-            <p className="mt-1 text-[10.5px] text-[#8b93a7]">
+            <p className="mt-1 text-[10.5px] text-slate">
               {cafe.customers} client{cafe.customers === 1 ? "" : "s"} · {cafe.pointsIssued} pts ·
               créé le {new Date(cafe.createdAt).toLocaleDateString("fr-FR")}
             </p>
@@ -228,7 +231,7 @@ function Drawer({ cafe, onClose }: { cafe: Row; onClose: () => void }) {
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="shrink-0 rounded-md border border-[#232838] px-2 py-1 text-[13px] text-[#8b93a7]"
+            className="shrink-0 rounded-md border border-[var(--o-edge)] px-2 py-1 text-[13px] text-slate"
           >
             ✕
           </button>
@@ -243,7 +246,7 @@ function Drawer({ cafe, onClose }: { cafe: Row; onClose: () => void }) {
 
 function Dot({ cafe }: { cafe: AdminCafe }) {
   const [colour, title] = cafe.suspendedAt
-    ? ["bg-[#e5484d]", "suspendu"]
+    ? ["bg-[#c0341c]", "suspendu"]
     : cafe.live
       ? ["bg-[#2f9e6e]", "en ligne"]
       : ["bg-[#e0a52e]", "expiré"];
@@ -256,7 +259,7 @@ function Plan({ cafe, left }: { cafe: AdminCafe; left: Remaining }) {
     <span className="inline-flex flex-col items-end gap-0.5">
       <span
         className={`rounded px-1.5 py-0.5 text-[9px] font-bold tracking-[0.06em] ${
-          cafe.plan === "pro" ? "bg-[#6d4ae6] text-white" : "bg-[#1b2030] text-[#9d86ff]"
+          cafe.plan === "pro" ? "bg-royal text-white" : "bg-[var(--o-inset)] text-royal"
         }`}
       >
         {label}
@@ -264,7 +267,7 @@ function Plan({ cafe, left }: { cafe: AdminCafe; left: Remaining }) {
       {!left.unlimited && (
         <span
           className={`text-[10px] font-semibold ${
-            left.expired ? "text-[#e5484d]" : left.soon ? "text-[#e0a52e]" : "text-[#8b93a7]"
+            left.expired ? "text-[#b3202f]" : left.soon ? "text-[#8a5a00]" : "text-slate"
           }`}
         >
           {left.expired ? "expiré" : left.label}

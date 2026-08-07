@@ -40,21 +40,21 @@ export default async function ConsoleLayout({
        side by side, and a 448px column around a 560px table scrolls sideways
        forever with two thirds of a laptop screen empty. */
     <div className="k-shell mx-auto flex min-h-dvh max-w-5xl flex-col">
-      <header className="flex items-center justify-between border-b border-[#232838] px-5 py-3">
-        <span className="font-mono text-[13px] font-semibold tracking-tight text-[#8b93a7]">
-          pointili<span className="text-[#4b5163]">/</span>console
+      <header className="flex items-center justify-between border-b border-[var(--o-edge)] px-5 py-3">
+        <span className="font-mono text-[13px] font-semibold tracking-tight text-slate">
+          pointili<span className="text-slate/60">/</span>console
         </span>
         <div className="flex items-center gap-4">
-          <span className="hidden font-mono text-[11px] text-[#5b6478] sm:inline">
+          <span className="hidden font-mono text-[11px] text-slate sm:inline">
             {owner.email}
           </span>
-          <Link href="/" className="text-[12px] font-medium text-[#8b93a7] hover:text-[#e6e8ee]">
+          <Link href="/" className="text-[12px] font-medium text-slate hover:text-charcoal">
             Site
           </Link>
           <form action={adminLogoutAction}>
             <button
               type="submit"
-              className="text-[12px] font-medium text-[#8b93a7] hover:text-[#e5484d]"
+              className="text-[12px] font-medium text-slate hover:text-[#b3202f]"
             >
               Quitter
             </button>

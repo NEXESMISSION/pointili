@@ -26,12 +26,12 @@ export function Renewals({ rows }: { rows: AdminRenewal[] }) {
 
   return (
     <section>
-      <h2 className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.1em] text-[#8b93a7]">
+      <h2 className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.1em] text-slate">
         Renouvellements{pending.length > 0 && ` (${pending.length})`}
       </h2>
 
       {pending.length === 0 ? (
-        <p className="rounded-lg border border-[#232838] bg-[#12151d] px-4 py-4 text-[13px] text-[#5b6478]">
+        <p className="rounded-lg border border-[var(--o-edge)] bg-[var(--o-panel)] px-4 py-4 text-[13px] text-slate">
           Aucune demande en attente.
         </p>
       ) : (
@@ -47,16 +47,16 @@ export function Renewals({ rows }: { rows: AdminRenewal[] }) {
           {done.map((r) => (
             <li
               key={r.id}
-              className="flex items-center gap-2 rounded-lg border border-[#1c2130] bg-[#0f1219] px-3 py-2 font-mono text-[11.5px] text-[#5b6478]"
+              className="flex items-center gap-2 rounded-lg border border-[var(--o-edge)] bg-[var(--o-inset)] px-3 py-2 font-mono text-[11.5px] text-slate"
             >
               <span
                 className={r.status === "approved" ? "text-[#2f9e6e]" : "text-[#c0341c]"}
               >
                 {r.status === "approved" ? "✓" : "✕"}
               </span>
-              <span className="min-w-0 flex-1 truncate text-[#8b93a7]">{r.name}</span>
+              <span className="min-w-0 flex-1 truncate text-slate">{r.name}</span>
               <span>{tnd(r.amount)}</span>
-              <span className="text-[#343c4f]">·</span>
+              <span className="text-slate/40">·</span>
               <span>
                 {new Date(r.decidedAt ?? r.createdAt).toLocaleDateString("fr-FR", {
                   day: "2-digit",
@@ -77,11 +77,11 @@ function RequestRow({ r }: { r: AdminRenewal }) {
   const [refusing, setRefusing] = useState(false);
 
   return (
-    <li className="rounded-lg border border-[#232838] bg-[#12151d] p-3">
+    <li className="rounded-lg border border-[var(--o-edge)] bg-[var(--o-panel)] p-3">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span className="text-[14px] font-bold text-[#e7ebf3]">{r.name}</span>
-        <span className="font-mono text-[11.5px] text-[#5b6478]">/{r.slug}</span>
-        <span className="ml-auto font-mono text-[11.5px] text-[#5b6478]">
+        <span className="text-[14px] font-bold text-charcoal">{r.name}</span>
+        <span className="font-mono text-[11.5px] text-slate">/{r.slug}</span>
+        <span className="ml-auto font-mono text-[11.5px] text-slate">
           {new Date(r.createdAt).toLocaleDateString("fr-FR", {
             day: "2-digit",
             month: "2-digit",
@@ -91,13 +91,13 @@ function RequestRow({ r }: { r: AdminRenewal }) {
         </span>
       </div>
 
-      <p className="mt-1 font-mono text-[12.5px] text-[#8b93a7]">
-        <b className="text-[#e7ebf3]">{tnd(r.amount)}</b>
-        <span className="text-[#343c4f]"> · </span>
+      <p className="mt-1 font-mono text-[12.5px] text-slate">
+        <b className="text-charcoal">{tnd(r.amount)}</b>
+        <span className="text-slate/40"> · </span>
         {findOffer(r.offer)?.label ?? r.offer} ({r.months} mois)
-        <span className="text-[#343c4f]"> · </span>
+        <span className="text-slate/40"> · </span>
         {payMethod(r.method)?.label ?? r.method}
-        <span className="text-[#343c4f]"> · </span>
+        <span className="text-slate/40"> · </span>
         formule actuelle {r.plan}
         {r.planExpiresAt
           ? ` jusqu'au ${new Date(r.planExpiresAt).toLocaleDateString("fr-FR")}`
@@ -105,7 +105,7 @@ function RequestRow({ r }: { r: AdminRenewal }) {
       </p>
 
       {r.note && (
-        <p className="mt-1 border-l-2 border-[#232838] pl-2 text-[12px] italic text-[#8b93a7]">
+        <p className="mt-1 border-l-2 border-[var(--o-edge)] pl-2 text-[12px] italic text-slate">
           « {r.note} »
         </p>
       )}
@@ -122,7 +122,7 @@ function RequestRow({ r }: { r: AdminRenewal }) {
       <button
         type="button"
         onClick={() => setBig((v) => !v)}
-        className="group mt-2 flex w-full flex-col items-center gap-1 rounded-lg border border-[#232838] bg-[#0f1219] py-2"
+        className="group mt-2 flex w-full flex-col items-center gap-1 rounded-lg border border-[var(--o-edge)] bg-[var(--o-inset)] py-2"
         aria-label={big ? "Réduire le reçu" : "Agrandir le reçu"}
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- served as bytes by /api/admin/proof */}
@@ -133,7 +133,7 @@ function RequestRow({ r }: { r: AdminRenewal }) {
             big ? "max-h-[70vh] max-w-full" : "max-h-[132px] max-w-[180px]"
           }`}
         />
-        <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-[#5b6478] group-hover:text-[#8b93a7]">
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-slate group-hover:text-slate">
           {big ? "réduire" : "agrandir le reçu"}
         </span>
       </button>
@@ -160,7 +160,7 @@ function RequestRow({ r }: { r: AdminRenewal }) {
             <button
               type="button"
               onClick={() => setRefusing(false)}
-              className="rounded-xl px-3 py-2 text-[11px] font-bold uppercase tracking-[0.06em] text-[#8b93a7]"
+              className="rounded-xl px-3 py-2 text-[11px] font-bold uppercase tracking-[0.06em] text-slate"
             >
               Annuler
             </button>
@@ -183,7 +183,7 @@ function RequestRow({ r }: { r: AdminRenewal }) {
             <button
               type="button"
               onClick={() => setRefusing(true)}
-              className="rounded-xl border border-[#232838] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.06em] text-[#8b93a7] active:scale-95"
+              className="rounded-xl border border-[var(--o-edge)] px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.06em] text-slate active:scale-95"
             >
               Refuser
             </button>

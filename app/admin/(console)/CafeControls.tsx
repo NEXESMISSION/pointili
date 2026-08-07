@@ -41,7 +41,7 @@ export function CafeDetail({ cafe }: { cafe: AdminCafe }) {
   return (
     <div className="px-4 py-3">
       {/* subscription */}
-      <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8b93a7]">
+      <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
         Abonnement
       </p>
       <form action={planFn} className="flex flex-wrap items-center gap-2">
@@ -65,18 +65,18 @@ export function CafeDetail({ cafe }: { cafe: AdminCafe }) {
           <option value="days">jours</option>
           <option value="months">mois</option>
         </select>
-        <button type="submit" disabled={planPending} className={`${btn} bg-[#6d4ae6] text-white`}>
+        <button type="submit" disabled={planPending} className={`${btn} bg-royal text-white`}>
           {planPending ? "· ·" : "Appliquer"}
         </button>
       </form>
-      <p className="mt-1.5 text-[10.5px] leading-snug text-[#8b93a7]">
+      <p className="mt-1.5 text-[10.5px] leading-snug text-slate">
         Prolonge à partir de l&apos;expiration actuelle (renouveler tôt ne perd
         rien). « Gratuit » = sans limite. Durée <b>0</b> = couper maintenant.
       </p>
       <Result state={planState} />
 
       {/* suspend / ban */}
-      <p className="mb-1.5 mt-4 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8b93a7]">
+      <p className="mb-1.5 mt-4 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
         Modération
       </p>
       {cafe.suspendedAt ? (
@@ -108,19 +108,19 @@ export function CafeDetail({ cafe }: { cafe: AdminCafe }) {
                 e.preventDefault();
               }
             }}
-            className={`${btn} border border-[#e5484d] text-[#e5484d]`}
+            className={`${btn} border border-[#c0341c] text-[#b3202f]`}
           >
             {susPending ? "· ·" : "Suspendre"}
           </button>
         </form>
       )}
-      <p className="mt-1.5 text-[10.5px] leading-snug text-[#8b93a7]">
+      <p className="mt-1.5 text-[10.5px] leading-snug text-slate">
         Coupe l&apos;accès des clients à /{cafe.slug} immédiatement.
       </p>
       <Result state={susState} />
 
       {/* notice */}
-      <p className="mb-1.5 mt-4 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8b93a7]">
+      <p className="mb-1.5 mt-4 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
         Message au propriétaire
       </p>
       <form action={noticeFn} className="space-y-2">
@@ -140,7 +140,7 @@ export function CafeDetail({ cafe }: { cafe: AdminCafe }) {
             className={`${field} w-[60px] text-center`}
             aria-label="jours"
           />
-          <span className="self-center text-[11px] text-[#8b93a7]">jours</span>
+          <span className="self-center text-[11px] text-slate">jours</span>
         </div>
         <textarea
           name="message"
@@ -149,7 +149,7 @@ export function CafeDetail({ cafe }: { cafe: AdminCafe }) {
           placeholder="Votre essai se termine dans 3 jours…"
           className={`${field} w-full resize-none`}
         />
-        <button type="submit" disabled={noticePending} className={`${btn} bg-[#1a1f2b] border border-[#2b3145] text-[#e6e8ee]`}>
+        <button type="submit" disabled={noticePending} className={`${btn} bg-[var(--o-inset)] border border-[var(--o-edge)] text-charcoal`}>
           {noticePending ? "· ·" : "Envoyer"}
         </button>
       </form>
@@ -179,7 +179,7 @@ export function BroadcastForm() {
           className={`${field} w-[60px] text-center`}
           aria-label="jours"
         />
-        <span className="self-center text-[11px] text-[#8b93a7]">jours</span>
+        <span className="self-center text-[11px] text-slate">jours</span>
       </div>
       <textarea
         name="message"
@@ -188,7 +188,7 @@ export function BroadcastForm() {
         placeholder="Maintenance prévue dimanche…"
         className={`${field} w-full resize-none`}
       />
-      <button type="submit" disabled={pending} className={`${btn} w-full bg-[#1a1f2b] border border-[#2b3145] py-2.5 text-[#e6e8ee]`}>
+      <button type="submit" disabled={pending} className={`${btn} w-full bg-[var(--o-inset)] border border-[var(--o-edge)] py-2.5 text-charcoal`}>
         {pending ? "· ·" : "Envoyer à tous les cafés"}
       </button>
       <Result state={state} />
