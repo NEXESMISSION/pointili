@@ -9,7 +9,7 @@ import {
   NO_SUCH_ACCOUNT_HASH,
   verifyPin,
 } from "@/lib/auth/crypto";
-import { getAccount, pinClear, pinFail, pinLockedFor } from "@/lib/db";
+import { getAccount, pinClear, pinGate } from "@/lib/db";
 
 export type SignInState = { error?: string; phone?: string };
 
@@ -42,7 +42,13 @@ export async function signInAction(_prev: SignInState, formData: FormData): Prom
 
   // Throttle BEFORE touching the PIN — this is the brute-force gate, and it is
   // keyed by phone, so exposing this form at a fixed URL does not widen it.
-  const lockedFor = await pinLockedFor(phone);
+  /*
+    ONE call, and it COUNTS this attempt as it checks. The old shape read
+    pin_locked_for, verified, then called pin_fail — three steps nothing
+    serialised, so concurrent guesses all passed the read before any was
+    recorded. pin_gate holds an advisory lock on the phone (0038).
+  */
+  const lockedFor = await pinGate(phone);
   if (lockedFor > 0) return { ...keep, error: `Trop d'essais. Réessaie dans ${lockedFor} min.` };
 
   const account = await getAccount(phone);
@@ -60,11 +66,7 @@ export async function signInAction(_prev: SignInState, formData: FormData): Prom
   */
   const ok = await verifyPin(pin, account?.pin_hash ?? NO_SUCH_ACCOUNT_HASH);
   if (!account || !ok) {
-    await pinFail(phone);
-    // If THIS attempt tripped the lock, say so now rather than letting them
-    // discover it on the next submit.
-    const lockedNow = await pinLockedFor(phone);
-    if (lockedNow > 0) return { ...keep, error: `Trop d'essais. Réessaie dans ${lockedNow} min.` };
+    // Already counted by pinGate above — nothing to record here.
     return { ...keep, error: "Numéro ou code secret incorrect." };
   }
 

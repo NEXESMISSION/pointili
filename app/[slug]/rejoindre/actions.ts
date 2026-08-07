@@ -17,8 +17,7 @@ import {
   enrollDiner,
   getAccount,
   pinClear,
-  pinFail,
-  pinLockedFor,
+  pinGate,
 } from "@/lib/db";
 
 export type JoinState = { error?: string };
@@ -58,8 +57,13 @@ export async function joinAction(
   const cafe = await getCafe(slug);
   if (!cafe) return { error: "Café introuvable." };
 
-  // Throttle before touching the PIN — this is the brute-force gate.
-  const lockedFor = await pinLockedFor(phone);
+  /*
+    Throttle before touching the PIN — and pin_gate COUNTS this attempt as it
+    checks. The old shape read pin_locked_for, verified, then called pin_fail:
+    three steps nothing serialised, so concurrent guesses all cleared the read
+    before any of them was recorded. See migration 0038.
+  */
+  const lockedFor = await pinGate(phone);
   if (lockedFor > 0) {
     return { error: `Trop d'essais. Réessaie dans ${lockedFor} min.` };
   }
@@ -84,11 +88,8 @@ export async function joinAction(
   /** Wrong PIN / unknown-on-the-login-tab — deliberately the same vague wording
    *  so this never becomes a "is this number registered?" oracle. */
   async function wrongCredentials(): Promise<JoinState> {
-    await pinFail(phone);
-    // If THIS attempt is the one that tripped the lock, say so now — otherwise
-    // the diner only learns they're locked on the next submit and keeps trying.
-    const lockedNow = await pinLockedFor(phone);
-    if (lockedNow > 0) return { error: `Trop d'essais. Réessaie dans ${lockedNow} min.` };
+    // Already counted by pinGate above — recording it again here would charge
+    // the diner two attempts for one submit.
     return { error: "Numéro ou code secret incorrect." };
   }
 

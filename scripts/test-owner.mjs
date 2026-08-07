@@ -225,7 +225,7 @@ check("welcome saves and the rate stays 1",
   `${prog.points_per_tnd} pt/TND · ${prog.welcome_points} welcome`);
 check("saving points did NOT clobber the stamp settings",
   prog.stamps_enabled === true && prog.stamps_required === 2 && prog.stamp_reward === "Café offert (test)",
-  `stamps=${prog.stamps_enabled}/${prog.stamps_required}`);
+  `stamps=${prog.stamps_enabled}/${prog.stamps_required} reward=${JSON.stringify(prog.stamp_reward)}`);
 
 /* ── 9. Analyses renders with real data ────────────────────────────── */
 await staff.goto(`${BASE}/owner/analyses`, { waitUntil: "networkidle" });

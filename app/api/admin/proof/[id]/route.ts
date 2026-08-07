@@ -46,20 +46,35 @@ export async function GET(
     return new Response("Not found", { status: 404 });
   }
 
-  const [head, b64] = uri.split(",", 2);
-  const type = head.slice(5).split(";")[0] || "image/webp";
-  let bytes: Buffer;
-  try {
-    bytes = Buffer.from(b64 ?? "", "base64");
-  } catch {
-    return new Response("Not found", { status: 404 });
-  }
+  /*
+    PARSED, NOT SPLIT.
+
+    This took the Content-Type straight out of the stored data-URI — whatever
+    text sat between "data:" and the first ";" or "," was echoed into the
+    response header. The value is owner-supplied (it is whatever the uploader
+    wrote when a shop submitted a payment receipt), so `data:image/svg+xml,...`
+    came back as an SVG, and an SVG is a document that runs script ON OUR
+    ORIGIN — served to a super-admin, from an admin page, with their session.
+    That is stored XSS aimed squarely at the one account that can do the most.
+
+    /api/cover already does it this way. This route is the same shape of thing
+    — an uploaded file turned into bytes — and now reads the same: an anchored
+    regex allowing only the raster types the uploader actually produces, plus
+    nosniff so a browser cannot decide it knows better.
+  */
+  const m = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(uri);
+  if (!m) return new Response("Not found", { status: 404 });
+
+  const bytes = Buffer.from(m[2], "base64");
 
   return new Response(new Uint8Array(bytes), {
     headers: {
-      "Content-Type": type,
+      "Content-Type": m[1],
       "Content-Length": String(bytes.length),
       "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
+      // A receipt is never a page. Belt and braces if the type check ever slips.
+      "Content-Security-Policy": "default-src 'none'; sandbox",
     },
   });
 }

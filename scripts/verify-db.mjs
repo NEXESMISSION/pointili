@@ -29,21 +29,60 @@ for (const r of tables.rows) {
   if (!r.rls) problems.push(`RLS is OFF on ${r.table}`);
 }
 
-// ── 2. RPC execute grants ───────────────────────────────────────────
-const grants = await c.query(`
-  select p.proname,
-         has_function_privilege('anon', p.oid, 'execute') as anon,
-         has_function_privilege('authenticated', p.oid, 'execute') as authenticated,
-         has_function_privilege('service_role', p.oid, 'execute') as service_role
-  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'public'
-    and p.proname in ('credit_points','spin_wheel','redeem_at_counter',
-                      'touch_diner_streak','diner_wallet','pointili_balance')
-  order by p.proname`);
+/*
+  ── 2. RPC execute grants — EVERY security-definer function, not a list ──
+
+  This check used to name six functions. That is why the critical shipped:
+  migrations 0028 and 0035 added `admin_traffic`, `admin_decide_renewal`,
+  `admin_renewal_proof`, `admin_renewal_requests`, `submit_renewal_request` and
+  `my_renewal_requests`, revoked EXECUTE `from anon, authenticated` — which is a
+  no-op, because Postgres grants EXECUTE to PUBLIC by default and anon inherits
+  from PUBLIC — and this gate said nothing, because none of the six names it
+  knew about had changed. The whole admin/billing surface was callable with the
+  browser key and the ship gate was green.
+
+  A gate that enumerates what to check can only ever catch what somebody
+  remembered to add. This enumerates what EXISTS: every `security definer`
+  function in `public`, minus a small allowlist that must stay reachable.
+
+  `public` is checked explicitly and FIRST. Testing only anon would still pass
+  while the PUBLIC grant sat underneath it.
+*/
+const RLS_HELPERS = [
+  // Named inside RLS policy USING/WITH CHECK clauses. A policy is evaluated as
+  // the QUERYING role, so revoking these from anon breaks every anonymous read
+  // — the public café page included. Each takes ids and returns a boolean or a
+  // public projection; none moves money or crosses a tenant boundary.
+  "pointili_owns_business",
+  "pointili_owns_game",
+  "pointili_is_super_admin",
+  "pointili_business_public",
+  "pointili_game_public",
+];
+
+const grants = await c.query(
+  `select p.proname,
+          has_function_privilege('public', p.oid, 'execute') as public,
+          has_function_privilege('anon', p.oid, 'execute') as anon,
+          has_function_privilege('authenticated', p.oid, 'execute') as authenticated,
+          has_function_privilege('service_role', p.oid, 'execute') as service_role
+   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.prosecdef
+     and not (p.proname = any($1::text[]))
+   order by p.proname`,
+  [RLS_HELPERS],
+);
 
 console.log("\n=== RPC EXECUTE (anon/authenticated MUST be false) ===");
 console.table(grants.rows);
 for (const g of grants.rows) {
+  // PUBLIC first: this is the grant a `revoke ... from anon` never removes.
+  if (g.public) {
+    problems.push(
+      `PUBLIC can EXECUTE ${g.proname} — the revoke omitted the word "public", so it did nothing`,
+    );
+  }
   if (g.anon) {
     problems.push(`anon can EXECUTE ${g.proname} — callable with the browser key`);
   }

@@ -104,6 +104,24 @@ export async function createAccount(
 /* PIN throttling — a 4-digit PIN is 10k combinations                          */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * The brute-force gate — counts this attempt AND says whether it may proceed.
+ *
+ * Replaces the pinLockedFor() → verify → pinFail() sequence, which was
+ * check-then-act: a hundred concurrent requests all read "not locked" before
+ * any of them was counted, so all hundred PINs were evaluated. pin_gate takes
+ * an advisory lock on the phone and records the attempt BEFORE the caller
+ * verifies anything (see migration 0038).
+ *
+ * Returns minutes still locked; 0 means "you may try". Call pinClear() on a
+ * successful sign-in to give the diner their allowance back.
+ */
+export async function pinGate(phone: string): Promise<number> {
+  const db = createAdminClient();
+  const { data } = await db.rpc("pin_gate", { p_phone: phone });
+  return (data as number | null) ?? 0;
+}
+
 export async function pinLockedFor(phone: string): Promise<number> {
   const db = createAdminClient();
   const { data } = await db.rpc("pin_locked_for", { p_phone: phone });
