@@ -219,6 +219,58 @@ t("café B survived intact", after?.name === victim.name, after?.name ?? "GONE")
   await dropStranger();
 }
 
+/*
+  ── EXECUTE-TO-PUBLIC ─────────────────────────────────────────────────────
+
+  Postgres grants EXECUTE on every new function to the pseudo-role PUBLIC, and
+  anon inherits from PUBLIC. So `revoke all ... from anon, authenticated` —
+  which is what 0028 and 0035 wrote — removes grants those roles never held
+  separately and leaves the real one in place. The statement reads like a lock
+  and is a no-op.
+
+  That mattered here more than usual, because every admin_* RPC authorises on a
+  caller-supplied p_actor. An owner_id is readable with the browser key (see
+  the businesses grant), so anyone could pass a super-admin's uuid and approve
+  their own renewals, or read another shop's payment receipts.
+
+  0036 sweeps every security-definer function and closes it. These assertions
+  are what stop the next one from arriving open — a new RPC that forgets is a
+  failing test, not a live hole.
+*/
+{
+  const { data: any } = await anon.from("businesses").select("id, owner_id").limit(1);
+  const actor = any?.[0]?.owner_id ?? "00000000-0000-0000-0000-000000000000";
+  const bid = any?.[0]?.id ?? "00000000-0000-0000-0000-000000000000";
+  const PROOF = `data:image/png;base64,${"A".repeat(200)}`;
+
+  const shut = async (fn, args) => {
+    const { error } = await anon.rpc(fn, args);
+    return /permission denied|does not exist|Could not find/i.test(error?.message ?? "");
+  };
+
+  t("anon cannot read a shop's payment receipt",
+    await shut("admin_renewal_proof", { p_actor: actor, p_id: bid }),
+    "admin_renewal_proof");
+  t("anon cannot approve a renewal",
+    await shut("admin_decide_renewal", { p_actor: actor, p_id: bid, p_approve: true, p_note: null }),
+    "admin_decide_renewal — would mint a free plan");
+  t("anon cannot list the renewal queue",
+    await shut("admin_renewal_requests", { p_actor: actor, p_limit: 5 }),
+    "admin_renewal_requests");
+  t("anon cannot forge a renewal against a shop",
+    await shut("submit_renewal_request", {
+      p_owner: actor, p_business_id: bid, p_offer: "12m", p_months: 12,
+      p_amount: 1, p_method: "d17", p_proof: PROOF, p_note: null,
+    }),
+    "submit_renewal_request");
+  t("anon cannot read a shop's billing history",
+    await shut("my_renewal_requests", { p_owner: actor, p_business_id: bid }),
+    "my_renewal_requests");
+  t("anon cannot read platform-wide traffic",
+    await shut("admin_traffic", { p_actor: actor, p_days: 7 }),
+    "admin_traffic");
+}
+
 await svc.from("businesses").delete().eq("id", mine.id);
 /* Registered as well as called: a suite that throws before this line used to
    leave a live, sign-in-able account in the production database. */
