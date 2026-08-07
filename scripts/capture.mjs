@@ -505,6 +505,20 @@ const diner = await context();
   await page.fill('input[name="pin"]', PIN);
   await page.click('button[type="submit"]');
   await page.waitForTimeout(2600);
+  /*
+    SPEND THE CELEBRATION BEFORE FILMING THE CARD.
+
+    The shoot credits 195 TND, which carries this customer past several reward
+    thresholds at once — so the first time the card is opened it is covered,
+    correctly, by "Récompense débloquée !". The poster for the clip called
+    "carte" was therefore a full-screen overlay with no card visible on it.
+
+    Opening it once here lets that play to an empty room. The mark only moves
+    from the browser, after paint (components/MarkOpened), so this waits for
+    the action to land rather than for the page.
+  */
+  await page.goto(`${BASE}/${SHOP}`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(3000);
   await page.close();
 }
 
@@ -518,10 +532,25 @@ await clip(diner, "carte", async (page) => {
 await clip(diner, "redeem", async (page) => {
   await ready(page, `${BASE}/${SHOP}/boutique`);
   await beat(page, 1300);
-  const buy = page.locator('form button[type="submit"]').first();
+  /*
+    PICK, THEN COMMIT, THEN CONFIRM — three steps, because that is what the
+    screen does now.
+
+    This used to press `form button[type="submit"]`, which stopped existing
+    when the boutique became pick-then-commit: the commit button is type=button
+    (it opens the question) and the submit lives inside the confirmation. The
+    clip therefore threw "nothing affordable to buy" on a card holding 205
+    points, and the landing page kept showing a redeem from an older UI.
+
+    Filming the confirmation is not a cost — it is the honest picture: spending
+    a month of coffees asks first.
+  */
+  const buy = page.locator('form[data-redeem] button:has-text("Échanger")').first();
   if (!(await buy.count()) || !(await buy.isEnabled())) throw new Error("nothing affordable to buy");
   await tap(page, buy);
-  await beat(page, 3400);
+  await beat(page, 1100);
+  await tap(page, page.locator('button:has-text("Oui, échanger")').first());
+  await beat(page, 3200);
 });
 
 await clip(diner, "wallet", async (page) => {

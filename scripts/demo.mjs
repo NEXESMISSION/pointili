@@ -63,10 +63,21 @@ import { readFile } from "node:fs/promises";
  * not hold a licence for (public/rewards/CREDITS.json for the rest).
  */
 async function coverPhoto() {
-  const buf = await readFile("public/hero-barista.png");
+  /*
+    NOT hero-barista.png. That is the LANDING PAGE illustration, and it has a
+    mock-up of this very card drawn into it — using it as the shop's banner put
+    a fake card, with a fake balance, inside the real one.
+
+    A photograph of mint tea on a tray is what a Tunisian café's banner would
+    actually be: warm, dark enough to carry white type under the scrim, and
+    ours (public/rewards/CREDITS.json). Kept at the source's own width — a
+    banner is displayed at ~390–560px and upscaling a 640px photo to 1080 only
+    makes it softer.
+  */
+  const buf = await readFile("public/rewards/the-a-la-menthe.webp");
   const webp = await sharp(buf)
-    .resize(1080, 720, { fit: "cover", position: "centre" })
-    .webp({ quality: 78 })
+    .resize(640, 380, { fit: "cover", position: "centre" })
+    .webp({ quality: 82 })
     .toBuffer();
   return `data:image/webp;base64,${webp.toString("base64")}`;
 }
@@ -293,8 +304,21 @@ const { rows: bizRows } = await sql.query(
 const biz = bizRows[0].id;
 
 await sql.query(
-  `insert into loyalty_programs (business_id, active, points_per_tnd, welcome_points, redeem_expiry_hours)
-   values ($1,true,$2,$3,48)`,
+  /*
+    Stamps ON.
+
+    Not decoration: a café is the archetype for "ten coffees, one free", it is
+    the half of the product that needs no arithmetic at all, and the landing
+    page has a clip of a cashier adding one. With stamps off, that clip could
+    not be filmed at all and the marketing page kept an older version of the
+    screen — the one thing a demo shop must never cause.
+
+    Eight, not ten: a card a customer can believe they will finish.
+  */
+  `insert into loyalty_programs
+     (business_id, active, points_per_tnd, welcome_points, redeem_expiry_hours,
+      stamps_enabled, stamps_required, stamp_reward)
+   values ($1,true,$2,$3,48,true,8,'Café offert')`,
   [biz, RATE, WELCOME],
 );
 
