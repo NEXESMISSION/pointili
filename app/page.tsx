@@ -537,6 +537,25 @@ export default async function Landing({
               palier qui se déclenche le jour où ça marche.
             </p>
 
+            {/*
+              HOW YOU ACTUALLY PAY — the question this page never answered.
+
+              Every price on it was a number with no mechanism behind it, and
+              the mechanism is the objection: a café owner in Tunisia does not
+              have a card they will type into a website, and a page that only
+              shows a price is quietly asking for one. D17, Flouci and a
+              transfer are what they already use, and the renewal screen in the
+              app now takes the receipt (voir /owner/renouveler).
+            */}
+            <p className="mt-4 max-w-[52ch] text-[14px] leading-relaxed text-slate">
+              <span className="font-semibold text-charcoal">
+                Vous payez par D17, Flouci ou virement.
+              </span>{" "}
+              Vous envoyez la photo du reçu depuis l&apos;application, et votre
+              compte est prolongé — pas de carte bancaire, pas de prélèvement
+              qui se renouvelle tout seul.
+            </p>
+
             {/* items-start, so the smaller offer is only as tall as it needs to
                 be. Stretched to match the year it grew a 250px hole between its
                 one paragraph and a button pinned to the bottom by mt-auto. */}
