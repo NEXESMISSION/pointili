@@ -3,7 +3,9 @@
 import { useActionState, useState, useTransition } from "react";
 import { businessType } from "@/lib/businessTypes";
 import { BRAND_SWATCHES, inkOn, textOnWhite, safeColor } from "@/lib/theme";
-import type { Cafe } from "@/lib/types";
+import { LOOKS } from "@/lib/looks";
+import type { Cafe, CardTheme } from "@/lib/types";
+import { ShopLogo } from "@/components/ShopLogo";
 import { removeCoverAction, saveCoverAction, saveThemeAction, type SettingsState } from "./actions";
 
 /**
@@ -54,6 +56,19 @@ const HEIGHTS = [
   { key: "s", label: "Compact" },
   { key: "m", label: "Normal" },
   { key: "l", label: "Ample" },
+] as const;
+
+/*
+  Whether the logo gets CUT to a circle, or shown whole.
+
+  Every surface used to force the disc, which is right for a photograph and
+  wrong for the thing this field actually holds — a wordmark came back with its
+  first and last letters sliced off, and a mark drawn on transparency got a
+  white plate stamped behind it. "Entier" is the escape hatch for both.
+*/
+const LOGO_SHAPES = [
+  { key: "circle", label: "Rond" },
+  { key: "free", label: "Entier" },
 ] as const;
 
 /* A texture drawn from the shop's own ink. Never over a photograph. */
@@ -111,6 +126,7 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
   const [height, setHeight] = useState(t.bannerHeight);
   const [pattern, setPattern] = useState(t.pattern);
   const [scrim, setScrim] = useState(t.scrim);
+  const [logoShape, setLogoShape] = useState(t.logoShape);
 
   /* The cover is saved on its own, the moment it is chosen — see saveCoverAction. */
   const [cover, setCover] = useState<string | null>(t.coverAt ? `/api/cover/${cafe.slug}?v=${t.coverAt}` : null);
@@ -171,6 +187,7 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
       <input type="hidden" name="bannerRound" value={round} />
       <input type="hidden" name="bannerHeight" value={height} />
       <input type="hidden" name="pattern" value={pattern} />
+      <input type="hidden" name="logoShape" value={logoShape} />
       {/* checkboxes post "on"/absent, which is what saveThemeAction reads */}
       <input type="checkbox" name="scrim" checked={scrim} readOnly hidden />
 
@@ -190,10 +207,77 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
         curve={round}
         height={height}
         pattern={pattern}
+        logoShape={logoShape}
       />
       </div>
 
       <div className="min-w-0">
+      {/*
+        ══ READY-MADE IDENTITIES ═══════════════════════════════════════
+        First, and above the knobs, because most shops have a colour in mind
+        and no opinion about corner radii. One tap fills in all eight controls;
+        everything below still works exactly as it did for the shop that wants
+        to keep going. Nothing is saved until Enregistrer — a preset changes
+        the PREVIEW, which is the point of having one.
+      */}
+      <Label>Styles prêts à l&apos;emploi</Label>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {LOOKS.map((l) => {
+          const on =
+            l.colour.toLowerCase() === colour.toLowerCase() &&
+            l.theme.banner === banner &&
+            l.theme.bannerRound === round &&
+            l.theme.pattern === pattern &&
+            l.theme.surface === surface;
+          return (
+            <button
+              key={l.id}
+              type="button"
+              onClick={() => {
+                setColour(l.colour);
+                setBanner(l.theme.banner);
+                setSurface(l.theme.surface);
+                setRadius(l.theme.radius);
+                setRound(l.theme.bannerRound);
+                setHeight(l.theme.bannerHeight);
+                setPattern(l.theme.pattern);
+                setFont(l.theme.font);
+              }}
+              aria-pressed={on}
+              className={`overflow-hidden rounded-2xl border text-left transition active:scale-[0.98] ${
+                on ? "border-[#5b3fd1] ring-2 ring-[#5b3fd1]/30" : "border-[var(--o-edge)]"
+              }`}
+            >
+              {/* the look, actually drawn — a name alone tells nobody anything */}
+              <span
+                className="block h-[52px] w-full"
+                style={{
+                  backgroundColor: l.colour,
+                  backgroundImage: [
+                    l.theme.pattern === "none"
+                      ? null
+                      : patternLayer(l.theme.pattern, inkOn(l.colour)),
+                    l.theme.banner === "flat"
+                      ? null
+                      : `linear-gradient(168deg, ${l.colour} 0%, ${mixHex(l.colour, "#000", 0.28)} 100%)`,
+                  ]
+                    .filter(Boolean)
+                    .join(", ") || undefined,
+                  backgroundSize:
+                    l.theme.pattern === "none" ? undefined : patternSize(l.theme.pattern),
+                  borderBottomLeftRadius: CURVE_PX[l.theme.bannerRound],
+                  borderBottomRightRadius: CURVE_PX[l.theme.bannerRound],
+                }}
+              />
+              <span className="block px-3 py-2">
+                <span className="block text-[12.5px] font-bold text-charcoal">{l.name}</span>
+                <span className="mt-0.5 block text-[11px] leading-snug text-slate">{l.note}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* ══ COLOUR ══════════════════════════════════════════════════════ */}
       <Label>Couleur principale</Label>
       <div className="flex flex-wrap gap-2">
@@ -306,6 +390,25 @@ export function ThemeForm({ cafe }: { cafe: Cafe }) {
           />
         )}
       </div>
+
+      {/* ══ THE LOGO'S SHAPE ════════════════════════════════════════════
+          Only worth asking a shop that HAS a logo — without one the card
+          shows its business-type emoji and there is nothing to crop. */}
+      {cafe.logoUrl && (
+        <>
+          <Label>Votre logo</Label>
+          <Segmented
+            options={LOGO_SHAPES}
+            value={logoShape}
+            onChange={(v) => setLogoShape(v)}
+          />
+          <p className="mt-1.5 text-[12px] leading-snug text-[var(--o-muted)]">
+            «&nbsp;Entier&nbsp;» affiche votre logo tel quel, sans le découper
+            en rond et sans fond derrière — pour un logo large, ou sur fond
+            transparent.
+          </p>
+        </>
+      )}
 
       {/* ══ SURFACE ═════════════════════════════════════════════════════ */}
       <Label>Style de l&apos;app</Label>
@@ -453,6 +556,7 @@ function Preview({
   curve,
   height,
   pattern,
+  logoShape,
 }: {
   cafe: Cafe;
   emoji: string;
@@ -468,6 +572,8 @@ function Preview({
   curve: "none" | "s" | "m" | "l";
   height: "s" | "m" | "l";
   pattern: "none" | "dots" | "stripes" | "grid";
+  /** Whether the logo is cut to a disc or shown whole — see LOGO_SHAPES. */
+  logoShape: CardTheme["logoShape"];
 }) {
   const soft = mixHex(colour, dark ? "#17141f" : "#ffffff", 0.86);
   const usePhoto = banner === "photo" && cover;
@@ -505,17 +611,15 @@ function Preview({
         }}
       >
         <div className="flex items-center gap-2.5">
-          {cafe.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-            <img src={cafe.logoUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
-          ) : (
-            <span
-              className="grid h-9 w-9 place-items-center rounded-full text-[16px]"
-              style={{ background: "color-mix(in oklab, currentColor 16%, transparent)" }}
-            >
-              <span className="shop-mark">{emoji}</span>
-            </span>
-          )}
+          {/* The same component the real card uses, so "Entier" is answered
+              here — where the owner is looking — rather than after a save. */}
+          <ShopLogo
+            url={cafe.logoUrl}
+            shape={logoShape}
+            emoji={emoji}
+            size={36}
+            tint="color-mix(in oklab, currentColor 16%, transparent)"
+          />
           <span className="min-w-0">
             <span className="block truncate text-[13.5px] font-extrabold">{cafe.name}</span>
             <span className="block text-[10.5px] font-semibold opacity-75">145 points</span>

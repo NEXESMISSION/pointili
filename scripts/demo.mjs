@@ -141,7 +141,19 @@ const PREFIXES = [
 const RATE = 1;
 const WELCOME = 10;
 
-const DEMO_BRAND = "#7a4a25"; // a roaster's brown
+/*
+  THE DEMO SHOP'S COLOUR IS NOT AN AESTHETIC CHOICE — IT IS A LAYOUT CHOICE.
+
+  It was a roaster's brown, which is a perfectly good colour for a café and the
+  wrong one for us: every clip and poster on the landing page is filmed here,
+  and the landing page is white with a Royal Mauve accent. A brown card sitting
+  in a purple page reads as two products photographed together.
+
+  A deep indigo-blue is close enough to the accent to belong on that page and
+  far enough from it to keep the product's actual claim true — the card wears
+  the SHOP's colour, not ours.
+*/
+const DEMO_BRAND = "#1d4ed8";
 
 /*
   ── A SHOP THAT HAS ACTUALLY BEEN DRESSED ─────────────────────────────────
@@ -162,12 +174,20 @@ const DEMO_DESIGN = {
   showEngagement: true,
   pointsExpiryMonths: null,
   theme: {
-    banner: "photo",
+    /*
+      A gradient, not the photograph.
+
+      The photo banner is real and the owner clip shows it being chosen — but a
+      warm room photograph under a blue accent is two palettes in one frame,
+      and these are marketing stills. A gradient in the shop's own colour with
+      a fine dot texture is the cleanest thing this screen can be.
+    */
+    banner: "gradient",
     surface: "light",
     radius: "m",
     bannerRound: "l",
     bannerHeight: "l",
-    pattern: "none",
+    pattern: "dots",
     scrim: true,
     font: "poppins",
     /* the cache key on /api/cover — a fixed string is fine for a fixture */

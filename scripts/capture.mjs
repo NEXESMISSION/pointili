@@ -254,7 +254,9 @@ async function findByPhone(page) {
   await human(page, 'input[name="customer"]', NUM, 130);
   await beat(page, 400);
   await tap(page, page.locator('button:has-text("Chercher")'));
-  await page.locator('[role="dialog"]').waitFor({ timeout: 20000 });
+  /* .first(): the install prompt is a dialog too, and a strict locator that
+     matches two elements throws rather than waiting for the one we mean. */
+  await page.locator('[role="dialog"]').first().waitFor({ timeout: 20000 });
   await beat(page, 700);
 }
 
@@ -546,7 +548,21 @@ await clip(diner, "redeem", async (page) => {
     a month of coffees asks first.
   */
   const buy = page.locator('form[data-redeem] button:has-text("Échanger")').first();
-  if (!(await buy.count()) || !(await buy.isEnabled())) throw new Error("nothing affordable to buy");
+  if (!(await buy.count()) || !(await buy.isEnabled())) {
+    /*
+      Top them up and try once more, rather than failing the clip.
+
+      What the customer can afford at this point is the sum of everything the
+      till clips did to them — a credit here, a correction there — and any one
+      of those changing means the redeem clip silently keeps its previous
+      version. A marketing page showing a UI that no longer exists is a worse
+      outcome than a shoot that tops up its own actor.
+    */
+    await svc.rpc("credit_points", { p_business_id: biz.id, p_phone: `+216${NUM}`, p_amount_tnd: 120 });
+    await ready(page, `${BASE}/${SHOP}/boutique`);
+    await beat(page, 1200);
+    if (!(await buy.count()) || !(await buy.isEnabled())) throw new Error("nothing affordable to buy");
+  }
   await tap(page, buy);
   await beat(page, 1100);
   await tap(page, page.locator('button:has-text("Oui, échanger")').first());

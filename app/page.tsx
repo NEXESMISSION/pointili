@@ -5,6 +5,7 @@ import { BrandLockup } from "@/components/BrandMark";
 import { currentDiner } from "@/lib/auth/diner";
 import { Showcase } from "@/components/Showcase";
 import { Compare } from "@/components/Compare";
+import { Dressed } from "@/components/Dressed";
 import { AudienceProvider, AudienceTabs, ForCustomer, ForOwner } from "@/components/Audience";
 import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
@@ -148,6 +149,8 @@ const INCLUDED = [
   "Programme fidélité",
   "QR Code illimité",
   "Récompenses",
+  "Carte à vos couleurs",
+  "Français et tunisien",
   "Analyses et statistiques",
   "Support en Tunisie",
 ];
@@ -374,11 +377,18 @@ export default async function Landing({
           <p className="shrink-0 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-slate">
             Fait pour
           </p>
+          {/* The separator TRAILS its word instead of leading the next one.
+              Leading, it wrapped onto the next line on a 390px screen and the
+              list ended "· Salons" — a dot hanging at the start of a line
+              reads as a bullet, or as a typo. Trailing, it can only ever
+              dangle at the end of a line, which is what punctuation does. */}
           <ul className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[15px] text-charcoal">
             {TRADES.map((t, i) => (
-              <li key={t} className="flex items-baseline gap-2">
-                {i > 0 && <span aria-hidden className="text-royal">·</span>}
+              <li key={t}>
                 {t}
+                {i < TRADES.length - 1 && (
+                  <span aria-hidden className="ml-2 text-royal">·</span>
+                )}
               </li>
             ))}
           </ul>
@@ -501,6 +511,13 @@ export default async function Landing({
         </div>
       </section>
 
+      {/* ── whose card is it ────────────────────────────────────────
+          Straight after the filmed product, because the question the clips
+          raise is "yes, but that is YOUR card" — and the answer is three of
+          them. Shown to both audiences: a customer reading this page is being
+          told their card will look like the shop they already go to. */}
+      <Dressed />
+
       {/* ── the objections, then the price ───────────────────────────
           Both of these used to sit AFTER the closing call to action — the page
           asked for the sale, then explained why. Owner-only, obviously: a
@@ -520,7 +537,10 @@ export default async function Landing({
               palier qui se déclenche le jour où ça marche.
             </p>
 
-            <div className="mt-10 grid gap-5 md:grid-cols-[1.6fr_1fr]">
+            {/* items-start, so the smaller offer is only as tall as it needs to
+                be. Stretched to match the year it grew a 250px hole between its
+                one paragraph and a button pinned to the bottom by mt-auto. */}
+            <div className="mt-10 grid gap-5 md:grid-cols-[1.6fr_1fr] md:items-start">
               {/* the year — a block of ink, not a three-stop gradient */}
               <div className="rounded-[3px] bg-deep p-7 text-white md:p-9">
                 <p className="inline-block bg-royal px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white">
@@ -580,7 +600,7 @@ export default async function Landing({
                 </p>
                 <Link
                   href={cta.href}
-                  className="mt-auto rounded-[3px] border border-charcoal px-5 py-3.5 text-center text-[14px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white active:translate-y-px"
+                  className="mt-7 rounded-[3px] border border-charcoal px-5 py-3.5 text-center text-[14px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white active:translate-y-px"
                 >
                   {ownerHere ? "Ma caisse" : "Choisir cette offre"}
                 </Link>
@@ -710,15 +730,19 @@ function HeroPhone() {
     "linear-gradient(to bottom, #000 0%, #000 var(--hero-fade), transparent 100%)";
 
   return (
-    <div className="w-full max-w-[250px] md:max-w-[290px] lg:max-w-[310px]">
+    <div className="w-full max-w-[260px] md:max-w-[310px] lg:max-w-[340px]">
       <Image
         src="/hero-phone-v2.png"
         alt="La carte de fidélité Pointili sur un téléphone : Yassine a 230 points et 7 tampons sur 10 chez Café El Ali"
         width={585}
         height={1090}
         priority
-        sizes="(max-width: 767px) 250px, (max-width: 1023px) 290px, 310px"
-        className="block aspect-[585/720] h-auto w-full object-cover object-top drop-shadow-[0_18px_40px_rgba(36,18,59,.22)] [--hero-fade:82%] md:aspect-[585/860] md:[--hero-fade:88%]"
+        sizes="(max-width: 767px) 260px, (max-width: 1023px) 310px, 340px"
+        /* The desktop crop is deep (585/980 of a 585/1090 render) so the device
+           fills its field instead of sitting in a pool of empty lilac, and the
+           fade starts at 76% so the last quarter is a real dissolve rather than
+           the abrupt edge a 88% ramp gave — that read as a clipped image. */
+        className="block aspect-[585/740] h-auto w-full object-cover object-top drop-shadow-[0_18px_40px_rgba(36,18,59,.22)] [--hero-fade:80%] md:aspect-[585/980] md:[--hero-fade:76%]"
         style={{
           maskImage: HERO_FADE,
           WebkitMaskImage: HERO_FADE,
