@@ -2,7 +2,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { chromium } from "playwright-core";
 import { env } from "./db.mjs";
-import { ensureTestCafe, dropTestCafe, TEST_SLUG } from "./fixture.mjs";
+import { ensureTestCafe, dropTestCafe, TEST_SLUG, OWNER_EMAIL } from "./fixture.mjs";
 
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
@@ -13,14 +13,16 @@ const NORM = `+216${LOCAL}`;
 const ok = [];
 const t = (n, p, d = "") => { ok.push(p); console.log(`${p ? "PASS" : "FAIL"}  ${n}${d ? ` — ${d}` : ""}`); };
 
-await ensureTestCafe({ ownerEmail: env.SUPER_ADMIN_EMAIL });
+/* Named the founder's account outright, so this suite signed in as a
+   super-admin and dropped their shop on the way out. See fixture.mjs. */
+const { ownerPassword: OWNER_PASSWORD } = await ensureTestCafe();
 const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
 const b = await chromium.launch({ executablePath: CHROME });
 const s = await b.newPage({ viewport: { width: 390, height: 844 } });
 await s.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
-await s.fill('input[name="email"]', env.SUPER_ADMIN_EMAIL);
-await s.fill('input[name="password"]', env.SUPER_ADMIN_PASSWORD);
+await s.fill('input[name="email"]', OWNER_EMAIL);
+await s.fill('input[name="password"]', OWNER_PASSWORD);
 await s.click('button[type="submit"]');
 await s.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 20000 }).catch(() => {});
 

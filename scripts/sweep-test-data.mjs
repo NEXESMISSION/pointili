@@ -41,8 +41,19 @@ const PATTERNS = [
   /^operator-\d+@example\.com$/,
   /^e2e-owner-\d+@example\.com$/,
   /^probe-\d+@example\.com$/,
+  /*
+    Residue from driving owner signup by hand, which no script owns.
+
+    Two of these sat in the café table for a fortnight and this sweep could not
+    see either one, because every pattern above was written from a suite's
+    source — and the signup flow is the one path that gets exercised through the
+    browser instead. The shape is still generated (a timestamp in the address, a
+    timestamp in the slug), so it is still safely recognisable; nobody had
+    written it down.
+  */
+  /^onboarding-\d+@example\.com$/,
 ];
-const SLUGS = /^(probe-\d+|susp-\d+|attack-\d+|e2etest|e2e-second-shop|cafe-de-letoile-co)$/;
+const SLUGS = /^(probe-\d+|susp-\d+|attack-\d+|boulangerie-essai-\d+|e2etest|e2e-second-shop|cafe-de-letoile-co)$/;
 
 /** The deliberate fixture, opt-in only. */
 const DEMO_EMAIL = /^elmanar@pointili\.online$/;

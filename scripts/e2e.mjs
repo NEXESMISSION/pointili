@@ -8,7 +8,7 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import { env, onExit } from "./db.mjs";
-import { ensureTestCafe, dropTestCafe, TEST_SLUG } from "./fixture.mjs";
+import { ensureTestCafe, dropTestCafe, TEST_SLUG, OWNER_EMAIL } from "./fixture.mjs";
 import { chromium } from "playwright-core";
 
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
@@ -20,19 +20,23 @@ const SLUG = TEST_SLUG;
 const PHONE = `2${String(Date.now()).slice(-7)}`;
 const PIN = "4271";
 
-// The owner app is behind real Supabase Auth once keys are configured.
-const OWNER_EMAIL = process.env.OWNER_EMAIL ?? env.SUPER_ADMIN_EMAIL;
-const OWNER_PASSWORD = process.env.OWNER_PASSWORD ?? env.SUPER_ADMIN_PASSWORD;
-
 const results = [];
 const check = (name, pass, detail = "") => {
   results.push({ name, pass, detail });
   console.log(`${pass ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
 };
 
-// Provision a fresh throwaway café owned by the caisse login, so this run is
-// self-contained and leaves no fixture data behind.
-await ensureTestCafe({ ownerEmail: OWNER_EMAIL });
+/*
+  Provision a fresh throwaway café, so this run is self-contained and leaves no
+  fixture data behind.
+
+  The password comes BACK from the fixture rather than out of .env.local: the
+  café and the account that owns it are both minted here, and that account is a
+  plain owner with a one-run random password. The suite used to sign in as the
+  founder's super-admin — which is how a live shop kept getting served, and
+  dropped, out from under its real owner. See the note in fixture.mjs.
+*/
+const { ownerPassword: OWNER_PASSWORD } = await ensureTestCafe();
 
 const browser = await chromium.launch({ executablePath: CHROME });
 const diner = await browser.newPage({ viewport: { width: 390, height: 844 } });

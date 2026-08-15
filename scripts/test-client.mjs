@@ -15,7 +15,6 @@ import { ensureTestCafe, dropTestCafe, TEST_SLUG } from "./fixture.mjs";
 
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
-const OWNER_EMAIL = process.env.OWNER_EMAIL ?? env.SUPER_ADMIN_EMAIL;
 const OTHER = "e2e-second-shop";
 
 // one fresh identity per run; LOCAL is what they type at signup
@@ -29,7 +28,9 @@ const check = (name, pass, detail = "") => {
   console.log(`${pass ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
 };
 
-const { id: cafeA } = await ensureTestCafe({ ownerEmail: OWNER_EMAIL });
+/* Owned by the fixture's own plain-owner account, not the founder's. cafeB
+   below inherits that owner_id, so neither shop shows up under a real login. */
+const { id: cafeA } = await ensureTestCafe();
 const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 const { data: ownerRow } = await admin.from("businesses").select("owner_id").eq("id", cafeA).single();
 

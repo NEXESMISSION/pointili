@@ -12,13 +12,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { chromium } from "playwright-core";
 import { env } from "./db.mjs";
-import { ensureTestCafe, dropTestCafe, TEST_SLUG } from "./fixture.mjs";
+import { ensureTestCafe, dropTestCafe, TEST_SLUG, OWNER_EMAIL } from "./fixture.mjs";
 
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
-
-const OWNER_EMAIL = process.env.OWNER_EMAIL ?? env.SUPER_ADMIN_EMAIL;
-const OWNER_PASSWORD = process.env.OWNER_PASSWORD ?? env.SUPER_ADMIN_PASSWORD;
 
 const LOCAL = `2${String(Date.now()).slice(-7)}`;
 const NORM = `+216${LOCAL}`;
@@ -30,7 +27,10 @@ const check = (name, pass, detail = "") => {
   console.log(`${pass ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
 };
 
-const { id: cafeId } = await ensureTestCafe({ ownerEmail: OWNER_EMAIL });
+/* Both the café and the plain-owner account that owns it are minted here, with
+   a password good for this run only. This used to sign in as the founder's
+   super-admin, which served — and then dropped — a real shop. See fixture.mjs. */
+const { id: cafeId, ownerPassword: OWNER_PASSWORD } = await ensureTestCafe();
 const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
 const browser = await chromium.launch({ executablePath: CHROME });

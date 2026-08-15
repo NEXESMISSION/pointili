@@ -11,6 +11,8 @@
  * numbers — floor(12.5 x 1) = 12, cheapest reward affordable at 67 — are tuned to
  * it.
  */
+import { randomBytes } from "node:crypto";
+import { createClient } from "@supabase/supabase-js";
 import { connect, env } from "./db.mjs";
 import { shopLogo } from "./shop-logo.mjs";
 
@@ -19,7 +21,126 @@ export const TEST_SLUG = "e2etest";
     screenshot proves the per-shop theming rather than the default. */
 export const BRAND = "#0f6b4f";
 export const TEST_NAME = "Café Test";
-export const OWNER_EMAIL = process.env.OWNER_EMAIL ?? env.SUPER_ADMIN_EMAIL;
+
+/**
+ * THE FIXTURE OWNS ITS OWN ACCOUNT. It used to borrow the founder's.
+ *
+ * This defaulted to SUPER_ADMIN_EMAIL, and that one line caused every
+ * production symptom reported against the live shop. Three separate ways:
+ *
+ *   1. ownerCafe() resolves "the owner's café" as the OLDEST one they own, and
+ *      the fixture is deliberately backdated to 2000-01-01 to win that race
+ *      (see the note in ensureTestCafe). So while the founder's own account
+ *      owned the fixture, signing in to /owner served Café Test — not their
+ *      real shop. Their café looked emptied because they were never looking
+ *      at it.
+ *   2. Every suite ends by dropping the fixture, so that shop then vanished
+ *      out from under the same account mid-session: a card that "gets added
+ *      again and again", a points balance that resets, a 404 on /e2etest.
+ *   3. The founder is a super-admin, so every owner-app assertion ran with
+ *      privileges a real owner does not have. The suite could not have caught
+ *      an owner-facing permission bug, because it was never a plain owner.
+ *
+ * So the fixture provisions a dedicated account instead. Two properties make
+ * it safe to have a permanent test login in a database that IS production:
+ *
+ *   · it is only ever an `owner` — never seeded into SUPER_ADMIN_EMAILS, so
+ *     the console suites still have to use the real super-admin path, and the
+ *     owner suites finally test the privileges an owner actually has.
+ *   · its password is 32 random bytes, regenerated on every run and never
+ *     written down — not in this repo, not in .env.local, not in CI config.
+ *     The suite holds it in memory for the length of one run. Between runs
+ *     nobody can sign in as it, including us.
+ *
+ * OWNER_EMAIL/OWNER_PASSWORD in the environment still override, for pointing
+ * a suite at some specific account on purpose.
+ */
+export const OWNER_EMAIL = process.env.OWNER_EMAIL ?? "e2e@pointili.test";
+
+const svc = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+});
+
+/**
+ * Make sure `email` exists as a plain owner and return a password that works
+ * for exactly this run. Creates the account the first time, rotates the
+ * password every time. Returns { id, password }.
+ */
+export async function ensureTestOwner(email = OWNER_EMAIL) {
+  const override = process.env.OWNER_PASSWORD;
+
+  /*
+    NEVER touch an account this fixture did not create.
+
+    Without this, pointing a suite at a real address — which test-walkin did,
+    passing SUPER_ADMIN_EMAIL by hand — would have rotated a human being's
+    password to a random string that is discarded seconds later, locking them
+    out of their own console with no reset path but the service key. Only
+    @pointili.test addresses are ours to provision. Anything else must be
+    supplied with its password by whoever is aiming the suite at it.
+  */
+  const ours = email.endsWith("@pointili.test");
+  if (!ours) {
+    const c = await connect();
+    try {
+      const { rows } = await c.query("select id from profiles where email=$1", [email]);
+      if (!rows.length) throw new Error(`owner not found in profiles: ${email}`);
+      if (!override) {
+        throw new Error(
+          `refusing to set a password on ${email}: it is not a @pointili.test ` +
+            `account. Pass OWNER_PASSWORD to use a real account, or drop ` +
+            `OWNER_EMAIL to use the fixture's own.`,
+        );
+      }
+      return { id: rows[0].id, password: override };
+    } finally {
+      await c.end();
+    }
+  }
+
+  const password = override ?? `${randomBytes(32).toString("base64url")}aA1!`;
+
+  const c = await connect();
+  let id;
+  try {
+    const { rows } = await c.query("select id from profiles where email=$1", [email]);
+    id = rows[0]?.id;
+  } finally {
+    await c.end();
+  }
+
+  if (id) {
+    /* Rotate, so a password that leaked out of one run's memory is already
+       dead by the next. Skipped when the caller supplied one on purpose. */
+    if (!override) {
+      const { error } = await svc.auth.admin.updateUserById(id, { password });
+      if (error) throw error;
+    }
+    return { id, password };
+  }
+
+  const { data, error } = await svc.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true, // no inbox exists for @pointili.test, and none should
+  });
+  if (error) throw error;
+  id = data.user.id;
+
+  /* The profiles row arrives via a trigger on auth.users, but not necessarily
+     before the next statement — and `role` must be 'owner', never 'super'. */
+  const c2 = await connect();
+  try {
+    await c2.query(
+      `insert into profiles (id, email, role) values ($1, $2, 'owner')
+       on conflict (id) do update set email = excluded.email, role = 'owner'`,
+      [id, email],
+    );
+  } finally {
+    await c2.end();
+  }
+  return { id, password };
+}
 
 /*
   Labels, cost, position — and the drawn illustration each one carries.
@@ -62,12 +183,12 @@ async function dropOnConn(c, slug) {
  * Returns { id, slug }.
  */
 export async function ensureTestCafe({ ownerEmail = OWNER_EMAIL, slug = TEST_SLUG } = {}) {
+  /* Provisions the account and mints this run's password. Must happen before
+     the connection below — it opens its own. */
+  const { id: ownerId, password: ownerPassword } = await ensureTestOwner(ownerEmail);
+
   const c = await connect();
   try {
-    const { rows } = await c.query("select id from profiles where email=$1", [ownerEmail]);
-    if (!rows.length) throw new Error(`owner not found in profiles: ${ownerEmail}`);
-    const ownerId = rows[0].id;
-
     await dropOnConn(c, slug);
 
     /*
@@ -127,7 +248,7 @@ export async function ensureTestCafe({ ownerEmail = OWNER_EMAIL, slug = TEST_SLU
       [gameId, JSON.stringify(prizeConfig)],
     );
 
-    return { id: businessId, slug };
+    return { id: businessId, slug, ownerEmail, ownerPassword };
   } finally {
     await c.end();
   }
