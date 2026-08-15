@@ -1,5 +1,6 @@
 import "server-only";
 import { requireElevatedSuperAdmin } from "./auth/owner";
+import { adminRpc } from "./adminRpc";
 import { createAdminClient } from "./supabase/admin";
 
 /**
@@ -90,16 +91,12 @@ export type AdminAction = {
 export async function adminOverview(): Promise<AdminCafe[]> {
   // Throws NEEDS_ELEVATION if the step-up has lapsed; the id is then re-verified
   // against profiles inside the RPC.
-  const me = await requireElevatedSuperAdmin();
-  const db = createAdminClient();
-  const { data } = await db.rpc("admin_overview", { p_actor: me.id });
+  const data = await adminRpc<AdminCafe[]>("admin_overview");
   return (data as AdminCafe[] | null) ?? [];
 }
 
 export async function platformStats(): Promise<PlatformStats> {
-  const me = await requireElevatedSuperAdmin();
-  const db = createAdminClient();
-  const { data } = await db.rpc("admin_platform_stats", { p_actor: me.id });
+  const data = await adminRpc<PlatformStats>("admin_platform_stats");
   return (data as PlatformStats | null) ?? {
     cafes: 0, live: 0, suspended: 0, expiring7d: 0, expired: 0,
     diners: 0, owners: 0, pointsIssued: 0, plays: 0,
@@ -107,9 +104,7 @@ export async function platformStats(): Promise<PlatformStats> {
 }
 
 export async function recentActions(limit = 20): Promise<AdminAction[]> {
-  const me = await requireElevatedSuperAdmin();
-  const db = createAdminClient();
-  const { data } = await db.rpc("admin_recent_actions", { p_actor: me.id, p_limit: limit });
+  const data = await adminRpc<AdminAction[]>("admin_recent_actions", { p_limit: limit });
   return (data as AdminAction[] | null) ?? [];
 }
 
@@ -197,9 +192,7 @@ const NO_TRAFFIC: Traffic = {
  * read at five different moments.
  */
 export async function traffic(days = 30): Promise<Traffic> {
-  const me = await requireElevatedSuperAdmin();
-  const db = createAdminClient();
-  const { data } = await db.rpc("admin_traffic", { p_actor: me.id, p_days: days });
+  const data = await adminRpc<Traffic>("admin_traffic", { p_days: days });
   const d = data as (Traffic & { ok?: boolean }) | null;
   /* ok:false is the RPC's own "not a super-admin" — treat it as no data rather
      than rendering `undefined` into the page */
@@ -244,9 +237,7 @@ export type AdminRenewal = RenewalRequest & {
 
 /** The console's queue: pending first, then what was decided recently. */
 export async function renewalQueue(limit = 30): Promise<AdminRenewal[]> {
-  const me = await requireElevatedSuperAdmin();
-  const db = createAdminClient();
-  const { data } = await db.rpc("admin_renewal_requests", { p_actor: me.id, p_limit: limit });
+  const data = await adminRpc<Record<string, unknown>[]>("admin_renewal_requests", { p_limit: limit });
   return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
     ...mapRenewal(r),
     businessId: String(r.business_id),

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireElevatedSuperAdmin } from "@/lib/auth/owner";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { adminWrite } from "@/lib/adminRpc";
 import { createClient } from "@/lib/supabase/server";
 
 export type AdminState = { error?: string; ok?: string };
@@ -66,9 +66,11 @@ export async function setPlanAction(
   _prev: AdminState,
   formData: FormData,
 ): Promise<AdminState> {
-  let me;
+  /* The gate is inside adminWrite now — this one stays to TRANSLATE it: a
+     server action that lets UNAUTHORISED escape shows the operator a red
+     error boundary instead of "reconnectez-vous". */
   try {
-    me = await requireElevatedSuperAdmin();
+    await requireElevatedSuperAdmin();
   } catch (e) {
     return { error: guardMessage(e) };
   }
@@ -88,9 +90,7 @@ export async function setPlanAction(
     return { error: "Durée : 0 à 1000." };
   }
 
-  const db = createAdminClient();
-  const { data, error } = await db.rpc("admin_set_plan", {
-    p_actor: me.id, // from the session — never from the form
+  const { data, error } = await adminWrite<PostState>("admin_set_plan", {
     p_business_id: businessId,
     p_plan: plan,
     p_amount: amount,
@@ -112,9 +112,11 @@ export async function setSuspendedAction(
   _prev: AdminState,
   formData: FormData,
 ): Promise<AdminState> {
-  let me;
+  /* The gate is inside adminWrite now — this one stays to TRANSLATE it: a
+     server action that lets UNAUTHORISED escape shows the operator a red
+     error boundary instead of "reconnectez-vous". */
   try {
-    me = await requireElevatedSuperAdmin();
+    await requireElevatedSuperAdmin();
   } catch (e) {
     return { error: guardMessage(e) };
   }
@@ -127,9 +129,7 @@ export async function setSuspendedAction(
   // Suspending is destructive to a live business — never do it namelessly.
   if (suspend && !reason) return { error: "Une raison est obligatoire." };
 
-  const db = createAdminClient();
-  const { data, error } = await db.rpc("admin_set_suspended", {
-    p_actor: me.id,
+  const { data, error } = await adminWrite<PostState>("admin_set_suspended", {
     p_business_id: businessId,
     p_suspended: suspend,
     p_reason: reason || null,
@@ -149,9 +149,11 @@ export async function noticeAction(
   _prev: AdminState,
   formData: FormData,
 ): Promise<AdminState> {
-  let me;
+  /* The gate is inside adminWrite now — this one stays to TRANSLATE it: a
+     server action that lets UNAUTHORISED escape shows the operator a red
+     error boundary instead of "reconnectez-vous". */
   try {
-    me = await requireElevatedSuperAdmin();
+    await requireElevatedSuperAdmin();
   } catch (e) {
     return { error: guardMessage(e) };
   }
@@ -166,9 +168,7 @@ export async function noticeAction(
     return { error: "Type invalide." };
   }
 
-  const db = createAdminClient();
-  const { data, error } = await db.rpc("admin_notice", {
-    p_actor: me.id,
+  const { data, error } = await adminWrite<PostState>("admin_notice", {
     // empty string → everyone
     p_business_id: businessId || null,
     p_kind: kind,
@@ -188,16 +188,14 @@ export async function noticeAction(
  * every owner's dashboard until expiry — this pulls it back immediately.
  */
 export async function dismissNoticeAction(id: string): Promise<void> {
-  let me;
   try {
-    me = await requireElevatedSuperAdmin();
+    await requireElevatedSuperAdmin();
   } catch {
     return; // fail closed; the notice simply stays
   }
   if (!id) return;
 
-  const db = createAdminClient();
-  await db.rpc("admin_dismiss_notice", { p_actor: me.id, p_id: id });
+  await adminWrite("admin_dismiss_notice", { p_id: id });
 
   revalidatePath("/admin");
   revalidatePath("/owner"); // the owner's banner should disappear too
@@ -247,9 +245,11 @@ export async function decideRenewalAction(
   _prev: AdminState,
   formData: FormData,
 ): Promise<AdminState> {
-  let me;
+  /* The gate is inside adminWrite now — this one stays to TRANSLATE it: a
+     server action that lets UNAUTHORISED escape shows the operator a red
+     error boundary instead of "reconnectez-vous". */
   try {
-    me = await requireElevatedSuperAdmin();
+    await requireElevatedSuperAdmin();
   } catch (e) {
     return { error: guardMessage(e) };
   }
@@ -261,9 +261,7 @@ export async function decideRenewalAction(
   // Refusing is the one that reaches a person as bad news — never namelessly.
   if (!approve && !note) return { error: "Dites pourquoi : le café verra cette raison." };
 
-  const db = createAdminClient();
-  const { data, error } = await db.rpc("admin_decide_renewal", {
-    p_actor: me.id,
+  const { data, error } = await adminWrite<PostState>("admin_decide_renewal", {
     p_id: id,
     p_approve: approve,
     p_note: note || null,

@@ -113,8 +113,27 @@ end $$;
   does NOT fix the second half of the flaw: the admin RPCs still authorise on a
   caller-supplied p_actor rather than auth.uid(). With EXECUTE closed, only
   service_role reaches them and the app always passes the session's own actor —
-  so the hole is contained, not eliminated. A future migration should change
-  those signatures to derive the actor internally.
+  so the hole is contained, not eliminated.
+
+  ── AND "just use auth.uid()" IS NOT THE FIX, WHICH IS WORTH SAYING ───────
+  This note used to end "a future migration should change those signatures to
+  derive the actor internally". Following that literally takes the console
+  down. Every call site reaches these functions through the SERVICE ROLE
+  (lib/supabase/admin), and under the service role auth.uid() is NULL — so
+  is_super(auth.uid()) is false for every caller, the real operator included.
+
+  Deriving the actor internally first requires moving all of it onto the
+  operator's own session client and re-granting EXECUTE to `authenticated`,
+  which un-does half of what this file just did and has to be re-tested against
+  RLS on every admin path. It is a real piece of work, not a comment change.
+
+  What was actually left is not a hole an attacker can reach — it is a mistake
+  WE could make: eleven call sites each resolving the operator and then passing
+  their id by hand, where forgetting the first or mistyping the second is
+  privilege escalation that reviews as ordinary code. Those two lines are one
+  function now (lib/adminRpc.ts): the gate and the actor are the same call, and
+  the argument type forbids a p_actor of its own. There is no longer a way to
+  call an admin RPC without being checked, or to be checked as somebody else.
 
   Also unfixed here, and worth doing next:
     · `grant select on businesses to anon` has no column list, publishing

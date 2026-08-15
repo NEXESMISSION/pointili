@@ -1,5 +1,4 @@
-import { requireSuperAdmin } from "@/lib/auth/owner";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { adminRpc } from "@/lib/adminRpc";
 
 /**
  * A payment receipt, as bytes, for the console.
@@ -28,20 +27,18 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  let me;
-  try {
-    me = await requireSuperAdmin();
-  } catch {
-    // 404, not 403: an unauthorised caller learns nothing about what exists.
-    return new Response("Not found", { status: 404 });
-  }
-
   const { id } = await params;
   if (!UUID.test(id)) return new Response("Not found", { status: 404 });
 
-  const db = createAdminClient();
-  const { data } = await db.rpc("admin_renewal_proof", { p_actor: me.id, p_id: id });
-  const uri = data as string | null;
+  /* adminRpc throws if the caller is not an elevated super-admin. 404, not
+     403: an unauthorised caller learns nothing about what exists. */
+  let uri: string | null;
+  try {
+    uri = await adminRpc<string>("admin_renewal_proof", { p_id: id });
+  } catch {
+    return new Response("Not found", { status: 404 });
+  }
+
   if (!uri || !uri.startsWith("data:image/")) {
     return new Response("Not found", { status: 404 });
   }
