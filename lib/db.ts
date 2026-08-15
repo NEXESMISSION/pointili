@@ -142,12 +142,29 @@ export async function pinClear(phone: string) {
 /* Points                                                                      */
 /* -------------------------------------------------------------------------- */
 
+/*
+  A BALANCE THAT COULD NOT BE FETCHED IS NOT A BALANCE OF ZERO.
+
+  This used to swallow the error and `?? 0`, so one dropped RPC — a reset
+  connection, a slow pooler, a 5xx from PostgREST — told a customer holding 340
+  points that they had none, on the one screen the whole product exists to show
+  them. It is transient, so it is right again on a refresh, which is precisely
+  what makes it read as "the app lost my points" rather than as a failed
+  request.
+
+  It is worse at the counter, where the same number is what the cashier reads
+  out before deciding whether a reward can be taken.
+
+  Zero is a real balance and has to stay reachable — a new card genuinely has
+  none. So the RPC returning NULL still means zero; only a failed call throws.
+*/
 export async function getBalance(businessId: string, phone: string): Promise<number> {
   const db = createAdminClient();
-  const { data } = await db.rpc("pointili_balance", {
+  const { data, error } = await db.rpc("pointili_balance", {
     p_business_id: businessId,
     p_phone: phone,
   });
+  if (error) throw new Error(`getBalance: ${error.message}`);
   return (data as number | null) ?? 0;
 }
 

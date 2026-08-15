@@ -158,11 +158,11 @@ function Num({
 const TICKET = 2.5;
 
 export function EarnForm({
-  cafe,
   program,
   rewards,
 }: {
-  cafe: Cafe;
+  /* `cafe` used to be taken only to read designSettings.loyaltyEnabled, a flag
+     nothing in the repo ever wrote — see the note in lib/data.ts. */
   program: LoyaltyProgram;
   /** Cheapest-first, so the example can name the reward that is actually next. */
   rewards: Reward[];
@@ -238,7 +238,7 @@ export function EarnForm({
           name="loyaltyActive"
           label="Programme de points activé"
           help="Décochez pour tout mettre en pause."
-          defaultChecked={program.active && cafe.designSettings.loyaltyEnabled}
+          defaultChecked={program.active}
         />
       </Advanced>
 
@@ -1032,11 +1032,17 @@ function RewardEditor({
           </p>
         )}
         {/*
-          Visibility is set on the CARD, not in here, so the editor must not
-          post a stale value: an unchecked box would submit nothing and quietly
-          hide a reward every time its name was corrected.
+          Visibility is set on the CARD, not in here — so this form posts NO
+          `active` at all, and saveRewardAction's update branch no longer writes
+          the column.
+
+          There used to be a hidden `value="on"` here, reasoning that an
+          unchecked box would submit nothing and quietly hide a reward whenever
+          its name was corrected. That danger is real, but pinning the field to
+          "on" only swapped which direction it broke in: correcting the name of
+          a reward the owner had hidden re-published it. A form that does not
+          own a value should send nothing about it, not a constant.
         */}
-        <input type="hidden" name="active" value="on" />
         <Feedback state={state} />
         <div className="mt-3.5 flex items-center gap-2">
           <button type="submit" disabled={pending} className={btn}>

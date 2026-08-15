@@ -75,7 +75,12 @@ export function SettingsList({
     "The wheel is on" needs prizes as well as the toggle: an active wheel with
     an empty prize list shows a customer nothing, so it is not on.
   */
-  const stampsValue = program.stampsEnabled ? `${program.stampsRequired} visites` : null;
+  /* One visit is "1 visite". Every other value line on this screen already
+     agrees the count decides the ending — see `lot${…}` on the next line — but
+     the two lines that talk about VISITS were written without it, so a shop
+     whose first reward is reachable in one go read "dès 1 visites". */
+  const visites = (n: number) => `${n} visite${n > 1 ? "s" : ""}`;
+  const stampsValue = program.stampsEnabled ? visites(program.stampsRequired) : null;
   const wheelValue =
     game && game.active && game.prizes.length > 0
       ? `${game.prizes.length} lot${game.prizes.length > 1 ? "s" : ""} · ${game.spinCost} pts le tour`
@@ -85,7 +90,7 @@ export function SettingsList({
     points: {
       title: "Les points",
       sub: "Ce que chaque dinar dépensé rapporte à vos clients.",
-      body: <div className="mx-auto w-full max-w-[560px]"><EarnForm cafe={cafe} program={program} rewards={rewards} /></div>,
+      body: <div className="mx-auto w-full max-w-[560px]"><EarnForm program={program} rewards={rewards} /></div>,
     },
     rewards: {
       title: "Les récompenses",
@@ -170,7 +175,7 @@ export function SettingsList({
              v…", losing the half that carries the meaning. The pictures say how
              many there are; the value says the one thing they cannot. */
           value={
-            cheapest ? `dès ${visitsForPoints(cheapest.pointsCost, ticket)} visites` : "aucune"
+            cheapest ? `dès ${visites(visitsForPoints(cheapest.pointsCost, ticket))}` : "aucune"
           }
           warn={!cheapest}
           onClick={() => setOpen("rewards")}

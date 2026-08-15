@@ -94,7 +94,6 @@ export type CardTheme = {
 };
 
 export type DesignSettings = {
-  loyaltyEnabled: boolean;
   showEngagement: boolean;
   pointsExpiryMonths: number | null;
   theme: CardTheme;

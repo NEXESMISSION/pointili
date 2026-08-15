@@ -300,7 +300,6 @@ export async function saveRewardAction(
   const id = String(formData.get("id") ?? "");
   const label = String(formData.get("label") ?? "").trim().slice(0, 60);
   const cost = num(formData.get("pointsCost"), 1, 1_000_000);
-  const active = formData.get("active") === "on";
 
   if (!label) return { error: "Le nom de la récompense est requis." };
   if (cost === null) return { error: "Coût : au moins 1 point." };
@@ -309,7 +308,24 @@ export async function saveRewardAction(
   const { data, error } = id
     ? await db
         .from("loyalty_rewards")
-        .update({ label, points_cost: Math.round(cost), active })
+        /*
+          VISIBILITY IS NOT THIS FORM'S TO SET.
+
+          Whether a reward is on the customer's menu belongs to the row toggle
+          on the list, which saves the instant it is flipped
+          (toggleRewardActiveAction). This editor only ever posted a hardcoded
+          <input type="hidden" name="active" value="on" />, so `active` above is
+          always true and writing it here re-published anything hidden.
+
+          The sequence that costs a shop money: the pâtisserie sells out at
+          11:00 and the owner hides it, then at 11:05 corrects a typo in its
+          name — and it is back on every customer's menu, still sold out. The
+          hidden rows are only dimmed to 55% in the list, so they open for
+          editing like any other.
+
+          The insert below still sets it: a brand-new reward is born visible.
+        */
+        .update({ label, points_cost: Math.round(cost) })
         .eq("id", id)
         .eq("business_id", cafe.id) // belt and braces; RLS enforces it too
         .select("id")
@@ -319,7 +335,7 @@ export async function saveRewardAction(
           business_id: cafe.id,
           label,
           points_cost: Math.round(cost),
-          active,
+          active: true, // a new reward is born visible
           position: 99,
           // a drawn illustration when the name matches one — see lib/rewardArt
           image_url: rewardArtFor(label),

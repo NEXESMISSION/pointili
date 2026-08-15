@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { CardIcon, CheckIcon, Sparkle } from "@/components/icons";
 import { fmtPoints } from "@/lib/points";
 
@@ -119,15 +119,45 @@ export function DoneSheet({
    */
   onNext: () => void;
 }) {
+  /*
+    THE TIMER RELEASES THE CUSTOMER. It used to only hide the receipt.
+
+    The distinction above is the whole point of this component, and the sheet
+    that owns it says so at CaisseForms.tsx:559 — dismissing "only hid the
+    receipt, the till stayed bound to the same person, showing an empty amount
+    box and a live Créditer", so the cashier keys the next customer's total and
+    credits the previous one. The BUTTON was fixed to call onNext. This timer
+    was left calling onClose, which performed that exact failure automatically,
+    four seconds after every sale where nobody tapped — which is most sales,
+    because the cashier is bagging the order.
+
+    A deliberate dismiss still binds: tapping the veil or pressing Escape is a
+    cashier saying "I am staying with this person" (to add a stamp, to check
+    the history). Doing nothing is not that statement, so the unattended path
+    is the safe one.
+
+    Both handlers are held in refs because the parent passes fresh arrows on
+    every render — with either in the dependency array, each re-render cleared
+    the pending timeout and started the four seconds over.
+  */
+  const nextRef = useRef(onNext);
+  const closeRef = useRef(onClose);
+  /* Kept current in an effect, not during render — a ref written while
+     rendering is torn under concurrent rendering, and React lints it. */
   useEffect(() => {
-    const t = setTimeout(onClose, 4000);
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    nextRef.current = onNext;
+    closeRef.current = onClose;
+  });
+
+  useEffect(() => {
+    const t = setTimeout(() => nextRef.current(), 4000);
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && closeRef.current();
     window.addEventListener("keydown", esc);
     return () => {
       clearTimeout(t);
       window.removeEventListener("keydown", esc);
     };
-  }, [onClose]);
+  }, []);
 
   const filled = done.kind === "stamp" && done.completed;
 

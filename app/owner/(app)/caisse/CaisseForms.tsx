@@ -453,6 +453,16 @@ function CustomerSheet({
     Math.round((Number(amount.replace(",", ".")) || 0) * pointsPerTnd * customer.multiplier * 100) / 100;
 
   function credit() {
+    /*
+      Guard the FUNCTION, not the button.
+
+      `disabled={busy}` on Créditer stops a second tap, but the amount field
+      calls credit() straight from onKeyDown — so a cashier who hits Enter twice,
+      or whose phone repeats the key, posts the sale twice. Both requests are
+      valid, so the customer is credited twice and the shop's takings gain a sale
+      that never happened. The button was never the only way in.
+    */
+    if (busy) return;
     // Clear BOTH first. Otherwise a refusal renders underneath the previous
     // sale's green confirmation, and the screen says yes and no at once.
     setFlash(null);
@@ -863,7 +873,12 @@ function CustomerSheet({
                   <input
                     name="newPin"
                     value={newPin}
-                    onChange={(e) => setNewPin(e.target.value.replace(/D/g, "").slice(0, 4))}
+                    /* /\D/g, not /D/g — the missing backslash stripped the
+                       letter D and left every other letter in place, so any
+                       four characters armed the button and the refusal came
+                       back from the server, during the one flow whose whole
+                       job is getting a locked-out customer back in. */
+                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
                     inputMode="numeric"
                     maxLength={4}
                     placeholder="••••"

@@ -78,7 +78,21 @@ function toCafe(b: BusinessRow): Cafe {
     phone: b.phone,
     businessType: b.business_type ?? "other",
     designSettings: {
-      loyaltyEnabled: (d.loyaltyEnabled as boolean) ?? true,
+      /*
+        `loyaltyEnabled` used to be read here and is gone.
+
+        It was seeded true by migration 0001, defaulted true on this line, and
+        WRITTEN BY NOTHING — no action, no form, anywhere in the repo. The one
+        place it was consumed was the "programme actif" toggle, as
+        `program.active && designSettings.loyaltyEnabled`, while saving that
+        toggle writes only loyalty_programs.active. So any shop whose JSON held
+        false read OFF, could tick it, would be told "Enregistré ✦", and found
+        it OFF again on reload — permanently, with no way out through the
+        product.
+
+        The column that is written is the column that is read. The stale key
+        can stay in the jsonb; nothing looks at it.
+      */
       showEngagement: (d.showEngagement as boolean) ?? true,
       pointsExpiryMonths: (d.pointsExpiryMonths as number | null) ?? null,
       /*
@@ -124,13 +138,23 @@ function toCafe(b: BusinessRow): Cafe {
  * getCafe(slug), and without this that's two round-trips to Zurich for the same
  * row on every navigation. Same for getGame below. Big perceived-speed win.
  */
+/*
+  null here becomes a 404, so it must only ever mean "no shop has this slug".
+
+  Swallowing the error made a dropped request indistinguishable from a wrong
+  address, and the caller turns that into notFound() — a live shop showing
+  "cette adresse n'existe pas" to a customer standing at its counter with the
+  QR code still on screen. The slug is printed on table cards, so the customer
+  concludes the shop's code is dead.
+*/
 export const getCafe = cache(async (slug: string): Promise<Cafe | null> => {
   const db = createAdminClient();
-  const { data } = await db
+  const { data, error } = await db
     .from("businesses")
     .select(CAFE_COLS)
     .eq("slug", slug)
     .maybeSingle();
+  if (error) throw new Error(`getCafe(${slug}): ${error.message}`);
   return data ? toCafe(data as unknown as BusinessRow) : null;
 });
 
@@ -160,15 +184,35 @@ export const getAnyCafe = cache(async (): Promise<Cafe | null> => {
 });
 
 /** The café owned by this Supabase user (v1: one café per owner). */
+/*
+  "I could not ask" IS NOT "you do not have one".
+
+  This used to destructure `data` alone and return null for both outcomes, and
+  null here does not mean "no café" to the caller — it means the owner has not
+  set their shop up yet. ownerHome() sends that owner to /owner/nouveau, and the
+  (app) layout redirects every owner page there too.
+
+  So one dropped request — a reset connection, a PostgREST 5xx, a slow pooler —
+  logged a working shop out of its own till and invited its owner to create the
+  café they already own. It is transient, so it clears on a refresh, which is
+  exactly what makes it read as "I got randomly logged out" rather than as a
+  bug with a cause. Worse, an owner who believes the prompt ends up with a
+  SECOND café, and this product resolves an owner to the oldest one they own.
+
+  A thrown error reaches app/owner/(app)/error.tsx, which says something went
+  wrong and offers to retry — the truth, and recoverable. Returning null here
+  must mean the query succeeded and found nothing.
+*/
 export const getOwnedCafe = cache(async (ownerId: string): Promise<Cafe | null> => {
   const db = createAdminClient();
-  const { data } = await db
+  const { data, error } = await db
     .from("businesses")
     .select(CAFE_COLS)
     .eq("owner_id", ownerId)
     .order("created_at")
     .limit(1)
     .maybeSingle();
+  if (error) throw new Error(`getOwnedCafe(${ownerId}): ${error.message}`);
   return data ? toCafe(data as unknown as BusinessRow) : null;
 })
 
