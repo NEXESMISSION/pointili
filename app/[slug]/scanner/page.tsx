@@ -1,3 +1,4 @@
+import { ShopLogo } from "@/components/ShopLogo";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { CafeClosed } from "@/components/CafeClosed";
@@ -54,22 +55,15 @@ export default async function Scanner({
       {/* ── whose counter this is ── */}
       <section className="pt-2 text-center">
         <span className="relative mx-auto grid h-[74px] w-[74px] place-items-center">
-          {cafe.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-            <img
-              src={cafe.logoUrl}
-              alt=""
-              className="relative h-[74px] w-[74px] rounded-full object-cover"
-              style={{ boxShadow: "0 0 0 2px var(--cafe-line)" }}
-            />
-          ) : (
-            <span
-              className="relative grid h-[74px] w-[74px] place-items-center rounded-full text-[34px]"
-              style={{ background: "var(--cafe-soft)" }}
-            >
-              <span className="shop-mark">{type.emoji}</span>
-            </span>
-          )}
+          <ShopLogo
+            url={cafe.logoUrl}
+            shape={cafe.designSettings.theme.logoShape}
+            emoji={type.emoji}
+            size={74}
+            ring="var(--cafe-line)"
+            tint="var(--cafe-soft)"
+            className="relative"
+          />
         </span>
 
         <h1 className="mt-3 text-[25px] font-extrabold leading-tight tracking-[-0.02em] text-charcoal">

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { ShopLogo } from "@/components/ShopLogo";
+import type { CardTheme } from "@/lib/types";
 import { usePathname } from "next/navigation";
 import { CardIcon, GiftIcon, UserIcon } from "@/components/icons";
 import { translator, type Lang } from "@/lib/dict";
@@ -32,6 +34,7 @@ export function SideRail({
   slug,
   name,
   logoUrl,
+  logoShape,
   emoji,
   cards,
   lang = "fr",
@@ -39,6 +42,8 @@ export function SideRail({
   slug: string;
   name: string;
   logoUrl: string | null;
+  /** Cut to a disc, or shown whole — the shop's choice. See CardTheme. */
+  logoShape: CardTheme["logoShape"];
   /** French or Tunisian — see lib/dict. */
   lang?: Lang;
   /** The business-type mark, for a shop that has uploaded no logo. */
@@ -59,17 +64,13 @@ export function SideRail({
     <aside className="sticky top-0 hidden h-dvh w-[264px] shrink-0 flex-col border-r border-[var(--edge)] px-3 py-5 lg:flex">
       {/* whose card this is — and a way back to it */}
       <Link href={base} className="mb-6 flex items-center gap-3 px-2">
-        {logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-          <img src={logoUrl} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
-        ) : (
-          <span
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-[18px]"
-            style={{ background: "var(--cafe-soft)" }}
-          >
-            <span className="shop-mark">{emoji}</span>
-          </span>
-        )}
+        <ShopLogo
+          url={logoUrl}
+          shape={logoShape}
+          emoji={emoji}
+          size={40}
+          tint="var(--cafe-soft)"
+        />
         <span className="min-w-0">
           <span className="block truncate text-[15px] font-extrabold leading-tight text-charcoal">
             {name}

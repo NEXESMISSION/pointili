@@ -10,10 +10,11 @@ import { CardArrived } from "@/components/CardArrived";
 import { CountUp } from "@/components/CountUp";
 import { RewardUnlocked } from "@/components/RewardUnlocked";
 import { MarkOpened } from "@/components/MarkOpened";
-import { fmtPoints } from "@/lib/points";
 import { codeQr } from "@/lib/qr";
 import { inkOn, safeColor } from "@/lib/theme";
-import { t as translation } from "@/lib/i18n";
+import { t as translation, type T } from "@/lib/i18n";
+import { Tpl } from "@/components/Tpl";
+import { ShopLogo } from "@/components/ShopLogo";
 
 /**
  * Ma carte — the shop's own card, in the shop's own colour.
@@ -182,7 +183,7 @@ export default async function Carte({
         <header className="flex items-center justify-between gap-2 lg:hidden">
           <Link
             href={`/${slug}/profil`}
-            aria-label="Mon profil"
+            aria-label={t("Mon profil")}
             className="grid h-10 w-10 place-items-center rounded-full transition active:scale-95"
             style={{ background: "color-mix(in oklab, var(--cafe-ink) 14%, transparent)" }}
           >
@@ -206,9 +207,20 @@ export default async function Carte({
           */}
           <Link
             href={`/cartes?from=${slug}`}
-            aria-label={`Mes cartes — ${wallet.length} boutique${wallet.length > 1 ? "s" : ""}`}
-            className="flex min-w-0 flex-1 items-center justify-center gap-2.5 rounded-full py-2 pl-3 pr-3.5 transition active:scale-[0.97]"
-            style={{ background: "color-mix(in oklab, var(--cafe-ink) 15%, transparent)" }}
+            aria-label={`${t("Mes cartes")} — ${t.n(wallet.length, "boutique")}`}
+            /*
+              NEUTRAL, on purpose. This was --cafe-ink at 15% — a translucent
+              wash, so over a green banner it read green and over a red one red.
+              The tile is not the shop's: it is the way OUT of this card and into
+              the other shops the customer carries. Wearing this shop's colour
+              made the platform's own control look like one of its features.
+
+              Opaque rather than another tint, because any translucent fill
+              takes the hue underneath it. Grey on every banner, and the ink goes
+              charcoal with it — white text on a light grey pill was the reason
+              the fill had to borrow colour in the first place.
+            */
+            className="flex min-w-0 flex-1 items-center justify-center gap-2.5 rounded-full bg-[var(--o-inset)] py-2 pl-3 pr-3.5 text-charcoal transition active:scale-[0.97]"
           >
             {others.length > 0 && (
               <span className="flex shrink-0 -space-x-2.5">
@@ -238,8 +250,10 @@ export default async function Carte({
               <span className="block truncate text-[14.5px] font-extrabold leading-tight">
                 {t("Mes cartes")}
               </span>
+              {/* t.n, not a manual "s" — Arabic counts in bands, so 2 فروع and
+                  30 فرع are both right and no boolean produces both. */}
               <span className="block text-[11px] font-semibold leading-tight opacity-75">
-                {wallet.length} {t(wallet.length > 1 ? "boutiques" : "boutique")}
+                {t.n(wallet.length, "boutique")}
               </span>
             </span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0 opacity-80 rtl:-scale-x-100" aria-hidden>
@@ -250,7 +264,9 @@ export default async function Carte({
           <Link
             href={`/${slug}/historique`}
             aria-label={
-              pending > 0 ? `${pending} récompense${pending > 1 ? "s" : ""} à récupérer` : "Mes codes"
+              pending > 0
+                ? t("{n} à récupérer", { n: t.n(pending, "récompense") })
+                : t("Mes codes")
             }
             className="relative grid h-10 w-10 place-items-center rounded-full transition active:scale-95"
             style={{ background: "color-mix(in oklab, var(--cafe-ink) 14%, transparent)" }}
@@ -272,28 +288,21 @@ export default async function Carte({
 
         {/* who — the shop at the size a shop deserves on its own card */}
         <div className="mt-5 flex items-center gap-3">
-          {cafe.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-            <img
-              src={cafe.logoUrl}
-              alt=""
-              data-shop-logo
-              className="h-[46px] w-[46px] shrink-0 rounded-full object-cover"
-              style={{ boxShadow: "0 0 0 2px color-mix(in oklab, var(--cafe-ink) 28%, transparent)" }}
-            />
-          ) : (
-            <span
-              className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-full text-[20px]"
-              style={{ background: "color-mix(in oklab, var(--cafe-ink) 16%, transparent)" }}
-            >
-              <span className="shop-mark">{type.emoji}</span>
-            </span>
-          )}
+          <ShopLogo
+            url={cafe.logoUrl}
+            shape={theme.logoShape}
+            emoji={type.emoji}
+            size={46}
+            ring="color-mix(in oklab, var(--cafe-ink) 28%, transparent)"
+            tint="color-mix(in oklab, var(--cafe-ink) 16%, transparent)"
+          />
           <span className="min-w-0">
             <span className="block truncate text-[18px] font-extrabold leading-tight tracking-[-0.015em]">
               {cafe.name}
             </span>
-            <span className="block text-[12px] font-semibold opacity-70">{type.label}</span>
+            {/* "Café" reads مقهى here — the category is chrome, not the shop's
+                own name, so it belongs to the reader's language. */}
+            <span className="block text-[12px] font-semibold opacity-70">{t(type.label)}</span>
           </span>
         </div>
 
@@ -304,7 +313,12 @@ export default async function Carte({
             to={diner.balance}
             className="text-[52px] font-extrabold leading-[0.9] tabular-nums tracking-[-0.04em]"
           />
-          <span className="pb-1.5 text-[15px] font-bold opacity-75">{t("points")}</span>
+          {/* t.unit, not t("points"): the figure is animated by CountUp above,
+              so the noun is a separate element — and it still has to agree
+              with the balance (118 نقطة, but 5 نقاط). */}
+          <span className="pb-1.5 text-[15px] font-bold opacity-75">
+            {t.unit(diner.balance, "point")}
+          </span>
         </div>
 
         {/*
@@ -332,12 +346,17 @@ export default async function Carte({
                 }}
               />
             </span>
+            {/* One sentence in the dictionary, not four fragments — so the
+                Tunisian can read «باقيلك 30 نقطة باش تاخذ أتاي بالنعناع»
+                instead of French word order wearing Arabic words. */}
             <p className="mt-2.5 text-[12.5px] leading-snug opacity-85">
-              {t("Encore")}{" "}
-              <b className="font-extrabold">
-                {fmtPoints(nudge.needed)} {t(nudge.needed >= 2 ? "points" : "point")}
-              </b>{" "}
-              {t("pour")} <b className="font-extrabold">{nudge.target.label}</b>
+              <Tpl
+                tpl={t("Encore {n} pour {reward}")}
+                slots={{
+                  n: <b className="font-extrabold">{t.n(nudge.needed, "point")}</b>,
+                  reward: <b className="font-extrabold">{t(nudge.target.label)}</b>,
+                }}
+              />
             </p>
           </div>
         ) : readyCount > 0 ? (
@@ -345,11 +364,12 @@ export default async function Carte({
              the earning rate, which reads as a shrug when you can already
              afford the best thing on the menu. */
           <p className="mt-5 text-[12.5px] leading-snug opacity-85">
-            {t("Tu peux prendre")}{" "}
-            <b className="font-extrabold">{t("n'importe quelle récompense")}</b> {t("ici.")}
+            {t("Tu peux prendre n'importe quelle récompense ici.")}
           </p>
         ) : (
-          <p className="mt-5 text-[12.5px] leading-snug opacity-85">{rateLabel(program.pointsPerTnd)}</p>
+          <p className="mt-5 text-[12.5px] leading-snug opacity-85">
+            {rateLabel(program.pointsPerTnd, t)}
+          </p>
         )}
 
         {/*
@@ -392,12 +412,19 @@ export default async function Carte({
             </div>
             <p className="mt-2 text-[11.5px] leading-snug opacity-80">
               {stampsLeft <= 0 ? (
-                <b className="font-extrabold">{program.stampReward} t&apos;attend 🎉</b>
+                <b className="font-extrabold">
+                  {t("{reward} t'attend 🎉", { reward: t(program.stampReward) })}
+                </b>
               ) : (
-                <>
-                  {stampsLeft} visite{stampsLeft > 1 ? "s" : ""} pour{" "}
-                  <b className="font-extrabold">{program.stampReward}</b>
-                </>
+                /* «باقيلك 8 زيارات باش تاخذ قهوة هدية.» — the visits count in
+                   bands like everything else, so t.n owns the word. */
+                <Tpl
+                  tpl={t("Encore {n} pour {reward}.")}
+                  slots={{
+                    n: t.n(stampsLeft, "visite"),
+                    reward: <b className="font-extrabold">{t(program.stampReward)}</b>,
+                  }}
+                />
               )}
             </p>
           </div>
@@ -443,13 +470,13 @@ export default async function Carte({
       {pending > 0 ? (
         <Waiting
           href={`/${slug}/codes`}
-          title={`${pending} récompense${pending > 1 ? "s" : ""} à récupérer`}
-          hint="Montre le QR au comptoir — c'est déjà payé."
+          title={t("{n} à récupérer", { n: t.n(pending, "récompense") })}
+          hint={t("Montre le QR au comptoir — c'est déjà payé.")}
         />
       ) : readyCount > 0 ? (
         <Waiting
           href={`/${slug}/boutique`}
-          title={`${readyCount} récompense${readyCount > 1 ? "s" : ""} à ta portée`}
+          title={t("{n} à ta portée", { n: t.n(readyCount, "récompense") })}
           hint={t("Tu as assez de points — choisis la tienne.")}
         />
       ) : null}
@@ -473,7 +500,7 @@ export default async function Carte({
           label={t("Mon activité")}
           value={
             pending > 0
-              ? `${pending} code${pending > 1 ? "s" : ""} · mes points`
+              ? t("{n} · mes points", { n: t.n(pending, "code") })
               : t("points, visites, récompenses")
           }
           icon={
@@ -567,15 +594,19 @@ export default async function Carte({
                       {/* two lines, not an ellipsis: "Cappuccino off…" and
                           "Pâtisserie du jo…" name nothing, and naming the thing
                           is the entire job of this row */}
+                      {/* t() on a reward NAME looks odd but is deliberate: most
+                          shops keep the suggestions the app offered them, so
+                          "Café offert" becomes قهوة هدية, and a name a shop
+                          typed itself falls through to its own words. */}
                       <span className="block text-[12.5px] font-bold leading-snug text-charcoal line-clamp-2 min-h-[2.4em]">
-                        {r.label}
+                        {t(r.label)}
                       </span>
                       <span
                         className="mt-0.5 block text-[11.5px] font-extrabold"
                         style={{ color: affordable ? "var(--cafe-text)" : undefined }}
                       >
                         <span className={affordable ? "" : "text-slate"}>
-                          {affordable ? t("à prendre") : `${fmtPoints(r.pointsCost)} ${t("points")}`}
+                          {affordable ? t("à prendre") : t.n(r.pointsCost, "point")}
                         </span>
                       </span>
                     </span>
@@ -661,14 +692,14 @@ function Tile({
  * about to hand over. A rate below 1 is inverted rather than shown as "0,5
  * point par dinar", which nobody converts in their head at a counter.
  */
-function rateLabel(rate: number): string {
-  if (!rate || rate <= 0) return "Cumule des points à chaque achat";
+function rateLabel(rate: number, t: T): string {
+  if (!rate || rate <= 0) return t("Cumule des points à chaque achat");
   if (rate >= 1) {
     const n = Math.round(rate * 100) / 100;
-    return `1 dinar dépensé = ${n} point${n > 1 ? "s" : ""}`;
+    return t("1 dinar dépensé = {n}", { n: t.n(n, "point") });
   }
   const dinars = Math.round((1 / rate) * 10) / 10;
-  return `${dinars} dinars dépensés = 1 point`;
+  return t("{d} dinars dépensés = 1 point", { d: dinars });
 }
 
 /**

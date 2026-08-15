@@ -104,6 +104,9 @@ function toCafe(b: BusinessRow): Cafe {
         bannerHeight: pick(t.bannerHeight, ["s", "m", "l"], "m"),
         pattern: pick(t.pattern, ["none", "dots", "stripes", "grid"], "none"),
         scrim: t.scrim !== false,
+        /* absent on every row written before the knob existed, and "circle" is
+           what those shops are already looking at */
+        logoShape: pick(t.logoShape, ["circle", "free"], "circle"),
         font: pick(t.font, ["inter", "poppins"], "inter"),
         coverAt: typeof t.coverAt === "string" ? t.coverAt : null,
       },

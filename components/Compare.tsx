@@ -110,8 +110,20 @@ function Check({ className = "" }: { className?: string }) {
 export function Compare() {
   return (
     <>
-      {/* ── le comparatif ─────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl border-t border-hair px-5 py-16 md:px-8 md:py-24">
+      {/* ── le comparatif ─────────────────────────────────────────────
+          TWO WIDTHS OF RULE, and they have to stay two.
+
+          A rule on the max-w-6xl element itself lands on the PADDING box, so
+          it overhung the text by 32px and the page ended up with three
+          different rule widths — full-bleed under the pricing band, 1152 under
+          a section heading, 1088 across a table. Read together they look like
+          a mistake rather than a hierarchy.
+
+          So: a section divider is FULL BLEED (this border, on the outer
+          element), and every rule inside a section aligns to the text column.
+          One means "a new subject starts", the other means "a new row". */}
+      <section className="border-t border-hair">
+      <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
           Le carton
         </p>
@@ -212,10 +224,12 @@ export function Compare() {
           marché, pas un concurrent en particulier — leurs offres changent, la
           nôtre aussi.
         </p>
+      </div>
       </section>
 
       {/* ── les questions ─────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl border-t border-hair px-5 py-16 md:px-8 md:py-24">
+      <section className="border-t border-hair">
+      <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
           Le comptoir
         </p>
@@ -248,6 +262,7 @@ export function Compare() {
             </details>
           ))}
         </div>
+      </div>
       </section>
     </>
   );

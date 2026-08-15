@@ -5,6 +5,7 @@ import { OwnerReturn } from "@/components/OwnerReturn";
 import { CafeClosed } from "@/components/CafeClosed";
 import { TopBar } from "@/components/TopBar";
 import { SideRail } from "@/components/SideRail";
+import { ScrollTop } from "@/components/ScrollTop";
 import { businessType } from "@/lib/businessTypes";
 import { themeVars } from "@/lib/theme";
 import { getCafe, getMember } from "@/lib/data";
@@ -89,6 +90,7 @@ export default async function CafeLayout({
         slug={cafe.slug}
         name={cafe.name}
         logoUrl={cafe.logoUrl}
+        logoShape={cafe.designSettings.theme.logoShape}
         emoji={businessType(cafe.businessType).emoji}
         cards={cards}
         lang={lang}
@@ -103,6 +105,10 @@ export default async function CafeLayout({
 
         <BottomNav slug={cafe.slug} lang={lang} />
       </div>
+
+      {/* Every screen under here opens at its own top — except when the person
+          pressed back, which is meant to return them where they were. */}
+      <ScrollTop />
 
       {/* the customer's card is the thing worth keeping one tap away */}
       <InstallPrompt audience="client" />

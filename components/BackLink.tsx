@@ -58,7 +58,10 @@ export function BackLink({
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="h-5 w-5"
+        /* An arrow is a picture of a direction, and dir="rtl" does not turn
+           pictures round — this one kept pointing at the left edge on the
+           Tunisian side, where "back" is to the right. */
+        className="h-5 w-5 rtl:-scale-x-100"
         aria-hidden
       >
         <path d="m15 18-6-6 6-6" />

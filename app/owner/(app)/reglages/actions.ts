@@ -549,6 +549,7 @@ const FONTS = ["inter", "poppins"] as const;
 const CURVES = ["none", "s", "m", "l"] as const;
 const HEIGHTS = ["s", "m", "l"] as const;
 const PATTERNS = ["none", "dots", "stripes", "grid"] as const;
+const LOGO_SHAPES = ["circle", "free"] as const;
 
 function one<T extends string>(v: FormDataEntryValue | null, allowed: readonly T[], fallback: T): T {
   const s = String(v ?? "");
@@ -576,6 +577,9 @@ export async function saveThemeAction(
     bannerHeight: one(formData.get("bannerHeight"), HEIGHTS, "m"),
     pattern: one(formData.get("pattern"), PATTERNS, "none"),
     scrim: formData.get("scrim") === "on",
+    /* "circle" is the fallback because it is what every shop saved before this
+       existed already looks like — see CardTheme.logoShape. */
+    logoShape: one(formData.get("logoShape"), LOGO_SHAPES, "circle"),
   };
 
   const db = await createClient();

@@ -1,3 +1,4 @@
+import { ShopLogo } from "@/components/ShopLogo";
 import { notFound, redirect } from "next/navigation";
 import { currentDiner, lastDinerPhone } from "@/lib/auth/diner";
 import { businessType } from "@/lib/businessTypes";
@@ -159,22 +160,14 @@ export default async function Rejoindre({
         */}
         <div className="mt-6 flex flex-col items-center">
           <span className="relative">
-            {cafe.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- owner-uploaded
-              <img
-                src={cafe.logoUrl}
-                alt=""
-                className="h-[84px] w-[84px] rounded-full object-cover"
-                style={{ boxShadow: "0 0 0 2px var(--cafe-line)" }}
-              />
-            ) : (
-              <span
-                className="grid h-[84px] w-[84px] place-items-center rounded-full text-[36px]"
-                style={{ background: "var(--cafe-soft)" }}
-              >
-                <span className="shop-mark">{type.emoji}</span>
-              </span>
-            )}
+            <ShopLogo
+              url={cafe.logoUrl}
+              shape={cafe.designSettings.theme.logoShape}
+              emoji={type.emoji}
+              size={84}
+              ring="var(--cafe-line)"
+              tint="var(--cafe-soft)"
+            />
             <span
               className="absolute -bottom-0.5 -right-0.5 grid h-7 w-7 place-items-center rounded-full ring-4 ring-[var(--surface)]"
               style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}

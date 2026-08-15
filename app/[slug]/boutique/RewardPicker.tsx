@@ -5,6 +5,7 @@ import { useActionState, useEffect, useRef, useState, useTransition } from "reac
 import { GiftIcon } from "@/components/icons";
 import type { Reward } from "@/lib/types";
 import { redeemAction, type RedeemState } from "./actions";
+import { translator, type Lang, type T } from "@/lib/dict";
 import { fmtPoints } from "@/lib/points";
 
 /*
@@ -27,11 +28,15 @@ export function RewardPicker({
   slug,
   rewards,
   balance,
+  lang = "fr",
 }: {
   slug: string;
   rewards: Reward[];
   balance: number;
+  /** The reader's language — a translator cannot cross the server boundary. */
+  lang?: Lang;
 }) {
+  const t = translator(lang);
   const router = useRouter();
   const action = redeemAction.bind(null, slug);
   const [state, formAction, pending] = useActionState<RedeemState, FormData>(action, {});
@@ -90,7 +95,7 @@ export function RewardPicker({
   const canBuy = Boolean(chosen) && balance >= (chosen?.pointsCost ?? Infinity);
 
   if (issued) {
-    return <CodeReveal issued={issued} onAgain={() => setIssued(null)} />;
+    return <CodeReveal issued={issued} onAgain={() => setIssued(null)} t={t} />;
   }
 
   return (
@@ -146,12 +151,14 @@ export function RewardPicker({
                 </span>
 
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[14px] font-bold text-charcoal">{r.label}</span>
+                  <span className="block truncate text-[14px] font-bold text-charcoal">
+                    {t(r.label)}
+                  </span>
                   <span
                     className="mt-0.5 block text-[13px] font-extrabold"
                     style={{ color: affordable ? "var(--cafe-text)" : "var(--muted)" }}
                   >
-                    {r.pointsCost} points
+                    {t.n(r.pointsCost, "point")}
                   </span>
                   {!affordable && (
                     <>
@@ -165,7 +172,7 @@ export function RewardPicker({
                         />
                       </span>
                       <span className="mt-1 block text-[11px] text-slate">
-                        Encore {fmtPoints(r.pointsCost - balance)} points
+                        {t("Encore {n}", { n: t.n(r.pointsCost - balance, "point") })}
                       </span>
                     </>
                   )}
@@ -212,17 +219,17 @@ export function RewardPicker({
         {busy
           ? "· · ·"
           : !chosen
-            ? "Choisis une récompense"
+            ? t("Choisis une récompense")
             : canBuy
-              ? `Échanger ${chosen.pointsCost} points`
-              : `Encore ${fmtPoints(chosen.pointsCost - balance)} points`}
+              ? t("Échanger {n}", { n: t.n(chosen.pointsCost, "point") })
+              : t("Encore {n}", { n: t.n(chosen.pointsCost - balance, "point") })}
       </button>
 
       {confirming && chosen && (
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Confirmer l'échange"
+          aria-label={t("Confirmer l'échange")}
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 px-3 pb-3 backdrop-blur-sm lg:items-center lg:pb-3"
           onClick={() => !busy && setConfirming(false)}
         >
@@ -231,14 +238,28 @@ export function RewardPicker({
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-[12.5px] font-bold uppercase tracking-[0.08em] text-slate">
-              Confirmer
+              {t("Confirmer")}
             </p>
             <p className="mt-2 text-[19px] font-extrabold leading-snug text-charcoal">
-              Échanger {chosen.pointsCost} points contre {chosen.label} ?
+              {t("Échanger {n} contre {reward} ?", {
+                n: t.n(chosen.pointsCost, "point"),
+                reward: t(chosen.label),
+              })}
             </p>
 
             {/* the arithmetic, done for them */}
+            {/*
+              dir="ltr" IS LOAD-BEARING, not a leftover.
+
+              Arithmetic is written left to right in Arabic exactly as it is in
+              French — ١٠٠ − ٤٠ = ٦٠, never the mirror. Inside the RTL subtree
+              this flex row reversed, and the sum read "نقطة 60 = 40 − 100":
+              the answer first and the operators pointing the wrong way, on the
+              one screen where a customer is checking that the shop is about to
+              take the right number of points off them.
+            */}
             <div
+              dir="ltr"
               className="mt-4 flex items-center justify-center gap-2 rounded-2xl px-4 py-3"
               style={{ background: "var(--cafe-soft)" }}
             >
@@ -254,13 +275,11 @@ export function RewardPicker({
                 className="text-[17px] font-extrabold"
                 style={{ color: "var(--cafe-text)" }}
               >
-                {fmtPoints(balance - chosen.pointsCost)}
+                {t.n(balance - chosen.pointsCost, "point")}
               </span>
-              <span className="text-[12px] font-semibold text-slate">points</span>
             </div>
             <p className="mt-2 text-[12px] leading-snug text-slate">
-              Les points sont débités tout de suite. Le code, lui, n&apos;expire
-              jamais.
+              {t("Les points sont débités tout de suite. Le code, lui, n'expire jamais.")}
             </p>
 
             <div className="mt-5 grid grid-cols-2 gap-2">
@@ -269,7 +288,7 @@ export function RewardPicker({
                 onClick={() => setConfirming(false)}
                 className="d-card min-h-[50px] text-[14px] font-bold text-charcoal active:scale-[0.99]"
               >
-                Annuler
+                {t("Annuler")}
               </button>
               {/*
                 NO onClick THAT CLOSES THIS DIALOG.
@@ -287,7 +306,7 @@ export function RewardPicker({
                 className="min-h-[50px] rounded-2xl text-[14px] font-extrabold transition active:scale-[0.98] disabled:opacity-50"
                 style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
               >
-                {busy ? "· · ·" : "Oui, échanger"}
+                {busy ? "· · ·" : t("Oui, échanger")}
               </button>
             </div>
           </div>
@@ -302,9 +321,11 @@ export function RewardPicker({
 function CodeReveal({
   issued,
   onAgain,
+  t,
 }: {
   issued: { code: string; label: string; qr: string };
   onAgain: () => void;
+  t: T;
 }) {
   /*
     The code the diner just paid for goes ON SCREEN, not somewhere below it.
@@ -328,10 +349,10 @@ function CodeReveal({
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden>
           <path d="m5 12.5 4.5 4.5L19 7" />
         </svg>
-        Récompense réservée
+        {t("Récompense réservée")}
       </p>
 
-      <p className="mt-5 text-[14px] text-slate">Fais scanner ça :</p>
+      <p className="mt-5 text-[14px] text-slate">{t("Fais scanner ça :")}</p>
 
       {/*
         THE PICTURE FIRST, THE CHARACTERS UNDER IT.
@@ -358,7 +379,12 @@ function CodeReveal({
         </div>
         {/* Still large: the fallback for a lens that will not focus, and the
             thing a cashier types when the shop's phone is in a pocket. */}
+        {/* dir=ltr: the code is a Latin-and-digits string read out loud at a
+            counter. Left in the RTL flow its characters keep their order but
+            the trailing punctuation and the tracking flip, and a cashier
+            comparing it to their own screen should never have to wonder. */}
         <p
+          dir="ltr"
           className="mt-4 font-mono text-[30px] font-extrabold leading-none tracking-[0.18em]"
           style={{ color: "var(--cafe-text)" }}
         >
@@ -366,19 +392,21 @@ function CodeReveal({
         </p>
       </div>
 
-      <p className="mt-3 text-[14px] font-bold text-charcoal">{issued.label}</p>
+      <p className="mt-3 text-[14px] font-bold text-charcoal">{t(issued.label)}</p>
       <p className="mt-1 text-[13px] leading-relaxed text-slate">
-        Le serveur scanne le QR — ou tape le code.
+        {t("Le serveur scanne le QR — ou tape le code.")}
       </p>
       {/* The clock belongs HERE, where the points were actually spent. */}
-      <p className="mt-1.5 text-[12.5px] font-bold text-gold-deep">Pas de date limite</p>
+      <p className="mt-1.5 text-[12.5px] font-bold text-gold-deep">
+        {t("Pas de date limite")}
+      </p>
 
       <button
         type="button"
         onClick={onAgain}
         className="d-card mt-6 w-full py-3.5 text-[14px] font-bold text-charcoal active:scale-[0.99]"
       >
-        Échanger autre chose
+        {t("Échanger autre chose")}
       </button>
     </div>
   );

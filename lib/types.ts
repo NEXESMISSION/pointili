@@ -63,6 +63,26 @@ export type CardTheme = {
    * turn it off and get their own image untouched.
    */
   scrim: boolean;
+  /**
+   * Whether the shop's logo is CUT to a circle, or shown whole.
+   *
+   * Every surface that draws a logo used to force `rounded-full object-cover`,
+   * which is right for a photograph of a shopfront and wrong for a logo — and
+   * a logo is what this field holds. A wordmark came back with its first and
+   * last letters sliced off; a mark drawn on transparency got a disc of white
+   * stamped behind it; anything not square lost whichever side was longer.
+   * There was no way to say "it is already the right shape, leave it alone".
+   *
+   *   "circle"  cropped to a disc, filling it. The default, because it is what
+   *             every existing shop already looks like and because it is the
+   *             safe choice for a photo or an off-centre mark.
+   *   "free"    contained, not cropped: the whole logo, its own proportions,
+   *             nothing behind it. For transparent PNGs and wide wordmarks.
+   *
+   * Old rows have no value and read as "circle", so nothing changes for a shop
+   * that never opens the setting.
+   */
+  logoShape: "circle" | "free";
   /** Both are already loaded by the root layout — see the note above. */
   font: "inter" | "poppins";
   /**
