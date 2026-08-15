@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { GiftIcon, Sparkle, UserIcon } from "@/components/icons";
 import { getCafe, getLoyaltyProgram, getMember, getRewards, nextRewardNudge } from "@/lib/data";
 import { balanceSinceLastOpen, dinerWallet } from "@/lib/db";
+import { currentDiner } from "@/lib/auth/diner";
 import type { LoyaltyProgram } from "@/lib/types";
 import { CardArrived } from "@/components/CardArrived";
 import { CountUp } from "@/components/CountUp";
@@ -53,27 +54,34 @@ export default async function Carte({
     but has no card yet — /rejoindre enrolls them (welcome bonus + per-shop code)
     so the card never renders empty.
   */
-  const diner = await getMember(cafe.id);
-  if (!diner) redirect(`/${slug}/rejoindre`);
-
   /*
-    READ BEFORE TOUCHING. touchCardOpened is what moves the "last seen" mark, so
-    the two balances have to be taken first or the diff is always empty and the
-    customer is never told they have earned something.
-  */
-  /* The wallet, for the switcher in the banner — the other shops' marks are
-     what make it read as a control with something behind it. One indexed RPC,
-     in parallel with the three it already ran.
+    ── ONE WAIT, NOT TWO ─────────────────────────────────────────────────
+    This screen used to resolve the member, and only THEN start the five reads
+    beside it — a whole round trip in series, on the page a customer is holding
+    up at a till. Every one of those reads needs either cafe.id (known already)
+    or the phone, and the phone comes from the COOKIE, not from the member
+    lookup: getMember's own answer is only needed to decide whether this person
+    belongs here.
 
-     `seen` is IN this group rather than awaited before it: it depends on
-     nothing the others produce, and standing in front of them added its own
-     round trip to the slowest screen in the product for no reason. */
-  const [seen, program, rewards, wallet] = await Promise.all([
-    balanceSinceLastOpen(cafe.id, diner.phone),
+    So they all leave together. `diner` is still awaited first below, and a
+    non-member still redirects before anything renders — the five results are
+    simply already in hand by then instead of being asked for afterwards.
+  */
+  const phone = await currentDiner();
+  if (!phone) redirect(`/${slug}/rejoindre`);
+
+  const [diner, seen, program, rewards, wallet] = await Promise.all([
+    getMember(cafe.id),
+    balanceSinceLastOpen(cafe.id, phone),
     getLoyaltyProgram(cafe.id),
     getRewards(cafe.id),
-    dinerWallet(diner.phone),
+    dinerWallet(phone),
   ]);
+  if (!diner) redirect(`/${slug}/rejoindre`);
+
+  /* READ BEFORE TOUCHING: `seen` above is taken before markCardOpened moves the
+     "last seen" mark, or the diff is always empty and the customer is never
+     told they have earned something. */
   /* Up to three OTHER shops: this one is already the whole screen. */
   const others = wallet.filter((c) => c.slug !== slug).slice(0, 3);
 
@@ -145,18 +153,37 @@ export default async function Carte({
        when the BEHAVIOUR breaks, never when the wording improves. */
     <div data-carte className="flex flex-1 flex-col pb-6">
       <MarkOpened slug={slug} />
-      {(nouveau || seen.firstOpen) && (
-        <CardArrived cafeName={cafe.name} points={program.welcomePoints ?? 0} />
-      )}
+      {/*
+        BOTH ARE RENDERED ALWAYS AND DECIDE FOR THEMSELVES. `play` is the
+        condition; mounting is not.
+
+        Rendering them conditionally is what silently killed both of them.
+        MarkOpened above calls a server action on mount, and a server action
+        re-renders the route it was called from — so a frame after this page
+        paints, it renders AGAIN with the card already marked as opened. Every
+        condition here is false on that pass, and a conditionally-rendered
+        celebration is unmounted mid-animation. The card arrival never played
+        for a single person who joined; the unlock never played for anyone
+        whose reward had just come into reach.
+
+        Kept mounted, each one's useState initialiser holds the decision made
+        on the first render, which is the render that had the truth.
+      */}
+      <CardArrived
+        play={Boolean(nouveau || seen.firstOpen)}
+        cafeName={cafe.name}
+        points={program.welcomePoints ?? 0}
+        lang={t.lang}
+      />
       {/* A brand-new card gets CardArrived, never both — balanceSinceLastOpen
           returns an empty diff for a card that has never been opened. */}
-      {!nouveau && !seen.firstOpen && justUnlocked && (
-        <RewardUnlocked
-          label={justUnlocked.label}
-          imageUrl={justUnlocked.imageUrl}
-          href={`/${slug}/boutique`}
-        />
-      )}
+      <RewardUnlocked
+        play={Boolean(!nouveau && !seen.firstOpen && justUnlocked)}
+        label={justUnlocked?.label ?? ""}
+        imageUrl={justUnlocked?.imageUrl ?? null}
+        href={`/${slug}/boutique`}
+        lang={t.lang}
+      />
 
       {/* ══ THE BANNER — the shop's, not ours ═══════════════════════════
           Flat, a gradient off their own colour, or their photograph. The photo

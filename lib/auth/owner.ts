@@ -28,20 +28,67 @@ export function supabaseConfigured(): boolean {
 const authUser = cache(async function authUser() {
   if (!supabaseConfigured()) return null;
   const supabase = await createClient();
+
+  /*
+    ── VERIFIED LOCALLY, NOT OVER THE NETWORK ────────────────────────────
+    getUser() asks the auth server on every call, and it is the FIRST thing
+    every owner screen does — so every till page, every settings page and every
+    server action began with a 100–150ms round trip before it could read
+    anything, to answer a question the token already answers.
+
+    getClaims() verifies the token's SIGNATURE locally with WebCrypto against
+    the project's JWKS (ES256 here — checked against the well-known endpoint),
+    fetching the key set once and caching it. This is NOT getSession(): a
+    tampered or unsigned cookie fails verification, which is the property the
+    note on currentOwner() is about. If the project ever moves to a symmetric
+    secret, this call falls back to asking the server, so it stays correct
+    rather than becoming insecure.
+
+    WHAT IT COSTS, plainly: revocation stops being instant. A session signed
+    out elsewhere keeps working until its access token expires — up to an hour.
+    For a till that is the right trade. For the console it is not, which is why
+    requireSuperAdmin() below still pays for a live check.
+  */
+  const { data, error } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (error || !claims?.sub) return null;
+  return { id: String(claims.sub), email: (claims.email as string | undefined) ?? null };
+});
+
+/**
+ * The same question, asked of the auth SERVER — no local shortcut.
+ *
+ * The console gate only. That surface can take a shop offline, so a revoked
+ * session has to stop working when it is revoked, not when its token happens
+ * to expire.
+ */
+const liveUser = cache(async function liveUser() {
+  if (!supabaseConfigured()) return null;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   return user ?? null;
 });
 
+/*
+  ── AND A NOTE ON MEASURING THIS, WHICH COST ME AN AFTERNOON ─────────────
+  A 307 to /owner/login is faster to serve than the till. So if this function
+  ever answers null by mistake, every owner page redirects and the numbers
+  IMPROVE — /owner "went from 587ms to 420ms" while being completely broken.
+
+  Measure the RENDERED PAGE. Assert something that only exists on the real
+  screen (the till's `input[name="customer"]`), never time-to-first-byte alone.
+*/
+
 /**
  * The signed-in owner (Supabase Auth), or null.
  *
- * Uses getUser() rather than getSession(): getSession() reads the cookie without
- * revalidating it, so a forged cookie would pass. getUser() verifies against the
- * auth server. Never trust the cookie's contents for authorisation.
+ * The token is VERIFIED, never merely read — authUser() checks its signature
+ * (see there). getSession() would read the cookie without checking anything and
+ * a forged one would pass; that is the line this must not cross, and does not.
  *
- * cache(): getUser() is a NETWORK CALL to the auth server, and every owner
+ * cache(): resolving the user costs a profiles SELECT, and every owner
  * screen asked the same question several times per request — the layout resolves
  * the café, the page resolves it again, ownerHome() asks a third time, and each
  * of those went through here plus a profiles SELECT. Measured on the till, that
@@ -180,6 +227,17 @@ export async function ownerHome(): Promise<string> {
 export async function requireSuperAdmin(): Promise<OwnerSession> {
   const owner = await requireOwner();
   if (owner.role !== "super_admin") throw new Error("FORBIDDEN");
+
+  /*
+    THE CONSOLE PAYS FOR A LIVE CHECK, and it is the only thing that does.
+    Everywhere else the token is verified locally (authUser), because a shop's
+    own till cannot afford a network round trip in front of every screen. This
+    surface can take a business offline, so "was this session revoked?" is
+    asked of the auth server rather than inferred from a token that is still
+    cryptographically valid.
+  */
+  const live = await liveUser();
+  if (!live || live.id !== owner.id) throw new Error("UNAUTHORISED");
   return owner;
 }
 

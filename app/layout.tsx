@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DESCRIPTION, KEYWORDS, SITE_NAME, SITE_URL, TAGLINE } from "@/lib/seo";
 import { Fraunces, Space_Mono, Inter, Poppins } from "next/font/google";
 import { ServiceWorker } from "@/components/ServiceWorker";
+import { RouteProgress } from "@/components/RouteProgress";
 import { Track } from "@/components/Track";
 import "./globals.css";
 
@@ -158,6 +159,10 @@ export default function RootLayout({
         landing page is explicitly outside the app and lays out full-width.
       */}
       <body>
+        {/* Every navigation in the product, answered — see RouteProgress. It
+            is mounted here rather than per-app because the presses with no
+            feedback were the ones nobody remembered to instrument. */}
+        <RouteProgress />
         {children}
         {/* Registers the service worker for the whole origin, which is what
             makes the site installable. Renders nothing. */}
