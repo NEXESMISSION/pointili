@@ -84,9 +84,20 @@ export default async function Reglages() {
             <h1 className="truncate text-[19px] font-extrabold leading-tight text-charcoal">
               {cafe.name}
             </h1>
-            <p className="truncate text-[12px] text-slate">
-              {type.label} · pointili.online/{cafe.slug}
-            </p>
+            {/*
+              THE SUBTITLE IS GONE, and both halves of it are still on screen.
+
+              It read "{type} · pointili.online/{slug}", and this card's own job
+              — stated above — is "this is your shop, and this is whether your
+              customers can use it today". The type is neither; it is the value
+              of the "Nom, logo & type" row below. The address is the "Adresse
+              de la carte" row below, where it is selectable, copyable and
+              openable rather than truncated and inert.
+
+              On desktop all three sat in one viewport, so the screen said the
+              shop's URL twice and its type twice, and the copy an owner could
+              not use came first.
+            */}
           </div>
           <span
             className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold ${
@@ -138,8 +149,20 @@ export default async function Reglages() {
       />
       </div>
 
-      {/* the account column — what you pay, and the way out */}
+      {/*
+        The account column — what you pay, and the way out.
+
+        It gets a heading for the same reason the two groups beside it have
+        one. Without it these were three unlabelled objects — a price fold, a
+        sign-out button and an email — stacked against the top of a column with
+        nothing tying them together, reading as leftovers that fitted nowhere
+        else rather than as a section about the account. Same type as
+        "VOTRE PROGRAMME" and "VOTRE BOUTIQUE", because it is the same rank.
+      */}
       <div className="space-y-4">
+      <h2 className="mb-1.5 px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-slate">
+        Votre compte
+      </h2>
       {/*
         The prices, in the product — but not in the way.
 
@@ -230,17 +253,21 @@ export default async function Reglages() {
           Se déconnecter
         </button>
         {/*
-          The identifier and the public link, as a footnote under the exit —
-          they were a row each in an account section that no longer exists.
-          Nobody opens their own settings to look up their own email address,
-          but the day support asks for it, it is here.
+          The identifier, as a footnote under the exit — it was a row in an
+          account section that no longer exists. Nobody opens their own settings
+          to look up their own email address, but the day support asks for it,
+          it is here.
+
+          The "site public" link beside it is gone. It pointed at /?pro=1 — the
+          page that SELLS Pointili — while sitting one column away from "Adresse
+          de la carte", which opens the shop's own public page. Two links a
+          thumb apart, named almost the same, going somewhere entirely
+          different; the one an owner meant is the other one. The sidebar
+          already carries "Voir le site public" for anyone who did want the
+          marketing page.
         */}
-        <p className="mt-2.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11.5px] text-slate">
+        <p className="mt-2.5 text-center text-[11.5px] text-slate">
           <span className="truncate font-mono">{owner?.email ?? "—"}</span>
-          <span>·</span>
-          <Link href="/?pro=1" className="font-bold underline underline-offset-2">
-            site public
-          </Link>
         </p>
       </form>
       </div>

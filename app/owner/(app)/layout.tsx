@@ -39,9 +39,22 @@ export default async function OwnerLayout({
 
   const left = remaining(cafe.planExpiresAt);
 
+  /*
+    THE CHIP IS FOR PLANS THAT NEED SOMETHING DOING. "Pro" needed nothing.
+
+    A paid shop got a permanent violet badge on every screen of its own admin,
+    saying it had paid. It carried no date, no action and no change of state —
+    and on Réglages it was the THIRD statement of the plan in one viewport,
+    beside "Formule Pro · jusqu'au 30 novembre" (which has the date) and
+    "Formules et tarifs" (which has the prices). Removing it costs a paid shop
+    nothing and settles one of the duplications.
+
+    A trial running out and an expired plan still chip, because those are the
+    two that want a decision.
+  */
   const planChip =
     cafe.plan === "pro"
-      ? { text: "Pro", cls: "bg-[#5b3fd1] text-white" }
+      ? null
       : left.expired
         ? { text: "Expiré", cls: "bg-[#e5484d]/12 text-[#e5484d]" }
         : { text: `Essai · ${left.label ?? ""}`.trim(), cls: "bg-[#a06e00]/12 text-[#a06e00]" };
