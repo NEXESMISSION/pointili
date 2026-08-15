@@ -14,6 +14,14 @@ const SUPER = { email: env.SUPER_ADMIN_EMAIL, password: env.SUPER_ADMIN_PASSWORD
 const SLUG = TEST_SLUG;
 
 // Own our fixture: a throwaway café to grant/expire/suspend, gone at the end.
+/*
+  The café is owned by the SUPER-ADMIN here on purpose — this suite checks what
+  the owner app does for somebody who also has a console — so the fixture is
+  being pointed at a real address. It refuses to rotate a password it did not
+  mint (see ensureTestOwner), and the escape hatch is to supply the one we
+  already have: OWNER_PASSWORD. Set before the fixture is called, never after.
+*/
+process.env.OWNER_PASSWORD ??= env.SUPER_ADMIN_PASSWORD;
 await ensureTestCafe({ ownerEmail: SUPER.email });
 
 const results = [];

@@ -21,7 +21,16 @@ const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const SUPER = { email: env.SUPER_ADMIN_EMAIL, password: env.SUPER_ADMIN_PASSWORD };
 
-const { id: cafeId } = await ensureTestCafe({ ownerEmail: SUPER.email });
+/*
+  TWO PEOPLE, WHICH IS THE POINT.
+
+  This used to hand the cafe to the super-admin, so one account both sent the
+  request and approved it — which tests the screens and not the boundary. The
+  shop belongs to the fixture's own owner now; the console step signs in as the
+  operator. Submitter and approver are different humans, as they are in life.
+*/
+const { id: cafeId, ownerEmail: OWNER_EMAIL, ownerPassword: OWNER_PASSWORD } =
+  await ensureTestCafe();
 const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
 const results = [];
@@ -41,12 +50,17 @@ const cleanup = async () => {
 };
 
 try {
+  const login = async (page, email, password) => {
+    await page.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 20000 }).catch(() => {});
+  };
+
+  /* the shop owner — the one who pays */
   const p = await b.newPage({ viewport: { width: 390, height: 844 } });
-  await p.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
-  await p.fill('input[name="email"]', SUPER.email);
-  await p.fill('input[name="password"]', SUPER.password);
-  await p.click('button[type="submit"]');
-  await p.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 20000 }).catch(() => {});
+  await login(p, OWNER_EMAIL, OWNER_PASSWORD);
 
   /* ── 1 · the flow exists and is reachable from the settings screen ── */
   await p.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
@@ -135,8 +149,13 @@ try {
   );
 
   /* ── 4 · the console sees it, with the photograph ─────────────────── */
-  await p.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
-  const consoleTxt = await p.locator("body").innerText();
+  /* A SECOND SESSION, as the operator. The owner who sent this request must
+     never be the account that approves it — that is the whole boundary. */
+  const opCtx = await b.newContext({ viewport: { width: 1280, height: 900 } });
+  const op = await opCtx.newPage();
+  await login(op, SUPER.email, SUPER.password);
+  await op.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+  const consoleTxt = await op.locator("body").innerText();
   check("the console queues the request", /Renouvellements/i.test(consoleTxt));
   check(
     "it carries the amount and the method",
@@ -144,7 +163,7 @@ try {
   );
 
   const proofUrl = `${BASE}/api/admin/proof/${req.id}`;
-  const asAdmin = await p.request.get(proofUrl);
+  const asAdmin = await op.request.get(proofUrl);
   check("the console can read the receipt", asAdmin.status() === 200, String(asAdmin.status()));
 
   const stranger = await b.newContext();
@@ -163,8 +182,8 @@ try {
     .eq("id", cafeId)
     .single();
 
-  await p.locator('button:has-text("Valider")').first().click();
-  await p.waitForFunction(
+  await op.locator('button:has-text("Valider")').first().click();
+  await op.waitForFunction(
     () => /Renouvellement validé/i.test(document.body.innerText),
     undefined,
     { timeout: 20000 },
