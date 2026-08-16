@@ -178,10 +178,23 @@ export function Showcase({ lang = "fr", only }: { lang?: Lang; only: string[] })
   const shots = only
     .map((clip) => SHOTS.find((s) => s.clip === `/demo/${clip}.webm`))
     .filter((s): s is Shot => Boolean(s));
+
+  /*
+    SIDE BY SIDE, NOT ONE UNDER THE OTHER.
+
+    These were full-width rows — phone on one side, words on the other, sides
+    alternating — which is the right shape for nine of them and costs a whole
+    screen each for two. Two screens to say "here is the till, here is what you
+    learn", on a page whose entire argument is that it is short.
+
+    As a pair they take one. It also puts the two claims where they can be read
+    together, which is the actual argument: the thing you do all day, and the
+    thing you get for doing it.
+  */
   return (
-    <div className="space-y-14 md:space-y-20">
-      {shots.map((s, i) => (
-        <Row key={s.clip} shot={s} flip={i % 2 === 1} lang={lang} />
+    <div className="grid gap-12 sm:grid-cols-2 sm:gap-8 md:gap-12">
+      {shots.map((s) => (
+        <Card key={s.clip} shot={s} lang={lang} />
       ))}
     </div>
   );
@@ -190,80 +203,65 @@ export function Showcase({ lang = "fr", only }: { lang?: Lang; only: string[] })
 /* The copy stays in SHOTS in French and is translated HERE, at the point of
    use: the French line is the dictionary key, so the data reads as prose in the
    source and there is exactly one t() per field instead of one per string. */
-function Row({ shot, flip, lang }: { shot: Shot; flip: boolean; lang: Lang }) {
+function Card({ shot, lang }: { shot: Shot; lang: Lang }) {
   const t = translator(lang);
   return (
-    /* Ruled off at the top, catalogue-fashion. The rows used to float in
-       whitespace with nothing marking where one ended and the next began,
-       which is fine for two and formless for six. */
-    <section className="grid items-center gap-8 border-t border-hair pt-10 md:grid-cols-2 md:gap-14 md:pt-12">
-      {/* the phone */}
-      <div className={flip ? "md:order-2" : ""}>
-        {/* Narrower on a phone: at 286px the device alone was 619px of a
-              844px screen, so one clip filled the viewport and the words that
-              explain it never appeared beside it. */}
-          <div className="mx-auto w-full max-w-[228px] sm:max-w-[286px]">
-          {/* The bezel stays round — it is a phone. Only the shadow changed:
-              it was a 90px black bloom that made the device hover over the
-              page, which is the same "floating card" effect the rest of this
-              redesign took out. */}
-          <div className="relative overflow-hidden rounded-[36px] border-[7px] border-[#1b1430] bg-[#0b0616] shadow-[0_16px_44px_-24px_rgba(36,18,59,.55)]">
-            {/*
-              autoPlay + muted + playsInline is the only combination every mobile
-              browser will start on its own; without muted, iOS refuses, and
-              without playsInline it takes over the whole screen.
+    <section>
+      {/* The device is capped rather than fluid: a phone that grows with the
+          column stops reading as a phone somewhere around 300px, and these sit
+          two-up in a 1152px container. */}
+      <div className="mx-auto w-full max-w-[214px] md:max-w-[236px]">
+        {/* The bezel stays round — it is a phone. Only the shadow changed: it
+            was a 90px black bloom that made the device hover over the page,
+            which is the same "floating card" effect the rest of this redesign
+            took out. */}
+        <div className="relative overflow-hidden rounded-[32px] border-[6px] border-[#1b1430] bg-[#0b0616] shadow-[0_16px_44px_-24px_rgba(36,18,59,.55)]">
+          {/*
+            autoPlay + muted + playsInline is the only combination every mobile
+            browser will start on its own; without muted, iOS refuses, and
+            without playsInline it takes over the whole screen.
 
-              preload="none" keeps eight clips off the wire until they are wanted.
-            */}
-            <video
-              src={`${shot.clip}?v=${DEMO_VERSION}`}
-              poster={shot.poster && `${shot.poster}?v=${DEMO_VERSION}`}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="none"
-              aria-label={`${t(shot.title)} — ${t(shot.side)}`}
-              className="block h-auto w-full"
-            />
-          </div>
+            preload="none" keeps the clips off the wire until they are wanted.
+          */}
+          <video
+            src={`${shot.clip}?v=${DEMO_VERSION}`}
+            poster={shot.poster && `${shot.poster}?v=${DEMO_VERSION}`}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="none"
+            aria-label={`${t(shot.title)} — ${t(shot.side)}`}
+            className="block h-auto w-full"
+          />
         </div>
       </div>
 
-      {/* what it is */}
-      <div className={flip ? "md:order-1" : ""}>
-        {/*
-          A CHIP, NOT A CATALOGUE ENTRY.
+      {/*
+        A CHIP, NOT A CATALOGUE ENTRY.
 
-          This was "№ 01 —— ENCAISSER" in 11px letterspaced uppercase mono with
-          a hairline rule through it: a printed-catalogue treatment from when
-          there were nine of these and reading them in order was the point.
-          With two left, the number counts to two and the rule and the tracking
-          are three legibility costs stacked on a label.
+        This was "№ 01 —— ENCAISSER" in 11px letterspaced uppercase mono with a
+        hairline rule through it: a printed-catalogue treatment from when there
+        were nine of these and reading them in order was the point. With two
+        left, the number counts to two and the rule and the tracking are three
+        legibility costs stacked on a label.
+      */}
+      <p className="mt-7 inline-flex items-center rounded-full bg-lilac-2 px-3 py-1 text-[11.5px] font-bold uppercase tracking-[0.1em] text-royal">
+        {t(shot.eyebrow)}
+      </p>
 
-          A small filled chip says the same word, and the screen beside it does
-          the rest of the explaining.
-        */}
-        <p className="inline-flex items-center rounded-full bg-lilac-2 px-3 py-1 text-[11.5px] font-bold uppercase tracking-[0.1em] text-royal">
-          {t(shot.eyebrow)}
-        </p>
+      <h3 className="mt-3.5 text-[23px] leading-[1.18] md:text-[26px]">{t(shot.title)}</h3>
+      <p className="mt-3 text-[15px] leading-relaxed text-slate">{t(shot.lede)}</p>
 
-        <h3 className="mt-4 text-[26px] leading-[1.15] md:text-[31px]">{t(shot.title)}</h3>
-        <p className="mt-3.5 max-w-[44ch] text-[15.5px] leading-relaxed text-slate">
-          {t(shot.lede)}
-        </p>
+      {/*
+        THE FACTS LIST IS GONE FROM THE PAGE, and `facts` stays on the type.
 
-        {/*
-          THE FACTS LIST IS GONE FROM THE PAGE, and `facts` stays on the type.
-
-          Three ticked claims under every clip was nine lines of reading beside
-          three films of the thing doing exactly what they claimed. The clip is
-          the evidence; the list was the page explaining its own evidence. They
-          are kept in SHOTS because they are true and because the alternative —
-          deleting them — is the kind of thing that gets rewritten from memory
-          two months later, worse.
-        */}
-      </div>
+        Three ticked claims under every clip was nine lines of reading beside
+        films of the thing doing exactly what they claimed. The clip is the
+        evidence; the list was the page explaining its own evidence. They stay
+        in SHOTS because they are true, and because deleting them is the kind of
+        thing that gets rewritten from memory two months later, worse.
+      */}
     </section>
   );
 }

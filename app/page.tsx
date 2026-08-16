@@ -433,14 +433,15 @@ export default async function Landing({
       </section>
 
       {/* ── the product, filmed ────────────────────────────────────── */}
-      <section id="produit" className="mx-auto max-w-6xl scroll-mt-4 px-5 py-16 md:px-8 md:py-24">
-        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
-          {t("Le produit, filmé")}
-        </p>
-        <h2 className="mt-5 max-w-[18ch] text-[32px] md:text-[44px]">
+      <section id="produit" className="mx-auto max-w-6xl scroll-mt-4 px-5 py-14 md:px-8 md:py-20">
+        {/* No "LE PRODUIT, FILMÉ" eyebrow above this. It was a mono uppercase
+            label saying, in three words, what the heading underneath it says in
+            four — a row of chrome and 40px of height to introduce a heading
+            that introduces itself. */}
+        <h2 className="max-w-[18ch] text-[32px] md:text-[42px]">
           {t("Rien n'est dessiné ici.")}
         </h2>
-        <p className="mt-5 max-w-[54ch] text-[15.5px] leading-relaxed text-slate">
+        <p className="mt-4 max-w-[54ch] text-[15.5px] leading-relaxed text-slate">
           {t(
             "Chaque écran ci-dessous est le vrai produit, filmé en train de faire ce qu'il dit.",
           )}
@@ -459,7 +460,7 @@ export default async function Landing({
           The other seven are still filmed and still captioned in
           components/Showcase. Putting one back is a word in this list.
         */}
-        <div className="mt-14">
+        <div className="mt-10 md:mt-12">
           <Showcase lang={lang} only={["credit", "analyses"]} />
         </div>
       </section>
