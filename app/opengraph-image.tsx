@@ -94,7 +94,7 @@ export default async function Image() {
               marginRight: 20,
             }}
           >
-            80 TND / an
+            120 TND / an
           </div>
           <div style={{ display: "flex", fontSize: 25, color: "rgba(255,255,255,0.45)" }}>
             14 jours gratuits · sans carte bancaire

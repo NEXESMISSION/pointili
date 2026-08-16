@@ -56,8 +56,8 @@ export default function Conditions() {
 
       <H2>Le prix</H2>
       <P>
-        <b className="text-white">65 TND</b> pour six mois,{" "}
-        <b className="text-white">80 TND</b> pour un an. Tout est compris :
+        <b className="text-white">80 TND</b> pour six mois,{" "}
+        <b className="text-white">120 TND</b> pour un an. Tout est compris :
         points, récompenses, tampons, analyses, kit d&apos;impression. Pas de
         commission sur vos ventes, et aucune limite — quatre clients ou quatre
         cents, c&apos;est le même prix.

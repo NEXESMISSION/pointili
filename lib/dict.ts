@@ -543,7 +543,7 @@ const TN: Record<string, string> = {
      shop OWNER deciding whether to buy. Second person either way, but this
      one is a rep across a counter, not an app in a pocket. ── */
   "Une carte de fidélité, tous vos commerces": "كارت فيداليتي وحدة، في كلّ المحلات اللي تمشيلهم",
-  "Pointili est un programme de fidélité pour cafés, restaurants et commerces en Tunisie. Vos clients scannent un QR code, ouvrent une carte dans leur navigateur — sans application — cumulent des points à chaque achat et les échangent contre vos récompenses. 80 TND par an, 14 jours d'essai gratuit, sans carte bancaire.": "Pointili برنامج فيداليتي للمقاهي والريستورانات والمحلات في تونس. الحرفاء متاعك يسكانيو كود QR، تتحلّ كارت في النافيڨاتور متاعهم — من غير أبليكاسيون — يجمّعو نقاط في كلّ شرا ويبدّلوهم بالهدايا متاعك. 80 دينار في العام، 14 نهار تجريب بلاش، من غير كارت بنكية.",
+  "Pointili est un programme de fidélité pour cafés, restaurants et commerces en Tunisie. Vos clients scannent un QR code, ouvrent une carte dans leur navigateur — sans application — cumulent des points à chaque achat et les échangent contre vos récompenses. 120 TND par an, 14 jours d'essai gratuit, sans carte bancaire.": "Pointili برنامج فيداليتي للمقاهي والريستورانات والمحلات في تونس. الحرفاء متاعك يسكانيو كود QR، تتحلّ كارت في النافيڨاتور متاعهم — من غير أبليكاسيون — يجمّعو نقاط في كلّ شرا ويبدّلوهم بالهدايا متاعك. 120 دينار في العام، 14 نهار تجريب بلاش، من غير كارت بنكية.",
   "Cafés": "مقاهي",
   "Restaurants": "ريستورانات",
   "Barbiers": "حجّامة",
@@ -791,7 +791,10 @@ const TN: Record<string, string> = {
     "الحرفاء متاعك يقراو الكارت متاعهم {fr} ولا {tn}، موش بالعربية الفصحى. كلّ واحد يختار على تليفونو.",
   "La carte client": "كارت الحريف",
   /* The six-month offer is a line inside the year now, not a second card. */
-  "Ou 65 TND pour 6 mois.": "ولا 65 دينار لـ6 شهور.",
+  /* Templated, because the figures come from lib/billing — the page must not
+     be able to advertise a price the renewal screen does not charge. */
+  "Ou {n} TND pour 6 mois — sans engagement.": "ولا {n} دينار لـ6 شهور — من غير التزام.",
+  "Économisez {n} TND": "توفّر {n} دينار",
   /*
     The hero's second line. "Simplement." replaced "Vous saurez enfin lesquels."
     — بساطة would be the noun; ".وبكل بساطة" is how the promise is actually
@@ -814,7 +817,7 @@ const TN: Record<string, string> = {
     "D17 ولا Flouci ولا فيرمان — تبعث تصويرة الوصل من الأبليكاسيون.",
   "Points, visites et récompenses": "نقاط، زيارات وهدايا",
   "Un coût maîtrisé": "ثمن واضح",
-  "80 TND par an, rien d'autre": "80 دينار في العام، وخلاص",
+  "Un seul paiement par an, rien d'autre": "خلاص وحيد في العام، وخلاص",
   "Rapports clairs": "أرقام واضحة",
   "Qui revient, et à quel rythme": "شكون يرجعلك، وقدّاش من مرّة",
   "Une équipe là pour vous aider": "فمّا فريق هوني باش يعاونك",

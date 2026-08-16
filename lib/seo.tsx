@@ -25,11 +25,11 @@ export const DESCRIPTION =
   "Pointili est un programme de fidélité pour cafés, restaurants et commerces en Tunisie. " +
   "Vos clients scannent un QR code, ouvrent une carte dans leur navigateur — sans application — " +
   "cumulent des points à chaque achat et les échangent contre vos récompenses. " +
-  "80 TND par an, 14 jours d'essai gratuit, sans carte bancaire.";
+  "120 TND par an, 14 jours d'essai gratuit, sans carte bancaire.";
 
 export const PRICES = [
-  { name: "Abonnement 1 an", price: 80, months: 12 },
-  { name: "Abonnement 6 mois", price: 65, months: 6 },
+  { name: "Abonnement 1 an", price: 120, months: 12 },
+  { name: "Abonnement 6 mois", price: 80, months: 6 },
 ];
 
 /** Words a Tunisian shop owner actually types. Not a keyword-stuffing list. */

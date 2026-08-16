@@ -12,6 +12,7 @@
  *   · approving is what extends the plan — the two can never disagree
  */
 import { deflateSync } from "node:zlib";
+import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import { chromium } from "playwright-core";
 import { env } from "./db.mjs";
@@ -19,6 +20,20 @@ import { ensureTestCafe, dropTestCafe } from "./fixture.mjs";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
+
+/*
+  THE YEAR'S PRICE, READ FROM THE CATALOGUE THIS SUITE IS CHECKING.
+
+  lib/billing.ts is TypeScript and this is a plain .mjs, so it is read rather
+  than imported — which is ugly, and still better than writing the number down
+  a second time. The whole point of the check below is that the amount charged
+  comes from that file and not from the form; a copy of it here would be one
+  more place for the price to drift.
+*/
+const YEAR_PRICE = Number(
+  readFileSync("lib/billing.ts", "utf8").match(/months:\s*12,\s*price:\s*(\d+)/)?.[1],
+);
+if (!YEAR_PRICE) throw new Error("could not read the 12-month price out of lib/billing.ts");
 const SUPER = { email: env.SUPER_ADMIN_EMAIL, password: env.SUPER_ADMIN_PASSWORD };
 
 /*
@@ -72,14 +87,18 @@ try {
 
   await p.goto(`${BASE}/owner/renouveler`, { waitUntil: "networkidle" });
   const form = await p.locator("main").innerText();
-  check("the flow states the total", /Total à payer/i.test(form) && /80 TND/.test(form));
+  check(
+    "the flow states the total",
+    /Total à payer/i.test(form) && new RegExp(`${YEAR_PRICE}\\s*TND`).test(form),
+    form.split("\n").find((l) => /Total à payer/i.test(l)) ?? "",
+  );
   check(
     "all three ways to pay are offered",
     /D17/.test(form) && /Flouci/i.test(form) && /RIB/i.test(form),
   );
   /*
     The one thing that must never be quiet: while lib/billing says PLACEHOLDER,
-    the screen has to say so, or somebody transfers 80 TND into a demo.
+    the screen has to say so, or somebody transfers real money into a demo.
   */
   check(
     "placeholder coordinates announce themselves",
@@ -116,10 +135,18 @@ try {
     .eq("business_id", cafeId);
   const req = rows?.[0];
   check("the request reaches the database", !!req, req ? req.id : "none");
+  /*
+    READ THE CATALOGUE, DO NOT RESTATE IT. This asserted `=== 80` — the price
+    at the time it was written — so the day the year went to 120 the check
+    failed on correct behaviour and reported the right answer as the wrong one.
+    A test named "the price comes from the price list" has to consult the price
+    list; anything else is a second place to keep the price, which is the exact
+    duplication lib/billing exists to remove.
+  */
   check(
     "the price comes from the price list, not the form",
-    Number(req?.amount) === 80 && req?.months === 12,
-    `${req?.amount} TND · ${req?.months} mois`,
+    Number(req?.amount) === YEAR_PRICE && req?.months === 12,
+    `${req?.amount} TND · ${req?.months} mois (catalogue: ${YEAR_PRICE})`,
   );
   check("the receipt is stored with it", String(req?.proof ?? "").startsWith("data:image/"));
   check("the owner's note is kept", /4471/.test(String(req?.note ?? "")));
@@ -159,7 +186,7 @@ try {
   check("the console queues the request", /Renouvellements/i.test(consoleTxt));
   check(
     "it carries the amount and the method",
-    /80 TND/.test(consoleTxt) && /D17/i.test(consoleTxt),
+    new RegExp(`${YEAR_PRICE}\\s*TND`).test(consoleTxt) && /D17/i.test(consoleTxt),
   );
 
   const proofUrl = `${BASE}/api/admin/proof/${req.id}`;

@@ -3,8 +3,13 @@
  *
  * One file, because these numbers were scattered across the settings screen as
  * hard-coded JSX and the renewal flow needs the same two prices, the same two
- * durations and the same three ways to pay — and an offer that says 80 TND on
- * one screen and 80 DT for 10 months on the next is worse than no offer.
+ * durations and the same three ways to pay — and an offer that says 120 TND on
+ * one screen and 120 DT for 10 months on the next is worse than no offer.
+ *
+ * THE YEAR HAS TO BEAT TWO HALF-YEARS, or it is not an offer, it is a longer
+ * commitment for the same money. 80 twice is 160; the year is 120, so choosing
+ * it saves 40 TND — which is the number the landing page prints, and it is
+ * derived from these two rather than typed beside them.
  */
 
 export type OfferId = "6m" | "12m";
@@ -21,8 +26,8 @@ export type Offer = {
 };
 
 export const OFFERS: Offer[] = [
-  { id: "6m", label: "6 mois", months: 6, price: 65, perMonth: "≈ 11 TND / mois" },
-  { id: "12m", label: "1 an", months: 12, price: 80, perMonth: "≈ 7 TND / mois", best: true },
+  { id: "6m", label: "6 mois", months: 6, price: 80, perMonth: "≈ 13 TND / mois" },
+  { id: "12m", label: "1 an", months: 12, price: 120, perMonth: "≈ 10 TND / mois", best: true },
 ];
 
 export function offer(id: string): Offer | null {
@@ -51,7 +56,7 @@ export type Method = {
  * and the Flouci link points at example.com.
  *
  * While this flag is true the flow SAYS SO, loudly, on the screen and next to
- * every value — see PaymentDetails in the renewal form. Nobody transfers 80 TND
+ * every value — see PaymentDetails in the renewal form. Nobody transfers 120 TND
  * to a placeholder because it was quietly styled to look official.
  *
  * To go live: put the real values below and set PLACEHOLDER to false. That is
@@ -95,7 +100,7 @@ export function method(id: string): Method | null {
   return METHODS.find((m) => m.id === id) ?? null;
 }
 
-/** "65 TND" — one place, so the space and the unit never wander. */
+/** "80 TND" — one place, so the space and the unit never wander. */
 export function tnd(n: number): string {
   return `${Number.isInteger(n) ? n : n.toFixed(3)} TND`;
 }

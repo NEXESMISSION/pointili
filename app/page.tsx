@@ -8,6 +8,8 @@ import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
 import { currentLang, dir, translator, type T } from "@/lib/i18n";
 import { LangToggle } from "@/components/LangToggle";
+import { Tpl } from "@/components/Tpl";
+import { OFFERS } from "@/lib/billing";
 
 /**
  * The landing page, set like printed matter.
@@ -145,9 +147,20 @@ const Headset = ({ className = "h-5 w-5" }: { className?: string }) => (
   <S className={className} strokeWidth="2"><path d="M4 13v-1a8 8 0 0 1 16 0v1" /><rect x="2.5" y="13" width="4.5" height="6" rx="2" /><rect x="17" y="13" width="4.5" height="6" rx="2" /></S>
 );
 
+/*
+  The prices come from lib/billing, which is what the renewal screen charges.
+  Typing them here is how a page ends up advertising 80 and invoicing 120.
+
+  The saving is arithmetic on those two, not a third number to keep in step:
+  two half-years against one year.
+*/
+const YEAR = OFFERS.find((o) => o.months === 12)!;
+const HALF = OFFERS.find((o) => o.months === 6)!;
+const SAVING = HALF.price * 2 - YEAR.price;
+
 const PILLARS = [
   { icon: Card, title: "Programme fidélité", line: "Points, visites et récompenses" },
-  { icon: Percent, title: "Un coût maîtrisé", line: "80 TND par an, rien d'autre" },
+  { icon: Percent, title: "Un coût maîtrisé", line: "Un seul paiement par an, rien d'autre" },
   { icon: Chart, title: "Rapports clairs", line: "Qui revient, et à quel rythme" },
   { icon: Headset, title: "Support en Tunisie", line: "Une équipe là pour vous aider" },
 ];
@@ -466,35 +479,57 @@ export default async function Landing({
       </section>
 
       {/* ── the price ────────────────────────────────────────────────
-          THE CARD IS THE ANCHOR, so the copy above it is a heading and one
-          line. It used to carry a heading, a three-clause paragraph and a
-          second paragraph about payment methods before the reader reached the
-          number — the page explaining a price it had not shown yet.
+          THE YEAR AND THE HALF-YEAR ARE ONE BLOCK, not two cards to compare.
+          At two prices a comparison table is overkill; what an owner needs is
+          the number, what the alternative costs, and which one is cheaper —
+          and the last of those is arithmetic the page should do for them
+          rather than leave on the table. 80 twice is 160, the year is 120, so
+          the year saves 40. That figure is DERIVED from lib/billing so it can
+          never drift from what the renewal screen actually charges.
 
-          The four columns inside are the design's, and they are the answers to
-          the four questions an owner actually has after the number: what do I
-          get, what does it really cost, what do I learn, and who picks up when
-          something breaks. */}
+          The four columns are the questions that follow the number: what do I
+          get, what does it really cost, what do I learn, and who answers when
+          it breaks. */}
       <section className="border-t border-hair bg-mist">
-        <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
-          <h2 className="text-[32px] md:text-[44px]">{t("Un prix simple.")}</h2>
+        <div className="mx-auto max-w-6xl px-5 py-14 md:px-8 md:py-20">
+          <h2 className="text-[32px] md:text-[42px]">{t("Un prix simple.")}</h2>
           <p className="mt-4 max-w-[46ch] text-[15.5px] leading-relaxed text-slate">
             {t("Pas de commission sur vos ventes. Pas de limite de clients.")}
           </p>
 
           <div className="mt-10 overflow-hidden rounded-[18px] bg-deep text-white">
-            <div className="grid gap-8 p-7 md:grid-cols-2 md:items-center md:p-10">
+            <div className="grid items-center gap-8 p-7 md:grid-cols-[1.15fr_1fr] md:gap-12 md:p-10">
               <div>
-                <p className="display text-[68px] leading-[0.85] tabular-nums">
-                  80
+                <p className="display text-[76px] leading-[0.82] tabular-nums">
+                  {YEAR.price}
                   <span className="ms-2 align-super font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-lavender">
                     {t("TND / an")}
                   </span>
                 </p>
-                <p className="mt-4 max-w-[26ch] text-[14px] leading-relaxed text-white/60">
+
+                {/* Its own line. Baseline-aligned beside a 76px numeral it
+                    wrapped under the digits and read as a caption on them. The
+                    saving is the only reason to take the year over two halves,
+                    and it was left as arithmetic for the reader to do. */}
+                <p className="mt-4">
+                  <span className="inline-block rounded-full bg-royal px-3 py-1 text-[12px] font-bold text-white">
+                    <Tpl tpl={t("Économisez {n} TND")} slots={{ n: SAVING }} />
+                  </span>
+                </p>
+
+                <p className="mt-4 max-w-[30ch] text-[14.5px] leading-relaxed text-white/60">
                   {t("Tout ce dont vous avez besoin pour fidéliser vos clients.")}
                 </p>
-                <p className="mt-2 text-[13px] text-white/50">{t("Ou 65 TND pour 6 mois.")}</p>
+
+                {/* The half-year is a line, not a second card: it is the same
+                    product, and presenting it as a rival makes an owner shop
+                    against themselves. */}
+                <p className="mt-3 text-[13.5px] text-white/50">
+                  <Tpl
+                    tpl={t("Ou {n} TND pour 6 mois — sans engagement.")}
+                    slots={{ n: HALF.price }}
+                  />
+                </p>
               </div>
 
               <div>
@@ -519,7 +554,7 @@ export default async function Landing({
               </div>
             </div>
 
-            {/* the four columns, ruled apart — the design's anchor row */}
+            {/* the four columns, ruled apart — the anchor row */}
             <ul className="grid border-t border-white/12 sm:grid-cols-2 lg:grid-cols-4">
               {PILLARS.map(({ title, line, icon: Icon }) => (
                 <li
