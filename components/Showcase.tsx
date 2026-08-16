@@ -206,52 +206,62 @@ export function Showcase({ lang = "fr", only }: { lang?: Lang; only: string[] })
 function Card({ shot, lang }: { shot: Shot; lang: Lang }) {
   const t = translator(lang);
   return (
-    <section>
-      {/* The device is capped rather than fluid: a phone that grows with the
-          column stops reading as a phone somewhere around 300px, and these sit
-          two-up in a 1152px container. */}
-      <div className="mx-auto w-full max-w-[214px] md:max-w-[236px]">
-        {/* The bezel stays round — it is a phone. Only the shadow changed: it
-            was a 90px black bloom that made the device hover over the page,
-            which is the same "floating card" effect the rest of this redesign
-            took out. */}
-        <div className="relative overflow-hidden rounded-[32px] border-[6px] border-[#1b1430] bg-[#0b0616] shadow-[0_16px_44px_-24px_rgba(36,18,59,.55)]">
-          {/*
-            autoPlay + muted + playsInline is the only combination every mobile
-            browser will start on its own; without muted, iOS refuses, and
-            without playsInline it takes over the whole screen.
+    /*
+      A CARD, NOT A FLOATING PHONE.
 
-            preload="none" keeps the clips off the wire until they are wanted.
-          */}
-          <video
-            src={`${shot.clip}?v=${DEMO_VERSION}`}
-            poster={shot.poster && `${shot.poster}?v=${DEMO_VERSION}`}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="none"
-            aria-label={`${t(shot.title)} — ${t(shot.side)}`}
-            className="block h-auto w-full"
-          />
+      These were two devices standing in white space with a chip and two
+      paragraphs underneath — nothing held them, so at a glance the page read
+      as two screenshots somebody had dropped in, and the words belonged to
+      whichever phone you decided they were nearer.
+
+      The device now sits IN something: a tinted panel it is cropped by, with
+      the words in the white below it. The crop is the point — a phone running
+      off the bottom edge reads as a screen you are looking into rather than an
+      image that has been placed, and it costs a third of the height a whole
+      device did.
+    */
+    <section className="overflow-hidden rounded-[20px] border border-hair bg-white">
+      <div className="relative flex justify-center overflow-hidden bg-lilac-2 px-6 pt-8">
+        {/* -mb keeps the bezel running past the panel's bottom edge, and the
+            panel's overflow does the cutting. */}
+        <div className="-mb-10 w-full max-w-[196px] md:max-w-[212px]">
+          <div className="overflow-hidden rounded-t-[30px] border-[6px] border-b-0 border-[#1b1430] bg-[#0b0616] shadow-[0_18px_40px_-26px_rgba(36,18,59,.6)]">
+            {/*
+              autoPlay + muted + playsInline is the only combination every
+              mobile browser will start on its own; without muted, iOS refuses,
+              and without playsInline it takes over the whole screen.
+
+              preload="none" keeps the clips off the wire until they are wanted.
+            */}
+            <video
+              src={`${shot.clip}?v=${DEMO_VERSION}`}
+              poster={shot.poster && `${shot.poster}?v=${DEMO_VERSION}`}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="none"
+              aria-label={`${t(shot.title)} — ${t(shot.side)}`}
+              className="block h-auto w-full"
+            />
+          </div>
         </div>
       </div>
 
-      {/*
-        A CHIP, NOT A CATALOGUE ENTRY.
+      <div className="p-6 md:p-7">
+        {/*
+          A CHIP, NOT A CATALOGUE ENTRY. This was "№ 01 —— ENCAISSER" in 11px
+          letterspaced uppercase mono with a hairline rule through it: a printed
+          catalogue treatment from when there were nine of these and reading
+          them in order was the point.
+        */}
+        <p className="inline-flex items-center rounded-full bg-lilac-2 px-3 py-1 text-[11.5px] font-bold uppercase tracking-[0.1em] text-royal">
+          {t(shot.eyebrow)}
+        </p>
 
-        This was "№ 01 —— ENCAISSER" in 11px letterspaced uppercase mono with a
-        hairline rule through it: a printed-catalogue treatment from when there
-        were nine of these and reading them in order was the point. With two
-        left, the number counts to two and the rule and the tracking are three
-        legibility costs stacked on a label.
-      */}
-      <p className="mt-7 inline-flex items-center rounded-full bg-lilac-2 px-3 py-1 text-[11.5px] font-bold uppercase tracking-[0.1em] text-royal">
-        {t(shot.eyebrow)}
-      </p>
-
-      <h3 className="mt-3.5 text-[23px] leading-[1.18] md:text-[26px]">{t(shot.title)}</h3>
-      <p className="mt-3 text-[15px] leading-relaxed text-slate">{t(shot.lede)}</p>
+        <h3 className="mt-3.5 text-[22px] leading-[1.18] md:text-[25px]">{t(shot.title)}</h3>
+        <p className="mt-2.5 text-[14.5px] leading-relaxed text-slate">{t(shot.lede)}</p>
+      </div>
 
       {/*
         THE FACTS LIST IS GONE FROM THE PAGE, and `facts` stays on the type.

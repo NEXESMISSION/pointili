@@ -425,21 +425,17 @@ export default async function Landing({
       </section>
 
       {/* ── the price ────────────────────────────────────────────────
-          ONE CARD, CENTRED, ON WHITE.
+          TWO BOXES, and the year is the one that is dressed.
 
-          It was a wide dark slab: price on the left, button on the right, four
-          ruled columns underneath. That shape was carrying the weight of the
-          dark "Trois gestes" band above it, and with that band gone it was the
-          only black rectangle on the page — an anchor holding nothing down.
+          Both durations were real all along and only one of them was shown as
+          a price — the half-year was a grey line under the year, which is a
+          footnote, not an option. Side by side an owner can see what the choice
+          actually costs: 80 twice is 160 against 120, and the saving is printed
+          on the year rather than left as arithmetic on the table.
 
-          A price is read, not scanned: one column, one number, what you get,
-          one button, in that order. The card is white with a violet edge so
-          the page stays light all the way to the footer, and the only filled
-          shapes left on it are the two things you can press.
-
-          Everything in the list is a thing that exists — the seven inclusions
-          the old page kept in a tick list, back where they answer the question
-          the price raises. */}
+          The year is filled and carries the badge; the half-year is outlined
+          and quiet. Two boxes of equal weight is a question, and this page
+          should be answering one. */}
       <section className="border-t border-hair bg-mist">
         <div className="mx-auto max-w-6xl px-5 py-14 md:px-8 md:py-20">
           <div className="mx-auto max-w-[560px] text-center">
@@ -449,60 +445,77 @@ export default async function Landing({
             </p>
           </div>
 
-          <div className="mx-auto mt-10 max-w-[520px] rounded-[20px] border-2 border-royal/25 bg-white p-7 shadow-[0_24px_60px_-40px_rgba(36,18,59,.45)] md:p-9">
-            <div className="text-center">
-              <p className="display text-[72px] leading-[0.85] tabular-nums text-charcoal">
+          <div className="mx-auto mt-10 grid max-w-[820px] items-start gap-5 md:grid-cols-2">
+            {/* ── the year ── */}
+            <div className="relative rounded-[20px] border-2 border-royal bg-white p-7 shadow-[0_24px_60px_-40px_rgba(36,18,59,.45)]">
+              <span className="absolute -top-3 start-7 rounded-full bg-royal px-3 py-1 text-[11.5px] font-bold text-white">
+                <Tpl tpl={t("Économisez {n} TND")} slots={{ n: SAVING }} />
+              </span>
+
+              <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-royal">
+                {t("1 an")}
+              </p>
+              <p className="display mt-3 text-[60px] leading-[0.85] tabular-nums text-charcoal">
                 {YEAR.price}
-                <span className="ms-2 align-super font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-royal">
-                  {t("TND / an")}
+                <span className="ms-2 align-super font-mono text-[12px] font-bold uppercase tracking-[0.1em] text-royal">
+                  {t("TND")}
                 </span>
               </p>
+              <p className="mt-2 text-[13px] text-slate">{t(YEAR.perMonth)}</p>
 
-              {/* The saving is the only reason to take the year over two
-                  halves, and it used to be arithmetic left on the table. */}
-              <p className="mt-4">
-                <span className="inline-block rounded-full bg-royal px-3 py-1 text-[12px] font-bold text-white">
-                  <Tpl tpl={t("Économisez {n} TND")} slots={{ n: SAVING }} />
+              <Link
+                href={cta.href}
+                className="group mt-6 flex flex-col items-center rounded-[12px] bg-royal px-5 py-3.5 text-center transition hover:bg-[#4c33b4] active:translate-y-px"
+              >
+                <span className="flex items-center gap-2.5 text-[15px] font-bold text-white">
+                  {cta.label} <Arrow className="cta-arrow h-4 w-4" />
                 </span>
-              </p>
-
-              <p className="mt-4 text-[13.5px] text-slate">
-                <Tpl
-                  tpl={t("Ou {n} TND pour 6 mois — sans engagement.")}
-                  slots={{ n: HALF.price }}
-                />
-              </p>
+                <span className="mt-1 text-[12px] text-white/70">{cta.note}</span>
+              </Link>
             </div>
 
-            <ul className="mt-8 grid gap-x-6 gap-y-3 border-t border-hair pt-7 sm:grid-cols-2">
-              {INCLUDED.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-[14.5px] text-charcoal">
-                  <Check className="mt-[5px] h-3.5 w-3.5 shrink-0 text-royal" />
-                  {t(f)}
-                </li>
-              ))}
-            </ul>
+            {/* ── six months ── */}
+            <div className="rounded-[20px] border border-hair bg-white p-7">
+              <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-slate">
+                {t("6 mois")}
+              </p>
+              <p className="display mt-3 text-[60px] leading-[0.85] tabular-nums text-charcoal">
+                {HALF.price}
+                <span className="ms-2 align-super font-mono text-[12px] font-bold uppercase tracking-[0.1em] text-slate">
+                  {t("TND")}
+                </span>
+              </p>
+              <p className="mt-2 text-[13px] text-slate">{t(HALF.perMonth)}</p>
 
-            <Link
-              href={cta.href}
-              className="group mt-8 flex flex-col items-center rounded-[12px] bg-royal px-6 py-4 text-center transition hover:bg-[#4c33b4] active:translate-y-px"
-            >
-              <span className="flex items-center gap-2.5 text-[15px] font-bold text-white">
-                {cta.label} <Arrow className="cta-arrow h-4 w-4" />
-              </span>
-              <span className="mt-1.5 text-[12.5px] text-white/70">{cta.note}</span>
-            </Link>
-
-            {/*
-              HOW YOU ACTUALLY PAY — the question a price alone never answers.
-              A café owner in Tunisia does not have a card they will type into a
-              website, and a page that shows only a number is quietly asking for
-              one.
-            */}
-            <p className="mt-5 text-center text-[12.5px] leading-relaxed text-slate">
-              {t("D17, Flouci ou virement — vous envoyez la photo du reçu depuis l'application.")}
-            </p>
+              <Link
+                href={cta.href}
+                className="mt-6 flex items-center justify-center rounded-[12px] border border-charcoal px-5 py-3.5 text-center text-[15px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white active:translate-y-px"
+              >
+                {t("Choisir 6 mois")}
+              </Link>
+              <p className="mt-3 text-center text-[12px] text-slate">{t("Sans engagement")}</p>
+            </div>
           </div>
+
+          {/* what both of them buy — said once, under both */}
+          <ul className="mx-auto mt-8 grid max-w-[820px] gap-x-6 gap-y-3 border-t border-hair pt-7 sm:grid-cols-2 lg:grid-cols-3">
+            {INCLUDED.map((f) => (
+              <li key={f} className="flex items-start gap-2.5 text-[14.5px] text-charcoal">
+                <Check className="mt-[5px] h-3.5 w-3.5 shrink-0 text-royal" />
+                {t(f)}
+              </li>
+            ))}
+          </ul>
+
+          {/*
+            HOW YOU ACTUALLY PAY — the question a price alone never answers. A
+            café owner in Tunisia does not have a card they will type into a
+            website, and a page that shows only a number is quietly asking for
+            one.
+          */}
+          <p className="mx-auto mt-7 max-w-[560px] text-center text-[12.5px] leading-relaxed text-slate">
+            {t("D17, Flouci ou virement — vous envoyez la photo du reçu depuis l'application.")}
+          </p>
         </div>
       </section>
 

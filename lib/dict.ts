@@ -795,6 +795,18 @@ const TN: Record<string, string> = {
      be able to advertise a price the renewal screen does not charge. */
   "Ou {n} TND pour 6 mois — sans engagement.": "ولا {n} دينار لـ6 شهور — من غير التزام.",
   "Économisez {n} TND": "توفّر {n} دينار",
+  /* The two price boxes. "1 an" and "6 mois" also exist in lib/billing as the
+     offer labels; these are the headings above the numbers. */
+  "1 an": "عام",
+  "6 mois": "6 شهور",
+  TND: "دينار",
+  "Choisir 6 mois": "نختار 6 شهور",
+  "Sans engagement": "من غير التزام",
+  /* The comparison lines, as lib/billing writes them. They are keyed on the
+     exact French so a change to the catalogue shows up here as untranslated
+     rather than as a stale figure in Arabic. */
+  "≈ 10 TND / mois": "≈ 10 دينار / شهر",
+  "≈ 13 TND / mois": "≈ 13 دينار / شهر",
   /*
     The hero's second line. "Simplement." replaced "Vous saurez enfin lesquels."
     — بساطة would be the noun; ".وبكل بساطة" is how the promise is actually
