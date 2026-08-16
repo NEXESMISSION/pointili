@@ -695,6 +695,28 @@ const TN: Record<string, string> = {
   " ou en": " ولا",
   "tunisien": "بالتونسي",
   ", pas en arabe littéraire. Chacun choisit, sur son téléphone.": "، موش بالعربية الفصحى. كلّ واحد يختار على تليفونو.",
+
+  /*
+    ── THE SENTENCES THAT CARRY MARKUP ───────────────────────────────────
+    Whole sentences with {slots}, not the fragments above them, because the
+    emphasised piece does not sit in the same place in both languages. See
+    components/Tpl. The wording is exactly the wording already agreed in the
+    fragments; only the order is free to move.
+
+    The language line drops {ar} on purpose. In French, «tunisien — بالتونسي»
+    shows a French reader the word in its own script, which is the whole point
+    of writing it twice. In Tunisian it would print بالتونسي twice in a row and
+    read as a stutter.
+  */
+  "La carte de fidélité de votre commerce, dans le téléphone de vos clients. {none} — ni pour eux, ni pour vous.":
+    "كارت الفيداليتي متاع محلّك، في تليفون حرفاءك. {none} — لا ليهم ولا ليك.",
+  "Un numéro, un code secret, et vos cartes sont là. {nothing}":
+    "نمرة، كود سرّي، والكوارط متاعك هاهي. {nothing}",
+  "{how} Vous envoyez la photo du reçu depuis l'application, et votre compte est prolongé — pas de carte bancaire, pas de prélèvement qui se renouvelle tout seul.":
+    "{how} تصوّر الوصل وتبعثو من الأبليكاسيون، والحساب متاعك يتمدّد — من غير كارت بنكية، ومن غير ما يتسحبولك فلوس وحدهم.",
+  "Vos clients lisent leur carte en {fr} ou en {tn} — {ar}, pas en arabe littéraire. Chacun choisit, sur son téléphone.":
+    "الحرفاء متاعك يقراو الكارت متاعهم {fr} ولا {tn}، موش بالعربية الفصحى. كلّ واحد يختار على تليفونو.",
+  "La carte client": "كارت الحريف",
   "Encaisser": "الخلاص",
   "Cinq secondes, pendant que vous rendez la monnaie": "خمس ثواني، وإنت تردّ الصرف",
   "Le client donne son numéro de téléphone. Vous tapez le montant en dinars. C'est fini.": "الحريف يعطيك نمرة تليفونو. إنت تكتب المبلغ بالدينار. وسالينا.",

@@ -1,4 +1,6 @@
 import { DEMO_VERSION } from "./demoVersion";
+import { translator, type Lang } from "@/lib/dict";
+import { Tpl } from "./Tpl";
 
 /**
  * ── LA CARTE EST LA VÔTRE ─────────────────────────────────────────────────
@@ -35,23 +37,24 @@ const LOOKS = [
   },
 ];
 
-export function Dressed() {
+export function Dressed({ lang = "fr" }: { lang?: Lang }) {
+  const t = translator(lang);
+
   return (
     <section className="border-t border-hair bg-mist">
       <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
-          Votre marque
+          {t("Votre marque")}
         </p>
         <h2 className="mt-5 max-w-[20ch] text-[32px] md:text-[44px]">
-          La carte porte votre nom. Pas le nôtre.
+          {t("La carte porte votre nom. Pas le nôtre.")}
         </h2>
         <p className="mt-5 max-w-[54ch] text-[15.5px] leading-relaxed text-slate">
-          Votre couleur, votre logo, et une photo de votre salle si vous en
-          voulez une. Vous choisissez la hauteur du bandeau, l&apos;arrondi des
-          angles et le motif — depuis vos Réglages, en trente secondes, sans
-          nous écrire.{" "}
+          {t(
+            "Votre couleur, votre logo, et une photo de votre salle si vous en voulez une. Vous choisissez la hauteur du bandeau, l'arrondi des angles et le motif — depuis vos Réglages, en trente secondes, sans nous écrire.",
+          )}{" "}
           <span className="font-semibold text-charcoal">
-            Ci-dessous, le même écran, trois commerces.
+            {t("Ci-dessous, le même écran, trois commerces.")}
           </span>
         </p>
 
@@ -64,15 +67,15 @@ export function Dressed() {
                 {/* eslint-disable-next-line @next/next/no-img-element -- a static asset, not user content */}
                 <img
                   src={`/demo/${l.file}.png?v=${DEMO_VERSION}`}
-                  alt={`La carte client — ${l.label.toLowerCase()}`}
+                  alt={`${t("La carte client")} — ${t(l.label).toLowerCase()}`}
                   width={390}
                   height={780}
                   loading="lazy"
                   className="block h-auto w-full"
                 />
               </div>
-              <p className="mt-4 text-[15px] font-bold text-charcoal">{l.label}</p>
-              <p className="mt-1 text-[13.5px] leading-relaxed text-slate">{l.note}</p>
+              <p className="mt-4 text-[15px] font-bold text-charcoal">{t(l.label)}</p>
+              <p className="mt-1 text-[13.5px] leading-relaxed text-slate">{t(l.note)}</p>
             </li>
           ))}
         </ul>
@@ -88,16 +91,25 @@ export function Dressed() {
         */}
         <div className="mt-12 flex flex-wrap items-baseline gap-x-4 gap-y-2 border-t border-hair pt-8">
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-royal">
-            Et la langue
+            {t("Et la langue")}
           </p>
           <p className="max-w-[52ch] text-[15px] leading-relaxed text-slate">
-            Vos clients lisent leur carte en{" "}
-            <span className="font-semibold text-charcoal">français</span> ou en{" "}
-            <span className="font-semibold text-charcoal">tunisien</span> —{" "}
-            <span className="font-semibold text-charcoal" lang="ar-TN" dir="rtl">
-              بالتونسي
-            </span>
-            , pas en arabe littéraire. Chacun choisit, sur son téléphone.
+            {/* One dictionary entry, not five fragments: Tunisian does not put
+                these pieces in the French order. See components/Tpl. */}
+            <Tpl
+              tpl={t(
+                "Vos clients lisent leur carte en {fr} ou en {tn} — {ar}, pas en arabe littéraire. Chacun choisit, sur son téléphone.",
+              )}
+              slots={{
+                fr: <span className="font-semibold text-charcoal">{t("français")}</span>,
+                tn: <span className="font-semibold text-charcoal">{t("tunisien")}</span>,
+                ar: (
+                  <span className="font-semibold text-charcoal" lang="ar-TN" dir="rtl">
+                    بالتونسي
+                  </span>
+                ),
+              }}
+            />
           </p>
         </div>
       </div>

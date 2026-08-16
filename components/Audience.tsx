@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, type ReactNode } from "react";
+import { translator, type Lang } from "@/lib/dict";
 
 /**
  * WHO IS THIS PAGE TALKING TO?
@@ -26,7 +27,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 
 type Side = "owner" | "customer";
 
-const Ctx = createContext<{ side: Side; setSide: (s: Side) => void } | null>(null);
+const Ctx = createContext<{ side: Side; setSide: (s: Side) => void; lang: Lang } | null>(null);
 
 function useAudience() {
   const ctx = useContext(Ctx);
@@ -34,9 +35,23 @@ function useAudience() {
   return ctx;
 }
 
-export function AudienceProvider({ children }: { children: ReactNode }) {
+/*
+  THE LANGUAGE RIDES IN THE CONTEXT THAT IS ALREADY HERE.
+
+  Everything on the landing page that has to translate is inside this provider
+  already, and most of it is a client component — so the alternative was
+  threading a `lang` prop through every one of them from the server page. The
+  audience and the language are the same kind of fact about the reader, read
+  once at the top and answered everywhere below.
+*/
+export function AudienceProvider({ lang = "fr", children }: { lang?: Lang; children: ReactNode }) {
   const [side, setSide] = useState<Side>("owner");
-  return <Ctx.Provider value={{ side, setSide }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ side, setSide, lang }}>{children}</Ctx.Provider>;
+}
+
+/** The reader's language, for the client components inside this page. */
+export function useLang(): Lang {
+  return useAudience().lang;
 }
 
 /**
@@ -54,7 +69,8 @@ export function AudienceTabs({
   className?: string;
   full?: boolean;
 }) {
-  const { side, setSide } = useAudience();
+  const { side, setSide, lang } = useAudience();
+  const t = translator(lang);
 
   /*
     whitespace-nowrap is doing real work: "Pour mon commerce" broke onto two
@@ -126,8 +142,8 @@ export function AudienceTabs({
       display; this owns everything else.
     */
     <div className={`items-center gap-1 rounded-[3px] border border-hair p-1 ${className}`}>
-      {tab("owner", "Pour mon commerce", "Commerce")}
-      {tab("customer", "Je suis client", "Client")}
+      {tab("owner", t("Pour mon commerce"), t("Commerce"))}
+      {tab("customer", t("Je suis client"), t("Client"))}
     </div>
   );
 }

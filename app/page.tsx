@@ -9,7 +9,8 @@ import { Dressed } from "@/components/Dressed";
 import { AudienceProvider, AudienceTabs, ForCustomer, ForOwner } from "@/components/Audience";
 import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
-import { currentLang, dir, translator } from "@/lib/i18n";
+import { currentLang, dir, translator, type T } from "@/lib/i18n";
+import { Tpl } from "@/components/Tpl";
 import { LangToggle } from "@/components/LangToggle";
 
 /**
@@ -222,7 +223,7 @@ export default async function Landing({
       };
 
   return (
-    <AudienceProvider>
+    <AudienceProvider lang={lang}>
     {/*
       dir and lang-tn both live on THIS element, not on <html>.
 
@@ -268,12 +269,20 @@ export default async function Landing({
           rather than a tint that leaked. */}
       <header className="border-b border-hair">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 md:px-8">
-          <Brand />
+          <Brand tight />
           <AudienceTabs className="hidden sm:flex" />
           {/* Before the way in, not after it: a reader who cannot read the
               page needs the language before they need the sign-in button, and
               on a phone the masthead is the only place they will look. */}
-          <LangToggle current={lang} className="ms-auto sm:ms-0" />
+          {/*
+            NOT ms-auto any more. That pushed the control to the far end on a
+            phone, where it sat shoulder to shoulder with the way in — two
+            controls touching, one of which changes the whole page. The row is
+            justify-between, so with the margin gone the three things space
+            themselves and the language sits where the note below says it
+            should: before the way in, not welded to it.
+          */}
+          <LangToggle current={lang} />
           {/*
             A BUTTON, because it is the way in.
 
@@ -288,7 +297,7 @@ export default async function Landing({
               href={ownerHere ? "/owner" : "/owner/login"}
               className="shrink-0 whitespace-nowrap rounded-[3px] border border-charcoal px-4 py-2 text-[13.5px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white"
             >
-              {ownerHere ? "Ma caisse" : "Espace café"}
+              {ownerHere ? t("Ma caisse") : t("Espace café")}
             </Link>
           </ForOwner>
           <ForCustomer>
@@ -296,7 +305,7 @@ export default async function Landing({
               href="/moi"
               className="shrink-0 whitespace-nowrap rounded-[3px] border border-charcoal px-4 py-2 text-[13.5px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white"
             >
-              Mes cartes
+              {t("Mes cartes")}
             </Link>
           </ForCustomer>
         </div>
@@ -316,7 +325,7 @@ export default async function Landing({
 
             <p className="flex items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
               <span aria-hidden className="h-px w-7 bg-royal" />
-              Fait en Tunisie, pour la Tunisie
+              {t("Fait en Tunisie, pour la Tunisie")}
             </p>
 
             {/*
@@ -329,31 +338,43 @@ export default async function Landing({
             */}
             <ForOwner>
               <h1 className="mt-6 text-[38px] md:text-[52px] lg:text-[58px]">
-                Vos habitués reviennent.
+                {t("Vos habitués reviennent.")}
                 <br />
-                <span className="text-royal">Vous saurez enfin lesquels.</span>
+                <span className="text-royal">{t("Vous saurez enfin lesquels.")}</span>
               </h1>
               <p className="mt-6 max-w-[44ch] text-[16px] leading-[1.65] text-slate">
-                La carte de fidélité de votre commerce, dans le téléphone de vos
-                clients.{" "}
-                <span className="font-semibold text-charcoal">
-                  Aucune application
-                </span>{" "}
-                — ni pour eux, ni pour vous.
+                <Tpl
+                  tpl={t(
+                    "La carte de fidélité de votre commerce, dans le téléphone de vos clients. {none} — ni pour eux, ni pour vous.",
+                  )}
+                  slots={{
+                    none: (
+                      <span className="font-semibold text-charcoal">
+                        {t("Aucune application")}
+                      </span>
+                    ),
+                  }}
+                />
               </p>
             </ForOwner>
 
             <ForCustomer>
               <h1 className="mt-6 text-[38px] md:text-[52px] lg:text-[58px]">
-                Vos points,
+                {t("Vos points,")}
                 <br />
-                <span className="text-royal">dans tous vos commerces.</span>
+                <span className="text-royal">{t("dans tous vos commerces.")}</span>
               </h1>
               <p className="mt-6 max-w-[44ch] text-[16px] leading-[1.65] text-slate">
-                Un numéro, un code secret, et vos cartes sont là.{" "}
-                <span className="font-semibold text-charcoal">
-                  Rien à installer.
-                </span>
+                <Tpl
+                  tpl={t("Un numéro, un code secret, et vos cartes sont là. {nothing}")}
+                  slots={{
+                    nothing: (
+                      <span className="font-semibold text-charcoal">
+                        {t("Rien à installer.")}
+                      </span>
+                    ),
+                  }}
+                />
               </p>
             </ForCustomer>
 
@@ -381,11 +402,11 @@ export default async function Landing({
                   href="/moi"
                   className="group inline-flex items-center gap-3 rounded-[3px] bg-royal px-8 py-4 text-[15px] font-bold text-white transition hover:bg-[#4c33b4] active:translate-y-px"
                 >
-                  Ouvrir mes cartes
+                  {t("Ouvrir mes cartes")}
                   <Arrow className="cta-arrow h-4 w-4" />
                 </Link>
                 <p className="mt-4 text-[13px] text-slate">
-                  Ou scannez le QR posé sur votre table
+                  {t("Ou scannez le QR posé sur votre table")}
                 </p>
               </ForCustomer>
             </div>
@@ -420,7 +441,7 @@ export default async function Landing({
       <section className="border-b border-hair">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-6 md:flex-row md:items-baseline md:gap-10 md:px-8">
           <p className="shrink-0 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-slate">
-            Fait pour
+            {t("Fait pour")}
           </p>
           {/* The separator TRAILS its word instead of leading the next one.
               Leading, it wrapped onto the next line on a 390px screen and the
@@ -428,9 +449,12 @@ export default async function Landing({
               reads as a bullet, or as a typo. Trailing, it can only ever
               dangle at the end of a line, which is what punctuation does. */}
           <ul className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[15px] text-charcoal">
-            {TRADES.map((t, i) => (
-              <li key={t}>
-                {t}
+            {/* `trade`, not `t` — the map variable used to shadow the
+                translator, so every t("…") inside this list would have been a
+                call on a string. */}
+            {TRADES.map((trade, i) => (
+              <li key={trade}>
+                {t(trade)}
                 {i < TRADES.length - 1 && (
                   <span aria-hidden className="ml-2 text-royal">·</span>
                 )}
@@ -447,29 +471,31 @@ export default async function Landing({
       <section className="bg-deep text-white">
         <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-lavender">
-            <ForOwner>Au comptoir</ForOwner>
-            <ForCustomer>Sur votre téléphone</ForCustomer>
+            <ForOwner>{t("Au comptoir")}</ForOwner>
+            <ForCustomer>{t("Sur votre téléphone")}</ForCustomer>
           </p>
           <h2 className="mt-5 max-w-[20ch] text-[32px] text-white md:text-[44px]">
-            <ForOwner>Trois gestes, cinq secondes.</ForOwner>
-            <ForCustomer>Trois gestes, une seule fois.</ForCustomer>
+            <ForOwner>{t("Trois gestes, cinq secondes.")}</ForOwner>
+            <ForCustomer>{t("Trois gestes, une seule fois.")}</ForCustomer>
           </h2>
           <p className="mt-5 max-w-[52ch] text-[15.5px] leading-relaxed text-white/60">
             <ForOwner>
-              Pendant que vous rendez la monnaie. Pas de matériel, pas de
-              lecteur, pas de caisse à changer — votre téléphone suffit.
+              {t(
+                "Pendant que vous rendez la monnaie. Pas de matériel, pas de lecteur, pas de caisse à changer — votre téléphone suffit.",
+              )}
             </ForOwner>
             <ForCustomer>
-              Après ça, votre carte est là à chaque passage : vous donnez votre
-              numéro, et c&apos;est tout.
+              {t(
+                "Après ça, votre carte est là à chaque passage : vous donnez votre numéro, et c'est tout.",
+              )}
             </ForCustomer>
           </p>
 
           <ForOwner>
-            <Steps steps={STEPS_OWNER} />
+            <Steps steps={STEPS_OWNER} t={t} />
           </ForOwner>
           <ForCustomer>
-            <Steps steps={STEPS_CUSTOMER} />
+            <Steps steps={STEPS_CUSTOMER} t={t} />
           </ForCustomer>
         </div>
       </section>
@@ -483,16 +509,15 @@ export default async function Landing({
           <div className="mx-auto grid max-w-6xl gap-12 px-5 py-16 md:grid-cols-12 md:px-8 md:py-24">
             <div className="md:col-span-5">
               <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
-                Ce que vous ne savez pas
+                {t("Ce que vous ne savez pas")}
               </p>
               <h2 className="mt-5 text-[30px] md:text-[40px]">
-                Vous connaissez vos habitués. Vous ne savez pas combien sont
-                revenus.
+                {t("Vous connaissez vos habitués. Vous ne savez pas combien sont revenus.")}
               </h2>
               <p className="mt-5 max-w-[42ch] text-[15.5px] leading-relaxed text-charcoal/65">
-                Le carton ne compte pas, et personne n&apos;a jamais tenu ce
-                registre à la main. Voilà les quatre chiffres qui apparaissent
-                dans votre espace, sans que vous ayez rien à saisir.
+                {t(
+                  "Le carton ne compte pas, et personne n'a jamais tenu ce registre à la main. Voilà les quatre chiffres qui apparaissent dans votre espace, sans que vous ayez rien à saisir.",
+                )}
               </p>
             </div>
 
@@ -507,10 +532,10 @@ export default async function Landing({
                   </span>
                   <span>
                     <span className="block text-[16px] font-bold text-charcoal">
-                      {term}
+                      {t(term)}
                     </span>
                     <span className="mt-1 block text-[14.5px] leading-relaxed text-charcoal/65">
-                      {def}
+                      {t(def)}
                     </span>
                   </span>
                 </li>
@@ -523,9 +548,9 @@ export default async function Landing({
                 trust and a number you were sold.
               */}
               <li className="pt-5 text-[13.5px] leading-relaxed text-charcoal/55">
-                En dessous de cinq clients, l&apos;écran affiche «&nbsp;Trop tôt
-                pour conclure&nbsp;» au lieu d&apos;un taux. Un chiffre sur
-                quatre passages ne veut rien dire, et nous préférons le dire.
+                {t(
+                  "En dessous de cinq clients, l'écran affiche « Trop tôt pour conclure » au lieu d'un taux. Un chiffre sur quatre passages ne veut rien dire, et nous préférons le dire.",
+                )}
               </li>
             </ul>
           </div>
@@ -535,19 +560,20 @@ export default async function Landing({
       {/* ── the product, filmed ──────────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
-          Le produit, filmé
+          {t("Le produit, filmé")}
         </p>
         <h2 className="mt-5 max-w-[18ch] text-[32px] md:text-[44px]">
-          Rien n&apos;est dessiné ici.
+          {t("Rien n'est dessiné ici.")}
         </h2>
         <p className="mt-5 max-w-[54ch] text-[15.5px] leading-relaxed text-slate">
-          Chaque écran ci-dessous est le vrai produit, filmé en train de faire
-          ce qu&apos;il dit.{" "}
+          {t(
+            "Chaque écran ci-dessous est le vrai produit, filmé en train de faire ce qu'il dit.",
+          )}{" "}
           <ForOwner>
-            <span className="font-semibold text-charcoal">Voici votre caisse.</span>
+            <span className="font-semibold text-charcoal">{t("Voici votre caisse.")}</span>
           </ForOwner>
           <ForCustomer>
-            <span className="font-semibold text-charcoal">Voici votre téléphone.</span>
+            <span className="font-semibold text-charcoal">{t("Voici votre téléphone.")}</span>
           </ForCustomer>
         </p>
 
@@ -561,7 +587,7 @@ export default async function Landing({
           raise is "yes, but that is YOUR card" — and the answer is three of
           them. Shown to both audiences: a customer reading this page is being
           told their card will look like the shop they already go to. */}
-      <Dressed />
+      <Dressed lang={lang} />
 
       {/* ── the objections, then the price ───────────────────────────
           Both of these used to sit AFTER the closing call to action — the page
@@ -569,17 +595,18 @@ export default async function Landing({
           customer weighing Pointili against a paper punch card is not a person
           who exists, and they never pay anything. */}
       <ForOwner>
-        <Compare />
+        <Compare lang={lang} />
 
         <section className="border-t border-hair">
           <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
             <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
-              Le prix
+              {t("Le prix")}
             </p>
-            <h2 className="mt-5 text-[32px] md:text-[44px]">Un prix simple.</h2>
+            <h2 className="mt-5 text-[32px] md:text-[44px]">{t("Un prix simple.")}</h2>
             <p className="mt-5 max-w-[44ch] text-[15.5px] leading-relaxed text-slate">
-              Pas de commission sur vos ventes. Pas de limite de clients. Pas de
-              palier qui se déclenche le jour où ça marche.
+              {t(
+                "Pas de commission sur vos ventes. Pas de limite de clients. Pas de palier qui se déclenche le jour où ça marche.",
+              )}
             </p>
 
             {/*
@@ -593,12 +620,18 @@ export default async function Landing({
               app now takes the receipt (voir /owner/renouveler).
             */}
             <p className="mt-4 max-w-[52ch] text-[14px] leading-relaxed text-slate">
-              <span className="font-semibold text-charcoal">
-                Vous payez par D17, Flouci ou virement.
-              </span>{" "}
-              Vous envoyez la photo du reçu depuis l&apos;application, et votre
-              compte est prolongé — pas de carte bancaire, pas de prélèvement
-              qui se renouvelle tout seul.
+              <Tpl
+                tpl={t(
+                  "{how} Vous envoyez la photo du reçu depuis l'application, et votre compte est prolongé — pas de carte bancaire, pas de prélèvement qui se renouvelle tout seul.",
+                )}
+                slots={{
+                  how: (
+                    <span className="font-semibold text-charcoal">
+                      {t("Vous payez par D17, Flouci ou virement.")}
+                    </span>
+                  ),
+                }}
+              />
             </p>
 
             {/* items-start, so the smaller offer is only as tall as it needs to
@@ -608,7 +641,7 @@ export default async function Landing({
               {/* the year — a block of ink, not a three-stop gradient */}
               <div className="rounded-[3px] bg-deep p-7 text-white md:p-9">
                 <p className="inline-block bg-royal px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white">
-                  Meilleure offre
+                  {t("Meilleure offre")}
                 </p>
 
                 <div className="mt-7 grid gap-8 sm:grid-cols-2 sm:items-start">
@@ -616,11 +649,11 @@ export default async function Landing({
                     <p className="display text-[68px] leading-[0.85] tabular-nums">
                       80
                       <span className="ml-2 align-super font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-lavender">
-                        TND / an
+                        {t("TND / an")}
                       </span>
                     </p>
                     <p className="mt-4 max-w-[24ch] text-[14px] leading-relaxed text-white/60">
-                      Tout ce dont vous avez besoin pour fidéliser vos clients.
+                      {t("Tout ce dont vous avez besoin pour fidéliser vos clients.")}
                     </p>
                   </div>
 
@@ -631,7 +664,7 @@ export default async function Landing({
                         className="flex items-center gap-3 border-b border-white/15 py-2.5 text-[14px] text-white"
                       >
                         <Check className="h-3.5 w-3.5 shrink-0 text-lavender" />
-                        {f}
+                        {t(f)}
                       </li>
                     ))}
                   </ul>
@@ -655,18 +688,19 @@ export default async function Landing({
                 <p className="display text-[44px] leading-[0.85] tabular-nums text-charcoal">
                   65
                   <span className="ml-2 align-super font-mono text-[12px] font-bold uppercase tracking-[0.1em] text-slate">
-                    TND / 6 mois
+                    {t("TND / 6 mois")}
                   </span>
                 </p>
                 <p className="mt-4 text-[14px] leading-relaxed text-slate">
-                  Parfait pour commencer. Les mêmes fonctions, la même
-                  assistance — vous payez juste plus souvent.
+                  {t(
+                    "Parfait pour commencer. Les mêmes fonctions, la même assistance — vous payez juste plus souvent.",
+                  )}
                 </p>
                 <Link
                   href={cta.href}
                   className="mt-7 rounded-[3px] border border-charcoal px-5 py-3.5 text-center text-[14px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white active:translate-y-px"
                 >
-                  {ownerHere ? "Ma caisse" : "Choisir cette offre"}
+                  {ownerHere ? t("Ma caisse") : t("Choisir cette offre")}
                 </Link>
               </div>
             </div>
@@ -683,15 +717,15 @@ export default async function Landing({
         <div className="mx-auto grid max-w-6xl items-end gap-10 px-5 py-16 md:grid-cols-12 md:px-8 md:py-24">
           <div className="md:col-span-7">
             <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-lavender">
-              Commencer
+              {t("Commencer")}
             </p>
             <h2 className="mt-5 text-[34px] text-white md:text-[46px]">
-              La fidélité commence aujourd&apos;hui.
+              {t("La fidélité commence aujourd'hui.")}
             </h2>
             <p className="mt-5 max-w-[46ch] text-[15.5px] leading-relaxed text-white/60">
-              Vous créez votre espace, vous réglez vos récompenses, vous
-              imprimez votre QR. Aucun matériel, aucun engagement, et vos
-              habitués n&apos;ont rien à installer.
+              {t(
+                "Vous créez votre espace, vous réglez vos récompenses, vous imprimez votre QR. Aucun matériel, aucun engagement, et vos habitués n'ont rien à installer.",
+              )}
             </p>
           </div>
 
@@ -700,7 +734,7 @@ export default async function Landing({
               href={cta.href}
               className="group inline-flex items-center gap-3 rounded-[3px] bg-white px-8 py-4 text-[15px] font-bold text-deep transition hover:bg-lilac active:translate-y-px"
             >
-              {ownerHere ? "Ma caisse" : "Créer ma boutique"}
+              {ownerHere ? t("Ma caisse") : t("Créer ma boutique")}
               <Arrow className="cta-arrow h-4 w-4" />
             </Link>
             <p className="mt-4 text-[13px] text-white/60">
@@ -720,7 +754,7 @@ export default async function Landing({
           <div>
             <Brand />
             <p className="mt-3 text-[13px] text-slate">
-              Conçu et hébergé pour la Tunisie
+              {t("Conçu et hébergé pour la Tunisie")}
             </p>
           </div>
           {/* py-2 on the links, not just on the row: they were 22px tall, and a
@@ -728,12 +762,12 @@ export default async function Landing({
               and takes both to 40. */}
           <nav className="flex flex-wrap items-center gap-x-8 text-[13.5px] text-slate">
             <Link href="/confidentialite" className="py-2 transition hover:text-charcoal">
-              Confidentialité
+              {t("Confidentialité")}
             </Link>
             <Link href="/conditions" className="py-2 transition hover:text-charcoal">
-              Conditions
+              {t("Conditions")}
             </Link>
-            <span className="py-2">Contact</span>
+            <span className="py-2">{t("Contact")}</span>
           </nav>
         </div>
       </footer>
@@ -751,7 +785,7 @@ export default async function Landing({
  * floating. Extracted rather than inlined twice because the owner and the
  * customer each get their own three steps and only the words differ.
  */
-function Steps({ steps }: { steps: { title: string; text: string }[] }) {
+function Steps({ steps, t }: { steps: { title: string; text: string }[]; t: T }) {
   return (
     <ol className="mt-12 grid border-t border-white/20 md:mt-16 md:grid-cols-3">
       {steps.map((s, i) => (
@@ -762,8 +796,8 @@ function Steps({ steps }: { steps: { title: string; text: string }[] }) {
           <p className="font-mono text-[12px] font-bold tracking-[0.2em] text-lavender md:pt-8">
             {String(i + 1).padStart(2, "0")}
           </p>
-          <h3 className="mt-4 text-[23px] text-white md:text-[25px]">{s.title}</h3>
-          <p className="mt-3 text-[14.5px] leading-relaxed text-white/60">{s.text}</p>
+          <h3 className="mt-4 text-[23px] text-white md:text-[25px]">{t(s.title)}</h3>
+          <p className="mt-3 text-[14.5px] leading-relaxed text-white/60">{t(s.text)}</p>
         </li>
       ))}
     </ol>
@@ -842,10 +876,18 @@ function HeroPhone() {
   );
 }
 
-function Brand() {
+/* `tight` is the masthead. The footer has a whole row to itself and keeps the
+   word at every width. */
+function Brand({ tight = false }: { tight?: boolean }) {
   return (
     <span className="inline-flex items-center gap-2.5">
-      <BrandLockup size={34} accent="#5b3fd1" />
+      {/* The word goes away on phones — see BrandLockup. The mark stays, and
+          the page's title and hero both say the name anyway. */}
+      <BrandLockup
+        size={34}
+        accent="#5b3fd1"
+        wordmarkClassName={tight ? "hidden sm:inline" : ""}
+      />
     </span>
   );
 }

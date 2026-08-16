@@ -2,7 +2,8 @@
 
 import { CheckIcon } from "@/components/icons";
 import { DEMO_VERSION } from "@/components/demoVersion";
-import { useSide } from "@/components/Audience";
+import { useLang, useSide } from "@/components/Audience";
+import { translator, type Lang } from "@/lib/dict";
 
 /*
   THE PRODUCT, FILMED, EXPLAINED ONE CAPABILITY AT A TIME.
@@ -170,18 +171,23 @@ const SHOTS: Shot[] = [
  */
 export function Showcase() {
   const side = useSide();
+  const lang = useLang();
   const want = side === "owner" ? "Votre caisse" : "Le téléphone du client";
   const shots = SHOTS.filter((s) => s.side === want);
   return (
     <div className="space-y-14 md:space-y-20">
       {shots.map((s, i) => (
-        <Row key={s.clip} shot={s} index={i + 1} flip={i % 2 === 1} />
+        <Row key={s.clip} shot={s} index={i + 1} flip={i % 2 === 1} lang={lang} />
       ))}
     </div>
   );
 }
 
-function Row({ shot, index, flip }: { shot: Shot; index: number; flip: boolean }) {
+/* The copy stays in SHOTS in French and is translated HERE, at the point of
+   use: the French line is the dictionary key, so the data reads as prose in the
+   source and there is exactly one t() per field instead of one per string. */
+function Row({ shot, index, flip, lang }: { shot: Shot; index: number; flip: boolean; lang: Lang }) {
+  const t = translator(lang);
   return (
     /* Ruled off at the top, catalogue-fashion. The rows used to float in
        whitespace with nothing marking where one ended and the next began,
@@ -210,7 +216,7 @@ function Row({ shot, index, flip }: { shot: Shot; index: number; flip: boolean }
               loop
               playsInline
               preload="none"
-              aria-label={`${shot.title} — ${shot.side}`}
+              aria-label={`${t(shot.title)} — ${t(shot.side)}`}
               className="block h-auto w-full"
             />
           </div>
@@ -228,12 +234,12 @@ function Row({ shot, index, flip }: { shot: Shot; index: number; flip: boolean }
         <p className="flex items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
           <span className="tabular-nums">{String(index).padStart(2, "0")}</span>
           <span aria-hidden className="h-px w-6 bg-royal/40" />
-          {shot.eyebrow}
+          {t(shot.eyebrow)}
         </p>
 
-        <h3 className="mt-4 text-[27px] md:text-[33px]">{shot.title}</h3>
+        <h3 className="mt-4 text-[27px] md:text-[33px]">{t(shot.title)}</h3>
         <p className="mt-4 max-w-[46ch] text-[15.5px] leading-relaxed text-slate">
-          {shot.lede}
+          {t(shot.lede)}
         </p>
 
         {/* Hairline rows, not tinted circle-check bubbles. A round badge behind
@@ -244,7 +250,7 @@ function Row({ shot, index, flip }: { shot: Shot; index: number; flip: boolean }
           {shot.facts.map((f) => (
             <li key={f} className="flex items-start gap-3 border-b border-hair py-3">
               <CheckIcon className="mt-[5px] h-3 w-3 shrink-0 text-royal" />
-              <span className="text-[14.5px] leading-snug text-charcoal">{f}</span>
+              <span className="text-[14.5px] leading-snug text-charcoal">{t(f)}</span>
             </li>
           ))}
         </ul>

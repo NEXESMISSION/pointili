@@ -22,6 +22,8 @@
  * Pas de prix : docs/PRODUIT.md le marque encore « à confirmer ».
  */
 
+import { translator, type Lang } from "@/lib/dict";
+
 type Row = { label: string; us: string; paper: string; other: string };
 
 const ROWS: Row[] = [
@@ -107,7 +109,11 @@ function Check({ className = "" }: { className?: string }) {
   );
 }
 
-export function Compare() {
+export function Compare({ lang = "fr" }: { lang?: Lang }) {
+  /* ROWS and QA stay French in the source — the French line is the key, so the
+     data still reads as prose and each field needs one t() at the point of use
+     rather than one per string. */
+  const t = translator(lang);
   return (
     <>
       {/* ── le comparatif ─────────────────────────────────────────────
@@ -125,14 +131,15 @@ export function Compare() {
       <section className="border-t border-hair">
       <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
-          Le carton
+          {t("Le carton")}
         </p>
         <h2 className="mt-5 max-w-[22ch] text-[32px] md:text-[44px]">
-          Pourquoi Pointili plutôt qu&apos;un carnet&nbsp;?
+          {t("Pourquoi Pointili plutôt qu'un carnet ?")}
         </h2>
         <p className="mt-5 max-w-[54ch] text-[15.5px] leading-relaxed text-slate">
-          La carte en carton a fait tourner des milliers de commerces et elle
-          marche encore. Voilà simplement là où elle s&apos;arrête.
+          {t(
+            "La carte en carton a fait tourner des milliers de commerces et elle marche encore. Voilà simplement là où elle s'arrête.",
+          )}
         </p>
 
         {/*
@@ -150,7 +157,7 @@ export function Compare() {
           {ROWS.map((r) => (
             <li key={r.label} className="border-b border-hair py-5">
               <p className="font-mono text-[10.5px] font-bold uppercase tracking-[0.16em] text-slate">
-                {r.label}
+                {t(r.label)}
               </p>
 
               <div className="mt-3 border-l-2 border-royal bg-lilac-2 px-3.5 py-3">
@@ -159,14 +166,14 @@ export function Compare() {
                 </p>
                 <p className="mt-1.5 flex gap-2 text-[14px] font-semibold leading-snug text-charcoal">
                   <Check className="mt-[3px] h-[13px] w-[13px] shrink-0 text-ok" />
-                  {r.us}
+                  {t(r.us)}
                 </p>
               </div>
 
               <div className="mt-3.5 grid gap-3">
                 {[
-                  { who: "Carte en carton", what: r.paper },
-                  { who: "Autres plateformes", what: r.other },
+                  { who: t("Carte en carton"), what: t(r.paper) },
+                  { who: t("Autres plateformes"), what: t(r.other) },
                 ].map(({ who, what }) => (
                   <div key={who}>
                     <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-charcoal/40">
@@ -193,10 +200,10 @@ export function Compare() {
                   Pointili
                 </th>
                 <th className="px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-slate">
-                  Carte en carton
+                  {t("Carte en carton")}
                 </th>
                 <th className="px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-slate">
-                  Autres plateformes
+                  {t("Autres plateformes")}
                 </th>
               </tr>
             </thead>
@@ -204,25 +211,25 @@ export function Compare() {
               {ROWS.map((r) => (
                 <tr key={r.label} className="border-b border-hair">
                   <td className="py-4 pr-4 align-top font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-slate">
-                    {r.label}
+                    {t(r.label)}
                   </td>
                   <td className="bg-lilac-2 px-4 py-4 align-top text-[14.5px] font-semibold leading-snug text-charcoal">
                     <span className="flex gap-2.5">
                       <Check className="mt-[4px] h-[14px] w-[14px] shrink-0 text-ok" />
-                      {r.us}
+                      {t(r.us)}
                     </span>
                   </td>
-                  <td className="px-4 py-4 align-top text-[14px] leading-snug text-slate">{r.paper}</td>
-                  <td className="px-4 py-4 align-top text-[14px] leading-snug text-slate">{r.other}</td>
+                  <td className="px-4 py-4 align-top text-[14px] leading-snug text-slate">{t(r.paper)}</td>
+                  <td className="px-4 py-4 align-top text-[14px] leading-snug text-slate">{t(r.other)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         <p className="mt-4 max-w-[62ch] text-[12.5px] leading-relaxed text-charcoal/45">
-          «&nbsp;Autres plateformes&nbsp;» décrit ce qui est courant sur ce
-          marché, pas un concurrent en particulier — leurs offres changent, la
-          nôtre aussi.
+          {t(
+            "« Autres plateformes » décrit ce qui est courant sur ce marché, pas un concurrent en particulier — leurs offres changent, la nôtre aussi.",
+          )}
         </p>
       </div>
       </section>
@@ -231,13 +238,13 @@ export function Compare() {
       <section className="border-t border-hair">
       <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
-          Le comptoir
+          {t("Le comptoir")}
         </p>
         <h2 className="mt-5 max-w-[20ch] text-[32px] md:text-[44px]">
-          Les questions qu&apos;on nous pose
+          {t("Les questions qu'on nous pose")}
         </h2>
         <p className="mt-5 max-w-[54ch] text-[15.5px] leading-relaxed text-slate">
-          Les vraies, celles du comptoir.
+          {t("Les vraies, celles du comptoir.")}
         </p>
 
         {/* Two ruled columns, gap-x only: with a vertical gap the hairlines
@@ -285,12 +292,12 @@ export function Compare() {
                     className={`group border-b border-hair ${i === 0 ? "first:border-t" : "md:first:border-t"}`}
                   >
                     <summary className="flex cursor-pointer list-none items-start gap-5 py-4 text-[15.5px] font-bold leading-snug marker:hidden [&::-webkit-details-marker]:hidden">
-                      <span className="flex-1">{q}</span>
+                      <span className="flex-1">{t(q)}</span>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="mt-[5px] h-3 w-3 shrink-0 text-royal transition-transform duration-200 group-open:rotate-45" aria-hidden>
                         <path d="M12 5v14M5 12h14" />
                       </svg>
                     </summary>
-                    <p className="pb-5 pe-8 text-[14.5px] leading-relaxed text-slate">{a}</p>
+                    <p className="pb-5 pe-8 text-[14.5px] leading-relaxed text-slate">{t(a)}</p>
                   </details>
                 ))}
               </div>

@@ -53,10 +53,20 @@ export function BrandLockup({
   size = 36,
   accent = "#b9a3ff",
   className = "",
+  wordmarkClassName = "",
 }: {
   size?: number;
   accent?: string;
   className?: string;
+  /*
+    Lets a caller drop the WORD and keep the mark. The landing masthead needs
+    it: brand 165px + language 94px + the way in 104px does not fit a 390px
+    phone, and it fits even less in Tunisian, where "فضاء المحلّ" is longer
+    than "Espace café". Something had to go, and a logo without its wordmark is
+    still the brand — a call to action clipped in half at the screen edge is
+    not still a button.
+  */
+  wordmarkClassName?: string;
 }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
@@ -71,7 +81,7 @@ export function BrandLockup({
         shells, so they are unaffected.
       */}
       <span
-        className="font-extrabold tracking-[-0.02em]"
+        className={`font-extrabold tracking-[-0.02em] ${wordmarkClassName}`}
         style={{ fontSize: Math.round(size * 0.5) }}
       >
         pointili<span style={{ color: accent }}>.online</span>
