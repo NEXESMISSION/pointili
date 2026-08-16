@@ -955,6 +955,27 @@ body:has(.landing-light) {
   line-height: 1.04;
 }
 
+/*
+  THE HERO HEADLINE IS A SANS, to the supplied design.
+
+  Everything else on this page stays Fraunces. The hero is the one place a
+  visitor decides whether to keep reading, and the design it was built to sets
+  that line in a heavy grotesque — Inter, which this page already loads and
+  reads in, so it costs no font.
+
+  `.landing-light h1.hero-title` is (0,2,1) and beats the (0,1,1) rule above.
+  It cannot be a Tailwind font utility: those live in @layer utilities and lose
+  to the unlayered `h1,h2,h3` rule further up this file, which is the cascade
+  trap documented on .safe-t and again on the rule above.
+*/
+.landing-light h1.hero-title {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  /* A grotesque at 64px wants the negative tracking back that the serif did
+     not — see the note above. */
+  letter-spacing: -0.033em;
+}
+
 /* The same face on something that is not a heading — the prices, mostly.
    A <p> takes no unlayered rule, so this only has to exist, not fight. */
 .landing-light .display {

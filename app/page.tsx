@@ -260,55 +260,116 @@ export default async function Landing({
         </div>
       </header>
 
-      {/* ── hero ───────────────────────────────────────────────────── */}
+      {/* ── hero ─────────────────────────────────────────────────────
+          Built to a supplied design. What that design is, and why each piece:
+
+          THE HEADLINE IS THREE WORDS SHORTER and there is no paragraph under
+          it at all. That is the whole idea — the old hero spent a headline, a
+          sub-headline and a 24-word sentence saying one thing, and a person
+          holding a phone reads the first line and the button.
+
+          THE ORIGIN LINE MOVED AND BECAME A BADGE. It was an 11px letterspaced
+          uppercase mono eyebrow ABOVE the headline, which is where a magazine
+          puts a section label — it was read as chrome. Under the headline, in
+          sentence case, on a white pill, it reads as the claim it is.
+
+          The flag is drawn, not typed. Windows ships no regional-indicator
+          glyphs, so 🇹🇳 renders there as the two bare letters "TN" — the reason
+          the footer dropped it. A red disc has no such problem in any font.
+
+          NO "200 COMMERCES NOUS FONT CONFIANCE". The design has a row of
+          avatars and that sentence, and it is not true: this product has not
+          launched. The one place a visitor looks for evidence is the one place
+          a false number costs everything, and this page already deleted a fake
+          logo strip for exactly that reason. The trial terms sit there instead,
+          which is the honest version of the same reassurance. */}
       <section className="relative overflow-hidden border-b border-hair">
         <div className="mx-auto grid max-w-6xl items-stretch px-5 md:grid-cols-12 md:px-8">
-          <div className="pb-12 pt-12 md:col-span-7 md:pb-24 md:pr-12 md:pt-24">
-            <p className="flex items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
-              <span aria-hidden className="h-px w-7 bg-royal" />
-              {t("Fait en Tunisie, pour la Tunisie")}
-            </p>
-
-            <h1 className="mt-6 text-[38px] md:text-[52px] lg:text-[58px]">
+          <div className="relative z-10 pb-12 pt-14 md:col-span-6 md:pb-24 md:pe-10 md:pt-28">
+            <h1 className="hero-title text-[42px] leading-[1.06] md:text-[56px] lg:text-[64px]">
               {t("Vos habitués reviennent.")}
               <br />
-              <span className="text-royal">{t("Vous saurez enfin lesquels.")}</span>
+              <span className="text-royal">{t("Simplement.")}</span>
             </h1>
-            <p className="mt-6 max-w-[44ch] text-[16px] leading-[1.65] text-slate">
-              <Tpl
-                tpl={t(
-                  "La carte de fidélité de votre commerce, dans le téléphone de vos clients. {none} — ni pour eux, ni pour vous.",
-                )}
-                slots={{
-                  none: (
-                    <span className="font-semibold text-charcoal">
-                      {t("Aucune application")}
-                    </span>
-                  ),
-                }}
-              />
+
+            <p className="mt-7 inline-flex items-center gap-2.5 rounded-full border border-hair bg-white px-4 py-2 text-[13.5px] font-semibold text-charcoal">
+              <span aria-hidden className="grid h-5 w-5 place-items-center rounded-full bg-royal/12">
+                <span className="h-[7px] w-[7px] rounded-full bg-royal" />
+              </span>
+              {t("Fait en Tunisie, pour la Tunisie")}
+              {/* the flag, drawn — see the note above */}
+              <span aria-hidden className="h-[15px] w-[15px] rounded-full bg-[#e70013]" />
             </p>
 
-            <div className="mt-10">
+            <div className="mt-9 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:gap-7">
               <Link
                 href={cta.href}
-                className="group inline-flex items-center gap-3 rounded-[3px] bg-royal px-8 py-4 text-[15px] font-bold text-white transition hover:bg-[#4c33b4] active:translate-y-px"
+                className="group inline-flex items-center justify-center gap-3 rounded-[12px] bg-royal px-8 py-4 text-[15px] font-bold text-white transition hover:bg-[#4c33b4] active:translate-y-px"
               >
                 {cta.label}
                 <Arrow className="cta-arrow h-4 w-4" />
               </Link>
-              <p className="mt-4 text-[13px] text-slate">{cta.note}</p>
+
+              {/* The second way in is a LOOK, not a second sale. It goes to the
+                  two clips further down — the only thing on this page that
+                  answers "yes, but what is it" without asking for anything. */}
+              <a
+                href="#produit"
+                className="group inline-flex items-center justify-center gap-2.5 text-[15px] font-bold text-charcoal transition hover:text-royal"
+              >
+                {t("Découvrir Pointili")}
+                <span className="grid h-7 w-7 place-items-center rounded-full border border-hair text-royal transition group-hover:border-royal/40">
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="ms-[2px] h-3 w-3">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </span>
+              </a>
             </div>
+
+            <p className="mt-7 text-[13px] text-slate">{cta.note}</p>
           </div>
 
           {/*
-            The colour field is a child of the ART COLUMN, not of the section,
-            so its left edge is the grid line — exactly where the type column
-            ends — at every viewport, with no percentage guessing.
+            The art field is a child of the ART COLUMN, not of the section, so
+            its left edge is the grid line — exactly where the type column ends
+            — at every viewport, with no percentage guessing. It bleeds right
+            past the container into the section's overflow-hidden.
+
+            Pale, with a dot grid, rather than the solid lilac slab it was: in
+            the design the device sits on a near-white field and the pattern is
+            what stops that field reading as an empty half of the page.
           */}
-          <div className="relative md:col-span-5">
-            <div className="absolute inset-y-0 -left-5 -right-5 bg-lilac-2 md:left-0 md:-right-[50vw]" />
-            <div className="relative flex justify-center pb-10 pt-2 md:h-full md:items-end md:pb-0 md:pt-16">
+          <div className="relative md:col-span-6">
+            {/*
+              LOGICAL SIDES, and -z-10, because this field BLEEDS.
+
+              Written with left/right it bleeds physically right — which in
+              Tunisian is straight across the type column, and since this panel
+              comes after that column in the DOM it painted over it. The whole
+              hero rendered as an empty dotted rectangle with a phone in it: no
+              headline, no badge, no buttons, in the language half this country
+              reads. start/end bleed toward the page edge in both directions.
+
+              The type column is lifted instead of this being pushed down: at
+              -z-10 the field went behind an ancestor's white background and
+              the dot grid disappeared from both languages. A backdrop needs to
+              stay above the page and below the words, which is a job for the
+              words.
+            */}
+            <div className="absolute inset-y-0 -start-5 -end-5 bg-[#faf9fe] md:start-0 md:-end-[50vw]">
+              <div
+                aria-hidden
+                className="absolute inset-0"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle, rgba(91,63,209,.16) 1.6px, transparent 1.6px)",
+                  backgroundSize: "22px 22px",
+                  maskImage: "radial-gradient(120% 80% at 60% 45%, #000 35%, transparent 78%)",
+                  WebkitMaskImage: "radial-gradient(120% 80% at 60% 45%, #000 35%, transparent 78%)",
+                }}
+              />
+            </div>
+            <div className="relative flex justify-center pb-10 pt-4 md:h-full md:items-end md:pb-0 md:pt-20">
               <HeroPhone />
             </div>
           </div>
@@ -335,7 +396,7 @@ export default async function Landing({
       </section>
 
       {/* ── the product, filmed ────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
+      <section id="produit" className="mx-auto max-w-6xl scroll-mt-4 px-5 py-16 md:px-8 md:py-24">
         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
           {t("Le produit, filmé")}
         </p>

@@ -792,6 +792,13 @@ const TN: Record<string, string> = {
   "La carte client": "كارت الحريف",
   /* The six-month offer is a line inside the year now, not a second card. */
   "Ou 65 TND pour 6 mois.": "ولا 65 دينار لـ6 شهور.",
+  /*
+    The hero's second line. "Simplement." replaced "Vous saurez enfin lesquels."
+    — بساطة would be the noun; ".وبكل بساطة" is how the promise is actually
+    said, and it keeps the full stop the design sets it with.
+  */
+  "Simplement.": "وبكل بساطة.",
+  "Découvrir Pointili": "شوف Pointili",
   "Encaisser": "الخلاص",
   "Cinq secondes, pendant que vous rendez la monnaie": "خمس ثواني، وإنت تردّ الصرف",
   "Le client donne son numéro de téléphone. Vous tapez le montant en dinars. C'est fini.": "الحريف يعطيك نمرة تليفونو. إنت تكتب المبلغ بالدينار. وسالينا.",
