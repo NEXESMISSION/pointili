@@ -242,25 +242,60 @@ export function Compare() {
 
         {/* Two ruled columns, gap-x only: with a vertical gap the hairlines
             would stop and restart around every row and the whole thing would
-            go back to looking like eight little cards. */}
-        <div className="mt-10 grid md:grid-cols-2 md:gap-x-14">
-          {QA.map(({ q, a }) => (
-            /* <details> so a phone shows eight questions instead of four
-               screens of answers, and so it works with JavaScript off.
+            go back to looking like eight little cards.
 
-               The marker is a bare + at the trailing edge — no tinted circle
-               behind it. It still turns into a × when the answer is open,
-               which is the one piece of state this control has. */
-            <details key={q} className="group border-b border-hair first:border-t md:[&:nth-child(2)]:border-t">
-              <summary className="flex cursor-pointer list-none items-start gap-5 py-4 text-[15.5px] font-bold leading-snug marker:hidden [&::-webkit-details-marker]:hidden">
-                <span className="flex-1">{q}</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="mt-[5px] h-3 w-3 shrink-0 text-royal transition-transform duration-200 group-open:rotate-45" aria-hidden>
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-              </summary>
-              <p className="pb-5 pr-8 text-[14.5px] leading-relaxed text-slate">{a}</p>
-            </details>
-          ))}
+            ── EACH COLUMN IS ITS OWN STACK, and that is a fix, not a tidy-up ──
+
+            The eight <details> used to be direct children of this grid, which
+            made every pair share a ROW. A grid row is as tall as its tallest
+            cell, so opening one answer stretched the row and left a column of
+            blank page beside it — one four-line answer on the right pushed a
+            160px hole under the left-hand question, and the reader's eye read
+            that hole as "this one is broken" or "something failed to load".
+
+            Wrapping each half means opening a question only pushes the
+            questions BELOW IT IN ITS OWN COLUMN, which is what a reader
+            expects and what every accordion does.
+
+            `contents` on a phone, `block` from md up: at one column the
+            wrappers must not exist as boxes at all, or the eight questions
+            would render as two stacks of four and the rules would break in the
+            middle. So they collapse into the grid on mobile — and because they
+            collapse, the split is FIRST HALF / SECOND HALF rather than
+            odd/even: it is the only split that reads 1-8 in order when the two
+            wrappers disappear. */}
+        <div className="mt-10 grid md:grid-cols-2 md:gap-x-14">
+          {[QA.slice(0, Math.ceil(QA.length / 2)), QA.slice(Math.ceil(QA.length / 2))].map(
+            (column, i) => (
+              <div key={i} className="contents md:block">
+                {column.map(({ q, a }) => (
+                  /* <details> so a phone shows eight questions instead of four
+                     screens of answers, and so it works with JavaScript off.
+
+                     The marker is a bare + at the trailing edge — no tinted
+                     circle behind it. It still turns into a × when the answer
+                     is open, which is the one piece of state this control has.
+
+                     The second column's top rule is md-only: on a phone the
+                     two stacks are one continuous list, and a border-t there
+                     would double up against the border-b above it and draw one
+                     2px line across the middle of the questions. */
+                  <details
+                    key={q}
+                    className={`group border-b border-hair ${i === 0 ? "first:border-t" : "md:first:border-t"}`}
+                  >
+                    <summary className="flex cursor-pointer list-none items-start gap-5 py-4 text-[15.5px] font-bold leading-snug marker:hidden [&::-webkit-details-marker]:hidden">
+                      <span className="flex-1">{q}</span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="mt-[5px] h-3 w-3 shrink-0 text-royal transition-transform duration-200 group-open:rotate-45" aria-hidden>
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                    </summary>
+                    <p className="pb-5 pe-8 text-[14.5px] leading-relaxed text-slate">{a}</p>
+                  </details>
+                ))}
+              </div>
+            ),
+          )}
         </div>
       </div>
       </section>
