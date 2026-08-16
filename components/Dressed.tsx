@@ -37,7 +37,7 @@ const LOOKS = [
 
 export function Dressed() {
   return (
-    <section className="border-t border-hair bg-lilac-2">
+    <section className="border-t border-hair bg-mist">
       <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
           Votre marque

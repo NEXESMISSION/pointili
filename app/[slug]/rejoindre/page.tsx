@@ -1,4 +1,6 @@
 import { ShopLogo } from "@/components/ShopLogo";
+import { currentLang, t as translation } from "@/lib/i18n";
+import { Tpl } from "@/components/Tpl";
 import { notFound, redirect } from "next/navigation";
 import { currentDiner, lastDinerPhone } from "@/lib/auth/diner";
 import { businessType } from "@/lib/businessTypes";
@@ -99,6 +101,9 @@ export default async function Rejoindre({
   const known = hinted ? await getAccount(hinted) : null;
   const heldPoints = known ? await getBalance(cafe.id, known.phone) : null;
 
+  const lang = await currentLang();
+  const t = await translation();
+
   return (
     <div className="relative flex flex-1 flex-col overflow-hidden px-5 pb-8 pt-7">
       {/*
@@ -184,16 +189,20 @@ export default async function Rejoindre({
               forgotten them. */}
           <p className="mt-0.5 text-[13px] text-slate">
             {known ? (
-              <>Ta carte de fidélité</>
+              t("Ta carte de fidélité")
             ) : program.active && program.welcomePoints > 0 ? (
-              <>
-                <b className="font-bold" style={{ color: "var(--cafe-text)" }}>
-                  {program.welcomePoints} points offerts
-                </b>{" "}
-                à l&apos;inscription
-              </>
+              <Tpl
+                tpl={t("{n} offerts à l'inscription")}
+                slots={{
+                  n: (
+                    <b className="font-bold" style={{ color: "var(--cafe-text)" }}>
+                      {t.n(program.welcomePoints, "point")}
+                    </b>
+                  ),
+                }}
+              />
             ) : (
-              <>Création de ton compte</>
+              t("Création de ton compte")
             )}
           </p>
           {/*
@@ -208,9 +217,13 @@ export default async function Rejoindre({
           {!known && program.active && program.pointsPerTnd > 0 && (
             <p className="mt-1.5 text-[12px] text-slate">
               {program.pointsPerTnd >= 1
-                ? `1 dinar dépensé = ${Math.round(program.pointsPerTnd * 100) / 100} point${program.pointsPerTnd > 1 ? "s" : ""}`
-                : `${Math.round((1 / program.pointsPerTnd) * 10) / 10} dinars dépensés = 1 point`}
-              {" · ils n'expirent jamais"}
+                ? t("1 dinar dépensé = {n}", {
+                    n: t.n(Math.round(program.pointsPerTnd * 100) / 100, "point"),
+                  })
+                : t("{d} dinars dépensés = 1 point", {
+                    d: Math.round((1 / program.pointsPerTnd) * 10) / 10,
+                  })}
+              {t(" · ils n'expirent jamais")}
             </p>
           )}
         </div>
@@ -222,10 +235,11 @@ export default async function Rejoindre({
             name={known.name ?? null}
             points={heldPoints}
             cafeName={cafe.name}
+            lang={lang}
           />
         ) : (
           <div className="mt-7">
-            <JoinForm slug={slug} />
+            <JoinForm slug={slug} lang={lang} />
           </div>
         )}
 
@@ -236,9 +250,14 @@ export default async function Rejoindre({
         */}
         {!known && (
           <p className="mt-9 text-center text-[14px] font-extrabold leading-snug text-charcoal">
-            Un seul compte.
+            {t("Un seul compte.")}
             <br />
-            Utilisable <span style={{ color: "var(--cafe-text)" }}>partout</span>.
+            <Tpl
+              tpl={t("Utilisable {partout}.")}
+              slots={{
+                partout: <span style={{ color: "var(--cafe-text)" }}>{t("partout")}</span>,
+              }}
+            />
           </p>
         )}
       </div>

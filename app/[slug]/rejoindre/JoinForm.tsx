@@ -1,5 +1,7 @@
 "use client";
 
+import { translator, type Lang } from "@/lib/dict";
+import { Tpl } from "@/components/Tpl";
 import { useState, useActionState } from "react";
 import { joinAction, type JoinState } from "./actions";
 
@@ -13,7 +15,8 @@ const initial: JoinState = {};
  * that from a page headed "choose a code". The toggle makes the login path
  * obvious and expected; both modes post to the same action.
  */
-export function JoinForm({ slug }: { slug: string }) {
+export function JoinForm({ slug, lang = "fr" }: { slug: string; lang?: Lang }) {
+  const t = translator(lang);
   const [returning, setReturning] = useState(false);
   // React 19 auto-resets an uncontrolled <form action={…}>, which wiped the
   // phone number too on a failed attempt. Keeping it controlled means a wrong
@@ -41,10 +44,10 @@ export function JoinForm({ slug }: { slug: string }) {
       {/* new vs returning — so signing in is a first-class, obvious path */}
       <div className="mb-5 grid grid-cols-2 gap-1 rounded-2xl bg-[var(--track)] p-1">
         <button type="button" onClick={() => setReturning(false)} className={tab(!returning)}>
-          Nouveau compte
+          {t("Nouveau compte")}
         </button>
         <button type="button" onClick={() => setReturning(true)} className={tab(returning)}>
-          J&apos;ai déjà un compte
+          {t("J'ai déjà un compte")}
         </button>
       </div>
 
@@ -56,7 +59,7 @@ export function JoinForm({ slug }: { slug: string }) {
 
         <div>
           <label htmlFor="phone" className={label}>
-            Numéro de téléphone
+            {t("Numéro de téléphone")}
           </label>
           {/*
             The +216 is fixed furniture, not something to type.
@@ -70,12 +73,15 @@ export function JoinForm({ slug }: { slug: string }) {
           <div className="flex items-stretch gap-2">
             <span className="flex shrink-0 items-center gap-1.5 rounded-2xl border border-[var(--line-strong)] bg-white px-3 text-[14px] font-semibold text-charcoal">
               <span aria-hidden>🇹🇳</span>
-              +216
+              <span dir="ltr">+216</span>
             </span>
+            {/* dir=ltr: a phone number is typed left to right in every
+                language, and an RTL field reverses the caret while you enter it. */}
             <input
               id="phone"
               name="phone"
               type="tel"
+              dir="ltr"
               inputMode="tel"
               autoComplete="tel"
               required
@@ -89,7 +95,7 @@ export function JoinForm({ slug }: { slug: string }) {
 
         <div>
           <label htmlFor="pin" className={label}>
-            {returning ? "Ton code secret" : "Choisis un code secret"}
+            {returning ? t("Ton code secret") : t("Choisis un code secret")}
           </label>
           <div className="relative">
             <input
@@ -101,7 +107,8 @@ export function JoinForm({ slug }: { slug: string }) {
               maxLength={4}
               required
               placeholder="••••"
-              aria-label="Code secret à 4 chiffres"
+              dir="ltr"
+              aria-label={t("Code secret à 4 chiffres")}
               className={`${box} pr-16 tracking-[0.4em]`}
             />
             {/*
@@ -115,7 +122,7 @@ export function JoinForm({ slug }: { slug: string }) {
               onClick={() => setShowPin((v) => !v)}
               className="absolute inset-y-0 right-0 px-4 text-[11px] font-bold uppercase tracking-[0.06em] text-slate"
             >
-              {showPin ? "Cacher" : "Voir"}
+              {showPin ? t("Cacher") : t("Voir")}
             </button>
           </div>
           {/*
@@ -127,8 +134,8 @@ export function JoinForm({ slug }: { slug: string }) {
           */}
           <p className="mt-2 text-[12px] leading-snug text-slate">
             {returning
-              ? "Le code que tu as choisi en créant ton compte. Oublié ? Demande au comptoir."
-              : "Garde-le : c'est lui qui te rendra tes cartes sur un autre téléphone. Oublié ? Le commerce peut le réinitialiser."}
+              ? t("Le code que tu as choisi en créant ton compte. Oublié ? Demande au comptoir.")
+              : t("Garde-le : c'est lui qui te rendra tes cartes sur un autre téléphone. Oublié ? Le commerce peut le réinitialiser.")}
           </p>
         </div>
 
@@ -136,7 +143,7 @@ export function JoinForm({ slug }: { slug: string }) {
         {!returning && (
           <div>
             <label htmlFor="name" className={label}>
-              Ton prénom <span className="font-normal text-slate">(optionnel)</span>
+              {t("Ton prénom")} <span className="font-normal text-slate">{t("(optionnel)")}</span>
             </label>
             <input
               id="name"
@@ -164,9 +171,11 @@ export function JoinForm({ slug }: { slug: string }) {
           className="!mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[14.5px] font-bold transition active:scale-[0.98] disabled:opacity-60"
           style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
         >
-          {pending ? "· · ·" : returning ? "Retrouver mes cartes" : "Créer mon compte"}
+          {pending ? "· · ·" : returning ? t("Retrouver mes cartes") : t("Créer mon compte")}
           {!pending && (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]" aria-hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px] rtl:-scale-x-100" aria-hidden>
+              {/* an arrow is a picture of a direction; dir="rtl" does not
+                   turn pictures round */}
               <path d="M5 12h14M13 6l6 6-6 6" />
             </svg>
           )}
@@ -174,14 +183,21 @@ export function JoinForm({ slug }: { slug: string }) {
 
         {!returning && (
           <p className="pt-0.5 text-center text-[11.5px] leading-relaxed text-slate">
-            En continuant, tu acceptes nos{" "}
-            <a href="/conditions" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-charcoal">
-              conditions
-            </a>{" "}
-            et notre{" "}
-            <a href="/confidentialite" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-charcoal">
-              politique de confidentialité
-            </a>.
+            <Tpl
+              tpl={t("En continuant, tu acceptes nos {conditions} et notre {confidentialite}.")}
+              slots={{
+                conditions: (
+                  <a href="/conditions" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-charcoal">
+                    {t("conditions")}
+                  </a>
+                ),
+                confidentialite: (
+                  <a href="/confidentialite" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-charcoal">
+                    {t("politique de confidentialité")}
+                  </a>
+                ),
+              }}
+            />
           </p>
         )}
       </form>

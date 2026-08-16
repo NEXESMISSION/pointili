@@ -6,6 +6,8 @@ import { useMemo, useState } from "react";
 import { businessType } from "@/lib/businessTypes";
 import type { WalletCafe } from "@/lib/db";
 import { fmtPoints } from "@/lib/points";
+import { translator, type Lang, type T } from "@/lib/dict";
+import { Tpl } from "@/components/Tpl";
 import { StampIcon } from "@/components/icons";
 import { cafeVars } from "@/lib/theme";
 
@@ -30,6 +32,7 @@ const SEARCH_FROM = 6;
 
 type FilterKey = "all" | "pending" | "close";
 
+/* The French label is also the dictionary key — see lib/dict. */
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "Toutes" },
   { key: "pending", label: "À récupérer" },
@@ -68,6 +71,7 @@ export function WalletView({
   code,
   nudges = {},
   isOwner = false,
+  lang = "fr",
 }: {
   cards: WalletCafe[];
   currentSlug: string | null;
@@ -77,7 +81,10 @@ export function WalletView({
   isOwner?: boolean;
   /** businessId → next reward, or null when they can already afford the top one. */
   nudges?: Record<string, Nudge>;
+  /** The reader's language — a translator cannot cross the server boundary. */
+  lang?: Lang;
 }) {
+  const t = translator(lang);
   const router = useRouter();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -159,14 +166,12 @@ export function WalletView({
             panel is what made this header look unfinished rather than big.
           */}
           <h1 className="truncate whitespace-nowrap text-[21px] font-extrabold leading-tight tracking-[-0.02em] text-charcoal">
-            Mes cartes
+            {t("Mes cartes")}
           </h1>
-          <p className="text-[12.5px] text-slate">
-            {cards.length} boutique{cards.length === 1 ? "" : "s"}
-          </p>
+          <p className="text-[12.5px] text-slate">{t.n(cards.length, "boutique")}</p>
         </div>
 
-        {code && <CodePanel code={code} />}
+        {code && <CodePanel code={code} t={t} />}
       </header>
 
       {/*
@@ -194,7 +199,7 @@ export function WalletView({
                   on ? "bg-charcoal text-white" : "d-card text-slate"
                 }`}
               >
-                {f.label}
+                {t(f.label)}
                 <span className={`ml-1.5 tabular-nums ${on ? "opacity-70" : "opacity-55"}`}>
                   {counts[f.key]}
                 </span>
@@ -225,12 +230,12 @@ export function WalletView({
       {shown.length === 0 ? (
         <p className="d-card mt-4 px-6 py-12 text-center text-[13.5px] leading-relaxed text-slate">
           {q
-            ? "Aucune boutique ne correspond."
+            ? t("Aucune boutique ne correspond.")
             : filter === "pending"
-              ? "Rien à récupérer pour le moment."
+              ? t("Rien à récupérer pour le moment.")
               : filter === "close"
-                ? "Aucune carte proche de sa récompense."
-                : "Scanne le QR d'un commerce pour ajouter ta première carte."}
+                ? t("Aucune carte proche de sa récompense.")
+                : t("Scanne le QR d'un commerce pour ajouter ta première carte.")}
         </p>
       ) : (
         /* TWO PER ROW. One card per line made a three-shop wallet a page you
@@ -246,6 +251,7 @@ export function WalletView({
               card={c}
               current={c.slug === backSlug}
               nudge={nudges[c.businessId] ?? null}
+              t={t}
             />
           ))}
         </ul>
@@ -259,10 +265,10 @@ export function WalletView({
           product they pay for while looking for the door back to their till.
           They have that door now, on every customer screen: OwnerReturn. */}
       {!isOwner && (
-        <p className="mt-auto pt-10 text-center text-[11.5px] text-slate">
-          Vous êtes commerçant ?{" "}
+        <p className="mt-auto pt-10 text-center text-[13px] text-slate">
+          {t("Vous êtes commerçant ?")}{" "}
           <Link href="/?pro=1" className="font-semibold text-charcoal underline underline-offset-2">
-            Espace boutique
+            {t("Espace boutique")}
           </Link>
         </p>
       )}
@@ -312,7 +318,7 @@ export function WalletView({
  * it is — this one is theirs and permanent, the six-character ones are reward
  * vouchers that expire.
  */
-function CodePanel({ code }: { code: string }) {
+function CodePanel({ code, t }: { code: string; t: T }) {
   const [copied, setCopied] = useState(false);
 
   return (
@@ -327,14 +333,18 @@ function CodePanel({ code }: { code: string }) {
           () => {},
         );
       }}
-      aria-label={`Copier mon code client ${code}`}
+      aria-label={`${t("Mon code client")} ${code}`}
       className="d-card shrink-0 rounded-xl px-3 py-1.5 text-center transition active:scale-[0.97]"
     >
       <span className="block text-[8.5px] font-bold uppercase tracking-[0.08em] text-slate">
-        Mon code client
+        {t("Mon code client")}
       </span>
       <span className="mt-0.5 flex items-center justify-center gap-1.5">
-        <span className="font-mono text-[15.5px] font-bold tracking-[0.12em] text-charcoal">{code}</span>
+        {/* dir=ltr: four Latin characters carrying trailing letter-spacing,
+            which RTL puts on the wrong side of the last glyph. */}
+        <span dir="ltr" className="font-mono text-[15.5px] font-bold tracking-[0.12em] text-charcoal">
+          {code}
+        </span>
         {copied ? (
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 text-ok">
             <path d="m5 13 4 4L19 7" />
@@ -355,14 +365,16 @@ function CardRow({
   current,
   nudge,
   index,
+  t,
 }: {
   card: WalletCafe;
   current: boolean;
   nudge: Nudge;
+  t: T;
   /** Position in the list — only used to stagger the arrival. */
   index: number;
 }) {
-  const t = businessType(card.businessType);
+  const type = businessType(card.businessType);
   const pending = card.pendingWins + card.pendingRewards;
 
   return (
@@ -417,14 +429,14 @@ function CardRow({
               className="grid h-[38px] w-[38px] place-items-center rounded-full text-[17px]"
               style={{ background: "color-mix(in oklab, var(--cafe-ink) 16%, transparent)" }}
             >
-              <span className="shop-mark">{t.emoji}</span>
+              <span className="shop-mark">{type.emoji}</span>
             </span>
           )}
 
           <span className="mt-2 block text-[14px] font-extrabold leading-tight line-clamp-2">
             {card.name}
           </span>
-          <span className="block truncate text-[11px] font-medium opacity-70">{t.label}</span>
+          <span className="block truncate text-[11px] font-medium opacity-70">{t(type.label)}</span>
         </div>
 
         <div className="px-3 pb-3 pt-2.5">
@@ -435,7 +447,9 @@ function CardRow({
             >
               {fmtPoints(card.balance)}
             </span>
-            <span className="text-[11.5px] font-bold text-slate">points</span>
+            <span className="text-[11.5px] font-bold text-slate">
+              {t.unit(card.balance, "point")}
+            </span>
           </span>
 
           {nudge && (
@@ -452,8 +466,15 @@ function CardRow({
               {/* two lines allowed: the prize is the reason to open this card,
                   and "Encore 155 pour brunch com…" names nothing */}
               <span className="mt-1.5 block text-[11px] leading-snug text-slate line-clamp-2">
-                Encore <b className="font-extrabold text-charcoal">{fmtPoints(nudge.needed)}</b> pour{" "}
-                {nudge.label.toLowerCase()}
+                {/* No .toLowerCase(): it does nothing to Arabic script and was
+                    already wrong for a shop's own capitalised reward name. */}
+                <Tpl
+                  tpl={t("Encore {n} pour {reward}")}
+                  slots={{
+                    n: <b className="font-extrabold text-charcoal">{t.n(nudge.needed, "point")}</b>,
+                    reward: t(nudge.label),
+                  }}
+                />
               </span>
             </>
           )}
@@ -465,14 +486,16 @@ function CardRow({
           {card.stampsEnabled && card.stamps > 0 && (
             <span className="mt-1.5 flex items-center gap-1 text-[11px] text-slate">
               <StampIcon className="h-[13px] w-[13px]" />
-              <b className="font-extrabold text-charcoal">{card.stamps}</b> tampon
-              {card.stamps > 1 ? "s" : ""}
+              <Tpl
+                tpl={t("{n} tampons")}
+                slots={{ n: <b className="font-extrabold text-charcoal">{card.stamps}</b> }}
+              />
             </span>
           )}
 
           {pending > 0 && (
             <span className="mt-2 flex w-full items-center justify-center gap-1 rounded-full bg-gold-soft px-2 py-1 text-[10.5px] font-extrabold text-gold-deep">
-              🎁 {pending} à récupérer
+              🎁 {t("{n} à récupérer", { n: t.n(pending, "récompense") })}
             </span>
           )}
         </div>

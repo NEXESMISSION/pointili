@@ -1,8 +1,9 @@
 "use client";
 
+import { translator, type Lang } from "@/lib/dict";
+import { Tpl } from "@/components/Tpl";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { spinAction, type SpinState } from "./actions";
-import { fmtPoints } from "@/lib/points";
 import type { Prize } from "@/lib/types";
 
 /**
@@ -67,12 +68,16 @@ export function WheelPlayer({
   prizes,
   spinCost,
   balance,
+  lang = "fr",
 }: {
   slug: string;
   prizes: Prize[];
   spinCost: number;
   balance: number;
+  /** The reader's language — a translator cannot cross the server boundary. */
+  lang?: Lang;
 }) {
+  const t = translator(lang);
   const [state, formAction, pending] = useActionState<SpinState, FormData>(
     spinAction.bind(null, slug),
     {},
@@ -182,7 +187,7 @@ export function WheelPlayer({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label={`La roue — ${fmtPoints(spinCost)} points le tour`}
+          aria-label={t("La roue — {n} le tour", { n: t.n(spinCost, "point") })}
           /* 86px up on a phone clears the tab bar. There is no tab bar at lg,
              and pinning it to the window edge left it floating alone in the
              right-hand gutter, a quarter of a screen from the rewards it
@@ -198,7 +203,7 @@ export function WheelPlayer({
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="La roue"
+          aria-label={t("La roue")}
           className="fixed inset-0 z-40 flex items-end justify-center bg-black/45 px-3 pb-3 backdrop-blur-sm lg:items-center lg:pb-3"
           onClick={() => !spinning && setOpen(false)}
         >
@@ -209,16 +214,18 @@ export function WheelPlayer({
             <button
               type="button"
               onClick={() => !spinning && setOpen(false)}
-              aria-label="Fermer"
+              aria-label={t("Fermer")}
               className="absolute right-6 top-6 grid h-9 w-9 place-items-center rounded-full bg-[var(--panel-2)] text-slate"
             >
               ×
             </button>
-      <h2 className="text-[15.5px] font-extrabold text-charcoal">La roue</h2>
+      <h2 className="text-[15.5px] font-extrabold text-charcoal">{t("La roue")}</h2>
       <p className="mx-auto mt-1 max-w-[30ch] text-[13px] text-slate">
         {spinCost > 0
-          ? `${fmtPoints(spinCost)} points le tour. Tout le monde repart avec quelque chose.`
-          : "Un tour offert. Tout le monde repart avec quelque chose."}
+          ? t("{n} le tour. Tout le monde repart avec quelque chose.", {
+              n: t.n(spinCost, "point"),
+            })
+          : t("Un tour offert. Tout le monde repart avec quelque chose.")}
       </p>
 
       <div className="relative mx-auto mt-5 w-[240px]">
@@ -275,10 +282,10 @@ export function WheelPlayer({
       {revealed ? (
         <div ref={wonRef} className="mt-5">
           <p className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-slate">
-            Tu as gagné
+            {t("Tu as gagné")}
           </p>
-          <p className="mt-1 text-[17px] font-extrabold text-charcoal">{revealed.label}</p>
-          <p className="mt-3 text-[12.5px] text-slate">Fais scanner ça au comptoir</p>
+          <p className="mt-1 text-[17px] font-extrabold text-charcoal">{t(revealed.label)}</p>
+          <p className="mt-3 text-[12.5px] text-slate">{t("Fais scanner ça au comptoir")}</p>
           {/* Same pass zone as a bought reward — a win is collected by the same
               cashier pressing the same button, so it must not look like a
               different kind of object. */}
@@ -291,14 +298,19 @@ export function WheelPlayer({
               dangerouslySetInnerHTML={{ __html: revealed.qr }}
             />
           </div>
+          {/* dir=ltr: Latin characters with trailing letter-spacing, read out
+              across a counter — see the same treatment on every other code. */}
           <p
-            className="mt-2.5 font-mono text-[23px] font-extrabold tracking-[0.14em]"
+            dir="ltr"
+            className="mt-2.5 font-mono text-[23px] font-extrabold tracking-[0.14em] rtl:text-right"
             style={{ color: "var(--cafe-text)" }}
           >
             {revealed.code}
           </p>
           <p className="mt-2 text-[12px] text-slate">
-            Pas de date limite · il te reste {fmtPoints(revealed.balance)} points
+            {t("Pas de date limite · il te reste {n}", {
+              n: t.n(revealed.balance, "point"),
+            })}
           </p>
         </div>
       ) : (
@@ -309,12 +321,19 @@ export function WheelPlayer({
               style={{ background: "var(--cafe-soft)", border: "1px solid var(--cafe-line)" }}
             >
               <p className="text-[13.5px] font-extrabold leading-snug text-charcoal">
-                Dépenser {fmtPoints(spinCost)} points pour un tour ?
+                {t("Dépenser {n} pour un tour ?", { n: t.n(spinCost, "point") })}
               </p>
               <p className="mt-1 text-[12px] leading-snug text-slate">
-                Il te restera{" "}
-                <b className="font-bold text-charcoal">{fmtPoints(balance - spinCost)} points</b>.
-                Tout le monde repart avec quelque chose.
+                <Tpl
+                  tpl={t("Il te restera {n}. Tout le monde repart avec quelque chose.")}
+                  slots={{
+                    n: (
+                      <b className="font-bold text-charcoal">
+                        {t.n(balance - spinCost, "point")}
+                      </b>
+                    ),
+                  }}
+                />
               </p>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button
@@ -322,7 +341,7 @@ export function WheelPlayer({
                   onClick={() => setConfirming(false)}
                   className="d-card min-h-[46px] text-[13.5px] font-bold text-charcoal active:scale-[0.99]"
                 >
-                  Annuler
+                  {t("Annuler")}
                 </button>
                 <button
                   type="submit"
@@ -330,7 +349,7 @@ export function WheelPlayer({
                   className="min-h-[46px] rounded-2xl text-[13.5px] font-extrabold transition active:scale-[0.98] disabled:opacity-50"
                   style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
                 >
-                  {spinning ? "· · ·" : "Oui, tourner"}
+                  {spinning ? "· · ·" : t("Oui, tourner")}
                 </button>
               </div>
             </div>
@@ -343,10 +362,10 @@ export function WheelPlayer({
               style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
             >
               {spinning
-                ? "La roue tourne…"
+                ? t("La roue tourne…")
                 : affordable
-                  ? `Tourner · ${fmtPoints(spinCost)} points`
-                  : `Il te faut ${fmtPoints(spinCost)} points`}
+                  ? t("Tourner · {n}", { n: t.n(spinCost, "point") })
+                  : t("Il te faut {n}", { n: t.n(spinCost, "point") })}
             </button>
           )}
           {state.error && (

@@ -4,6 +4,7 @@ import { OwnerReturn } from "@/components/OwnerReturn";
 import { WalletView } from "@/components/WalletView";
 import { currentDiner } from "@/lib/auth/diner";
 import { dinerWallet } from "@/lib/db";
+import { currentLang, dir } from "@/lib/i18n";
 
 export const metadata = { title: "Mes cartes" };
 export const dynamic = "force-dynamic";
@@ -45,6 +46,8 @@ export default async function Cartes({
     this needs no migration — a wallet holds a handful of cards, and it is one
     small query each, in parallel.
   */
+  const lang = await currentLang();
+
   const { getRewards, nextRewardNudge } = await import("@/lib/data");
   const nudges = Object.fromEntries(
     await Promise.all(
@@ -62,7 +65,14 @@ export default async function Cartes({
     /* No --cafe here on purpose: this screen belongs to no single shop. Each
        card carries its own colour (see WalletView), and the page around them
        stays the same white as the rest of the client app. */
-    <div className="safe-t safe-b app-shell app-shell--light d-shell min-h-dvh px-5 lg:max-w-[880px] [--safe-pb:2.5rem] [--safe-pt:1.5rem]">
+    /* This screen sits OUTSIDE /[slug], so no layout above it has set lang or
+       dir — it carries both itself or the Tunisian wallet renders left to
+       right with its chevrons pointing the wrong way. */
+    <div
+      lang={lang === "tn" ? "ar-TN" : "fr"}
+      dir={dir(lang)}
+      className={`safe-t safe-b app-shell app-shell--light d-shell min-h-dvh px-5 lg:max-w-[880px] [--safe-pb:2.5rem] [--safe-pt:1.5rem] ${lang === "tn" ? "lang-tn" : ""}`}
+    >
       {/* The wallet is the only shop-neutral diner screen, which makes it the
           right home for a code that is the same at every shop. */}
       <WalletView
@@ -71,9 +81,10 @@ export default async function Cartes({
         code={account?.code ?? null}
         nudges={nudges}
         isOwner={isOwner}
+        lang={lang}
       />
       {/* the wallet is the customer's home base — the likeliest place to install from */}
-      <InstallPrompt audience="client" />
+      <InstallPrompt audience="client" lang={lang} />
       {/* owners only — the door back to the till, see OwnerReturn */}
       <OwnerReturn />
     </div>

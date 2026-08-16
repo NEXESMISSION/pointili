@@ -135,6 +135,7 @@ export default async function Recompenses({
           prizes={game.prizes}
           spinCost={game.spinCost}
           balance={diner.balance}
+          lang={lang}
         />
       )}
     </div>

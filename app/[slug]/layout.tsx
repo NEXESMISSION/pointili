@@ -111,7 +111,7 @@ export default async function CafeLayout({
       <ScrollTop />
 
       {/* the customer's card is the thing worth keeping one tap away */}
-      <InstallPrompt audience="client" />
+      <InstallPrompt audience="client" lang={lang} />
       {/* owners only — the door back to the till, see OwnerReturn */}
       <OwnerReturn />
     </div>

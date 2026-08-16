@@ -73,7 +73,16 @@ export function dir(lang: Lang): "rtl" | "ltr" {
    in front of it says two twice. Spoken, a Tunisian says زوز فروع; written
    next to a figure the app has to render, 2 فروع is what reads correctly. */
 
-type Unit = "point" | "visite" | "récompense" | "boutique" | "code" | "carte";
+type Unit =
+  | "point"
+  | "visite"
+  | "récompense"
+  | "boutique"
+  | "code"
+  | "carte"
+  | "minute"
+  | "heure"
+  | "jour";
 
 const FR_PLURAL: Record<Unit, [one: string, many: string]> = {
   point: ["point", "points"],
@@ -82,6 +91,9 @@ const FR_PLURAL: Record<Unit, [one: string, many: string]> = {
   boutique: ["boutique", "boutiques"],
   code: ["code", "codes"],
   carte: ["carte", "cartes"],
+  minute: ["min", "min"],
+  heure: ["h", "h"],
+  jour: ["j", "j"],
 };
 
 /** [singular, plural] — the plural is the 2–10 form, the singular covers 11+. */
@@ -92,7 +104,35 @@ const TN_PLURAL: Record<Unit, [one: string, many: string]> = {
   boutique: ["فرع", "فروع"],
   code: ["كود", "كودات"],
   carte: ["كارت", "كوارط"],
+  minute: ["دقيقة", "دقايق"],
+  heure: ["ساعة", "سوايع"],
+  jour: ["نهار", "أيام"],
 };
+
+/*
+  THE MONTHS, AND WHY Intl IS WRONG HERE.
+
+  `new Date(iso).toLocaleDateString("ar-TN", { month: "long" })` returns the
+  Modern Standard Arabic names — أغسطس, يناير, فبراير — which is the one thing
+  this whole file exists to avoid. Tunisia uses the French-derived set, and a
+  Tunisian reading أغسطس over their own history has the same reaction as
+  reading رصيدك من النقاط: correct Arabic, wrong country.
+
+  Hardcoded rather than fetched from a locale, because there is no locale that
+  produces these: ar-TN in ICU gives the MSA list. This IS the data.
+*/
+const TN_MONTHS = [
+  "جانفي", "فيفري", "مارس", "أفريل", "ماي", "جوان",
+  "جويلية", "أوت", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
+];
+
+/** "Août 2026" · "أوت 2026" — the heading a month of rows sits under. */
+export function monthYear(lang: Lang, iso: string): string {
+  const d = new Date(iso);
+  if (lang === "tn") return `${TN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  const s = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 /** Just the noun, agreeing with `count` — "نقطة", "نقاط", "point", "points". */
 function unitWord(lang: Lang, count: number, unit: Unit): string {
@@ -192,6 +232,7 @@ const TN: Record<string, string> = {
   "Tu as gagné": "ربحت",
   "Voir mes récompenses": "شوف الهدايا متاعي",
   "Plus tard": "من بعد",
+  "Fermer": "سكّر",
 
   /* ── the codes waiting to be collected ── */
   "Fais scanner le QR au comptoir — rien à dicter.":
@@ -200,6 +241,10 @@ const TN: Record<string, string> = {
   "Échange tes points dans les Récompenses — le code apparaîtra ici.":
     "بدّل النقاط متاعك في الهدايا — الكود باش يبان هوني.",
   "À scanner au comptoir": "باش يتسكانى في الكونتوار",
+  /* what a pending code IS — the header on each ticket */
+  "Gain": "ربحة",
+  "Carte pleine": "كارت كامل",
+  "Récompense": "هديّة",
   "Ou dicte le code — les deux marchent.": "ولا اقرا الكود بصوتك — الزوز يمشيو.",
 
   /* ── coming back ── */
@@ -223,6 +268,27 @@ const TN: Record<string, string> = {
     "اسكاني، جمّع نقاط في كلّ مرّة تجي، وبدّلهم بهدايا.",
   "Sans application, sans e-mail — juste votre numéro.":
     "من غير أبليكاسيون ومن غير إيميل — نمرتك برك.",
+  "{n} offerts à l'inscription": "{n} هدية كي تسجّل",
+  " · ils n'expirent jamais": " · وما يفوتش وقتهم",
+  "Utilisable {partout}.": "تخدم {partout}.",
+  "partout": "في كل بلاصة",
+  "Choisis un code secret": "اختار كود سرّي",
+  "Cacher": "خبّي",
+  "Voir": "شوف",
+  "Le code que tu as choisi en créant ton compte. Oublié ? Demande au comptoir.":
+    "الكود اللي اخترتو كي عملت حسابك. نسيتو؟ اسأل في الكونتوار.",
+  "Garde-le : c'est lui qui te rendra tes cartes sur un autre téléphone. Oublié ? Le commerce peut le réinitialiser.":
+    "احفظو: هو اللي يرجّعلك الكوارط متاعك في تليفون آخر. نسيتو؟ المحلّ ينجّم يبدّلو.",
+  "(optionnel)": "(كيف ما تحبّ)",
+  "Retrouver mes cartes": "لقّيني الكوارط متاعي",
+  "En continuant, tu acceptes nos {conditions} et notre {confidentialite}.":
+    "كي تكمّل، إنت موافق على {conditions} و{confidentialite} متاعنا.",
+  "conditions": "الشروط",
+  "Bon retour, {name}": "مرحبا بيك من جديد يا {name}",
+  "Ta carte {shop} t'attend avec {n}. Entre ton code secret pour la rouvrir.":
+    "الكارت متاعك في {shop} تستنّاك بـ{n}. حطّ الكود السرّي متاعك باش تفتحها.",
+  "Ta carte {shop} est toujours là. Entre ton code secret pour la rouvrir.":
+    "الكارت متاعك في {shop} مازالت هوني. حطّ الكود السرّي متاعك باش تفتحها.",
 
   /* ── the card arriving ── */
   "Carte de fidélité": "كارت فيداليتي",
@@ -236,10 +302,25 @@ const TN: Record<string, string> = {
   /* ── activity ── */
   "Achat": "شرا",
   "Bienvenue": "مرحبا",
+  "Échange": "تبديل",
   "Récupéré": "تاخذات",
   "Correction": "تصحيح",
+  "Expiration": "فات وقتها",
+  "Roue": "روة",
   "Total gagné": "الجملة اللي ربحتها",
   "Rien pour l'instant": "ما فمّا حتّى حاجة توّا",
+  /* "Historique" is up in the navigation block — one key, one entry. */
+  "{n} gagnés chez {shop}.": "ربحت {n} عند {shop}.",
+  "Ta prochaine visite chez {shop} apparaîtra ici.":
+    "الزيارة الجاية متاعك عند {shop} باش تبان هوني.",
+  "Fais scanner le QR au comptoir.": "خلّيهم يسكانيو الكود في الكونتوار.",
+  "Achat · {tnd}": "شرا · {tnd}",
+  "Récupéré · {label}": "تاخذات · {label}",
+  "✓ pris": "✓ تاخذات",
+  /* elapsed time, the way it is said rather than the way a date is written */
+  "à l'instant": "توّا",
+  "il y a {n}": "قبل {n}",
+  "hier": "البارح",
 
   /* ── profile ── */
   "Se déconnecter": "اخرج",
@@ -257,6 +338,15 @@ const TN: Record<string, string> = {
 
   /* ── the wallet ── */
   "À récupérer": "تستنّاك",
+  "Toutes": "الكل",
+  "Presque": "قريب",
+  "Aucune boutique ne correspond.": "ما فمّاش فرع يجي مع هذا.",
+  "Rien à récupérer pour le moment.": "ما فمّا حتّى حاجة تستنّاك توّا.",
+  "Aucune carte proche de sa récompense.": "ما فمّاش كارت قريبة من الهديّة متاعها.",
+  "Scanne le QR d'un commerce pour ajouter ta première carte.":
+    "اسكاني الكود متاع محلّ باش تزيد أوّل كارت متاعك.",
+  "Espace boutique": "فضاء المحلّ",
+  "{n} tampons": "{n} طوابع",
   "Tes points te suivent partout. Entre ton numéro et ton code secret pour les retrouver.":
     "النقاط متاعك تمشي معاك في كلّ بلاصة. حطّ نمرتك والكود السرّي متاعك باش تلقاهم.",
   "Pas encore de carte ?": "ما عندكش كارت توّا؟",
@@ -274,6 +364,7 @@ const TN: Record<string, string> = {
 
   /* ── errors ── */
   "Un petit souci": "فمّا مشكل صغير",
+  "Réessayer": "عاود جرّب",
   "Impossible d'afficher ta carte pour l'instant. Tes points sont bien là — réessaie.":
     "ما نجّمناش نوريو الكارت متاعك توّا. النقاط متاعك موجودة — عاود جرّب.",
 
@@ -281,16 +372,43 @@ const TN: Record<string, string> = {
   "Le serveur scanne ce QR (ou saisis le code) — pas besoin de donner ton numéro.":
     "الڨارسون يسكاني هذا الكود (ولا يكتبو) — ما تحتاجش تعطي نمرتك.",
   "Changer de caméra": "بدّل الكاميرا",
+  "Solde actuel": "الرصيد متاعك توّا",
 
   /* ── the wheel ── */
   "La roue": "الروة",
-  "Roue des prix": "روة الجوائز",
   "La roue tourne…": "الروة تدور…",
   "Fais scanner ça au comptoir": "خلّيهم يسكانيوه في الكونتوار",
-  "Code à présenter": "الكود اللي توّريه",
-  "Impossible de jouer": "ما تنجّمش تلعب",
-  "— Retente ta chance bientôt —": "— جرّب حظّك مرّة أخرى —",
-  "— Merci de votre visite —": "— يعيشك على الزيارة —",
+  "La roue — {n} le tour": "الروة — {n} الدورة",
+  "{n} le tour. Tout le monde repart avec quelque chose.":
+    "{n} الدورة. الكلّ يخرج بحاجة.",
+  "Un tour offert. Tout le monde repart avec quelque chose.":
+    "دورة هدية. الكلّ يخرج بحاجة.",
+  "Dépenser {n} pour un tour ?": "تصرف {n} على دورة؟",
+  "Il te restera {n}. Tout le monde repart avec quelque chose.":
+    "باش يبقالك {n}. الكلّ يخرج بحاجة.",
+  "Oui, tourner": "إيه، دوّر",
+  "Tourner · {n}": "دوّر · {n}",
+  "Il te faut {n}": "تلزمك {n}",
+  "Pas de date limite · il te reste {n}": "ما فمّاش وقت آخر · باقيلك {n}",
+
+  /* ── installing ── */
+  "Ajouter": "زيدها",
+  "Comment ?": "كيفاش؟",
+  "Masquer": "خبّي",
+  "C'est fait": "سالينا",
+  "« {what} » — sans store, sans installation":
+    "«{what}» — من غير ستور ومن غير تنزيل",
+  "Touche le bouton Partager": "أنقر على زرّ Partager",
+  "en bas de Safari — le carré avec une flèche vers le haut.":
+    "في لوطا في Safari — المربّع بالسهم اللي طالع.",
+  "Fais défiler et choisis « Sur l'écran d'accueil »":
+    "نزّل واختار «Sur l'écran d'accueil»",
+  "dans la liste des options.": "في القائمة متاع الخيارات.",
+  "Touche « Ajouter »": "أنقر على «Ajouter»",
+  "en haut à droite. L'icône Pointili apparaît avec tes autres apps.":
+    "في الفوق على اليمين. إيقونة Pointili باش تبان مع الأبليكاسيونات الأخرى متاعك.",
+  "Si tu ne vois pas « Sur l'écran d'accueil », ouvre cette page dans Safari : Chrome et les autres navigateurs iOS ne peuvent pas installer.":
+    "كان ما تشوفش «Sur l'écran d'accueil»، افتح هذي الصفحة في Safari: Chrome والنافيڨاتورات الأخرى في الآيفون ما ينجّموش ينزّلوها.",
 
   /* ── installing ── */
   "Ajouter à l'écran d'accueil": "زيدها في الإيكران متاعك",
@@ -376,16 +494,16 @@ const TN: Record<string, string> = {
   "-20% sur la coupe": "تنقيص 20% على القصّة",
   "-20% sur un produit": "تنقيص 20% على منتج",
   /*
-    "Coupe offerte" IS DELIBERATELY ABSENT, and that is the one case where a
-    French sentence being the key stops working.
-
-    It is suggested to BARBERS (a haircut) and to GLACIERS (a cup of ice
-    cream), and the two have no shared Tunisian word. Guessing means telling
-    an ice-cream shop's customer they have won قصّة هدية — a free haircut —
-    which is a worse outcome than leaving the shop's own French on screen.
-    Translating it needs the business type at the call site, which no screen
-    passes today; until one does, this stays untranslated on purpose.
+    "Coupe de cheveux offerte" and "Coupe de glace offerte" — never a bare
+    "Coupe offerte", which lib/rewards.ts used to suggest to barbers AND to
+    glaciers. One French string, two unrelated things, and no shared Tunisian
+    word: translating it would have told an ice-cream customer they had won a
+    free haircut. Fixed by naming the thing in the suggestion rather than by
+    teaching this file what kind of shop it is translating for — see the note
+    beside `barbier` in lib/rewards.ts.
   */
+  "Coupe de cheveux offerte": "قصّة هدية",
+  "Coupe de glace offerte": "كوب آيس كريم هدية",
 
   /* sport · mode · librairie · fleuriste · épicerie · boutique · pharmacie */
   "Séance offerte": "حصّة هدية",
@@ -406,9 +524,237 @@ const TN: Record<string, string> = {
   "-20% sur le panier": "تنقيص 20% على القفّة",
   "Cadeau surprise": "هدية مفاجأة",
   "-20% sur la prochaine visite": "تنقيص 20% في الزيارة الجاية",
+  /* The DEFAULT stamp reward — migration 0011's column default, and what
+     lib/data falls back to. Every shop that has switched stamps on without
+     naming the prize shows this on its card, so it is the most-rendered
+     reward string in the product and it was the last one still in French. */
+  "Une récompense offerte": "هديّة",
   "Livraison offerte": "التوصيل بلاش",
   "-10% sur l'addition": "تنقيص 10% على الحساب",
   "-20% sur l'addition": "تنقيص 20% على الحساب",
+
+  /* ── the landing page ─────────────────────────────────────────────────
+     The public site, which spoke only French until now. Same rules as
+     everything above: derja, not fusha, and the vocabulary this file
+     already committed to — كارت, زيارة, هدية, الڨارسون, الكونتوار.
+
+     The audience is different, though, and the register follows it: every
+     screen above talks to a CUSTOMER holding a card, and this talks to the
+     shop OWNER deciding whether to buy. Second person either way, but this
+     one is a rep across a counter, not an app in a pocket. ── */
+  "Une carte de fidélité, tous vos commerces": "كارت فيداليتي وحدة، في كلّ المحلات اللي تمشيلهم",
+  "Pointili est un programme de fidélité pour cafés, restaurants et commerces en Tunisie. Vos clients scannent un QR code, ouvrent une carte dans leur navigateur — sans application — cumulent des points à chaque achat et les échangent contre vos récompenses. 80 TND par an, 14 jours d'essai gratuit, sans carte bancaire.": "Pointili برنامج فيداليتي للمقاهي والريستورانات والمحلات في تونس. الحرفاء متاعك يسكانيو كود QR، تتحلّ كارت في النافيڨاتور متاعهم — من غير أبليكاسيون — يجمّعو نقاط في كلّ شرا ويبدّلوهم بالهدايا متاعك. 80 دينار في العام، 14 نهار تجريب بلاش، من غير كارت بنكية.",
+  "Cafés": "مقاهي",
+  "Restaurants": "ريستورانات",
+  "Barbiers": "حجّامة",
+  "Boutiques": "بوتيكات",
+  "Salons": "كوافيرات",
+  "Il donne son numéro": "يعطيك نمرتو",
+  "Pas de carte à sortir, rien à ouvrir. Huit chiffres — ou son code à quatre caractères, s'il l'a devant lui.": "ما فمّاش كارت باش يخرّجها، وما فمّا حتّى حاجة تتحلّ. ثمنية أرقام — ولا الكود متاعو بأربع حروف، كان يكون قدّامو.",
+  "Vous tapez des dinars": "تكتب دنانير",
+  "Le montant de l'addition, comme sur votre calculette. Jamais des points : vous n'avez rien à convertir.": "مبلغ الحساب، كيما في الكالكولاتريس متاعك. عمرك ما تحطّ نقاط: ما عندك حتّى حاجة تحوّلها.",
+  "Le serveur compte": "السيرفور هو اللي يحسب",
+  "Le calcul se fait chez nous, à votre taux. Personne au comptoir n'invente un solde, et personne ne peut le corriger en douce.": "الحساب يتعمل عندنا، على النسبة اللي حطّيتها. حتّى حدّ في الكونتوار ما يخترع رصيد، وحتّى حدّ ما ينجّم يبدّلو في السرّ.",
+  "Vous scannez le QR": "تسكاني الكود",
+  "Celui qui est posé sur la table ou collé à la caisse. Votre carte s'ouvre dans le navigateur.": "اللي محطوط على الطاولة ولا ملصوق في الكاس. الكارت متاعك تتحلّ في النافيڨاتور.",
+  "Un numéro, un code secret": "نمرة وكود سرّي",
+  "Pas d'e-mail, pas de mot de passe à retenir, rien à télécharger. Le bonus de bienvenue arrive tout de suite.": "لا إيميل، لا موديباس تحفظو، وما تنزّل حتّى حاجة. نقاط الترحيب تجيك توّا.",
+  "Vos points vous attendent": "النقاط متاعك تستنّاك",
+  "Une carte par commerce, toutes dans le même téléphone. Ils n'expirent pas.": "كارت لكلّ محلّ، والكلّ في نفس التليفون. وما يفوتش وقتهم.",
+  "Taux de retour": "نسبة الرجوع",
+  "La part de vos clients qui sont revenus. Sur 7 jours, 30 jours, ou depuis le début — avec l'écart par rapport à la période d'avant.": "قدّاش بالمية من حرفاءك رجعولك. على 7 أيام، 30 نهار، ولا من البداية — ومعاها قدّاش تبدّلت على الفترة اللي قبلها.",
+  "Visites": "الزيارات",
+  "Combien de passages ce mois-ci, et combien de clients différents les ont faits.": "قدّاش من زيارة صارت هذا الشهر، وقدّاش من حريف مختلف جا.",
+  "Nouveaux clients": "حرفاء جدد",
+  "Combien de cartes créées, et à quel rythme elles arrivent.": "قدّاش من كارت جديدة تعملت، وبأيّ سرعة قاعدين يجيو.",
+  "Récompenses utilisées": "الهدايا اللي تاخذات",
+  "Laquelle marche vraiment, et laquelle dort depuis trois mois.": "أنهي وحدة ماشية بالحقّ، وأنهي وحدة راقدة من ثلاثة شهور.",
+  "Programme fidélité": "برنامج فيداليتي",
+  "QR Code illimité": "كود QR بلا حدّ",
+  "Carte à vos couleurs": "كارت بالألوان متاعك",
+  "Français et tunisien": "بالفرنسية وبالتونسي",
+  "Analyses et statistiques": "أرقام وستاتيستيك",
+  "Support en Tunisie": "مساعدة من تونس",
+  "Aller à ma caisse": "أمشي للكاس متاعي",
+  "Vous êtes déjà connecté": "راك داخل ديجا",
+  "Commencer gratuitement": "ابدا بلاش",
+  "14 jours gratuits · Sans carte bancaire": "14 نهار بلاش · من غير كارت بنكية",
+  "Ma caisse": "الكاس متاعي",
+  "Fait en Tunisie, pour la Tunisie": "معمول في تونس، وللتوانسة",
+  "Vos habitués reviennent.": "حرفاءك الدايمين يرجعولك.",
+  "Vous saurez enfin lesquels.": "وأخيرا باش تعرف شكون فيهم.",
+  "La carte de fidélité de votre commerce, dans le téléphone de vos clients.": "كارت الفيداليتي متاع محلّك، في تليفون حرفاءك.",
+  "Aucune application": "من غير أبليكاسيون",
+  "— ni pour eux, ni pour vous.": "— لا ليهم ولا ليك.",
+  "Vos points,": "النقاط متاعك،",
+  "dans tous vos commerces.": "في كلّ المحلات اللي تمشيلهم.",
+  "Un numéro, un code secret, et vos cartes sont là.": "نمرة، كود سرّي، والكوارط متاعك هاهي.",
+  "Rien à installer.": "من غير تنزيل.",
+  "Ouvrir mes cartes": "افتح الكوارط متاعي",
+  "Ou scannez le QR posé sur votre table": "ولا اسكاني الكود اللي على طاولتك",
+  "Fait pour": "معمول لشكون",
+  "Au comptoir": "في الكونتوار",
+  "Sur votre téléphone": "في تليفونك",
+  "Trois gestes, cinq secondes.": "ثلاث حركات، خمس ثواني.",
+  "Trois gestes, une seule fois.": "ثلاث حركات، مرّة وحدة برك.",
+  "Pendant que vous rendez la monnaie. Pas de matériel, pas de lecteur, pas de caisse à changer — votre téléphone suffit.": "وإنت قاعد تردّ الصرف. لا ماتيريال، لا سكانير، ولا كاس تبدّلها — تليفونك يكفي.",
+  "Après ça, votre carte est là à chaque passage : vous donnez votre numéro, et c'est tout.": "من بعد هاذي، الكارت متاعك موجودة في كلّ مرّة تجي: تعطي نمرتك وخلاص.",
+  "Ce que vous ne savez pas": "اللي ما تعرفوش",
+  "Vous connaissez vos habitués. Vous ne savez pas combien sont revenus.": "تعرف حرفاءك الدايمين. أمّا ما تعرفش قدّاش منهم رجعو.",
+  "Le carton ne compte pas, et personne n'a jamais tenu ce registre à la main. Voilà les quatre chiffres qui apparaissent dans votre espace, sans que vous ayez rien à saisir.": "الكرتونة ما تحسبش، وحتّى حدّ عمرو ما عمل هذا الحساب بيدو. هاذم الأربعة أرقام اللي يبانو في الفضاء متاعك، من غير ما تكتب حتّى حاجة.",
+  "En dessous de cinq clients, l'écran affiche « Trop tôt pour conclure » au lieu d'un taux. Un chiffre sur quatre passages ne veut rien dire, et nous préférons le dire.": "كان عندك أقلّ من خمسة حرفاء، الإيكران يكتب «مازال بكري باش نحكمو» بلاصة النسبة. رقم مبني على أربع زيارات ما يقول حتّى حاجة، وأحنا نحبّو نقولوها.",
+  "La carte de fidélité Pointili sur un téléphone : Yassine a 118 points chez Café El Manar, son code client MEEF, et une récompense à récupérer": "كارت الفيداليتي متاع Pointili في تليفون: ياسين عندو 118 نقطة عند Café El Manar، الكود متاعو MEEF، وهدية تستنّاه",
+  "Le produit, filmé": "المنتج، متصوّر",
+  "Rien n'est dessiné ici.": "ما فمّا حتّى حاجة مرسومة هوني.",
+  "Chaque écran ci-dessous est le vrai produit, filmé en train de faire ce qu'il dit.": "كلّ إيكران تحت هو المنتج الحقيقي، متصوّر وهو يعمل اللي يقولو.",
+  "Voici votre caisse.": "هذا الكاس متاعك.",
+  "Voici votre téléphone.": "هذا تليفونك.",
+  "Le prix": "السومة",
+  "Un prix simple.": "سومة واضحة.",
+  "Pas de commission sur vos ventes. Pas de limite de clients. Pas de palier qui se déclenche le jour où ça marche.": "ما فمّاش كوميسيون على اللي تبيعو. ما فمّاش حدّ لعدد الحرفاء. وما فمّاش سومة تطلع نهار اللي تبدا الحكاية تمشي.",
+  "Vous payez par D17, Flouci ou virement.": "تخلّص بـD17 ولا Flouci ولا فيرمان.",
+  "Vous envoyez la photo du reçu depuis l'application, et votre compte est prolongé — pas de carte bancaire, pas de prélèvement qui se renouvelle tout seul.": "تصوّر الوصل وتبعثو من الأبليكاسيون، والحساب متاعك يتمدّد — من غير كارت بنكية، ومن غير ما يتسحبولك فلوس وحدهم.",
+  "Meilleure offre": "أحسن عرض",
+  "TND / an": "TND / عام",
+  "Tout ce dont vous avez besoin pour fidéliser vos clients.": "كلّ اللي تحتاجو باش تخلّي حرفاءك يرجعولك.",
+  "TND / 6 mois": "TND / 6 شهور",
+  "Parfait pour commencer. Les mêmes fonctions, la même assistance — vous payez juste plus souvent.": "باهي باش تبدا. نفس الخدمات ونفس المساعدة — كان إنّك تخلّص أكثر مرّات.",
+  "Choisir cette offre": "اختار هذا العرض",
+  "Commencer": "نبداو",
+  "La fidélité commence aujourd'hui.": "الفيداليتي تبدا اليوم.",
+  "Vous créez votre espace, vous réglez vos récompenses, vous imprimez votre QR. Aucun matériel, aucun engagement, et vos habitués n'ont rien à installer.": "تعمل الفضاء متاعك، تظبّط الهدايا متاعك، وتطبع الكود متاعك. من غير ماتيريال، من غير عقد يشدّك، وحرفاءك ما ينزّلوش حتّى حاجة.",
+  "Créer ma boutique": "اعمل المحلّ متاعي",
+  "Conçu et hébergé pour la Tunisie": "معمول ومستضاف لتونس",
+  "Confidentialité": "الخصوصية",
+  "Conditions": "الشروط",
+  "Contact": "اتصل بينا",
+  "Le carton": "الكرتونة",
+  "Pourquoi Pointili plutôt qu'un carnet ?": "علاش Pointili وموش الكرتونة؟",
+  "La carte en carton a fait tourner des milliers de commerces et elle marche encore. Voilà simplement là où elle s'arrête.": "الكرتونة خدّمت آلاف المحلات ومازالت تخدم. أحنا نوريّولك برك وين توقف.",
+  "Mise en route": "باش تبدا",
+  "Quelques minutes, depuis votre téléphone": "شويّة دقايق، من تليفونك",
+  "Imprimer, découper, distribuer": "تطبع، تقصّ، توزّع",
+  "Souvent une installation à prévoir": "برشا مرّات يلزم شكون يجي يركّبلك",
+  "Côté client": "عند الحريف",
+  "Le navigateur — rien à installer": "النافيڨاتور برك — ما فمّا حتّى حاجة تتنزّل",
+  "Une carte à ne pas perdre": "كارت يلزم ما تضيعش",
+  "Une application à télécharger": "أبليكاسيون لازم ينزّلها",
+  "Client sans compte": "حريف ما عندوش حساب",
+  "Ses points l'attendent : le numéro suffit": "نقاطو تستنّاه: نمرتو تكفي",
+  "Il repart sans rien": "يخرج بلا حتّى حاجة",
+  "Il doit s'inscrire d'abord": "لازم يسجّل الأوّل",
+  "Ce que vous apprenez": "شنوّة تعرف",
+  "Qui revient, à quel rythme, quelle récompense marche": "شكون يرجع، وقدّاش يرجع، وأنهي هديّة تمشي",
+  "Rien — le carton ne compte pas": "حتّى حاجة — الكرتونة ما تحسبش",
+  "Des tableaux de bord, souvent payants": "تابلوهات أرقام، وأغلب الوقت بالفلوس",
+  "Une erreur de caisse": "غلطة في الكاس",
+  "Se corrige, et la correction reste inscrite": "تتصحّح، والتصحيح يبقى مكتوب",
+  "Un tampon de trop, tant pis": "طابع زايد وخلاص",
+  "Variable": "على حسب",
+  "Le numéro du client": "نمرة الحريف",
+  "Jamais affiché à la caisse — un code à 4 caractères": "عمرها ما تبان في الكاس — كود بـ4 حروف",
+  "Sans objet": "ما فمّاش نمرة أصلاً",
+  "Carte en carton": "كارت الكرتون",
+  "Autres plateformes": "پلاتفورمات أخرى",
+  "« Autres plateformes » décrit ce qui est courant sur ce marché, pas un concurrent en particulier — leurs offres changent, la nôtre aussi.": "«پلاتفورمات أخرى» تعني اللي موجود عادةً في السوق، موش شركة معيّنة بالإسم — العروض متاعهم تتبدّل، والعرض متاعنا زادا.",
+  "Le comptoir": "الكونتوار",
+  "Les questions qu'on nous pose": "الأسئلة اللي يسألونا عليها",
+  "Les vraies, celles du comptoir.": "الحقيقيّة، اللي تتسأل في الكونتوار.",
+  "Mon client doit-il installer une application ?": "الحريف متاعي لازم ينزّل أبليكاسيون؟",
+  "Non. Il scanne le QR posé sur la table et sa carte s'ouvre dans son navigateur. Pas d'e-mail, pas de mot de passe : un numéro et un code secret. Ni lui ni vous n'avez d'application à télécharger.": "لا. يسكاني الكود اللي على الطاولة والكارت متاعو تتحلّ في النافيڨاتور. من غير إيميل ومن غير موت دو پاس: نمرة وكود سرّي برك. لا هو ولا إنت عندكم أبليكاسيون تنزّلوها.",
+  "Et s'il n'a pas encore de carte au moment de payer ?": "وكان مازال ما عندوش كارت وقت الخلاص؟",
+  "Vous tapez son numéro et vous créditez quand même. Les points l'attendent. Le jour où il crée sa carte, il les retrouve tous — rien ne se perd, et personne ne repart les mains vides parce qu'il n'était pas encore inscrit.": "تكتب نمرتو وتعطيه نقاطو حتّى كان ما عندوش كارت. النقاط تستنّاه. النهار اللي يعمل فيه الكارت متاعو، يلقاهم الكلّ — ما تضيع حتّى نقطة، وحدّ ما يخرج فارغ خاطر مازال ما سجّلش.",
+  "Qu'est-ce qu'il me faut comme matériel ?": "شنوّة لازمني من ماتيريال؟",
+  "Un téléphone. Pas de caisse à changer, pas de lecteur à acheter, pas de formation. Vous créez votre espace, vous réglez vos récompenses, vous imprimez votre QR.": "تليفون برك. ما تبدّلش الكاس متاعك، ما تشريش سكانير، وما فمّاش تكوين. تعمل الفضاء متاعك، تحضّر الهدايا متاعك، وتطبع الكود متاعك.",
+  "Combien de temps ça prend à la caisse ?": "قدّاش تاخذ من وقت في الكاس؟",
+  "Le client donne son numéro ou son code à 4 caractères, vous tapez le montant en dinars, vous validez. Le calcul se fait sur le serveur, à votre taux — ni vous ni votre caissier n'avez de points à calculer.": "الحريف يعطيك نمرتو ولا الكود متاعو بـ4 حروف، إنت تكتب المبلغ بالدينار وتأكّد. الحساب يتعمل في السيرفور على حسب النسبة اللي حطّيتها — لا إنت ولا الكياس متاعك تحسبو حتّى نقطة.",
+  "Est-ce que je vois le numéro de téléphone de mes clients ?": "نجّم نشوف نمرة تليفون الحرفاء متاعي؟",
+  "L'écran de caisse ne l'affiche pas : vos clients y sont identifiés par un code à quatre caractères. Le système, lui, connaît le numéro — c'est la clé de leur registre de points.": "إيكران الكاس ما يوريهاش: الحرفاء متاعك يبانولك بكود بأربع حروف. أمّا السيستام يعرف النمرة — هي المفتاح متاع سجلّ النقاط متاعهم.",
+  "Et si mon caissier se trompe de montant ?": "وكان الكياس متاعي غلط في المبلغ؟",
+  "Vous corrigez depuis la fiche du client. La correction s'inscrit dans l'historique au lieu d'effacer la ligne : rien n'est supprimé, donc rien ne peut être maquillé.": "تصحّح من الفيش متاع الحريف. التصحيح يتكتب في الحركات، ما يمسحش السطر القديم: ما يتنحّى حتّى شيء، وبالتالي ما ينجّم حتّى حدّ يزوّق الحسابات.",
+  "J'ai déjà une carte en carton. Je dois tout arrêter ?": "عندي كارت كرتون. لازم نوقّف الكلّ؟",
+  "Non, et beaucoup gardent les deux au début. Pointili fait la même chose — une visite, un tampon — sauf que la carte est dans le téléphone du client, qu'elle ne se perd pas, et qu'à la fin du mois vous savez combien de vos clients sont revenus.": "لا، وبرشا يخلّيو الزوز في البداية. Pointili يعمل نفس الحاجة — زيارة، طابع — أمّا الكارت في تليفون الحريف، ما تضيعش، وفي آخر الشهر تعرف قدّاش من حريف رجعلك.",
+  "Mes clients me connaissent déjà. À quoi ça sert ?": "الحرفاء متاعي يعرفوني. شنوّة باش تنفعني؟",
+  "C'est exactement pour ça que ça marche. Vous connaissez vos habitués ; ce que vous ne savez pas, c'est combien sont revenus ce mois-ci, ni lesquels ont cessé de venir. Pointili met un chiffre là-dessus, sans rien changer à votre façon de les accueillir.": "هذا بالضبط علاش تمشي. إنت تعرف الحرفاء الدايمين متاعك؛ اللي ما تعرفوش هو قدّاش منهم رجع هذا الشهر، وشكون فيهم بطّل يجي. Pointili يحطّلك رقم على هالحكاية، من غير ما تبدّل شيء في طريقة ما تستقبل بيها حرفاءك.",
+  "Votre marque": "المارك متاعك",
+  "La carte porte votre nom. Pas le nôtre.": "الكارت باسمك إنت. موش باسمنا أحنا.",
+  "Votre couleur, votre logo, et une photo de votre salle si vous en voulez une. Vous choisissez la hauteur du bandeau, l'arrondi des angles et le motif — depuis vos Réglages, en trente secondes, sans nous écrire.": "اللون متاعك، اللوڨو متاعك، وتصويرة من الصالة متاعك كان تحبّ. إنت اللّي تختار علوّ الشريط، وتدوير الزوايا، والنقشة — من «Réglages» متاعك، في ثلاثين ثانية، من غير ما تكتبلنا.",
+  "Ci-dessous, le même écran, trois commerces.": "تحت هوني، نفس الإيكران، ثلاث محلّات.",
+  "Une couleur": "لون",
+  "La vôtre, avec un motif discret et des angles arrondis.": "اللون متاعك، مع نقشة خفيفة وزوايا مدوّرة.",
+  "Une photo": "تصويرة",
+  "Votre salle, votre comptoir. Le nom reste lisible dessus.": "الصالة متاعك، الكونتوار متاعك. والإسم يبقى يتقرا فوقها.",
+  "Un aplat": "لون سادة",
+  "Net, carré, sans dégradé — si c'est votre style.": "واضح، مربّع، من غير ديڨرادي — كان هذا هو الستيل متاعك.",
+  "La carte client — une couleur": "كارت الحريف — لون",
+  "La carte client — une photo": "كارت الحريف — تصويرة",
+  "La carte client — un aplat": "كارت الحريف — لون سادة",
+  "Et la langue": "واللغة",
+  "Vos clients lisent leur carte en": "الحرفاء متاعك يقراو الكارت متاعهم",
+  "français": "بالفرنسية",
+  " ou en": " ولا",
+  "tunisien": "بالتونسي",
+  ", pas en arabe littéraire. Chacun choisit, sur son téléphone.": "، موش بالعربية الفصحى. كلّ واحد يختار على تليفونو.",
+  "Encaisser": "الخلاص",
+  "Cinq secondes, pendant que vous rendez la monnaie": "خمس ثواني، وإنت تردّ الصرف",
+  "Le client donne son numéro de téléphone. Vous tapez le montant en dinars. C'est fini.": "الحريف يعطيك نمرة تليفونو. إنت تكتب المبلغ بالدينار. وسالينا.",
+  "Le numéro suffit — le client n'a rien à sortir": "النمرة تكفي — الحريف ما يحتاجش يخرّج حتّى حاجة",
+  "Vous tapez des DINARS, jamais des points": "إنت تكتب الدنانير، وعمرك ما تكتب نقاط",
+  "Le calcul se fait sur le serveur : personne n'invente un solde": "الحساب يتعمل في السيرفور: حتّى حدّ ما ينجّمش يخترع رصيد",
+  "Tamponner": "الطابع",
+  "Votre carte en carton, sauf qu'elle ne se perd pas": "الكارت الكرتون متاعك، أمّا هاذي ما تضيعش",
+  "Une visite, un tampon. En plus des points, si vous voulez — ou à la place.": "زيارة، طابع. مع النقاط كان تحبّ — ولا في بلاصتهم.",
+  "Vous choisissez le nombre de visites": "إنت اللّي تختار قدّاش من زيارة",
+  "Carte pleine : le code de récompense part tout seul": "كارت كامل: كود الهديّة يمشي وحدو",
+  "Rien à ranger, rien à retrouver": "ما فمّا حتّى حاجة ترتّبها، ولا حتّى حاجة تلوّج عليها",
+  "Savoir": "الأرقام",
+  "Enfin le chiffre que vous n'avez jamais eu": "أخيرا الرقم اللّي عمرك ما كان عندك",
+  "Combien de vos clients reviennent ? Sur 7 jours, 30 jours, ou depuis le début — avec l'écart par rapport à la période d'avant.": "قدّاش من حريف يرجعلك؟ في 7 أيام، 30 نهار، ولا من البداية — ومعاه الفرق مع الفترة اللّي قبل.",
+  "Taux de retour, visites, clients servis, nouveaux": "نسبة الرجوع، الزيارات، الحرفاء اللّي خدمتهم، والجداد",
+  "En dessous de 5 clients : « Trop tôt pour conclure »": "أقلّ من 5 حرفاء: «مازال بكري باش نحكمو»",
+  "Aucun « bénéfice net » inventé — votre marge ne nous regarde pas": "ما نخترعولكش «ربح صافي» — الربح متاعك ما يخصّناش",
+  "Régler": "الرّيڨلاج",
+  "Votre programme, vos règles": "البرنامج متاعك، والقوانين متاعك",
+  "Chaque réglage affiche sa valeur actuelle. Un tap pour la changer, un bouton pour l'enregistrer.": "كلّ ريڨلاج يوريلك القيمة متاعو توّا. نقرة باش تبدّلها، وزرّ باش تسجّلها.",
+  "Points par dinar, bonus de bienvenue, validité des codes": "النقاط في كلّ دينار، هديّة التسجيل، وقتاش يفوت وقت الكود",
+  "L'échelle des récompenses, avec photo": "سلّم الهدايا، بالتصويرة",
+  "Le nom, le logo et le type de votre commerce": "الإسم، اللوڨو، ونوع المحلّ متاعك",
+  "Imprimer": "الطباعة",
+  "Le kit, prêt ce soir": "الكيت، حاضر هالليلة",
+  "Chevalet de table, affiche A5, autocollant, story. Votre QR, à vos couleurs, prêt à imprimer.": "شوفالي متاع الطاولة، أفيش A5، ستيكر، وستوري. الكود متاعك، بالألوان متاعك، حاضر باش تطبعو.",
+  "Quatre formats, générés depuis votre espace": "أربع مقاسات، يتعملوا من الفضاء متاعك",
+  "Le QR reste sur fond blanc — pour qu'il scanne toujours": "الكود يبقى على أرضية بيضة — باش يتسكانى ديما",
+  "Imprimé chez vous, sans rien commander": "تطبعو عندك، من غير ما تكوموندي حتّى حاجة",
+  "S'inscrire": "التسجيل",
+  "Dix secondes, sans application et sans e-mail": "عشر ثواني، من غير أبليكاسيون ومن غير إيميل",
+  "Le client scanne le QR posé sur la table. Un numéro, un code secret, et sa carte existe.": "الحريف يسكاني الكود اللّي على الطاولة. نمرة، كود سرّي، والكارت متاعو ولّى موجود.",
+  "Rien à télécharger — la carte s'ouvre dans le navigateur": "ما فمّا حتّى حاجة تنزّلها — الكارت تتحلّ في النافيڨاتور",
+  "Pas d'e-mail, pas de mot de passe à retenir": "لا إيميل، ولا موت دو پاس تحفظو",
+  "Le bonus de bienvenue arrive immédiatement": "هديّة التسجيل توصل توّا",
+  "Retrouver": "الكوارط",
+  "Vos points vous attendent, dans chaque commerce": "النقاط متاعك تستنّاك، في كلّ محلّ",
+  "Une carte par commerce, toutes dans le même téléphone. Votre code à quatre caractères marche partout.": "كارت لكلّ محلّ، والكلّ في نفس التليفون. الكود متاعك بأربع حروف يخدم في كلّ بلاصة.",
+  "Un seul compte pour tous les commerces Pointili": "حساب واحد برك في كلّ المحلّات اللّي تخدم بـPointili",
+  "Vos points n'expirent pas": "النقاط متاعك ما يفوتش وقتهم",
+  "Votre numéro n'est jamais affiché au comptoir": "نمرتك عمرها ما تبان في الكونتوار",
+  "Échanger": "التبديل",
+  "Des points contre du réel": "نقاط تتبدّل بحاجة حقيقيّة",
+  "Le client choisit sa récompense et reçoit un code à six caractères. Vous le vérifiez, puis vous le validez.": "الحريف يختار الهديّة متاعو ويوصلو كود بستّ حروف. إنت تشيكيه، ومن بعدها تأكّدو.",
+  "Vérifier d'abord, valider ensuite — deux gestes distincts": "تشيكي الأوّل، وأكّد من بعد — زوز حركات، موش وحدة",
+  "Utilisable une seule fois, et il expire": "يتستعمل مرّة وحدة برك، ووقتو يفوت",
+  "Le code s'affiche en grand : il se lit à travers un comptoir": "الكود يبان بالكبير: يتقرا من ورا الكونتوار",
+  "Corriger": "التصحيح",
+  "Une erreur se répare, elle ne s'efface pas": "الغلطة تتصلّح، ما تتمحاش",
+  "Votre caissier s'est trompé de montant ? Corrigez-le. La correction s'inscrit dans l'historique.": "الكياس متاعك غلط في المبلغ؟ صلّحو. والتصحيح يتكتب في الحركات.",
+  "Chaque ligne reste : achat, bienvenue, échange, correction": "كلّ سطر يبقى: شرا، مرحبا، تبديل، تصحيح",
+  "Rien n'est supprimé, donc rien ne peut être maquillé": "ما يتمسح حتّى شيء، ومعناها حتّى حاجة ما تنجّمش تتغطّى",
+  "L'historique complet du client, depuis la caisse": "الحركات الكلّ متاع الحريف، من الكاس",
+  "Votre caisse": "الكاس متاعك",
+  "Le téléphone du client": "تليفون الحريف",
+  "Pour mon commerce": "للمحلّ متاعي",
+  "Commerce": "المحلّ",
+  "Je suis client": "أنا حريف",
+  "Client": "حريف",
 };
 
 /** Anything a caller drops into a {slot}. */
@@ -429,7 +775,17 @@ type Vars = Record<string, string | number>;
  */
 export function parts(tpl: string): { text: string; slot?: string }[] {
   const out: { text: string; slot?: string }[] = [];
-  const re = /\{(\w+)\}/g;
+  /*
+    [^{}]+ , NOT \w+ — the two fill paths have to agree on what a slot is.
+
+    t(fr, vars) replaces by plain string search, so `{vie privée}` worked there;
+    this matched \w+ only, so the same template rendered the braces LITERALLY on
+    screen — "et notre {vie privée}." went out on the join page in Tunisian.
+    One of them being stricter than the other is the whole bug, and the fix is
+    for them to accept the same thing rather than for callers to remember which
+    is which. Slot names are still identifiers by convention.
+  */
+  const re = /\{([^{}]+)\}/g;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(tpl))) {

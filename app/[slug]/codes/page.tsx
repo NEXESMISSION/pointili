@@ -3,9 +3,11 @@ import { CafeClosed } from "@/components/CafeClosed";
 import { GiftIcon } from "@/components/icons";
 import { getCafe, getMember } from "@/lib/data";
 import { codeQr } from "@/lib/qr";
+import { t as translation } from "@/lib/i18n";
 
 export const metadata = { title: "Mes codes" };
 
+/* The French here is also the dictionary key — see lib/dict. */
 const KIND_LABEL: Record<string, string> = {
   win: "Gain",
   reward: "Récompense",
@@ -46,6 +48,8 @@ export default async function Codes({
     diner.codes.map(async (c) => ({ ...c, qr: await codeQr(c.code) })),
   );
 
+  const t = await translation();
+
   return (
     <div className="flex flex-1 flex-col px-5 pb-6">
       {/* The bar above already says "Mes codes". Repeating it in a 21px H1
@@ -53,7 +57,7 @@ export default async function Codes({
           screen whose whole content is meant to be held up to a camera. What
           is left is the one line the bar cannot carry: what to DO with these. */}
       <p className="pb-4 pt-3 text-[13px] text-slate">
-        Fais scanner le QR au comptoir — rien à dicter.
+        {t("Fais scanner le QR au comptoir — rien à dicter.")}
       </p>
 
       {codes.length === 0 ? (
@@ -64,9 +68,11 @@ export default async function Codes({
           >
             <GiftIcon className="h-6 w-6" />
           </span>
-          <p className="mt-3 text-[14px] font-bold text-charcoal">Aucun code en attente</p>
+          <p className="mt-3 text-[14px] font-bold text-charcoal">
+            {t("Aucun code en attente")}
+          </p>
           <p className="mx-auto mt-1 max-w-[28ch] text-[13px] text-slate">
-            Échange tes points dans les Récompenses — le code apparaîtra ici.
+            {t("Échange tes points dans les Récompenses — le code apparaîtra ici.")}
           </p>
         </div>
       ) : (
@@ -93,10 +99,10 @@ export default async function Codes({
                   className="block text-[10.5px] font-bold uppercase tracking-[0.06em]"
                   style={{ color: "var(--cafe-text)" }}
                 >
-                  {KIND_LABEL[c.kind] ?? "Récompense"}
+                  {t(KIND_LABEL[c.kind] ?? "Récompense")}
                 </span>
                 <span className="mt-0.5 block truncate text-[15px] font-bold text-charcoal">
-                  {c.label}
+                  {t(c.label)}
                 </span>
                 {/*
                   No countdown, because there is nothing to count down to
@@ -124,18 +130,22 @@ export default async function Codes({
                 />
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate">
-                    À scanner au comptoir
+                    {t("À scanner au comptoir")}
                   </p>
                   {/* kept, and kept BIG: a scratched lens, a dead battery, a
                       shop whose only phone is in someone's pocket */}
+                  {/* dir=ltr: six Latin characters with trailing letter-spacing,
+                      which RTL would put on the wrong side of the last glyph —
+                      on the string a customer reads out at a counter. */}
                   <p
-                    className="mt-1 font-mono text-[26px] font-extrabold leading-none tracking-[0.14em]"
+                    dir="ltr"
+                    className="mt-1 font-mono text-[26px] font-extrabold leading-none tracking-[0.14em] rtl:text-right"
                     style={{ color: "var(--cafe-text)" }}
                   >
                     {c.code}
                   </p>
                   <p className="mt-1.5 text-[11.5px] leading-snug text-slate">
-                    Ou dicte le code — les deux marchent.
+                    {t("Ou dicte le code — les deux marchent.")}
                   </p>
                 </div>
               </div>

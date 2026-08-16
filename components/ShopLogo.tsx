@@ -62,8 +62,17 @@ export function ShopLogo({
     whole point of it rather than an oversight. A ring around an uncropped logo
     draws a circle the logo does not fill, which is the disc it was asking to
     escape; a tint behind a transparent PNG is the white plate it was asking to
-    lose. object-contain inside the same square box keeps every surface's
-    layout identical whichever shape a shop picks.
+    lose.
+
+    THE BOX IS NOT SQUARE HERE, and that is the difference between the setting
+    working and merely being honest. Contained inside `size × size`, a 600×160
+    wordmark fits by its WIDTH and lands about 12px tall — every letter
+    present, none of them readable. It escaped the crop and got shrunk instead.
+
+    So the HEIGHT is what is fixed and the width is free, up to 2.2× — enough
+    for the wide marks this exists for, bounded so a freak 10:1 banner cannot
+    push the shop's name off its own card. A square logo is unaffected: it
+    resolves to size × size exactly as before.
   */
   if (shape === "free") {
     return (
@@ -73,7 +82,7 @@ export function ShopLogo({
         alt=""
         data-shop-logo
         className={`shrink-0 object-contain ${className}`}
-        style={box}
+        style={{ height: size, width: "auto", maxWidth: Math.round(size * 2.2) }}
       />
     );
   }

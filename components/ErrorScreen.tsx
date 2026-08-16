@@ -16,6 +16,7 @@ export function ErrorScreen({
   reset,
   homeHref,
   homeLabel,
+  retryLabel,
   tone = "light",
 }: {
   title: string;
@@ -23,6 +24,11 @@ export function ErrorScreen({
   reset?: () => void;
   homeHref?: string;
   homeLabel?: string;
+  /**
+   * The retry button's wording. Optional and French by default: the owner app
+   * and the console are French-only, so only the diner boundary passes it.
+   */
+  retryLabel?: string;
   /**
    * "dark" for the diner app, whose shell is a deep-purple gradient — the light
    * palette rendered charcoal-on-purple there, i.e. barely readable.
@@ -60,7 +66,7 @@ export function ErrorScreen({
                 dark ? "bg-white text-charcoal" : "bg-royal text-white"
               }`}
             >
-              Réessayer
+              {retryLabel ?? "Réessayer"}
             </button>
           )}
           {homeHref && (

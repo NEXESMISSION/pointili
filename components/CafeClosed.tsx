@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { currentLang, dir, t as translation } from "@/lib/i18n";
 
 /**
  * Suspended, or the subscription lapsed.
@@ -10,19 +11,30 @@ import Link from "next/link";
  * It always offers a way out — this screen renders without the nav, so without
  * the link a diner who opened this card from their wallet was stranded.
  */
-export function CafeClosed({ name }: { name: string }) {
+export async function CafeClosed({ name }: { name: string }) {
+  /*
+    This screen is rendered INSTEAD of the shop's layout, so nothing above it
+    has set lang or dir — it is the whole document for as long as it is up. It
+    therefore has to read the cookie itself and carry both attributes, or the
+    Tunisian text renders left-aligned inside an LTR block.
+  */
+  const lang = await currentLang();
+  const t = await translation();
   return (
-    <div className="app-shell app-shell--light d-shell flex min-h-dvh flex-col items-center justify-center px-6 text-center">
+    <div
+      lang={lang === "tn" ? "ar-TN" : "fr"}
+      dir={dir(lang)}
+      className="app-shell app-shell--light d-shell flex min-h-dvh flex-col items-center justify-center px-6 text-center"
+    >
       <span className="d-soft grid h-14 w-14 place-items-center rounded-2xl text-[23px]">
         🌙
       </span>
       <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.1em] text-slate">
-        Momentanément fermé
+        {t("Momentanément fermé")}
       </p>
       <h1 className="mt-1.5 text-[21px] font-extrabold leading-tight text-charcoal">{name}</h1>
       <p className="mx-auto mt-2.5 max-w-[32ch] text-[13.5px] leading-relaxed text-slate">
-        La carte de fidélité de cette boutique est en pause. Tes points sont
-        conservés — repasse bientôt.
+        {t("La carte de fidélité de cette boutique est en pause. Tes points sont conservés — repasse bientôt.")}
       </p>
 
       {/*
@@ -35,7 +47,7 @@ export function CafeClosed({ name }: { name: string }) {
         href="/cartes"
         className="mt-7 rounded-2xl bg-charcoal px-5 py-3 text-[13.5px] font-bold text-white active:scale-[0.98]"
       >
-        Voir mes autres cartes
+        {t("Voir mes autres cartes")}
       </Link>
     </div>
   );

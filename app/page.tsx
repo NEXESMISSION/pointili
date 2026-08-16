@@ -9,6 +9,8 @@ import { Dressed } from "@/components/Dressed";
 import { AudienceProvider, AudienceTabs, ForCustomer, ForOwner } from "@/components/Audience";
 import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
+import { currentLang, dir, translator } from "@/lib/i18n";
+import { LangToggle } from "@/components/LangToggle";
 
 /**
  * The landing page, set like printed matter.
@@ -199,17 +201,42 @@ export default async function Landing({
     Cookie presence, not verification, same as the redirect above: this decides
     WORDING, and both destinations re-check properly.
   */
+  /*
+    The reader's language, from the same cookie the customer app uses.
+
+    This page costs nothing extra to make dynamic — it already awaits
+    searchParams for ?pro=1, so it was never static — and the language stays a
+    preference of the PERSON rather than a segment in the URL, which is what
+    lib/dict argues for and what keeps pointili.online/{slug} meaning one thing
+    for everybody who scans a sticker.
+  */
+  const lang = await currentLang();
+  const t = translator(lang);
+
   const cta = ownerHere
-    ? { href: "/owner", label: "Aller à ma caisse", note: "Vous êtes déjà connecté" }
+    ? { href: "/owner", label: t("Aller à ma caisse"), note: t("Vous êtes déjà connecté") }
     : {
         href: "/owner/signup",
-        label: "Commencer gratuitement",
-        note: "14 jours gratuits · Sans carte bancaire",
+        label: t("Commencer gratuitement"),
+        note: t("14 jours gratuits · Sans carte bancaire"),
       };
 
   return (
     <AudienceProvider>
-    <div className="landing-light min-h-dvh bg-white text-charcoal">
+    {/*
+      dir and lang-tn both live on THIS element, not on <html>.
+
+      It is the pattern app/[slug]/layout.tsx already uses — each section of
+      the product owns its own direction — and it is also what makes the
+      typography fix in globals.css work: `.landing-light.lang-tn` needs both
+      classes on one element to out-specify `.landing-light h1`, which would
+      otherwise set every Arabic heading in a face that has no Arabic in it.
+    */}
+    <div
+      dir={dir(lang)}
+      lang={lang === "tn" ? "ar-TN" : "fr"}
+      className={`landing-light min-h-dvh bg-white text-charcoal${lang === "tn" ? " lang-tn" : ""}`}
+    >
       {/*
         Server-rendered schema.org, so a crawler that runs no JavaScript still
         sees it — which is most AI crawlers. Deliberately no aggregateRating: we
@@ -243,10 +270,23 @@ export default async function Landing({
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 md:px-8">
           <Brand />
           <AudienceTabs className="hidden sm:flex" />
+          {/* Before the way in, not after it: a reader who cannot read the
+              page needs the language before they need the sign-in button, and
+              on a phone the masthead is the only place they will look. */}
+          <LangToggle current={lang} className="ms-auto sm:ms-0" />
+          {/*
+            A BUTTON, because it is the way in.
+
+            This was 11.5px letterspaced uppercase mono in grey — the quietest
+            thing in the row, and for a signed-in owner "Ma caisse" is the most
+            useful link on the whole page. Nothing about it said it could be
+            pressed. Bordered rather than filled so it does not outrank the
+            hero's call to action, sentence case so it can simply be read.
+          */}
           <ForOwner>
             <Link
               href={ownerHere ? "/owner" : "/owner/login"}
-              className="shrink-0 whitespace-nowrap font-mono text-[11.5px] font-bold uppercase tracking-[0.12em] text-slate transition hover:text-charcoal"
+              className="shrink-0 whitespace-nowrap rounded-[3px] border border-charcoal px-4 py-2 text-[13.5px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white"
             >
               {ownerHere ? "Ma caisse" : "Espace café"}
             </Link>
@@ -254,7 +294,7 @@ export default async function Landing({
           <ForCustomer>
             <Link
               href="/moi"
-              className="shrink-0 whitespace-nowrap font-mono text-[11.5px] font-bold uppercase tracking-[0.12em] text-slate transition hover:text-charcoal"
+              className="shrink-0 whitespace-nowrap rounded-[3px] border border-charcoal px-4 py-2 text-[13.5px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white"
             >
               Mes cartes
             </Link>
@@ -330,7 +370,7 @@ export default async function Landing({
                   {cta.label}
                   <Arrow className="cta-arrow h-4 w-4" />
                 </Link>
-                <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.14em] text-slate">
+                <p className="mt-4 text-[13px] text-slate">
                   {cta.note}
                 </p>
               </ForOwner>
@@ -344,7 +384,7 @@ export default async function Landing({
                   Ouvrir mes cartes
                   <Arrow className="cta-arrow h-4 w-4" />
                 </Link>
-                <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.14em] text-slate">
+                <p className="mt-4 text-[13px] text-slate">
                   Ou scannez le QR posé sur votre table
                 </p>
               </ForCustomer>
@@ -360,7 +400,12 @@ export default async function Landing({
             full-bleed band with the phone in it.
           */}
           <div className="relative md:col-span-5">
-            <div aria-hidden className="absolute -left-5 inset-y-0 right-[-50vw] bg-lilac md:left-0" />
+            {/* Logical, not physical. As `-left-5 … right-[-50vw]` this band
+                bled to the right whatever the direction — so in Arabic, where
+                the art column sits on the LEFT, it bled straight across the
+                text column and painted the headline out. start/end put the
+                bleed on the outside edge in both directions. */}
+            <div aria-hidden className="absolute -start-5 inset-y-0 -end-[50vw] bg-mist md:start-0" />
             <div className="relative flex justify-center pt-10 md:h-full md:items-end md:pt-0">
               <HeroPhone />
             </div>
@@ -434,7 +479,7 @@ export default async function Landing({
           the hero's argument again. It survives because it stopped restating
           the claim and started listing the evidence. */}
       <ForOwner>
-        <section className="bg-lilac">
+        <section className="bg-mist">
           <div className="mx-auto grid max-w-6xl gap-12 px-5 py-16 md:grid-cols-12 md:px-8 md:py-24">
             <div className="md:col-span-5">
               <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
@@ -599,7 +644,7 @@ export default async function Landing({
                   <span className="flex items-center gap-2.5 text-[15px] font-bold text-white">
                     {cta.label} <Arrow className="cta-arrow h-4 w-4" />
                   </span>
-                  <span className="mt-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-white/65">
+                  <span className="mt-1.5 text-[12.5px] text-white/70">
                     {cta.note}
                   </span>
                 </Link>
@@ -658,7 +703,7 @@ export default async function Landing({
               {ownerHere ? "Ma caisse" : "Créer ma boutique"}
               <Arrow className="cta-arrow h-4 w-4" />
             </Link>
-            <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.14em] text-white/50">
+            <p className="mt-4 text-[13px] text-white/60">
               {cta.note}
             </p>
           </div>
@@ -674,18 +719,21 @@ export default async function Landing({
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-8 md:flex-row md:items-center md:justify-between md:px-8">
           <div>
             <Brand />
-            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-slate">
+            <p className="mt-3 text-[13px] text-slate">
               Conçu et hébergé pour la Tunisie
             </p>
           </div>
-          <nav className="flex flex-wrap gap-x-8 gap-y-2 font-mono text-[11.5px] uppercase tracking-[0.1em] text-slate">
-            <Link href="/confidentialite" className="transition hover:text-charcoal">
+          {/* py-2 on the links, not just on the row: they were 22px tall, and a
+              22px target is a miss on a phone. The padding costs nothing here
+              and takes both to 40. */}
+          <nav className="flex flex-wrap items-center gap-x-8 text-[13.5px] text-slate">
+            <Link href="/confidentialite" className="py-2 transition hover:text-charcoal">
               Confidentialité
             </Link>
-            <Link href="/conditions" className="transition hover:text-charcoal">
+            <Link href="/conditions" className="py-2 transition hover:text-charcoal">
               Conditions
             </Link>
-            <span>Contact</span>
+            <span className="py-2">Contact</span>
           </nav>
         </div>
       </footer>
@@ -733,16 +781,30 @@ function Steps({ steps }: { steps: { title: string; text: string }[] }) {
  * as decoration; the only motion left on this page is the nine demo clips,
  * which are the software running.
  *
- * THE CROP STAYS, because it was never decoration. The render is 585×1090, so
- * any width that keeps the whole device makes it 1.86× as tall as it is wide.
- * The image is a window onto the top of it — the shop, the name, 230 points,
- * the full stamp card — dissolving below. Height drops ~40% while every pixel
- * of the card renders at exactly the size it would have.
+ * IT IS A SCREENSHOT NOW, NOT A RENDER — and that is a correctness fix, not a
+ * change of taste.
  *
- * The dissolve now lands on the lilac field rather than white, which is what
- * makes it read as the phone continuing past the frame instead of a hard cut.
- * A fade that stops short of true transparency looks like a rendering fault,
- * so both stops are absolute.
+ * hero-phone-v2.png was a 3/4-angled glossy render of a DARK purple card. The
+ * customer app has been white since the light conversion, so the largest image
+ * on the site showed a product that no longer exists — directly above nine
+ * clips of the real one, under a heading that says «Rien n'est dessiné ici».
+ * The page contradicted its own claim in its own hero.
+ *
+ * public/hero-card.png is the live /cafe-el-manar card, captured straight-on
+ * and dropped into a flat frame. Straight-on because the page around it is
+ * flat editorial: a tilted render with a specular highlight is exactly the
+ * language this redesign took out everywhere else.
+ *
+ * THE CROP STAYS, because it was never decoration. The capture is 904×1906, so
+ * any width that keeps the whole device makes it 2.1× as tall as it is wide.
+ * The image is a window onto the top of it — the shop, the balance, the nudge,
+ * the stamp row, the code and the errand — dissolving below. Height drops by
+ * about a third while every pixel renders at the size it would have.
+ *
+ * The dissolve lands on the lilac field rather than white, which is what makes
+ * it read as the card continuing past the frame instead of a hard cut. A fade
+ * that stops short of true transparency looks like a rendering fault, so both
+ * stops are absolute.
  */
 function HeroPhone() {
   const HERO_FADE =
@@ -751,17 +813,20 @@ function HeroPhone() {
   return (
     <div className="w-full max-w-[260px] md:max-w-[310px] lg:max-w-[340px]">
       <Image
-        src="/hero-phone-v2.png"
-        alt="La carte de fidélité Pointili sur un téléphone : Yassine a 230 points et 7 tampons sur 10 chez Café El Ali"
-        width={585}
-        height={1090}
+        src="/hero-card.png"
+        alt="La carte de fidélité Pointili sur un téléphone : Yassine a 118 points chez Café El Manar, son code client MEEF, et une récompense à récupérer"
+        width={904}
+        height={1906}
         priority
         sizes="(max-width: 767px) 260px, (max-width: 1023px) 310px, 340px"
-        /* The desktop crop is deep (585/980 of a 585/1090 render) so the device
-           fills its field instead of sitting in a pool of empty lilac, and the
-           fade starts at 76% so the last quarter is a real dissolve rather than
-           the abrupt edge a 88% ramp gave — that read as a clipped image. */
-        className="block aspect-[585/740] h-auto w-full object-cover object-top drop-shadow-[0_18px_40px_rgba(36,18,59,.22)] [--hero-fade:80%] md:aspect-[585/980] md:[--hero-fade:76%]"
+        /* The desktop crop is the deeper one so the device fills its field
+           instead of sitting in a pool of empty lilac; the phone crop is
+           shallower because the band it sits in is only as tall as the art.
+           Both fade over the last fifth, which is a real dissolve rather than
+           the abrupt edge a 90% ramp gives — that reads as a clipped image.
+           The frame's own drop shadow was clipped by the element capture, so
+           it is drawn here instead. */
+        className="block aspect-[904/1240] h-auto w-full object-cover object-top drop-shadow-[0_18px_40px_rgba(36,18,59,.22)] [--hero-fade:80%] md:aspect-[904/1480] md:[--hero-fade:78%]"
         style={{
           maskImage: HERO_FADE,
           WebkitMaskImage: HERO_FADE,

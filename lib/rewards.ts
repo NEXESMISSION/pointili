@@ -94,11 +94,27 @@ const IDEAS: Record<string, string[]> = {
   pizzeria: ["Pizza offerte", "Boisson offerte", "Dessert offert"],
   patisserie: ["Pâtisserie du jour", "Part de gâteau", "Café offert"],
   boulangerie: ["Baguette offerte", "Viennoiserie offerte", "Croissant offert"],
-  glacier: ["Boule offerte", "Coupe offerte", "Topping offert"],
+  glacier: ["Boule offerte", "Coupe de glace offerte", "Topping offert"],
   juice: ["Jus offert", "Smoothie offert", "Supplément offert"],
   bar: ["Boisson offerte", "Planche offerte", "Cocktail offert"],
   coiffure: ["Brushing offert", "Soin offert", "-20% sur la coupe"],
-  barbier: ["Taille de barbe offerte", "Coupe offerte", "Soin offert"],
+  /*
+    "Coupe de cheveux", not "Coupe" — and the glacier above says "Coupe de
+    glace" for the same reason.
+
+    The bare word was suggested to BOTH trades and means two unrelated things:
+    a haircut here, a sundae there. In French an owner reading a list of
+    suggestions can usually infer which; in Tunisian there is no shared word,
+    so the dictionary had to either guess — and tell an ice-cream shop's
+    customer they had won قصّة هدية, a free haircut — or leave the reward in
+    French on an otherwise Arabic card.
+
+    Naming the thing fixes it at the source instead: both suggestions are now
+    unambiguous in either language, and no screen has to know what kind of shop
+    it is drawing. No shop had saved the old wording (checked), so nothing
+    needs migrating.
+  */
+  barbier: ["Taille de barbe offerte", "Coupe de cheveux offerte", "Soin offert"],
   beaute: ["Soin offert", "Échantillon offert", "-20% sur un produit"],
   sport: ["Séance offerte", "Boisson offerte", "1 mois -20%"],
   mode: ["-20% sur un article", "Accessoire offert", "Retouche offerte"],

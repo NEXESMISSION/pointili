@@ -1,5 +1,7 @@
 "use client";
 
+import { translator, type Lang } from "@/lib/dict";
+import { Tpl } from "@/components/Tpl";
 import { useActionState } from "react";
 import { forgetDeviceAction, joinAction, type JoinState } from "./actions";
 
@@ -28,6 +30,7 @@ export function WelcomeBack({
   name,
   points,
   cafeName,
+  lang = "fr",
 }: {
   slug: string;
   /** "••• 123" — enough to recognise, not enough to be a phone number. */
@@ -37,7 +40,10 @@ export function WelcomeBack({
   /** What is waiting for them at THIS shop. The reassurance, in a number. */
   points: number | null;
   cafeName: string;
+  /** The reader's language — a translator cannot cross the server boundary. */
+  lang?: Lang;
 }) {
+  const t = translator(lang);
   const [state, formAction, pending] = useActionState<JoinState, FormData>(
     joinAction.bind(null, slug),
     {},
@@ -50,7 +56,7 @@ export function WelcomeBack({
         style={{ background: "var(--cafe-soft)" }}
       >
         <p className="text-[19px] font-extrabold leading-tight text-charcoal">
-          {name ? `Bon retour, ${name}` : "Bon retour"}
+          {name ? t("Bon retour, {name}", { name }) : t("Bon retour")}
         </p>
         {/*
           The point of the whole screen: your card is not gone. Said with the
@@ -59,33 +65,41 @@ export function WelcomeBack({
         */}
         <p className="mt-1 text-[13.5px] leading-relaxed text-charcoal/75">
           {points !== null && points > 0 ? (
-            <>
-              Ta carte {cafeName} t&apos;attend avec{" "}
-              <b className="font-extrabold" style={{ color: "var(--cafe-text)" }}>
-                {points} points
-              </b>
-              . Entre ton code secret pour la rouvrir.
-            </>
+            <Tpl
+              tpl={t("Ta carte {shop} t'attend avec {n}. Entre ton code secret pour la rouvrir.")}
+              slots={{
+                shop: cafeName,
+                n: (
+                  <b className="font-extrabold" style={{ color: "var(--cafe-text)" }}>
+                    {t.n(points, "point")}
+                  </b>
+                ),
+              }}
+            />
           ) : (
-            <>
-              Ta carte {cafeName} est toujours là. Entre ton code secret pour la
-              rouvrir.
-            </>
+            t("Ta carte {shop} est toujours là. Entre ton code secret pour la rouvrir.", {
+              shop: cafeName,
+            })
           )}
         </p>
-        <p className="mt-2 font-mono text-[12.5px] text-charcoal/60">+216 {masked}</p>
+        {/* dir=ltr: the "+" of +216 is a Unicode neutral and lands at the far
+            end of an RTL run — the masked number read "123 ••• 216+". */}
+        <p dir="ltr" className="mt-2 font-mono text-[12.5px] text-charcoal/60">
+          +216 {masked}
+        </p>
       </div>
 
       <form action={formAction} className="mt-5 space-y-3">
         {/* the number comes from the cookie, server-side — never from here */}
         <input type="hidden" name="mode" value="return" />
         <label htmlFor="pin" className="mb-2 block text-[13px] font-semibold text-charcoal">
-          Ton code secret
+          {t("Ton code secret")}
         </label>
         <input
           id="pin"
           name="pin"
           type="password"
+          dir="ltr"
           inputMode="numeric"
           autoComplete="current-password"
           maxLength={4}
@@ -107,7 +121,7 @@ export function WelcomeBack({
           className="w-full rounded-2xl py-3.5 text-[15px] font-bold transition active:scale-[0.99] disabled:opacity-60"
           style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
         >
-          {pending ? "…" : "Rouvrir ma carte"}
+          {pending ? "…" : t("Rouvrir ma carte")}
         </button>
       </form>
 
@@ -120,7 +134,7 @@ export function WelcomeBack({
       */}
       <form action={forgetDeviceAction} className="mt-4 text-center">
         <button type="submit" className="text-[12.5px] font-semibold text-slate underline underline-offset-2">
-          Ce n&apos;est pas moi — utiliser un autre numéro
+          {t("Ce n'est pas moi — utiliser un autre numéro")}
         </button>
       </form>
     </div>

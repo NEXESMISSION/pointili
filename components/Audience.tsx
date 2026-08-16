@@ -65,18 +65,30 @@ export function AudienceTabs({
     "Client" stay readable where the full phrases would have to go to 10px.
   */
   /*
-    A SECTION NAV, NOT A TOGGLE PILL.
+    IT HAS TO LOOK LIKE A CONTROL, because it is the most consequential one on
+    the page — it rewrites the headline, the steps, the clips and whether the
+    price is shown at all.
 
-    This used to be a segmented control: a rounded-full rail with the active
-    side filled royal and lifted on a violet glow shadow. That shape is the
-    stock "switch" of every generated landing page, and it sat in the header —
-    the first component on the page, setting the register for everything under
-    it.
+    It has now been wrong twice in opposite directions. First it was a
+    rounded-full rail with the active side filled royal and lifted on a violet
+    glow: the stock toggle of every generated landing page. The fix for that
+    was a newspaper section-nav — two words in 11px letterspaced uppercase
+    mono with a hairline under the active one — and that traded one problem for
+    a worse one. Three legibility costs stacked on a single element (small,
+    uppercase, wide-set), in grey, on the thing a visitor must read FIRST to
+    understand who the page is talking to. It read as a caption, not a switch.
 
-    A newspaper marks the section you are reading with a rule under its name.
-    Same information, no chrome, and it matches the mono nav the brand
-    dictionary asked for from the start (components/icons.tsx: "speaks in
-    type, not iconography").
+    The house style — "speaks in type, not iconography" — is about section
+    labels and eyebrows, which orient you. It was never meant for the things
+    you click. So: sentence case at a readable size, a solid fill on the active
+    side so the two options cannot be confused at a glance, and a target tall
+    enough to hit with a thumb. Flat and square-ish, so it is still this page's
+    language and not a pill with a glow under it.
+
+    CHARCOAL, NOT ROYAL, for the active fill. Royal is what this page uses to
+    mean "press this" — the two calls to action wear it. A mode switch is not
+    an action, and painting it the same colour puts a decoy next to the button
+    that actually matters.
   */
   const tab = (s: Side, long: string, short: string) => {
     const on = side === s;
@@ -85,9 +97,13 @@ export function AudienceTabs({
         type="button"
         onClick={() => setSide(s)}
         aria-pressed={on}
-        className={`relative whitespace-nowrap pb-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em] transition ${
-          full ? "flex-1 pt-1 text-center text-[11.5px]" : ""
-        } ${on ? "text-charcoal" : "text-slate hover:text-charcoal"}`}
+        className={`whitespace-nowrap rounded-[2px] px-4 py-2 text-[13.5px] font-semibold transition ${
+          full ? "flex-1 py-2.5 text-center" : ""
+        } ${
+          on
+            ? "bg-charcoal text-white"
+            : "text-slate hover:bg-mist hover:text-charcoal"
+        }`}
       >
         {full ? long : (
           <>
@@ -96,10 +112,6 @@ export function AudienceTabs({
             <span className="sm:hidden">{short}</span>
           </>
         )}
-        {/* The mark, drawn ON the container's rule rather than under the label,
-            so the active side reads as part of the line instead of as a button
-            with an underline. -bottom-px lands it exactly over the hairline. */}
-        {on && <span aria-hidden className="absolute -bottom-px left-0 right-0 h-[2px] bg-royal" />}
       </button>
     );
   };
@@ -113,7 +125,7 @@ export function AudienceTabs({
       hidden, and pushed the header link 5px off the screen. The caller owns
       display; this owns everything else.
     */
-    <div className={`items-end gap-7 border-b border-hair ${className}`}>
+    <div className={`items-center gap-1 rounded-[3px] border border-hair p-1 ${className}`}>
       {tab("owner", "Pour mon commerce", "Commerce")}
       {tab("customer", "Je suis client", "Client")}
     </div>

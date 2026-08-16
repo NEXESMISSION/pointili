@@ -1,4 +1,5 @@
 import { ShopLogo } from "@/components/ShopLogo";
+import { t as translation } from "@/lib/i18n";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { CafeClosed } from "@/components/CafeClosed";
@@ -7,7 +8,6 @@ import { Sparkle } from "@/components/icons";
 import { businessType } from "@/lib/businessTypes";
 import { codeQr } from "@/lib/qr";
 import { getCafe, getMember } from "@/lib/data";
-import { fmtPoints } from "@/lib/points";
 
 export const metadata = { title: "Mon code" };
 
@@ -49,6 +49,7 @@ export default async function Scanner({
   const qr = await codeQr(diner.code);
 
   const type = businessType(cafe.businessType);
+  const t = await translation();
 
   return (
     <div className="flex flex-1 flex-col px-5 pb-4">
@@ -73,7 +74,7 @@ export default async function Scanner({
           className="mt-2 inline-block rounded-full px-3.5 py-[3px] text-[12.5px] font-bold"
           style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}
         >
-          {type.label}
+          {t(type.label)}
         </span>
       </section>
 
@@ -84,14 +85,17 @@ export default async function Scanner({
         </div>
 
         <p className="mt-5 text-[11.5px] font-bold uppercase tracking-[0.10em] text-slate">
-          Mon code client
+          {t("Mon code client")}
         </p>
         {/*
           The fallback when a camera will not focus, a lens is scratched, or the
           shop has no phone free — so it is set at a size that can be READ OUT
           across a counter rather than squinted at.
         */}
+        {/* dir=ltr: Latin characters with trailing letter-spacing, on the one
+            string a customer reads out across a counter. */}
         <p
+          dir="ltr"
           className="mt-1.5 font-mono text-[31px] font-extrabold leading-none tracking-[0.16em]"
           style={{ color: "var(--cafe-text)" }}
         >
@@ -111,11 +115,7 @@ export default async function Scanner({
           </svg>
         </span>
         <p className="text-[13.5px] leading-relaxed text-slate">
-          Le serveur scanne ce QR (ou saisis le code) —{" "}
-          <b className="font-extrabold" style={{ color: "var(--cafe-text)" }}>
-            pas besoin
-          </b>{" "}
-          de donner ton numéro.
+          {t("Le serveur scanne ce QR (ou saisis le code) — pas besoin de donner ton numéro.")}
         </p>
       </div>
 
@@ -137,9 +137,9 @@ export default async function Scanner({
           <Sparkle className="h-6 w-6" />
         </span>
         <span className="min-w-0 flex-1 text-left">
-          <span className="block text-[13px] font-medium text-slate">Solde actuel</span>
+          <span className="block text-[13px] font-medium text-slate">{t("Solde actuel")}</span>
           <span className="block text-[17px] font-extrabold text-charcoal">
-            {fmtPoints(diner.balance)} points
+            {t.n(diner.balance, "point")}
           </span>
         </span>
         <GoChevron size={36} />

@@ -49,7 +49,7 @@ export function BackLink({
         if (!exact && typeof window !== "undefined" && window.history.length > 1) router.back();
         else router.push(fallback);
       }}
-      className={`-ml-1.5 grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate transition hover:bg-[var(--track)] active:scale-[0.95] ${className}`}
+      className={`-ml-1.5 grid h-10 w-10 shrink-0 place-items-center rounded-full text-slate transition hover:bg-[var(--track)] active:scale-[0.95] ${className}`}
     >
       <svg
         viewBox="0 0 24 24"

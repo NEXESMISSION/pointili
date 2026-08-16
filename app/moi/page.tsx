@@ -5,6 +5,7 @@ import { hasOwnerCookie } from "@/lib/auth/owner";
 import { OwnerReturn } from "@/components/OwnerReturn";
 import { cafeVars } from "@/lib/theme";
 import { SignInForm } from "./SignInForm";
+import { currentLang, dir, t as translation } from "@/lib/i18n";
 
 export const metadata = { title: "Mes cartes" };
 
@@ -34,9 +35,15 @@ export default async function Moi() {
      they were offered the SALES page as the way out. */
   const isOwner = await hasOwnerCookie();
 
+  /* Outside /[slug], so this screen owns its own language and direction. */
+  const lang = await currentLang();
+  const t = await translation();
+
   return (
     <div
-      className="safe-t safe-b app-shell app-shell--light d-shell flex min-h-dvh flex-col px-5 [--safe-pb:2.5rem] [--safe-pt:2rem]"
+      lang={lang === "tn" ? "ar-TN" : "fr"}
+      dir={dir(lang)}
+      className={`safe-t safe-b app-shell app-shell--light d-shell flex min-h-dvh flex-col px-5 [--safe-pb:2.5rem] [--safe-pt:2rem] ${lang === "tn" ? "lang-tn" : ""}`}
       style={cafeVars(null)}
     >
       <div className="mx-auto w-full max-w-md">
@@ -44,14 +51,13 @@ export default async function Moi() {
           ✦ pointili.online
         </p>
         <h1 className="mt-1.5 font-display text-[26px] font-extrabold leading-tight text-charcoal">
-          Mes cartes
+          {t("Mes cartes")}
         </h1>
         <p className="mt-1.5 mb-6 text-[14px] leading-relaxed text-slate">
-          Tes points te suivent partout. Entre ton numéro et ton code secret
-          pour les retrouver.
+          {t("Tes points te suivent partout. Entre ton numéro et ton code secret pour les retrouver.")}
         </p>
 
-        <SignInForm />
+        <SignInForm lang={lang} />
 
         {/*
           No signup here, deliberately: a card belongs to a shop. Creating an
@@ -59,19 +65,18 @@ export default async function Moi() {
           nothing in it and no idea why.
         */}
         <div className="d-card mt-7 px-4 py-4">
-          <p className="text-[13.5px] font-bold text-charcoal">Pas encore de carte ?</p>
+          <p className="text-[13.5px] font-bold text-charcoal">{t("Pas encore de carte ?")}</p>
           <p className="mt-1 text-[12.5px] leading-relaxed text-slate">
-            Scanne le QR posé au comptoir de ton commerce. C&apos;est gratuit,
-            sans application, et tes points démarrent tout de suite.
+            {t("Scanne le QR posé au comptoir de ton commerce. C'est gratuit, sans application, et tes points démarrent tout de suite.")}
           </p>
         </div>
 
         {!isOwner && (
           <p className="mt-6 text-center text-[12px] text-slate">
-            Tu es commerçant ?{" "}
+            {t("Vous êtes commerçant ?")}{" "}
             <Link href="/?pro=1" className="font-bold underline underline-offset-2"
               style={{ color: "var(--cafe-text)" }}>
-              Espace café
+              {t("Espace café")}
             </Link>
           </p>
         )}

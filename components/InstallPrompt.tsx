@@ -1,5 +1,6 @@
 "use client";
 
+import { translator, type Lang } from "@/lib/dict";
 import { useEffect, useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
 
@@ -52,8 +53,15 @@ type Deferred = Event & { prompt: () => Promise<void> };
 export function InstallPrompt({
   /** Where it is mounted, so the copy can name the right thing. */
   audience,
+  lang = "fr",
 }: {
   audience: "client" | "owner";
+  /*
+    The reader's language — the CLIENT side only. The owner app and the console
+    are French by design (see lib/dict), so the till's own install prompt never
+    passes this and keeps the French default.
+  */
+  lang?: Lang;
 }) {
   const [deferred, setDeferred] = useState<Deferred | null>(null);
   const [showIos, setShowIos] = useState(false);
@@ -119,7 +127,8 @@ export function InstallPrompt({
   // browser that has not (yet) said the app is installable.
   if (gone || (!deferred && !showIos)) return null;
 
-  const what = audience === "owner" ? "Ma caisse" : "Ma carte";
+  const t = translator(lang);
+  const what = audience === "owner" ? t("Ma caisse") : t("Ma carte");
   /*
     The two apps no longer share a surface: the till is a dark terminal and the
     customer's app is white. A single dark toast was fine when both were dark;
@@ -149,10 +158,10 @@ export function InstallPrompt({
           <BrandMark size={40} />
           <span className="min-w-0 flex-1 leading-tight">
             <span className="block text-[13.5px] font-bold">
-              Ajouter à l&apos;écran d&apos;accueil
+              {t("Ajouter à l'écran d'accueil")}
             </span>
             <span className={`block truncate text-[11.5px] ${sub}`}>
-              « {what} » — sans store, sans installation
+              {t("« {what} » — sans store, sans installation", { what })}
             </span>
           </span>
           {deferred ? (
@@ -167,7 +176,7 @@ export function InstallPrompt({
               }}
               className={`shrink-0 rounded-full px-4 py-2 text-[12.5px] font-bold active:scale-95 ${cta}`}
             >
-              Ajouter
+              {t("Ajouter")}
             </button>
           ) : (
             <button
@@ -175,13 +184,13 @@ export function InstallPrompt({
               onClick={() => setHowTo(true)}
               className={`shrink-0 rounded-full px-4 py-2 text-[12.5px] font-bold active:scale-95 ${cta}`}
             >
-              Comment ?
+              {t("Comment ?")}
             </button>
           )}
           <button
             type="button"
             onClick={dismiss}
-            aria-label="Masquer"
+            aria-label={t("Masquer")}
             className={`-mr-1 shrink-0 px-1.5 text-[18px] leading-none ${sub}`}
           >
             ×
@@ -199,15 +208,17 @@ export function InstallPrompt({
             className={`w-full max-w-[420px] rounded-3xl border p-5 ${panel}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-[16px] font-extrabold">Ajouter à l&apos;écran d&apos;accueil</p>
+            <p className="text-[16px] font-extrabold">{t("Ajouter à l'écran d'accueil")}</p>
             <p className={`mt-1 text-[12.5px] leading-relaxed ${sub}`}>
-              Sur iPhone, c&apos;est Safari qui installe — en trois gestes.
+              {t("Sur iPhone, c'est Safari qui installe — en trois gestes.")}
             </p>
+            {/* The step NUMERALS stay Latin digits either way: they label a
+                sequence, and Tunisian writes its figures the same. */}
             <ol className="mt-4 space-y-3">
               {[
-                ["1", "Touche le bouton Partager", "en bas de Safari — le carré avec une flèche vers le haut."],
-                ["2", "Fais défiler et choisis « Sur l'écran d'accueil »", "dans la liste des options."],
-                ["3", "Touche « Ajouter »", "en haut à droite. L'icône Pointili apparaît avec tes autres apps."],
+                ["1", t("Touche le bouton Partager"), t("en bas de Safari — le carré avec une flèche vers le haut.")],
+                ["2", t("Fais défiler et choisis « Sur l'écran d'accueil »"), t("dans la liste des options.")],
+                ["3", t("Touche « Ajouter »"), t("en haut à droite. L'icône Pointili apparaît avec tes autres apps.")],
               ].map(([n, title, hint]) => (
                 <li key={n} className="flex gap-3">
                   <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[12.5px] font-bold ${dark ? "bg-white/12" : "bg-[#f2f1f5]"}`}>
@@ -221,16 +232,14 @@ export function InstallPrompt({
               ))}
             </ol>
             <p className={`mt-4 rounded-xl px-3.5 py-2.5 text-[11.5px] leading-relaxed ${dark ? "bg-white/[0.06]" : "bg-[#f2f1f5]"} ${sub}`}>
-              Si tu ne vois pas « Sur l&apos;écran d&apos;accueil », ouvre cette page
-              dans Safari : Chrome et les autres navigateurs iOS ne peuvent pas
-              installer.
+              {t("Si tu ne vois pas « Sur l'écran d'accueil », ouvre cette page dans Safari : Chrome et les autres navigateurs iOS ne peuvent pas installer.")}
             </p>
             <button
               type="button"
               onClick={() => setHowTo(false)}
               className={`mt-4 w-full rounded-2xl py-3 text-[13.5px] font-bold ${cta}`}
             >
-              C&apos;est fait
+              {t("C'est fait")}
             </button>
           </div>
         </div>

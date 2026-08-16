@@ -2,24 +2,30 @@
 
 import { useActionState } from "react";
 import { signInAction, type SignInState } from "./actions";
+import { translator, type Lang } from "@/lib/dict";
 
 /* Same field + button as /[slug]/rejoindre — a diner must recognise this as the
    same door, not a second product. */
 const field =
   "w-full rounded-xl border border-hair bg-white px-4 py-3.5 text-[16px] font-medium text-charcoal outline-none transition-colors placeholder:font-normal placeholder:text-slate/60 focus:border-royal focus:ring-2 focus:ring-royal/15";
 
-export function SignInForm() {
+export function SignInForm({ lang = "fr" }: { lang?: Lang }) {
+  const t = translator(lang);
   const [state, action, pending] = useActionState<SignInState, FormData>(signInAction, {});
 
   return (
     <form action={action} className="space-y-2.5">
       <label className="block">
         <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.1em] text-slate">
-          Ton numéro
+          {t("Ton numéro")}
         </span>
+        {/* dir=ltr: a phone number is a left-to-right string wherever it is
+            typed, and an RTL field puts the caret and the digits the wrong
+            way round while somebody is entering it. */}
         <input
           name="phone"
           type="tel"
+          dir="ltr"
           inputMode="tel"
           autoComplete="tel"
           required
@@ -31,11 +37,12 @@ export function SignInForm() {
 
       <label className="block">
         <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.1em] text-slate">
-          Ton code secret
+          {t("Ton code secret")}
         </span>
         <input
           name="pin"
           type="password"
+          dir="ltr"
           inputMode="numeric"
           autoComplete="current-password"
           pattern="\d{4}"
@@ -57,7 +64,7 @@ export function SignInForm() {
 
       <button type="submit" disabled={pending} className="!mt-4 w-full rounded-xl py-4 text-[14px] font-bold transition active:scale-[0.98] disabled:opacity-60"
         style={{ background: "var(--cafe)", color: "var(--cafe-ink)" }}>
-        {pending ? "· · ·" : "Voir mes cartes ✦"}
+        {pending ? "· · ·" : t("Voir mes cartes ✦")}
       </button>
     </form>
   );

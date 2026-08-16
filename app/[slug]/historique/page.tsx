@@ -5,6 +5,9 @@ import { GiftIcon, Sparkle } from "@/components/icons";
 import { getCafe, getMember } from "@/lib/data";
 import { getActivity, type Activity } from "@/lib/db";
 import { fmtPoints } from "@/lib/points";
+import { t as translation, type T } from "@/lib/i18n";
+import { monthYear } from "@/lib/dict";
+import { Tpl } from "@/components/Tpl";
 
 export const metadata = { title: "Historique" };
 
@@ -40,27 +43,24 @@ const LABEL: Record<Activity["reason"], string> = {
   collected: "Récupéré",
 };
 
-/** "il y a 2 j" — elapsed time is the useful bit, not a raw date. */
-function ago(iso: string): string {
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
-  if (mins < 1) return "à l'instant";
-  if (mins < 60) return `il y a ${mins} min`;
-  const h = Math.floor(mins / 60);
-  if (h < 24) return `il y a ${h} h`;
-  const d = Math.floor(h / 24);
-  return d === 1 ? "hier" : `il y a ${d} j`;
-}
-
 /**
- * "Août 2026", capitalised — the heading a month of rows sits under.
+ * "il y a 2 j" · "قبل يومين" — elapsed time is the useful bit, not a raw date.
  *
- * Grouping is what turns thirty rows of "il y a 27 j" into something you can
- * read: the relative time answers "how long ago", the heading answers "when",
- * and only the second one lets you find the week you were looking for.
+ * The unit goes through t.n rather than being glued on, because "3 سوايع" and
+ * "12 ساعة" are both correct Arabic for the same noun and only the count
+ * decides which. Grouping by month is what turns thirty rows of "il y a 27 j"
+ * into something you can read: the relative time answers "how long ago", the
+ * heading answers "when", and only the second lets you find the week you were
+ * looking for.
  */
-function monthKey(iso: string): string {
-  const s = new Date(iso).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-  return s.charAt(0).toUpperCase() + s.slice(1);
+function ago(iso: string, t: T): string {
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (mins < 1) return t("à l'instant");
+  if (mins < 60) return t("il y a {n}", { n: t.n(mins, "minute") });
+  const h = Math.floor(mins / 60);
+  if (h < 24) return t("il y a {n}", { n: t.n(h, "heure") });
+  const d = Math.floor(h / 24);
+  return d === 1 ? t("hier") : t("il y a {n}", { n: t.n(d, "jour") });
 }
 
 /** The dinars a row is worth saying, or null. */
@@ -90,11 +90,13 @@ export default async function Historique({
      stops after eight rows sends them looking for a second one. */
   const activity = await getActivity(cafe.id, diner.phone, 40);
 
+  const t = await translation();
+
   /* Grouped in order — the RPC already returns newest first, so a plain walk
      keeps the months in sequence without a second sort. */
   const months: { key: string; rows: Activity[] }[] = [];
   for (const a of activity) {
-    const key = monthKey(a.at);
+    const key = monthYear(t.lang, a.at);
     const last = months[months.length - 1];
     if (last && last.key === key) last.rows.push(a);
     else months.push({ key, rows: [a] });
@@ -129,13 +131,13 @@ export default async function Historique({
               className="block truncate text-[14px] font-extrabold"
               style={{ color: "var(--cafe-text)" }}
             >
-              {diner.codes.length} récompense{diner.codes.length > 1 ? "s" : ""} à récupérer
+              {t("{n} à récupérer", { n: t.n(diner.codes.length, "récompense") })}
             </span>
             <span className="block truncate text-[11.5px] text-slate">
-              Fais scanner le QR au comptoir.
+              {t("Fais scanner le QR au comptoir.")}
             </span>
           </span>
-          <span className="shrink-0 text-[17px] leading-none text-slate">›</span>
+          <span className="shrink-0 text-[17px] leading-none text-slate rtl:-scale-x-100">›</span>
         </Link>
       )}
 
@@ -145,12 +147,21 @@ export default async function Historique({
         worth. It is also what keeps the word on the page for the suites.
       */}
       <div className="mb-4">
-        <h1 className="text-[13px] font-bold uppercase tracking-[0.08em] text-slate">Historique</h1>
+        <h1 className="text-[13px] font-bold uppercase tracking-[0.08em] text-slate">
+          {t("Historique")}
+        </h1>
         <p className="mt-1 text-[15px] leading-snug text-charcoal">
-          <b className="text-[19px] font-extrabold" style={{ color: "var(--cafe-text)" }}>
-            {fmtPoints(earned)}
-          </b>{" "}
-          points gagnés chez {cafe.name}.
+          <Tpl
+            tpl={t("{n} gagnés chez {shop}.")}
+            slots={{
+              n: (
+                <b className="text-[19px] font-extrabold" style={{ color: "var(--cafe-text)" }}>
+                  {t.n(earned, "point")}
+                </b>
+              ),
+              shop: cafe.name,
+            }}
+          />
         </p>
       </div>
 
@@ -162,9 +173,11 @@ export default async function Historique({
           >
             <Sparkle className="h-6 w-6" />
           </span>
-          <p className="mt-3 text-[14px] font-bold text-charcoal">Rien pour l&apos;instant</p>
+          <p className="mt-3 text-[14px] font-bold text-charcoal">
+            {t("Rien pour l'instant")}
+          </p>
           <p className="mx-auto mt-1 max-w-[28ch] text-[13px] text-slate">
-            Ta prochaine visite chez {cafe.name} apparaîtra ici.
+            {t("Ta prochaine visite chez {shop} apparaîtra ici.", { shop: cafe.name })}
           </p>
         </div>
       ) : (
@@ -189,19 +202,26 @@ export default async function Historique({
                       */}
                       <span className="block truncate text-[13.5px] font-semibold text-charcoal">
                         {a.reason === "collected"
-                          ? `Récupéré${a.label ? ` · ${a.label}` : ""}`
+                          ? a.label
+                            ? t("Récupéré · {label}", { label: t(a.label) })
+                            : t("Récupéré")
                           : tnd
-                            ? `Achat · ${tnd}`
-                            : LABEL[a.reason]}
+                            ? t("Achat · {tnd}", { tnd })
+                            : t(LABEL[a.reason])}
                       </span>
-                      <span className="block text-[11px] text-slate">{ago(a.at)}</span>
+                      <span className="block text-[11px] text-slate">{ago(a.at, t)}</span>
                     </span>
                     {a.reason === "collected" ? (
-                      <span className="shrink-0 text-[12px] font-bold text-slate">✓ pris</span>
+                      <span className="shrink-0 text-[12px] font-bold text-slate">{t("✓ pris")}</span>
                     ) : (
                       /* Earned is the shop's colour, spent is grey: on a white
                          page that is the only thing telling them apart. */
+                      /* dir=ltr: "+" and "−" are Unicode NEUTRALS, so in the
+                         Tunisian layout "+12" rendered as "12+" and a credit
+                         read like a correction. Same defect as the phone
+                         number on the profile screen. */
                       <span
+                        dir="ltr"
                         className="shrink-0 text-[14px] font-extrabold tabular-nums"
                         style={{ color: a.delta > 0 ? "var(--cafe-text)" : "var(--muted)" }}
                       >
