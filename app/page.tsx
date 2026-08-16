@@ -6,7 +6,7 @@ import { currentDiner } from "@/lib/auth/diner";
 import { Showcase } from "@/components/Showcase";
 import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
-import { currentLang, dir, translator, type T } from "@/lib/i18n";
+import { currentLang, dir, translator } from "@/lib/i18n";
 import { LangToggle } from "@/components/LangToggle";
 import { Tpl } from "@/components/Tpl";
 import { OFFERS } from "@/lib/billing";
@@ -70,41 +70,16 @@ export const metadata = {
    lipstick, phone, star, bar chart) is gone with the sections that held it:
    five of them dressed a category list up as a customer logo strip, and three
    sat in gradient tiles above copy that said nothing. What is left is an
-   arrow that means "go". The tick went with the seven-item feature list the
-   price card used to carry — see PILLARS. */
+   arrow that means "go" and a tick that means "included". */
 const S = (p: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden {...p} />
 );
 const Arrow = ({ className = "h-4 w-4" }: { className?: string }) => (
   <S className={className} strokeWidth="2.4"><path d="M5 12h13M12 6l6 6-6 6" /></S>
 );
-
-/*
-  THE MECHANIC, in the order it happens at the counter.
-
-  Every line is a checkable claim about what the software does, lifted from the
-  same source of truth the demo clips are captured against — not three abstract
-  nouns with a gloss each, which is what a page writes when it has nothing
-  concrete to say.
-
-  There used to be a second set of these for the customer. It went with the
-  audience switch: a person who scans a sticker on a table is not reading a
-  three-step explanation of how to scan a sticker on a table.
-*/
-const STEPS_OWNER = [
-  {
-    title: "Il donne son numéro",
-    text: "Pas de carte à sortir, rien à ouvrir. Huit chiffres — ou son code à quatre caractères, s'il l'a devant lui.",
-  },
-  {
-    title: "Vous tapez des dinars",
-    text: "Le montant de l'addition, comme sur votre calculette. Jamais des points : vous n'avez rien à convertir.",
-  },
-  {
-    title: "Le serveur compte",
-    text: "Le calcul se fait chez nous, à votre taux. Personne au comptoir n'invente un solde, et personne ne peut le corriger en douce.",
-  },
-];
+const Check = ({ className = "h-3.5 w-3.5" }: { className?: string }) => (
+  <S className={className} strokeWidth="3"><path d="m5 12.5 4.5 4.5L19 7" /></S>
+);
 
 /* ── the three reasons, iconed ──────────────────────────────────────────────
    Every one of these is checkable. "Sans application" is the claim the whole
@@ -134,18 +109,6 @@ const BENEFITS = [
    get, what does it really cost, what do I learn, and who answers when it
    breaks. They replace a seven-item tick list, which was a specification
    rather than an argument. */
-const Card = ({ className = "h-5 w-5" }: { className?: string }) => (
-  <S className={className} strokeWidth="2"><rect x="2.5" y="5" width="19" height="14" rx="2.5" /><path d="M2.5 10h19" /></S>
-);
-const Percent = ({ className = "h-5 w-5" }: { className?: string }) => (
-  <S className={className} strokeWidth="2"><path d="m6 18 12-12" /><circle cx="7.5" cy="7.5" r="2" /><circle cx="16.5" cy="16.5" r="2" /></S>
-);
-const Chart = ({ className = "h-5 w-5" }: { className?: string }) => (
-  <S className={className} strokeWidth="2"><path d="M12 3a9 9 0 1 0 9 9h-9V3Z" /><path d="M15.5 3.6A9 9 0 0 1 20.4 8.5" /></S>
-);
-const Headset = ({ className = "h-5 w-5" }: { className?: string }) => (
-  <S className={className} strokeWidth="2"><path d="M4 13v-1a8 8 0 0 1 16 0v1" /><rect x="2.5" y="13" width="4.5" height="6" rx="2" /><rect x="17" y="13" width="4.5" height="6" rx="2" /></S>
-);
 
 /*
   The prices come from lib/billing, which is what the renewal screen charges.
@@ -154,18 +117,20 @@ const Headset = ({ className = "h-5 w-5" }: { className?: string }) => (
   The saving is arithmetic on those two, not a third number to keep in step:
   two half-years against one year.
 */
+/* What the year buys. Seven things, all of which exist. */
+const INCLUDED = [
+  "Programme fidélité",
+  "QR Code illimité",
+  "Récompenses",
+  "Carte à vos couleurs",
+  "Français et tunisien",
+  "Analyses et statistiques",
+  "Support en Tunisie",
+];
+
 const YEAR = OFFERS.find((o) => o.months === 12)!;
 const HALF = OFFERS.find((o) => o.months === 6)!;
 const SAVING = HALF.price * 2 - YEAR.price;
-
-const PILLARS = [
-  { icon: Card, title: "Programme fidélité", line: "Points, visites et récompenses" },
-  { icon: Percent, title: "Un coût maîtrisé", line: "Un seul paiement par an, rien d'autre" },
-  { icon: Chart, title: "Rapports clairs", line: "Qui revient, et à quel rythme" },
-  { icon: Headset, title: "Support en Tunisie", line: "Une équipe là pour vous aider" },
-];
-
-
 
 export default async function Landing({
   searchParams,
@@ -426,25 +391,6 @@ export default async function Landing({
         </div>
       </section>
 
-      {/* ── the mechanic ───────────────────────────────────────────── */}
-      <section className="bg-deep text-white">
-        <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
-          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-lavender">
-            {t("Au comptoir")}
-          </p>
-          <h2 className="mt-5 max-w-[20ch] text-[32px] text-white md:text-[44px]">
-            {t("Trois gestes, cinq secondes.")}
-          </h2>
-          <p className="mt-5 max-w-[52ch] text-[15.5px] leading-relaxed text-white/60">
-            {t(
-              "Pendant que vous rendez la monnaie. Pas de matériel, pas de lecteur, pas de caisse à changer — votre téléphone suffit.",
-            )}
-          </p>
-
-          <Steps steps={STEPS_OWNER} t={t} />
-        </div>
-      </section>
-
       {/* ── the product, filmed ────────────────────────────────────── */}
       <section id="produit" className="mx-auto max-w-6xl scroll-mt-4 px-5 py-14 md:px-8 md:py-20">
         {/* No "LE PRODUIT, FILMÉ" eyebrow above this. It was a mono uppercase
@@ -479,96 +425,83 @@ export default async function Landing({
       </section>
 
       {/* ── the price ────────────────────────────────────────────────
-          THE YEAR AND THE HALF-YEAR ARE ONE BLOCK, not two cards to compare.
-          At two prices a comparison table is overkill; what an owner needs is
-          the number, what the alternative costs, and which one is cheaper —
-          and the last of those is arithmetic the page should do for them
-          rather than leave on the table. 80 twice is 160, the year is 120, so
-          the year saves 40. That figure is DERIVED from lib/billing so it can
-          never drift from what the renewal screen actually charges.
+          ONE CARD, CENTRED, ON WHITE.
 
-          The four columns are the questions that follow the number: what do I
-          get, what does it really cost, what do I learn, and who answers when
-          it breaks. */}
+          It was a wide dark slab: price on the left, button on the right, four
+          ruled columns underneath. That shape was carrying the weight of the
+          dark "Trois gestes" band above it, and with that band gone it was the
+          only black rectangle on the page — an anchor holding nothing down.
+
+          A price is read, not scanned: one column, one number, what you get,
+          one button, in that order. The card is white with a violet edge so
+          the page stays light all the way to the footer, and the only filled
+          shapes left on it are the two things you can press.
+
+          Everything in the list is a thing that exists — the seven inclusions
+          the old page kept in a tick list, back where they answer the question
+          the price raises. */}
       <section className="border-t border-hair bg-mist">
         <div className="mx-auto max-w-6xl px-5 py-14 md:px-8 md:py-20">
-          <h2 className="text-[32px] md:text-[42px]">{t("Un prix simple.")}</h2>
-          <p className="mt-4 max-w-[46ch] text-[15.5px] leading-relaxed text-slate">
-            {t("Pas de commission sur vos ventes. Pas de limite de clients.")}
-          </p>
+          <div className="mx-auto max-w-[560px] text-center">
+            <h2 className="text-[32px] md:text-[42px]">{t("Un prix simple.")}</h2>
+            <p className="mt-4 text-[15.5px] leading-relaxed text-slate">
+              {t("Pas de commission sur vos ventes. Pas de limite de clients.")}
+            </p>
+          </div>
 
-          <div className="mt-10 overflow-hidden rounded-[18px] bg-deep text-white">
-            <div className="grid items-center gap-8 p-7 md:grid-cols-[1.15fr_1fr] md:gap-12 md:p-10">
-              <div>
-                <p className="display text-[76px] leading-[0.82] tabular-nums">
-                  {YEAR.price}
-                  <span className="ms-2 align-super font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-lavender">
-                    {t("TND / an")}
-                  </span>
-                </p>
+          <div className="mx-auto mt-10 max-w-[520px] rounded-[20px] border-2 border-royal/25 bg-white p-7 shadow-[0_24px_60px_-40px_rgba(36,18,59,.45)] md:p-9">
+            <div className="text-center">
+              <p className="display text-[72px] leading-[0.85] tabular-nums text-charcoal">
+                {YEAR.price}
+                <span className="ms-2 align-super font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-royal">
+                  {t("TND / an")}
+                </span>
+              </p>
 
-                {/* Its own line. Baseline-aligned beside a 76px numeral it
-                    wrapped under the digits and read as a caption on them. The
-                    saving is the only reason to take the year over two halves,
-                    and it was left as arithmetic for the reader to do. */}
-                <p className="mt-4">
-                  <span className="inline-block rounded-full bg-royal px-3 py-1 text-[12px] font-bold text-white">
-                    <Tpl tpl={t("Économisez {n} TND")} slots={{ n: SAVING }} />
-                  </span>
-                </p>
+              {/* The saving is the only reason to take the year over two
+                  halves, and it used to be arithmetic left on the table. */}
+              <p className="mt-4">
+                <span className="inline-block rounded-full bg-royal px-3 py-1 text-[12px] font-bold text-white">
+                  <Tpl tpl={t("Économisez {n} TND")} slots={{ n: SAVING }} />
+                </span>
+              </p>
 
-                <p className="mt-4 max-w-[30ch] text-[14.5px] leading-relaxed text-white/60">
-                  {t("Tout ce dont vous avez besoin pour fidéliser vos clients.")}
-                </p>
-
-                {/* The half-year is a line, not a second card: it is the same
-                    product, and presenting it as a rival makes an owner shop
-                    against themselves. */}
-                <p className="mt-3 text-[13.5px] text-white/50">
-                  <Tpl
-                    tpl={t("Ou {n} TND pour 6 mois — sans engagement.")}
-                    slots={{ n: HALF.price }}
-                  />
-                </p>
-              </div>
-
-              <div>
-                <Link
-                  href={cta.href}
-                  className="group flex flex-col items-center rounded-[12px] bg-royal px-6 py-4 text-center transition hover:bg-[#4c33b4] active:translate-y-px"
-                >
-                  <span className="flex items-center gap-2.5 text-[15px] font-bold text-white">
-                    {cta.label} <Arrow className="cta-arrow h-4 w-4" />
-                  </span>
-                  <span className="mt-1.5 text-[12.5px] text-white/70">{cta.note}</span>
-                </Link>
-                {/*
-                  HOW YOU ACTUALLY PAY — the question a price alone never
-                  answers. A café owner in Tunisia does not have a card they
-                  will type into a website, and a page that shows only a number
-                  is quietly asking for one.
-                */}
-                <p className="mt-4 text-center text-[12.5px] leading-relaxed text-white/55">
-                  {t("D17, Flouci ou virement — vous envoyez la photo du reçu depuis l'application.")}
-                </p>
-              </div>
+              <p className="mt-4 text-[13.5px] text-slate">
+                <Tpl
+                  tpl={t("Ou {n} TND pour 6 mois — sans engagement.")}
+                  slots={{ n: HALF.price }}
+                />
+              </p>
             </div>
 
-            {/* the four columns, ruled apart — the anchor row */}
-            <ul className="grid border-t border-white/12 sm:grid-cols-2 lg:grid-cols-4">
-              {PILLARS.map(({ title, line, icon: Icon }) => (
-                <li
-                  key={title}
-                  className="border-b border-white/12 p-6 sm:border-b-0 sm:[&:nth-child(-n+2)]:border-b lg:[&:nth-child(-n+2)]:border-b-0 lg:border-e lg:last:border-e-0 sm:[&:nth-child(odd)]:border-e"
-                >
-                  <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-white/10 text-lavender">
-                    <Icon className="h-[18px] w-[18px]" />
-                  </span>
-                  <p className="mt-3.5 text-[14.5px] font-bold text-white">{t(title)}</p>
-                  <p className="mt-1 text-[13px] leading-snug text-white/55">{t(line)}</p>
+            <ul className="mt-8 grid gap-x-6 gap-y-3 border-t border-hair pt-7 sm:grid-cols-2">
+              {INCLUDED.map((f) => (
+                <li key={f} className="flex items-start gap-2.5 text-[14.5px] text-charcoal">
+                  <Check className="mt-[5px] h-3.5 w-3.5 shrink-0 text-royal" />
+                  {t(f)}
                 </li>
               ))}
             </ul>
+
+            <Link
+              href={cta.href}
+              className="group mt-8 flex flex-col items-center rounded-[12px] bg-royal px-6 py-4 text-center transition hover:bg-[#4c33b4] active:translate-y-px"
+            >
+              <span className="flex items-center gap-2.5 text-[15px] font-bold text-white">
+                {cta.label} <Arrow className="cta-arrow h-4 w-4" />
+              </span>
+              <span className="mt-1.5 text-[12.5px] text-white/70">{cta.note}</span>
+            </Link>
+
+            {/*
+              HOW YOU ACTUALLY PAY — the question a price alone never answers.
+              A café owner in Tunisia does not have a card they will type into a
+              website, and a page that shows only a number is quietly asking for
+              one.
+            */}
+            <p className="mt-5 text-center text-[12.5px] leading-relaxed text-slate">
+              {t("D17, Flouci ou virement — vous envoyez la photo du reçu depuis l'application.")}
+            </p>
           </div>
         </div>
       </section>
@@ -600,34 +533,6 @@ export default async function Landing({
         </div>
       </footer>
     </div>
-  );
-}
-
-/**
- * The numbered mechanic — № 01 rather than a badge, which is the house style
- * components/icons.tsx wrote down and this page had drifted away from.
- *
- * Three columns ruled apart on desktop, three ruled rows on a phone. The rules
- * are the layout: no cards, no borders that go all the way round, nothing
- * floating. Extracted rather than inlined twice because the owner and the
- * customer each get their own three steps and only the words differ.
- */
-function Steps({ steps, t }: { steps: { title: string; text: string }[]; t: T }) {
-  return (
-    <ol className="mt-12 grid border-t border-white/20 md:mt-16 md:grid-cols-3">
-      {steps.map((s, i) => (
-        <li
-          key={s.title}
-          className="border-b border-white/20 py-7 md:border-b-0 md:border-r md:px-8 md:py-0 md:first:pl-0 md:last:border-r-0 md:last:pr-0"
-        >
-          <p className="font-mono text-[12px] font-bold tracking-[0.2em] text-lavender md:pt-8">
-            {String(i + 1).padStart(2, "0")}
-          </p>
-          <h3 className="mt-4 text-[23px] text-white md:text-[25px]">{t(s.title)}</h3>
-          <p className="mt-3 text-[14.5px] leading-relaxed text-white/60">{t(s.text)}</p>
-        </li>
-      ))}
-    </ol>
   );
 }
 
