@@ -801,6 +801,10 @@ const TN: Record<string, string> = {
   "6 mois": "6 شهور",
   TND: "دينار",
   "Choisir 6 mois": "نختار 6 شهور",
+  /* The landing page is read by both audiences; this is the customer's line.
+     /moi carries the mirror of it — "Vous êtes commerçant ?" */
+  "Vous êtes client ?": "إنت حريف؟",
+  "Retrouvez vos cartes": "لقى الكوارط متاعك",
   "Sans engagement": "من غير التزام",
   /* The comparison lines, as lib/billing writes them. They are keyed on the
      exact French so a change to the catalogue shows up here as untranslated

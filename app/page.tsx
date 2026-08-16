@@ -10,6 +10,7 @@ import { currentLang, dir, translator } from "@/lib/i18n";
 import { LangToggle } from "@/components/LangToggle";
 import { Tpl } from "@/components/Tpl";
 import { platformSettings } from "@/lib/settings";
+import type { Offer } from "@/lib/billing";
 
 /**
  * The landing page, set like printed matter.
@@ -110,13 +111,6 @@ const BENEFITS = [
    breaks. They replace a seven-item tick list, which was a specification
    rather than an argument. */
 
-/*
-  The prices come from lib/billing, which is what the renewal screen charges.
-  Typing them here is how a page ends up advertising 80 and invoicing 120.
-
-  The saving is arithmetic on those two, not a third number to keep in step:
-  two half-years against one year.
-*/
 /* What the year buys. Seven things, all of which exist. */
 const INCLUDED = [
   "Programme fidélité",
@@ -138,9 +132,14 @@ const INCLUDED = [
 
   Picked by DURATION rather than by id, and with a fallback, because the offer
   list is editable: a landing page that throws because somebody renamed "12m"
-  is the worst possible outcome of a price change.
+  is the worst possible outcome of a price change. Advertising 80 while the
+  renewal screen invoices 120 is the second worst, which is why neither number
+  is typed on this page.
+
+  The saving under the year card is arithmetic on these two, not a third figure
+  to keep in step: two half-years against one year.
 */
-function priceBlocks(offers: { id: string; months: number; price: number }[]) {
+function priceBlocks(offers: Offer[]) {
   const longest = [...offers].sort((a, b) => b.months - a.months)[0];
   const shorter = [...offers].sort((a, b) => a.months - b.months)[0];
   return {
@@ -273,22 +272,30 @@ export default async function Landing({
               that is what this is.
             */}
             {/*
-              THE OWNER'S WAY IN NEVER LEAVES. All four things do not fit a
-              390px row, and the first cut hid this button and kept the customer
-              link — which had it exactly backwards: this page sells to shop
-              owners, and a returning one signing in is the single most useful
-              control on it. The customer link goes to the footer on phones,
-              where the one visitor who lost their sticker can still find it.
+              TWO WAYS IN, AND EACH ONE NAMES WHERE IT GOES.
+
+              This page is read by both audiences, and the two controls up here
+              used to be "Je suis client" and "Espace café" — one naming a
+              PERSON, the other a PLACE, so neither told you what pressing it
+              would do. Worse, the customer link was hidden below sm: the one
+              visitor who arrives here rather than by scanning a sticker is the
+              one who LOST the sticker, and on a phone they were shown nothing.
+
+              Both are visible at every width now, and both say their
+              destination: "Mes cartes" is the wallet, "Espace café" is the
+              till. The customer's is quiet because most customers never come
+              here at all; it is present because the ones who do have exactly
+              one errand.
             */}
             <Link
               href="/moi"
-              className="hidden whitespace-nowrap text-[13.5px] font-semibold text-slate transition hover:text-charcoal sm:inline"
+              className="whitespace-nowrap text-[13.5px] font-semibold text-slate transition hover:text-charcoal"
             >
-              {t("Je suis client")}
+              {t("Mes cartes")}
             </Link>
             <Link
               href={ownerHere ? "/owner" : "/owner/login"}
-              className="whitespace-nowrap rounded-[3px] border border-charcoal px-4 py-2 text-[13.5px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white"
+              className="whitespace-nowrap rounded-[3px] border border-charcoal px-3.5 py-2 text-[13.5px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white"
             >
               {ownerHere ? t("Ma caisse") : t("Espace café")}
             </Link>
@@ -378,6 +385,30 @@ export default async function Landing({
             </div>
 
             <p className="mt-6 text-[13px] text-slate">{cta.note}</p>
+
+            {/*
+              THE OTHER READER, ANSWERED IN ONE LINE.
+
+              /moi already carries the mirror of this — "Vous êtes commerçant ?
+              → Espace café" — because that page is the customer's door and an
+              owner can land on it by mistake. This is the same sentence from
+              the other side, and it was missing: everything above it addresses
+              somebody who owns a shop, and a customer who followed a link here
+              had to work out that none of it was for them.
+
+              It sits under the button rather than above the headline: the
+              customer is the rarer visitor, and the rarer visitor gets the
+              quieter line, not the first one.
+            */}
+            <p className="mt-5 border-t border-hair pt-5 text-[13.5px] text-slate">
+              {t("Vous êtes client ?")}{" "}
+              <Link
+                href="/moi"
+                className="font-bold text-royal underline underline-offset-2 transition hover:text-[#4c33b4]"
+              >
+                {t("Retrouvez vos cartes")}
+              </Link>
+            </p>
           </div>
 
           {/*
@@ -596,10 +627,6 @@ export default async function Landing({
             </Link>
             <Link href="/conditions" className="py-2 transition hover:text-charcoal">
               {t("Conditions")}
-            </Link>
-            {/* the masthead drops this below sm — see the note up there */}
-            <Link href="/moi" className="py-2 transition hover:text-charcoal sm:hidden">
-              {t("Je suis client")}
             </Link>
             <span className="py-2">{t("Contact")}</span>
           </nav>
