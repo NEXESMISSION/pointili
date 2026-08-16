@@ -94,8 +94,26 @@ export default async function Clients({
             ))}
           </nav>
 
-          <Period s={s} label={picked.label} />
-          <Verdict s={s} />
+          {/*
+            ── A DASHBOARD ON A LAPTOP, A COLUMN ON A PHONE ────────────────
+            These were four full-width strips down a 980px page: the money
+            card carried a sparse chart and three numbers strung across a
+            metre of white, and the loyalty verdict was ONE SENTENCE in a box
+            as wide as the screen. Read at arm's length that is not a report,
+            it is a list of boxes.
+
+            At lg the money keeps two thirds — it is the chart, it needs the
+            width — and the verdict takes the last third beside it, where a
+            single sentence is the right size for the space it is in. The two
+            people-lists keep their own row underneath, which is where an
+            owner's eye goes second.
+          */}
+          <div className="grid gap-3 lg:grid-cols-3 lg:items-start">
+            <div className="lg:col-span-2">
+              <Period s={s} label={picked.label} />
+            </div>
+            <Verdict s={s} />
+          </div>
 
           {/* the page's reason for existing */}
           <div className="grid gap-3 lg:grid-cols-2">

@@ -148,10 +148,15 @@ export function CaisseDesk({
   pointsPerTnd,
   stampsEnabled,
   stampsRequired,
+  qr,
+  slug,
 }: {
   pointsPerTnd: number;
   stampsEnabled: boolean;
   stampsRequired: number;
+  /** The shop's own QR as SVG markup — drawn by the page, see there. */
+  qr: string;
+  slug: string;
 }) {
   /* No `mode` any more — see the note where the tabs used to be. */
   const [stage, setStage] = useState<Stage>("keypad");
@@ -331,7 +336,53 @@ export function CaisseDesk({
           </div>
 
           {/* ── this person is collecting ─────────────────────────── */}
-          <ValidateForm scanned={voucher} />
+          <div className="space-y-4">
+            <ValidateForm scanned={voucher} />
+            {/*
+            ── THE SHOP'S QR, AS ITSELF ──────────────────────────────────────
+            This was a grey strip: a generic icon, a title, a sentence, and a
+            chevron a thousand pixels away on a laptop. Three small things marooned
+            in a very wide box, and the one thing it is about — the code — was not
+            on it. An icon of a QR is a worse picture of a QR than a QR.
+
+            So the code is the object now: printed small, on white (it has to be
+            dark-on-light or no camera reads it), next to what it does and the two
+            things an owner ever wants — open it, or print it. It is a CARD, so at
+            1440 it sits in the right-hand column beside the till instead of
+            stretching across the page.
+          */}
+          <section className="a-card flex items-center gap-4 p-4">
+            <Link
+              href="/owner/qr"
+              aria-label="Ouvrir mon QR"
+              className="grid h-[76px] w-[76px] shrink-0 place-items-center rounded-2xl bg-white p-2 ring-1 ring-[var(--o-edge)] transition active:scale-95 [&>svg]:h-full [&>svg]:w-full"
+              dangerouslySetInnerHTML={{ __html: qr }}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-bold text-charcoal">Mon QR</p>
+              <p className="mt-0.5 text-[12px] leading-snug text-slate">
+                À poser sur les tables — c&apos;est lui qui crée les cartes.
+              </p>
+              <p className="mt-1 truncate font-mono text-[11px] text-slate">
+                pointili.online/{slug}
+              </p>
+              <div className="mt-2.5 flex flex-wrap gap-2">
+                <Link
+                  href="/owner/qr"
+                  className="rounded-xl bg-[var(--o-inset)] px-3 py-1.5 text-[12px] font-bold text-charcoal transition active:scale-95"
+                >
+                  Ouvrir en grand
+                </Link>
+                <Link
+                  href="/owner/qr?print=1"
+                  className="rounded-xl border border-[var(--o-edge)] px-3 py-1.5 text-[12px] font-bold text-slate transition active:scale-95"
+                >
+                  Imprimer
+                </Link>
+              </div>
+            </div>
+          </section>
+          </div>
         </div>
       )}
 
@@ -348,22 +399,6 @@ export function CaisseDesk({
         one, when putting the QR on the tables IS the job, and out of the way
         every day after. /owner/qr is unchanged and still deep-linkable.
       */}
-      <Link
-        href="/owner/qr"
-        className="flex items-center gap-3 rounded-2xl border border-[var(--o-edge)] bg-[var(--o-inset)] px-4 py-3.5 transition active:bg-[var(--o-inset)]"
-      >
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--o-inset)] text-charcoal">
-          <QrIcon className="h-[18px] w-[18px]" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-[15px] font-bold text-charcoal">Mon QR</span>
-          <span className="block text-[12px] text-slate">
-            À poser sur les tables — c&apos;est lui qui crée les cartes.
-          </span>
-        </span>
-        <span className="shrink-0 text-[17px] leading-none text-slate">›</span>
-      </Link>
-
       {customer && (
         <CustomerSheet
           key={customer.ref}
