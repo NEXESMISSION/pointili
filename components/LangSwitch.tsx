@@ -1,4 +1,5 @@
-import { LANG_COOKIE, type Lang } from "@/lib/dict";
+import { type Lang } from "@/lib/dict";
+import { setLangAction } from "@/lib/langAction";
 
 /**
  * FRANÇAIS · تونسي — the whole language control.
@@ -51,28 +52,13 @@ export function LangSwitch({ current }: { current: Lang }) {
   );
 }
 
-/**
- * Set the cookie and re-render.
- *
- * A YEAR, and no revalidatePath: the diner screens are all force-dynamic, so
- * the next render reads the new cookie on its own. There is nothing cached to
- * bust and nothing to redirect to — they stay exactly where they were.
- */
-async function setLangAction(formData: FormData) {
-  "use server";
-  const { cookies } = await import("next/headers");
-  const { revalidatePath } = await import("next/cache");
-  const lang: Lang = formData.get("lang") === "tn" ? "tn" : "fr";
-  const jar = await cookies();
-  jar.set(LANG_COOKIE, lang, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 365 * 86400,
-  });
-  /* The layout reads the cookie, and a layout is not re-rendered by a plain
-     action — without this the tab bar keeps the old language until a hard
-     navigation. */
-  revalidatePath("/", "layout");
-}
+/*
+  The action moved to lib/langAction.
+
+  The landing page now has its own language control (components/LangToggle) —
+  different furniture, same cookie — and two copies of a cookie write are
+  identical the day they are written and subtly different a month later. The
+  shared one also revalidates the layout, which this one did not need while the
+  diner screens were the only caller (they are all force-dynamic) and which the
+  landing does need.
+*/
