@@ -35,7 +35,12 @@ const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_RO
 const { data: ownerRow } = await admin.from("businesses").select("owner_id").eq("id", cafeA).single();
 
 // a SECOND shop, so multi-card behaviour is real
-await admin.from("businesses").delete().eq("slug", OTHER);
+/* dropTestCafe, not a raw delete: diner_cafes is NOT cascaded by the business
+   FK (see fixture.mjs), so once any diner had joined the second shop, deleting
+   the business row failed on referential integrity and took the whole suite
+   with it. It only bit after a run crashed before its own cleanup, which is
+   exactly when a suite most needs to be able to start from nothing. */
+await dropTestCafe(OTHER);
 const { data: cafeB } = await admin
   .from("businesses")
   .insert({
