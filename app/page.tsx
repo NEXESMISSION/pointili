@@ -9,7 +9,7 @@ import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo"
 import { currentLang, dir, translator } from "@/lib/i18n";
 import { LangToggle } from "@/components/LangToggle";
 import { Tpl } from "@/components/Tpl";
-import { OFFERS } from "@/lib/billing";
+import { platformSettings } from "@/lib/settings";
 
 /**
  * The landing page, set like printed matter.
@@ -128,10 +128,26 @@ const INCLUDED = [
   "Support en Tunisie",
 ];
 
-const YEAR = OFFERS.find((o) => o.months === 12)!;
-const HALF = OFFERS.find((o) => o.months === 6)!;
-const SAVING = HALF.price * 2 - YEAR.price;
+/*
+  THE PRICES ON THIS PAGE ARE THE PRICES THE RENEWAL SCREEN CHARGES.
 
+  They were module constants read from lib/billing, which made them a deploy
+  away from the operator; they come from the platform settings now (0041) and
+  are resolved per request, inside the component, because a module-level read
+  would be evaluated once at build and never again.
+
+  Picked by DURATION rather than by id, and with a fallback, because the offer
+  list is editable: a landing page that throws because somebody renamed "12m"
+  is the worst possible outcome of a price change.
+*/
+function priceBlocks(offers: { id: string; months: number; price: number }[]) {
+  const longest = [...offers].sort((a, b) => b.months - a.months)[0];
+  const shorter = [...offers].sort((a, b) => a.months - b.months)[0];
+  return {
+    YEAR: offers.find((o) => o.months === 12) ?? longest,
+    HALF: offers.find((o) => o.months === 6) ?? (shorter !== longest ? shorter : null),
+  };
+}
 export default async function Landing({
   searchParams,
 }: {
@@ -187,6 +203,11 @@ export default async function Landing({
   */
   const lang = await currentLang();
   const t = translator(lang);
+
+  /* Per request, not per build: the operator can change a price from
+     /admin/reglages and this page has to say the new one. */
+  const { YEAR, HALF } = priceBlocks((await platformSettings()).offers);
+  const SAVING = HALF ? HALF.price * 2 - YEAR.price : 0;
 
   const cta = ownerHere
     ? { href: "/owner", label: t("Aller à ma caisse"), note: t("Vous êtes déjà connecté") }
@@ -371,16 +392,47 @@ export default async function Landing({
             ancestor's white background instead.
           */}
           <div className="relative md:col-span-6">
-            <div className="absolute inset-y-0 -start-5 -end-5 bg-[#faf9fe] md:start-0 md:-end-[50vw]">
+            {/*
+              THE FIELD FADES ON ALL FOUR SIDES — colour and dots together.
+
+              Two things had to change. The tint and the dot grid were separate
+              elements and only the dots were masked, so the pattern dissolved
+              onto a hard-edged pale rectangle: the fade fixed the texture and
+              left the panel it sat on with four straight sides, which is the
+              edge you actually notice.
+
+              And the mask was a centred ellipse. This panel BLEEDS — it is
+              1184px wide with about 640 of it on screen — so "50%" is near the
+              right edge of the viewport and the falloff happened off-screen,
+              leaving roughly half opacity exactly where the panel meets the
+              type column. A percentage of a box you cannot see is not a fade.
+
+              So: two symmetric linear fades, one per axis, on nested elements.
+              Symmetric means it is direction-agnostic — Tunisian mirrors the
+              whole grid and this needs no RTL variant. Nested rather than
+              mask-composite, which Safari only learned recently and which
+              degrades to "last layer wins" where it is missing.
+            */}
+            <div
+              aria-hidden
+              className="absolute inset-y-0 -start-5 -end-5 md:start-0 md:-end-[50vw]"
+              style={{
+                maskImage: "linear-gradient(to bottom, transparent, #000 15%, #000 85%, transparent)",
+                WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 15%, #000 85%, transparent)",
+              }}
+            >
               <div
-                aria-hidden
                 className="absolute inset-0"
                 style={{
+                  /* dots FIRST, tint last: background-image paints front to
+                     back, so reversing them hides the pattern under its own
+                     background. */
                   backgroundImage:
-                    "radial-gradient(circle, rgba(91,63,209,.16) 1.6px, transparent 1.6px)",
-                  backgroundSize: "22px 22px",
-                  maskImage: "radial-gradient(120% 80% at 60% 45%, #000 35%, transparent 78%)",
-                  WebkitMaskImage: "radial-gradient(120% 80% at 60% 45%, #000 35%, transparent 78%)",
+                    "radial-gradient(circle, rgba(91,63,209,.18) 1.6px, transparent 1.6px)," +
+                    "linear-gradient(#f7f5fe, #f7f5fe)",
+                  backgroundSize: "22px 22px, 100% 100%",
+                  maskImage: "linear-gradient(to right, transparent, #000 16%, #000 84%, transparent)",
+                  WebkitMaskImage: "linear-gradient(to right, transparent, #000 16%, #000 84%, transparent)",
                 }}
               />
             </div>
@@ -448,9 +500,15 @@ export default async function Landing({
           <div className="mx-auto mt-10 grid max-w-[820px] items-start gap-5 md:grid-cols-2">
             {/* ── the year ── */}
             <div className="relative rounded-[20px] border-2 border-royal bg-white p-7 shadow-[0_24px_60px_-40px_rgba(36,18,59,.45)]">
-              <span className="absolute -top-3 start-7 rounded-full bg-royal px-3 py-1 text-[11.5px] font-bold text-white">
-                <Tpl tpl={t("Économisez {n} TND")} slots={{ n: SAVING }} />
-              </span>
+              {/* A saving is a COMPARISON. With one offer configured, or a
+                  shorter one that is not actually dearer per month, the badge
+                  would read "Économisez 0 TND" — a discount that insults the
+                  reader's arithmetic. */}
+              {SAVING > 0 && (
+                <span className="absolute -top-3 start-7 rounded-full bg-royal px-3 py-1 text-[11.5px] font-bold text-white">
+                  <Tpl tpl={t("Économisez {n} TND")} slots={{ n: SAVING }} />
+                </span>
+              )}
 
               <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-royal">
                 {t("1 an")}
@@ -475,6 +533,7 @@ export default async function Landing({
             </div>
 
             {/* ── six months ── */}
+            {HALF && (
             <div className="rounded-[20px] border border-hair bg-white p-7">
               <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-slate">
                 {t("6 mois")}
@@ -495,6 +554,7 @@ export default async function Landing({
               </Link>
               <p className="mt-3 text-center text-[12px] text-slate">{t("Sans engagement")}</p>
             </div>
+            )}
           </div>
 
           {/* what both of them buy — said once, under both */}

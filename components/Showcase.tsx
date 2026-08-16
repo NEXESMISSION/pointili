@@ -1,5 +1,6 @@
 import { DEMO_VERSION } from "@/components/demoVersion";
 import { translator, type Lang } from "@/lib/dict";
+import { LazyClip } from "@/components/LazyClip";
 
 /*
   THE PRODUCT, FILMED, EXPLAINED ONE CAPABILITY AT A TIME.
@@ -226,22 +227,13 @@ function Card({ shot, lang }: { shot: Shot; lang: Lang }) {
             panel's overflow does the cutting. */}
         <div className="-mb-10 w-full max-w-[196px] md:max-w-[212px]">
           <div className="overflow-hidden rounded-t-[30px] border-[6px] border-b-0 border-[#1b1430] bg-[#0b0616] shadow-[0_18px_40px_-26px_rgba(36,18,59,.6)]">
-            {/*
-              autoPlay + muted + playsInline is the only combination every
-              mobile browser will start on its own; without muted, iOS refuses,
-              and without playsInline it takes over the whole screen.
-
-              preload="none" keeps the clips off the wire until they are wanted.
-            */}
-            <video
+            {/* Fetched when the reader is nearly here, not while they are
+                reading the headline — see components/LazyClip for the 1,685 KB
+                this was costing a visitor who never scrolled. */}
+            <LazyClip
               src={`${shot.clip}?v=${DEMO_VERSION}`}
               poster={shot.poster && `${shot.poster}?v=${DEMO_VERSION}`}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="none"
-              aria-label={`${t(shot.title)} — ${t(shot.side)}`}
+              label={`${t(shot.title)} — ${t(shot.side)}`}
               className="block h-auto w-full"
             />
           </div>
