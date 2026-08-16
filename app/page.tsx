@@ -7,7 +7,6 @@ import { Showcase } from "@/components/Showcase";
 import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
 import { currentLang, dir, translator, type T } from "@/lib/i18n";
-import { Tpl } from "@/components/Tpl";
 import { LangToggle } from "@/components/LangToggle";
 
 /**
@@ -69,15 +68,13 @@ export const metadata = {
    lipstick, phone, star, bar chart) is gone with the sections that held it:
    five of them dressed a category list up as a customer logo strip, and three
    sat in gradient tiles above copy that said nothing. What is left is an
-   arrow that means "go" and a tick that means "included". */
+   arrow that means "go". The tick went with the seven-item feature list the
+   price card used to carry — see PILLARS. */
 const S = (p: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden {...p} />
 );
 const Arrow = ({ className = "h-4 w-4" }: { className?: string }) => (
   <S className={className} strokeWidth="2.4"><path d="M5 12h13M12 6l6 6-6 6" /></S>
-);
-const Check = ({ className = "h-3.5 w-3.5" }: { className?: string }) => (
-  <S className={className} strokeWidth="3"><path d="m5 12.5 4.5 4.5L19 7" /></S>
 );
 
 /*
@@ -107,15 +104,55 @@ const STEPS_OWNER = [
   },
 ];
 
-const INCLUDED = [
-  "Programme fidélité",
-  "QR Code illimité",
-  "Récompenses",
-  "Carte à vos couleurs",
-  "Français et tunisien",
-  "Analyses et statistiques",
-  "Support en Tunisie",
+/* ── the three reasons, iconed ──────────────────────────────────────────────
+   Every one of these is checkable. "Sans application" is the claim the whole
+   product rests on and the one a competitor cannot copy without rebuilding;
+   "zéro frais caché" is the pricing section's own words; five seconds is what
+   the till clip shows happening. The design's "100% sécurisé · données
+   chiffrées" is not here because it is the sentence every page prints and none
+   can be held to. */
+const Bolt = ({ className = "h-5 w-5" }: { className?: string }) => (
+  <S className={className} strokeWidth="2"><path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z" /></S>
+);
+const Shield = ({ className = "h-5 w-5" }: { className?: string }) => (
+  <S className={className} strokeWidth="2"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6L12 3Z" /></S>
+);
+const Tick = ({ className = "h-5 w-5" }: { className?: string }) => (
+  <S className={className} strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="m8.5 12.2 2.4 2.4 4.6-4.9" /></S>
+);
+
+const BENEFITS = [
+  { icon: Bolt, title: "Ultra rapide", line: "Encaissez en 5 secondes" },
+  { icon: Shield, title: "Sans application", line: "Ni pour vous, ni pour vos clients" },
+  { icon: Tick, title: "Zéro frais caché", line: "Pas de commission sur vos ventes" },
 ];
+
+/* ── the four columns under the price ──────────────────────────────────────
+   The four questions an owner has once they have seen the number: what do I
+   get, what does it really cost, what do I learn, and who answers when it
+   breaks. They replace a seven-item tick list, which was a specification
+   rather than an argument. */
+const Card = ({ className = "h-5 w-5" }: { className?: string }) => (
+  <S className={className} strokeWidth="2"><rect x="2.5" y="5" width="19" height="14" rx="2.5" /><path d="M2.5 10h19" /></S>
+);
+const Percent = ({ className = "h-5 w-5" }: { className?: string }) => (
+  <S className={className} strokeWidth="2"><path d="m6 18 12-12" /><circle cx="7.5" cy="7.5" r="2" /><circle cx="16.5" cy="16.5" r="2" /></S>
+);
+const Chart = ({ className = "h-5 w-5" }: { className?: string }) => (
+  <S className={className} strokeWidth="2"><path d="M12 3a9 9 0 1 0 9 9h-9V3Z" /><path d="M15.5 3.6A9 9 0 0 1 20.4 8.5" /></S>
+);
+const Headset = ({ className = "h-5 w-5" }: { className?: string }) => (
+  <S className={className} strokeWidth="2"><path d="M4 13v-1a8 8 0 0 1 16 0v1" /><rect x="2.5" y="13" width="4.5" height="6" rx="2" /><rect x="17" y="13" width="4.5" height="6" rx="2" /></S>
+);
+
+const PILLARS = [
+  { icon: Card, title: "Programme fidélité", line: "Points, visites et récompenses" },
+  { icon: Percent, title: "Un coût maîtrisé", line: "80 TND par an, rien d'autre" },
+  { icon: Chart, title: "Rapports clairs", line: "Qui revient, et à quel rythme" },
+  { icon: Headset, title: "Support en Tunisie", line: "Une équipe là pour vous aider" },
+];
+
+
 
 export default async function Landing({
   searchParams,
@@ -261,101 +298,101 @@ export default async function Landing({
       </header>
 
       {/* ── hero ─────────────────────────────────────────────────────
-          Built to a supplied design. What that design is, and why each piece:
+          Built to a supplied design, in this order, on every width:
 
-          THE HEADLINE IS THREE WORDS SHORTER and there is no paragraph under
-          it at all. That is the whole idea — the old hero spent a headline, a
-          sub-headline and a 24-word sentence saying one thing, and a person
-          holding a phone reads the first line and the button.
+            origin badge → headline → ONE sentence → three benefits →
+            one button and one quiet "see how it works" → the product
 
-          THE ORIGIN LINE MOVED AND BECAME A BADGE. It was an 11px letterspaced
-          uppercase mono eyebrow ABOVE the headline, which is where a magazine
-          puts a section label — it was read as chrome. Under the headline, in
-          sentence case, on a white pill, it reads as the claim it is.
+          The phone comes last in the DOM, which is also the order it should
+          be read on a phone: words, reasons, action, then the picture. On a
+          laptop the grid puts it beside them without changing that order.
 
-          The flag is drawn, not typed. Windows ships no regional-indicator
-          glyphs, so 🇹🇳 renders there as the two bare letters "TN" — the reason
-          the footer dropped it. A red disc has no such problem in any font.
+          THE SENTENCE IS ONE SENTENCE. There was a paragraph here once, then
+          nothing at all; a single line is what a person actually reads between
+          a headline and a button.
 
-          NO "200 COMMERCES NOUS FONT CONFIANCE". The design has a row of
-          avatars and that sentence, and it is not true: this product has not
-          launched. The one place a visitor looks for evidence is the one place
-          a false number costs everything, and this page already deleted a fake
-          logo strip for exactly that reason. The trial terms sit there instead,
-          which is the honest version of the same reassurance. */}
+          THE THREE BENEFITS ARE CLAIMS THIS PRODUCT CAN KEEP. The design's
+          middle one is "100% sécurisé · données chiffrées et protégées", which
+          is the kind of sentence every SaaS page prints and none of them can
+          be held to. What this product genuinely has, and its competitors
+          mostly do not, is that nobody installs anything. */}
       <section className="relative overflow-hidden border-b border-hair">
-        <div className="mx-auto grid max-w-6xl items-stretch px-5 md:grid-cols-12 md:px-8">
-          <div className="relative z-10 pb-12 pt-14 md:col-span-6 md:pb-24 md:pe-10 md:pt-28">
-            <h1 className="hero-title text-[42px] leading-[1.06] md:text-[56px] lg:text-[64px]">
+        <div className="mx-auto grid max-w-6xl items-center px-5 md:grid-cols-12 md:px-8">
+          <div className="relative z-10 pb-12 pt-12 md:col-span-6 md:pb-20 md:pe-10 md:pt-20">
+            {/* the origin line, with the real flag — see /public/tunisia.webp */}
+            <p className="inline-flex items-center gap-2.5 rounded-full border border-hair bg-white px-3.5 py-1.5 text-[13px] font-semibold text-charcoal">
+              <Image
+                src="/tunisia.webp"
+                alt=""
+                width={40}
+                height={40}
+                className="h-[17px] w-[17px] rounded-full object-cover"
+              />
+              {t("Fait en Tunisie, pour la Tunisie")}
+            </p>
+
+            <h1 className="hero-title mt-6 text-[40px] leading-[1.06] md:text-[52px] lg:text-[58px]">
               {t("Vos habitués reviennent.")}
               <br />
               <span className="text-royal">{t("Simplement.")}</span>
             </h1>
 
-            <p className="mt-7 inline-flex items-center gap-2.5 rounded-full border border-hair bg-white px-4 py-2 text-[13.5px] font-semibold text-charcoal">
-              <span aria-hidden className="grid h-5 w-5 place-items-center rounded-full bg-royal/12">
-                <span className="h-[7px] w-[7px] rounded-full bg-royal" />
-              </span>
-              {t("Fait en Tunisie, pour la Tunisie")}
-              {/* the flag, drawn — see the note above */}
-              <span aria-hidden className="h-[15px] w-[15px] rounded-full bg-[#e70013]" />
+            <p className="mt-5 max-w-[42ch] text-[16px] leading-[1.6] text-slate">
+              {t("La carte de fidélité de votre commerce, dans le téléphone de vos clients.")}
             </p>
 
-            <div className="mt-9 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:gap-7">
+            <ul className="mt-9 grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-5">
+              {BENEFITS.map(({ title, line, icon: Icon }) => (
+                <li key={title}>
+                  <span className="grid h-10 w-10 place-items-center rounded-[12px] bg-lilac-2 text-royal">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <p className="mt-3 text-[14.5px] font-bold text-charcoal">{t(title)}</p>
+                  <p className="mt-1 text-[13px] leading-snug text-slate">{t(line)}</p>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-9 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:gap-6">
               <Link
                 href={cta.href}
-                className="group inline-flex items-center justify-center gap-3 rounded-[12px] bg-royal px-8 py-4 text-[15px] font-bold text-white transition hover:bg-[#4c33b4] active:translate-y-px"
+                className="group inline-flex items-center justify-center gap-3 rounded-[12px] bg-royal px-7 py-4 text-[15px] font-bold text-white transition hover:bg-[#4c33b4] active:translate-y-px"
               >
                 {cta.label}
                 <Arrow className="cta-arrow h-4 w-4" />
               </Link>
 
-              {/* The second way in is a LOOK, not a second sale. It goes to the
-                  two clips further down — the only thing on this page that
+              {/* Quiet, and it is a LOOK rather than a second sale: it jumps to
+                  the product running, which is the only thing on this page that
                   answers "yes, but what is it" without asking for anything. */}
               <a
                 href="#produit"
-                className="group inline-flex items-center justify-center gap-2.5 text-[15px] font-bold text-charcoal transition hover:text-royal"
+                className="group inline-flex items-center justify-center gap-2.5 text-[14.5px] font-semibold text-charcoal transition hover:text-royal"
               >
-                {t("Découvrir Pointili")}
-                <span className="grid h-7 w-7 place-items-center rounded-full border border-hair text-royal transition group-hover:border-royal/40">
+                <span className="grid h-9 w-9 place-items-center rounded-full border border-hair text-royal transition group-hover:border-royal/40">
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="ms-[2px] h-3 w-3">
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 </span>
+                {t("Voir comment ça marche")}
               </a>
             </div>
 
-            <p className="mt-7 text-[13px] text-slate">{cta.note}</p>
+            <p className="mt-6 text-[13px] text-slate">{cta.note}</p>
           </div>
 
           {/*
-            The art field is a child of the ART COLUMN, not of the section, so
-            its left edge is the grid line — exactly where the type column ends
-            — at every viewport, with no percentage guessing. It bleeds right
-            past the container into the section's overflow-hidden.
+            ONE DOMINANT PRODUCT IMAGE, and it does the explaining.
 
-            Pale, with a dot grid, rather than the solid lilac slab it was: in
-            the design the device sits on a near-white field and the pattern is
-            what stops that field reading as an empty half of the page.
+            The field bleeds off the page, so it is written with LOGICAL sides:
+            left/right do not flip, and in Tunisian this bled straight across
+            the type column — and being later in the DOM it painted over it. The
+            whole hero rendered as an empty dotted rectangle with a phone in it.
+            The type column is lifted above this rather than this being pushed
+            below, which was the first fix and sent the field behind an
+            ancestor's white background instead.
           */}
           <div className="relative md:col-span-6">
-            {/*
-              LOGICAL SIDES, and -z-10, because this field BLEEDS.
-
-              Written with left/right it bleeds physically right — which in
-              Tunisian is straight across the type column, and since this panel
-              comes after that column in the DOM it painted over it. The whole
-              hero rendered as an empty dotted rectangle with a phone in it: no
-              headline, no badge, no buttons, in the language half this country
-              reads. start/end bleed toward the page edge in both directions.
-
-              The type column is lifted instead of this being pushed down: at
-              -z-10 the field went behind an ancestor's white background and
-              the dot grid disappeared from both languages. A backdrop needs to
-              stay above the page and below the words, which is a job for the
-              words.
-            */}
             <div className="absolute inset-y-0 -start-5 -end-5 bg-[#faf9fe] md:start-0 md:-end-[50vw]">
               <div
                 aria-hidden
@@ -369,7 +406,7 @@ export default async function Landing({
                 }}
               />
             </div>
-            <div className="relative flex justify-center pb-10 pt-4 md:h-full md:items-end md:pb-0 md:pt-20">
+            <div className="relative flex justify-center pb-12 pt-4 md:h-full md:items-end md:pb-0 md:pt-16">
               <HeroPhone />
             </div>
           </div>
@@ -427,79 +464,76 @@ export default async function Landing({
         </div>
       </section>
 
-      {/* ── the price, and the way in ──────────────────────────────── */}
+      {/* ── the price ────────────────────────────────────────────────
+          THE CARD IS THE ANCHOR, so the copy above it is a heading and one
+          line. It used to carry a heading, a three-clause paragraph and a
+          second paragraph about payment methods before the reader reached the
+          number — the page explaining a price it had not shown yet.
+
+          The four columns inside are the design's, and they are the answers to
+          the four questions an owner actually has after the number: what do I
+          get, what does it really cost, what do I learn, and who picks up when
+          something breaks. */}
       <section className="border-t border-hair bg-mist">
         <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
-          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
-            {t("Le prix")}
-          </p>
-          <h2 className="mt-5 text-[32px] md:text-[44px]">{t("Un prix simple.")}</h2>
-          <p className="mt-5 max-w-[44ch] text-[15.5px] leading-relaxed text-slate">
-            {t(
-              "Pas de commission sur vos ventes. Pas de limite de clients. Pas de palier qui se déclenche le jour où ça marche.",
-            )}
+          <h2 className="text-[32px] md:text-[44px]">{t("Un prix simple.")}</h2>
+          <p className="mt-4 max-w-[46ch] text-[15.5px] leading-relaxed text-slate">
+            {t("Pas de commission sur vos ventes. Pas de limite de clients.")}
           </p>
 
-          {/* ONE BLOCK, not two cards. The six-month offer is a line inside the
-              year rather than a second column asking to be compared: at this
-              length the page should be answering "how much", not "which". */}
-          <div className="mt-10 grid gap-8 rounded-[3px] bg-deep p-7 text-white md:grid-cols-2 md:items-start md:p-10">
-            <div>
-              <p className="display text-[68px] leading-[0.85] tabular-nums">
-                80
-                <span className="ml-2 align-super font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-lavender">
-                  {t("TND / an")}
-                </span>
-              </p>
-              <p className="mt-4 max-w-[26ch] text-[14px] leading-relaxed text-white/60">
-                {t("Tout ce dont vous avez besoin pour fidéliser vos clients.")}
-              </p>
-              <p className="mt-2 text-[13px] text-white/50">{t("Ou 65 TND pour 6 mois.")}</p>
+          <div className="mt-10 overflow-hidden rounded-[18px] bg-deep text-white">
+            <div className="grid gap-8 p-7 md:grid-cols-2 md:items-center md:p-10">
+              <div>
+                <p className="display text-[68px] leading-[0.85] tabular-nums">
+                  80
+                  <span className="ms-2 align-super font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-lavender">
+                    {t("TND / an")}
+                  </span>
+                </p>
+                <p className="mt-4 max-w-[26ch] text-[14px] leading-relaxed text-white/60">
+                  {t("Tout ce dont vous avez besoin pour fidéliser vos clients.")}
+                </p>
+                <p className="mt-2 text-[13px] text-white/50">{t("Ou 65 TND pour 6 mois.")}</p>
+              </div>
 
-              <Link
-                href={cta.href}
-                className="group mt-7 flex flex-col items-center rounded-[3px] bg-royal px-6 py-4 text-center transition hover:bg-[#4c33b4] active:translate-y-px"
-              >
-                <span className="flex items-center gap-2.5 text-[15px] font-bold text-white">
-                  {cta.label} <Arrow className="cta-arrow h-4 w-4" />
-                </span>
-                <span className="mt-1.5 text-[12.5px] text-white/70">{cta.note}</span>
-              </Link>
+              <div>
+                <Link
+                  href={cta.href}
+                  className="group flex flex-col items-center rounded-[12px] bg-royal px-6 py-4 text-center transition hover:bg-[#4c33b4] active:translate-y-px"
+                >
+                  <span className="flex items-center gap-2.5 text-[15px] font-bold text-white">
+                    {cta.label} <Arrow className="cta-arrow h-4 w-4" />
+                  </span>
+                  <span className="mt-1.5 text-[12.5px] text-white/70">{cta.note}</span>
+                </Link>
+                {/*
+                  HOW YOU ACTUALLY PAY — the question a price alone never
+                  answers. A café owner in Tunisia does not have a card they
+                  will type into a website, and a page that shows only a number
+                  is quietly asking for one.
+                */}
+                <p className="mt-4 text-center text-[12.5px] leading-relaxed text-white/55">
+                  {t("D17, Flouci ou virement — vous envoyez la photo du reçu depuis l'application.")}
+                </p>
+              </div>
             </div>
 
-            <ul className="border-t border-white/15">
-              {INCLUDED.map((f) => (
+            {/* the four columns, ruled apart — the design's anchor row */}
+            <ul className="grid border-t border-white/12 sm:grid-cols-2 lg:grid-cols-4">
+              {PILLARS.map(({ title, line, icon: Icon }) => (
                 <li
-                  key={f}
-                  className="flex items-center gap-3 border-b border-white/15 py-2.5 text-[14px] text-white"
+                  key={title}
+                  className="border-b border-white/12 p-6 sm:border-b-0 sm:[&:nth-child(-n+2)]:border-b lg:[&:nth-child(-n+2)]:border-b-0 lg:border-e lg:last:border-e-0 sm:[&:nth-child(odd)]:border-e"
                 >
-                  <Check className="h-3.5 w-3.5 shrink-0 text-lavender" />
-                  {t(f)}
+                  <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-white/10 text-lavender">
+                    <Icon className="h-[18px] w-[18px]" />
+                  </span>
+                  <p className="mt-3.5 text-[14.5px] font-bold text-white">{t(title)}</p>
+                  <p className="mt-1 text-[13px] leading-snug text-white/55">{t(line)}</p>
                 </li>
               ))}
             </ul>
           </div>
-
-          {/*
-            HOW YOU ACTUALLY PAY — the question a price alone never answers. A
-            café owner in Tunisia does not have a card they will type into a
-            website, and a page that shows only a number is quietly asking for
-            one.
-          */}
-          <p className="mt-6 max-w-[52ch] text-[14px] leading-relaxed text-slate">
-            <Tpl
-              tpl={t(
-                "{how} Vous envoyez la photo du reçu depuis l'application, et votre compte est prolongé — pas de carte bancaire, pas de prélèvement qui se renouvelle tout seul.",
-              )}
-              slots={{
-                how: (
-                  <span className="font-semibold text-charcoal">
-                    {t("Vous payez par D17, Flouci ou virement.")}
-                  </span>
-                ),
-              }}
-            />
-          </p>
         </div>
       </section>
 

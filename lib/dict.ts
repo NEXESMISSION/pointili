@@ -799,6 +799,25 @@ const TN: Record<string, string> = {
   */
   "Simplement.": "وبكل بساطة.",
   "Découvrir Pointili": "شوف Pointili",
+  "Voir comment ça marche": "شوف كيفاش يخدم",
+  /* The hero's three reasons. Short on purpose — they sit under an icon. */
+  "Ultra rapide": "سريع برشا",
+  "Encaissez en 5 secondes": "تخلّص في 5 ثواني",
+  "Sans application": "من غير أبليكاسيون",
+  "Ni pour vous, ni pour vos clients": "لا ليك لا لحرفاءك",
+  "Zéro frais caché": "ما فمّاش مصاريف مخبّية",
+  "Pas de commission sur vos ventes": "ما ناخذوش كوميسيون على البيع متاعك",
+  /* The four columns under the price, and the two lines above it. */
+  "Pas de commission sur vos ventes. Pas de limite de clients.":
+    "ما ناخذوش كوميسيون على البيع متاعك. وما فمّاش حدّ للحرفاء.",
+  "D17, Flouci ou virement — vous envoyez la photo du reçu depuis l'application.":
+    "D17 ولا Flouci ولا فيرمان — تبعث تصويرة الوصل من الأبليكاسيون.",
+  "Points, visites et récompenses": "نقاط، زيارات وهدايا",
+  "Un coût maîtrisé": "ثمن واضح",
+  "80 TND par an, rien d'autre": "80 دينار في العام، وخلاص",
+  "Rapports clairs": "أرقام واضحة",
+  "Qui revient, et à quel rythme": "شكون يرجعلك، وقدّاش من مرّة",
+  "Une équipe là pour vous aider": "فمّا فريق هوني باش يعاونك",
   "Encaisser": "الخلاص",
   "Cinq secondes, pendant que vous rendez la monnaie": "خمس ثواني، وإنت تردّ الصرف",
   "Le client donne son numéro de téléphone. Vous tapez le montant en dinars. C'est fini.": "الحريف يعطيك نمرة تليفونو. إنت تكتب المبلغ بالدينار. وسالينا.",

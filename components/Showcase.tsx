@@ -181,7 +181,7 @@ export function Showcase({ lang = "fr", only }: { lang?: Lang; only: string[] })
   return (
     <div className="space-y-14 md:space-y-20">
       {shots.map((s, i) => (
-        <Row key={s.clip} shot={s} index={i + 1} flip={i % 2 === 1} lang={lang} />
+        <Row key={s.clip} shot={s} flip={i % 2 === 1} lang={lang} />
       ))}
     </div>
   );
@@ -190,7 +190,7 @@ export function Showcase({ lang = "fr", only }: { lang?: Lang; only: string[] })
 /* The copy stays in SHOTS in French and is translated HERE, at the point of
    use: the French line is the dictionary key, so the data reads as prose in the
    source and there is exactly one t() per field instead of one per string. */
-function Row({ shot, index, flip, lang }: { shot: Shot; index: number; flip: boolean; lang: Lang }) {
+function Row({ shot, flip, lang }: { shot: Shot; flip: boolean; lang: Lang }) {
   const t = translator(lang);
   return (
     /* Ruled off at the top, catalogue-fashion. The rows used to float in
@@ -232,20 +232,24 @@ function Row({ shot, index, flip, lang }: { shot: Shot; index: number; flip: boo
 
       {/* what it is */}
       <div className={flip ? "md:order-1" : ""}>
-        {/* No "whose screen" badge any more. The switch at the top of the page
-            has already answered that, and repeating it here was the tell that
-            the page had not chosen an audience.
+        {/*
+          A CHIP, NOT A CATALOGUE ENTRY.
 
-            Numbered — № 01, the house style — so six sections read as a
-            sequence you are working through rather than six pitches. */}
-        <p className="flex items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
-          <span className="tabular-nums">{String(index).padStart(2, "0")}</span>
-          <span aria-hidden className="h-px w-6 bg-royal/40" />
+          This was "№ 01 —— ENCAISSER" in 11px letterspaced uppercase mono with
+          a hairline rule through it: a printed-catalogue treatment from when
+          there were nine of these and reading them in order was the point.
+          With two left, the number counts to two and the rule and the tracking
+          are three legibility costs stacked on a label.
+
+          A small filled chip says the same word, and the screen beside it does
+          the rest of the explaining.
+        */}
+        <p className="inline-flex items-center rounded-full bg-lilac-2 px-3 py-1 text-[11.5px] font-bold uppercase tracking-[0.1em] text-royal">
           {t(shot.eyebrow)}
         </p>
 
-        <h3 className="mt-4 text-[27px] md:text-[33px]">{t(shot.title)}</h3>
-        <p className="mt-4 max-w-[46ch] text-[15.5px] leading-relaxed text-slate">
+        <h3 className="mt-4 text-[26px] leading-[1.15] md:text-[31px]">{t(shot.title)}</h3>
+        <p className="mt-3.5 max-w-[44ch] text-[15.5px] leading-relaxed text-slate">
           {t(shot.lede)}
         </p>
 
