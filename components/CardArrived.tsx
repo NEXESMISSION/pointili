@@ -1,5 +1,6 @@
 "use client";
 
+import { translator, type Lang } from "@/lib/dict";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -27,22 +28,63 @@ import { useRouter } from "next/navigation";
  *     panel simply appears, says the same words, and waits.
  */
 export function CardArrived({
+  lang = "fr",
+  play,
   cafeName,
   points,
 }: {
+  /*
+    WHETHER TO PLAY — NOT WHETHER TO EXIST.
+
+    This component is rendered by the card page unconditionally, and decides
+    for itself. That is not a style preference, it is the fix for the bug that
+    made it dead code:
+
+    MarkOpened calls a server action on mount, and a server action re-renders
+    the route it was called from. That second render is the one where the card
+    has just been marked opened — so firstOpen is false, the page's condition
+    is false, and a component that was rendered CONDITIONALLY simply vanishes,
+    about one frame into a 4.2-second animation.
+
+    Mounted always, the state below survives that re-render: a useState
+    initialiser runs once for the life of the component and React keeps the
+    value when the parent re-renders with different props. The celebration
+    therefore outlives the write that ends its own eligibility.
+  */
+  play: boolean;
   cafeName: string;
   /** The welcome bonus, or 0 when the shop grants none. */
   points: number;
+  /** The reader's language — a translator cannot cross the server boundary. */
+  lang?: Lang;
 }) {
+  const t = translator(lang);
   const router = useRouter();
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(play);
 
   useEffect(() => {
     /*
       Strip the flag immediately, not on dismiss. If the person closes the tab
       mid-animation and reopens it from history, the celebration must not be
       waiting for them — the card is old news by then.
+
+      ONLY WHEN THERE IS A FLAG, and that condition is the whole bug.
+
+      This screen is reached two ways now. The old one is ?nouveau=1 from the
+      join action. The new one is last_opened_at being null — the only honest
+      signal for "seeing this card for the first time", because it also covers
+      the walk-in whose card was made FOR them at the counter.
+
+      Arriving the new way, there is no flag to strip, and this still ran: a
+      router.replace onto the same route, which re-renders the server component.
+      By then the card had been marked opened (components/MarkOpened fires on
+      mount, one paint earlier), so firstOpen came back false, the page stopped
+      rendering this component, and the 4.2s celebration below was cut down in
+      about one frame. Nobody joining ever saw it. Not "it repeated" — it never
+      played at all, on either path, for anyone.
     */
+    if (!new URL(window.location.href).searchParams.has("nouveau")) return;
+
     const url = new URL(window.location.href);
     url.searchParams.delete("nouveau");
     router.replace(url.pathname + url.search, { scroll: false });
@@ -83,13 +125,17 @@ export function CardArrived({
         }}
       >
         <p className="text-[11px] font-bold uppercase tracking-[0.1em] opacity-70">
-          Carte de fidélité
+          {t("Carte de fidélité")}
         </p>
         <p className="mt-1 truncate text-[15.5px] font-extrabold">{cafeName}</p>
         {points > 0 && (
           <p className="arrive-points mt-5 text-[34px] font-extrabold leading-none tabular-nums">
-            +{points}
-            <span className="ml-1.5 align-middle text-[13px] font-bold opacity-70">points</span>
+            {/* dir=ltr: "+" is a Unicode neutral and lands at the wrong end of
+                an RTL run — the welcome bonus read "230+". */}
+            <span dir="ltr">+{points}</span>
+            <span className="ml-1.5 align-middle text-[13px] font-bold opacity-70">
+              {t.unit(points, "point")}
+            </span>
           </p>
         )}
         {/* the points landing on it */}
@@ -111,14 +157,16 @@ export function CardArrived({
       </div>
 
       <p className="arrive-text mt-7 text-[17px] font-extrabold text-white">
-        Ta carte est prête
+        {t("Ta carte est prête")}
       </p>
       <p className="arrive-text mt-1 max-w-[26ch] text-[13px] leading-relaxed text-white/60">
         {points > 0
-          ? `${points} points pour commencer. Montre ton code au comptoir à chaque achat.`
-          : "Montre ton code au comptoir à chaque achat."}
+          ? t("{n} pour commencer. Montre ton code au comptoir à chaque achat.", {
+              n: t.n(points, "point"),
+            })
+          : t("Montre ton code au comptoir à chaque achat.")}
       </p>
-      <p className="arrive-text mt-5 text-[12px] text-white/35">Touche pour continuer</p>
+      <p className="arrive-text mt-5 text-[12px] text-white/35">{t("Touche pour continuer")}</p>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { translator, type Lang } from "@/lib/dict";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { GiftIcon } from "./icons";
@@ -49,17 +50,36 @@ const BITS: [number, number, string, number, number][] = [
 ];
 
 export function RewardUnlocked({
+  lang = "fr",
+  play,
   label,
   imageUrl,
   href,
 }: {
+  /*
+    Same contract as CardArrived, for the same reason — see the long note in
+    that file. The card page renders this unconditionally and it decides for
+    itself, because the thing that makes it eligible (a reward crossing the
+    line SINCE the last open) is erased by MarkOpened's server action, and that
+    action re-renders this very page a frame after it mounts.
+
+    The reward is latched with it. `label` and `imageUrl` are whatever the
+    server last computed, and on the re-render that is nothing at all — so the
+    panel keeps its own copy rather than reading props that have gone empty
+    underneath it.
+  */
+  play: boolean;
   /** The reward that just came into reach, named the way the shop named it. */
   label: string;
   imageUrl: string | null;
   /** Where "Voir mes récompenses" goes — the shop's own boutique. */
   href: string;
+  /** The reader's language — a translator cannot cross the server boundary. */
+  lang?: Lang;
 }) {
-  const [open, setOpen] = useState(true);
+  const t = translator(lang);
+  const [won] = useState(play ? { label, imageUrl } : null);
+  const [open, setOpen] = useState(play);
 
   useEffect(() => {
     const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -67,13 +87,13 @@ export function RewardUnlocked({
     return () => window.removeEventListener("keydown", esc);
   }, []);
 
-  if (!open) return null;
+  if (!open || !won) return null;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`Récompense débloquée : ${label}`}
+      aria-label={`${t("Récompense débloquée !")} ${t(won.label)}`}
       onClick={() => setOpen(false)}
       className="unlock-veil fixed inset-0 z-[60] flex flex-col items-center justify-center px-6 text-center text-white"
       /*
@@ -93,7 +113,7 @@ export function RewardUnlocked({
       <button
         type="button"
         onClick={() => setOpen(false)}
-        aria-label="Fermer"
+        aria-label={t("Fermer")}
         className="absolute right-5 top-[max(1.25rem,env(safe-area-inset-top))] grid h-10 w-10 place-items-center rounded-full bg-white/12 text-white/70 transition active:scale-95"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="h-4 w-4">
@@ -126,7 +146,7 @@ export function RewardUnlocked({
       </span>
 
       <p className="unlock-line relative z-20 text-[15.5px] font-extrabold tracking-[0.01em]">
-        Récompense débloquée !
+        {t("Récompense débloquée !")}
       </p>
 
       {/* the medallion: rays behind, the thing itself in front */}
@@ -153,9 +173,9 @@ export function RewardUnlocked({
         />
 
         <span className="unlock-medal relative grid h-[186px] w-[186px] place-items-center overflow-hidden rounded-full bg-white shadow-[0_18px_50px_-12px_rgba(0,0,0,.55)]">
-          {imageUrl ? (
+          {won.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- an owner-uploaded URL, not a build-time asset
-            <img src={imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <img src={won.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
             /* the colour goes on a wrapper — the icons draw in currentColor and
                take no style prop */
@@ -167,15 +187,15 @@ export function RewardUnlocked({
       </div>
 
       <h1 className="unlock-line mt-9 text-[26px] font-extrabold leading-none [animation-delay:.24s]">
-        Félicitations !
+        {t("Félicitations !")}
       </h1>
       <p className="unlock-line mt-2.5 text-[13.5px] leading-snug text-white/75 [animation-delay:.32s]">
-        Tu as gagné
+        {t("Tu as gagné")}
       </p>
       {/* the shop's own wording, on its own line — "Brunch complet" is a title,
           not a noun that can be dropped into the middle of a sentence */}
       <p className="unlock-line mt-1 text-[19px] font-extrabold leading-tight [animation-delay:.36s]">
-        {label}
+        {t(won.label)}
       </p>
 
       <Link
@@ -183,7 +203,7 @@ export function RewardUnlocked({
         onClick={(e) => e.stopPropagation()}
         className="unlock-line mt-11 w-full max-w-[330px] rounded-full bg-white py-4 text-[14.5px] font-extrabold text-[#1a1030] shadow-[0_16px_40px_-14px_rgba(0,0,0,.7)] transition active:scale-[0.98] [animation-delay:.4s]"
       >
-        Voir mes récompenses
+        {t("Voir mes récompenses")}
       </Link>
 
       <button
@@ -191,7 +211,7 @@ export function RewardUnlocked({
         onClick={() => setOpen(false)}
         className="unlock-line mt-4 text-[13px] font-semibold text-white/55 [animation-delay:.46s]"
       >
-        Plus tard
+        {t("Plus tard")}
       </button>
     </div>
   );

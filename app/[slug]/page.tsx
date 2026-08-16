@@ -559,7 +559,10 @@ export default async function Carte({
             <h2 className="text-[14.5px] font-extrabold text-charcoal">{t("À gagner ici")}</h2>
             <Link
               href={`/${slug}/boutique`}
-              className="text-[12px] font-bold"
+              /* 13px and a -my-2 py-2 hit box: this was 12px in a 19px-tall
+                 target, on the busiest screen in the product. The negative
+                 margin buys the height back without moving the baseline. */
+              className="-my-2 py-2 text-[13px] font-bold"
               style={{ color: "var(--cafe-text)" }}
             >
               {t("Tout voir")}

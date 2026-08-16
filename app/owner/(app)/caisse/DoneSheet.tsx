@@ -171,6 +171,23 @@ export function DoneSheet({
         One announcement, one status node, both still correct.
       */
       aria-live="polite"
+      /*
+        THE LANDMARK THE TILL'S E2E READS, and the numbers on it as data.
+
+        The suite used to wait for that [role="status"] flash line — which lives
+        on the customer's desk, and the desk is torn down four seconds later
+        when this receipt hands the till to the next customer. The check waited
+        twenty. It therefore looked for the confirmation strictly after the
+        confirmation had been taken off the screen, on a till that was working
+        perfectly, and reported a timeout that named neither.
+
+        Reading the amounts as attributes rather than as text also stops the
+        check breaking on wording: it asserted "22,5 points" against a receipt
+        that says "22,5 pts", so even winning the race would have failed it.
+      */
+      data-receipt
+      data-earned={done.kind === "credit" ? done.earned : undefined}
+      data-balance={done.kind === "credit" ? done.balance : undefined}
       onClick={onClose}
       /*
         overflow-y-auto + m-auto on the sheet, NOT items-center on the veil.

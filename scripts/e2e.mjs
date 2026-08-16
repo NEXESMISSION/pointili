@@ -130,22 +130,47 @@ async function credit(amount, expectBalance) {
   await openCustomer(staff, PHONE);
   await staff.fill('input[name="amount"]', String(amount));
   await staff.locator('button:has-text("Créditer")').click();
-  await staff
-    .waitForFunction(
-      (want) => document.querySelector('[role="status"]')?.textContent?.includes(want),
-      `${expectBalance} points`,
-      { timeout: 20000 },
-    )
-    .catch(() => {});
-  return staff.locator('[role="status"]').innerText();
+  /*
+    READ THE RECEIPT, WHICH IS WHAT THE CASHIER SEES.
+
+    Not the [role="status"] flash on the customer's desk: the receipt hands the
+    till to the next customer after four seconds and the desk goes with it, so
+    anything waiting longer than that arrives to find the search screen and no
+    confirmation anywhere. The receipt carries the two numbers as attributes so
+    this asserts the arithmetic rather than the wording.
+  */
+  const receipt = staff.locator("[data-receipt]");
+  await receipt.waitFor({ timeout: 20000 }).catch(() => {});
+
+  if ((await receipt.count()) === 0) {
+    /* Say what was on the screen. A bare `locator timed out` names neither the
+       failure nor the till's own [role="alert"], which is usually sitting there
+       explaining itself. */
+    const alert = await staff.locator('[role="alert"]').first().textContent().catch(() => null);
+    const seen = (await staff.locator("main").innerText().catch(() => ""))
+      .split("\n").filter(Boolean).slice(0, 6).join(" · ");
+    throw new Error(
+      `the till showed no receipt after crediting ${amount}` +
+        (alert ? `\n  it refused with: ${alert.trim()}` : "") +
+        `\n  on screen: ${seen}`,
+    );
+  }
+
+  const earned = Number(await receipt.getAttribute("data-earned"));
+  const balance = Number(await receipt.getAttribute("data-balance"));
+  const text = await receipt.innerText();
+  if (balance !== expectBalance) {
+    throw new Error(`credited ${amount}: expected a balance of ${expectBalance}, the receipt says ${balance}`);
+  }
+  return { earned, balance, text };
 }
 
 /* 12,5 dinars earns 12,5 points — not 12. floor() used to delete the half
    dinar on every single sale (migration 0027), and this is the check that
    would have caught it: it asserted the bug instead. */
-const creditTxt = await credit(12.5, 22.5);
-check("caisse credits 12,5 × 1 = 12,5 — no fraction lost", /\+12,5/.test(creditTxt), creditTxt.split("\n")[0]);
-check("balance = 10 welcome + 12,5 earned = 22,5", /22,5 points/.test(creditTxt));
+const sale = await credit(12.5, 22.5);
+check("caisse credits 12,5 × 1 = 12,5 — no fraction lost", sale.earned === 12.5, `earned ${sale.earned}`);
+check("balance = 10 welcome + 12,5 earned = 22,5", sale.balance === 22.5, `balance ${sale.balance}`);
 
 /*
   The ledger has to remember the DINARS, not just the points it derived from
@@ -188,8 +213,8 @@ check("balance = 10 welcome + 12,5 earned = 22,5", /22,5 points/.test(creditTxt)
 const credit2 = await credit(5, 27.5);
 check(
   "welcome bonus granted once only",
-  !/bienvenue/i.test(credit2) && /27,5 points/.test(credit2),
-  credit2.replace(/\n/g, " · "),
+  !/bienvenue/i.test(credit2.text) && credit2.balance === 27.5,
+  credit2.text.replace(/\n/g, " · "),
 );
 
 // Points are the ONLY way to earn in the MVP — there is no wheel. The /api/play
