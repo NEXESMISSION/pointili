@@ -145,8 +145,28 @@ const lead = new WeakMap();
  * the END of the clip. Measuring the gap here means it can be cut exactly,
  * rather than guessing a fixed offset that is wrong for every clip.
  */
+/*
+  NETWORKIDLE IS A PREFERENCE HERE, NOT A REQUIREMENT.
+
+  The card screen fires a server action AFTER paint — components/MarkOpened,
+  which is what moves the "you have seen this" mark now that doing it during
+  render was found to run several times per view. A page that POSTs once it has
+  painted may never hand Playwright a 500ms window with no traffic, and on the
+  dev server the HMR socket makes that worse. The whole suite died on that one
+  navigation with every clip already filmed and none of them yet written.
+
+  So: ask for idle, accept quiet. The fixed pause below is what the shot has
+  always actually relied on, and a page that painted but kept talking is
+  perfectly filmable.
+*/
+async function settle(page, url) {
+  await page
+    .goto(url, { waitUntil: "networkidle", timeout: 20000 })
+    .catch(() => page.goto(url, { waitUntil: "domcontentloaded" }));
+}
+
 async function ready(page, url) {
-  await page.goto(url, { waitUntil: "networkidle" });
+  await settle(page, url);
   await page.waitForTimeout(450);
   lead.set(page, (Date.now() - born.get(page)) / 1000);
 }
@@ -387,7 +407,7 @@ const owner = await context();
 
     So: load the till, wait for it to settle, and only then let the clips run.
   */
-  await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await settle(page, `${BASE}/owner`);
   await page.locator('input[name="customer"]').waitFor({ timeout: 20000 });
   await page.waitForTimeout(1800);
   console.log("signed in — every owner clip shares this session\n");
@@ -444,7 +464,7 @@ await clip(owner, "correction", async (page) => {
 /* one retina still, in the same live session */
 {
   const page = await owner.newPage();
-  await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await settle(page, `${BASE}/owner`);
   await page.waitForTimeout(900);
   await page.screenshot({ path: `${OUT}/till.png` });
   console.log(`  ✓ ${OUT}/till.png`);
@@ -466,7 +486,7 @@ await clip(owner, "correction", async (page) => {
 {
   const page = await owner.newPage();
   const unknown = `2${String(Date.now()).slice(-7)}`;
-  await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await settle(page, `${BASE}/owner`);
   await page.locator('input[name="customer"]').waitFor({ timeout: 20000 });
   await page.fill('input[name="customer"]', unknown);
   await page.locator('button:has-text("Chercher")').click();
@@ -502,7 +522,7 @@ await owner.close();
 const diner = await context();
 {
   const page = await diner.newPage();
-  await page.goto(`${BASE}/moi`, { waitUntil: "networkidle" });
+  await settle(page, `${BASE}/moi`);
   await page.fill('input[name="phone"]', NUM);
   await page.fill('input[name="pin"]', PIN);
   await page.click('button[type="submit"]');
@@ -519,7 +539,7 @@ const diner = await context();
     from the browser, after paint (components/MarkOpened), so this waits for
     the action to land rather than for the page.
   */
-  await page.goto(`${BASE}/${SHOP}`, { waitUntil: "networkidle" });
+  await settle(page, `${BASE}/${SHOP}`);
   await page.waitForTimeout(3000);
   await page.close();
 }

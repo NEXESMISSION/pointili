@@ -144,16 +144,27 @@ const WELCOME = 10;
 /*
   THE DEMO SHOP'S COLOUR IS NOT AN AESTHETIC CHOICE — IT IS A LAYOUT CHOICE.
 
-  It was a roaster's brown, which is a perfectly good colour for a café and the
-  wrong one for us: every clip and poster on the landing page is filmed here,
-  and the landing page is white with a Royal Mauve accent. A brown card sitting
+  It was a roaster's brown first, which is a perfectly good colour for a café
+  and the wrong one for us: every clip and poster on the landing page is filmed
+  here, and that page is white with a Royal Mauve accent. A brown card sitting
   in a purple page reads as two products photographed together.
 
-  A deep indigo-blue is close enough to the accent to belong on that page and
-  far enough from it to keep the product's actual claim true — the card wears
-  the SHOP's colour, not ours.
+  Then it was a deep indigo — picked to sit NEAR the accent without being it,
+  on the theory that a demo card in Pointili's own violet would read as our
+  colour rather than the shop's and quietly undercut the claim this page makes
+  about who owns the card.
+
+  That theory lost to the page. Indigo next to Royal Mauve does not read as "a
+  shop that chose blue"; at the size the hero renders it reads as the mauve
+  being slightly off, which is worse than either colour alone — the one thing
+  a landing page cannot afford is looking like it failed to match itself.
+
+  So the demo shop wears the brand violet, and the claim is carried where it
+  was always carried honestly: components/Dressed.tsx, which is three shots of
+  the same screen in blue, brown and green side by side. A section built to
+  prove the card wears YOUR colour does that better than a hero ever did.
 */
-const DEMO_BRAND = "#1d4ed8";
+const DEMO_BRAND = "#5b3fd1";
 
 /*
   ── A SHOP THAT HAS ACTUALLY BEEN DRESSED ─────────────────────────────────
