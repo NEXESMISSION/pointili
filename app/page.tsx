@@ -4,9 +4,6 @@ import { redirect } from "next/navigation";
 import { BrandLockup } from "@/components/BrandMark";
 import { currentDiner } from "@/lib/auth/diner";
 import { Showcase } from "@/components/Showcase";
-import { Compare } from "@/components/Compare";
-import { Dressed } from "@/components/Dressed";
-import { AudienceProvider, AudienceTabs, ForCustomer, ForOwner } from "@/components/Audience";
 import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
 import { currentLang, dir, translator, type T } from "@/lib/i18n";
@@ -32,27 +29,33 @@ import { LangToggle } from "@/components/LangToggle";
  * reading, Space Mono for anything countable. Flat ink, hard-edged colour
  * fields, hairline rules. No gradient text, no blur, no ambient motion.
  *
- * THE ORDER CHANGED TOO, and that mattered more than the pixels:
+ * ── FOUR SECTIONS, AND THAT IS THE DESIGN ────────────────────────────────
  *
- *   was: hero → fake logo strip → clips → 3 abstract feature cards → a dark
- *        panel making the SAME argument as the hero → price → closing CTA →
- *        comparison table → FAQ
+ *   hero → the three gestures at the counter → two clips of the real thing →
+ *   the price, with the way in inside it
  *
- *   now: hero → who it is for → the mechanic (01/02/03) → what you learn →
- *        the clips → the comparison → the FAQ → the price → closing CTA
+ * It was nineteen phone screens and 1,219 words across eighteen sections: a
+ * trades list, an analytics section, three theme screenshots, a comparison
+ * table against carton, eight FAQ entries, nine clips, two price cards and a
+ * closing panel that repeated the hero. Every piece was defensible on its own
+ * and the sum was a document. A café owner deciding whether to try this reads
+ * it standing behind a counter, on a phone.
  *
- * Three things fixed by that. The hero's argument was being restated twice
- * more in different card shapes, so the two restatements are gone and the one
- * survivor says something new. The objections — the carton comparison and the
- * eight counter questions — used to sit AFTER the closing call to action,
- * which asks for the sale before answering why; they now come before the
- * price. And the mechanic ("he gives his number, you type dinars, the server
- * counts") was buried four screens down behind three adjectives; it is now
- * the first thing after the hero, because it is the first thing anyone asks.
+ * Six screens now, 349 words. The rule applied was: keep what a person needs
+ * to decide, and cut what only answers an objection they have not raised yet.
+ * What went is not lost — the comparison, the FAQ and the analytics copy are
+ * in git, and the seven unused clips are still filmed and captioned in
+ * components/Showcase, one word away from coming back.
+ *
+ * THE AUDIENCE SWITCH WENT WITH THEM. Half this page existed twice, once for a
+ * customer who almost never arrives here: they reach their card by scanning
+ * the sticker on their table. The one who lost it gets a link to their wallet —
+ * in the masthead, or in the footer on a phone, where the row has only enough
+ * width for the owner's way in. That link is the errand they actually have.
  *
  * This root is also the BUSINESS front door. A diner who lands here already
- * has a card, so they are sent to their wallet — the two audiences never share
- * a screen. See /moi for the customer's own door.
+ * has a card, so they are sent to their wallet. See /moi for the customer's
+ * own door.
  */
 
 export const metadata = {
@@ -78,27 +81,16 @@ const Check = ({ className = "h-3.5 w-3.5" }: { className?: string }) => (
 );
 
 /*
-  "FAIT POUR", not "UTILISÉ PAR" — and that is a correction, not a rewrite.
-
-  This row sits in the slot a reader's eye reads as social proof, and it was
-  filled with the names of TRADES. Nobody in that list is a customer; they are
-  categories. Claiming otherwise in the one place a visitor looks for evidence
-  is the fastest way to lose them, and dressing each one in a little outlined
-  icon made it look even more like a logo wall.
-
-  So it says what it actually is — the shops this is built for — set as one
-  line of type, which is also all a category list deserves.
-*/
-const TRADES = ["Cafés", "Restaurants", "Barbiers", "Boutiques", "Salons"];
-
-/*
   THE MECHANIC, in the order it happens at the counter.
 
-  This replaces three cards that read "Sans application / Fidélité automatique
-  / Analyse réelle" — three abstract nouns and a gloss each, which is what a
-  page writes when it has nothing concrete to say. Everything below is a
-  checkable claim about what the software does, lifted from the same source of
-  truth the demo clips are captured against.
+  Every line is a checkable claim about what the software does, lifted from the
+  same source of truth the demo clips are captured against — not three abstract
+  nouns with a gloss each, which is what a page writes when it has nothing
+  concrete to say.
+
+  There used to be a second set of these for the customer. It went with the
+  audience switch: a person who scans a sticker on a table is not reading a
+  three-step explanation of how to scan a sticker on a table.
 */
 const STEPS_OWNER = [
   {
@@ -113,39 +105,6 @@ const STEPS_OWNER = [
     title: "Le serveur compte",
     text: "Le calcul se fait chez nous, à votre taux. Personne au comptoir n'invente un solde, et personne ne peut le corriger en douce.",
   },
-];
-
-const STEPS_CUSTOMER = [
-  {
-    title: "Vous scannez le QR",
-    text: "Celui qui est posé sur la table ou collé à la caisse. Votre carte s'ouvre dans le navigateur.",
-  },
-  {
-    title: "Un numéro, un code secret",
-    text: "Pas d'e-mail, pas de mot de passe à retenir, rien à télécharger. Le bonus de bienvenue arrive tout de suite.",
-  },
-  {
-    title: "Vos points vous attendent",
-    text: "Une carte par commerce, toutes dans le même téléphone. Ils n'expirent pas.",
-  },
-];
-
-/*
-  WHAT THE ANALYTICS SCREEN ACTUALLY SHOWS.
-
-  The old version of this section was a dark panel headed "Vos clients
-  reviennent déjà. La question est : savez-vous combien ?" — which is the hero
-  headline again, one screen later — over three lines as vague as the cards
-  above it ("Chiffre généré. Mesurez l'impact de votre fidélité.").
-
-  These are the four figures on the real screen, named the way the screen
-  names them. A shop owner can check every one of them inside the trial.
-*/
-const LEARN = [
-  { term: "Taux de retour", def: "La part de vos clients qui sont revenus. Sur 7 jours, 30 jours, ou depuis le début — avec l'écart par rapport à la période d'avant." },
-  { term: "Visites", def: "Combien de passages ce mois-ci, et combien de clients différents les ont faits." },
-  { term: "Nouveaux clients", def: "Combien de cartes créées, et à quel rythme elles arrivent." },
-  { term: "Récompenses utilisées", def: "Laquelle marche vraiment, et laquelle dort depuis trois mois." },
 ];
 
 const INCLUDED = [
@@ -223,8 +182,7 @@ export default async function Landing({
       };
 
   return (
-    <AudienceProvider lang={lang}>
-    {/*
+    /*
       dir and lang-tn both live on THIS element, not on <html>.
 
       It is the pattern app/[slug]/layout.tsx already uses — each section of
@@ -232,7 +190,7 @@ export default async function Landing({
       typography fix in globals.css work: `.landing-light.lang-tn` needs both
       classes on one element to out-specify `.landing-light h1`, which would
       otherwise set every Arabic heading in a face that has no Arabic in it.
-    */}
+    */
     <div
       dir={dir(lang)}
       lang={lang === "tn" ? "ar-TN" : "fr"}
@@ -255,309 +213,128 @@ export default async function Landing({
               "@id": `${SITE_URL}/#website`,
               url: SITE_URL,
               name: "Pointili",
-              inLanguage: "fr",
+              inLanguage: lang === "tn" ? "ar-TN" : "fr",
               publisher: { "@id": `${SITE_URL}/#organization` },
             },
           ],
         }}
       />
 
-      {/* ── masthead ─────────────────────────────────────────────────
-          A rule under the header, the way a printed page rules off its
-          masthead. It also does a real job: it draws the top edge of the
-          hero's colour field, so the field reads as a panel that was placed
-          rather than a tint that leaked. */}
+      {/* ── masthead ───────────────────────────────────────────────── */}
       <header className="border-b border-hair">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 md:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-4 md:px-8">
           <Brand tight />
-          <AudienceTabs className="hidden sm:flex" />
-          {/* Before the way in, not after it: a reader who cannot read the
-              page needs the language before they need the sign-in button, and
-              on a phone the masthead is the only place they will look. */}
-          {/*
-            NOT ms-auto any more. That pushed the control to the far end on a
-            phone, where it sat shoulder to shoulder with the way in — two
-            controls touching, one of which changes the whole page. The row is
-            justify-between, so with the margin gone the three things space
-            themselves and the language sits where the note below says it
-            should: before the way in, not welded to it.
-          */}
           <LangToggle current={lang} />
-          {/*
-            A BUTTON, because it is the way in.
+          <div className="flex shrink-0 items-center gap-4">
+            {/*
+              THE CUSTOMER SIDE IS ONE LINK NOW, not half a website.
 
-            This was 11.5px letterspaced uppercase mono in grey — the quietest
-            thing in the row, and for a signed-in owner "Ma caisse" is the most
-            useful link on the whole page. Nothing about it said it could be
-            pressed. Bordered rather than filled so it does not outrank the
-            hero's call to action, sentence case so it can simply be read.
-          */}
-          <ForOwner>
+              This page used to carry a Commerce/Client switch that rewrote it:
+              a second headline, a second set of three steps, and a filter over
+              the clips — a parallel page maintained for a visitor who almost
+              never arrives here. Customers reach their card by scanning the
+              sticker on the table. The one who lost it wants their wallet, and
+              that is what this is.
+            */}
+            {/*
+              THE OWNER'S WAY IN NEVER LEAVES. All four things do not fit a
+              390px row, and the first cut hid this button and kept the customer
+              link — which had it exactly backwards: this page sells to shop
+              owners, and a returning one signing in is the single most useful
+              control on it. The customer link goes to the footer on phones,
+              where the one visitor who lost their sticker can still find it.
+            */}
+            <Link
+              href="/moi"
+              className="hidden whitespace-nowrap text-[13.5px] font-semibold text-slate transition hover:text-charcoal sm:inline"
+            >
+              {t("Je suis client")}
+            </Link>
             <Link
               href={ownerHere ? "/owner" : "/owner/login"}
-              className="shrink-0 whitespace-nowrap rounded-[3px] border border-charcoal px-4 py-2 text-[13.5px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white"
+              className="whitespace-nowrap rounded-[3px] border border-charcoal px-4 py-2 text-[13.5px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white"
             >
               {ownerHere ? t("Ma caisse") : t("Espace café")}
             </Link>
-          </ForOwner>
-          <ForCustomer>
-            <Link
-              href="/moi"
-              className="shrink-0 whitespace-nowrap rounded-[3px] border border-charcoal px-4 py-2 text-[13.5px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white"
-            >
-              {t("Mes cartes")}
-            </Link>
-          </ForCustomer>
+          </div>
         </div>
       </header>
 
-      {/* ── hero ─────────────────────────────────────────────────────
-          Type on paper, art in a colour field with a hard left edge that lines
-          up exactly with the grid column. What was here before was a violet
-          wash bleeding out of two 640px blurred circles — soft everywhere, so
-          nothing had an edge and the headline sat in a bruise. */}
+      {/* ── hero ───────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-hair">
         <div className="mx-auto grid max-w-6xl items-stretch px-5 md:grid-cols-12 md:px-8">
           <div className="pb-12 pt-12 md:col-span-7 md:pb-24 md:pr-12 md:pt-24">
-            {/* the switch, again, on phones — where the header version is
-                hidden. Full width and full labels: here it has the column. */}
-            <AudienceTabs full className="mb-9 flex w-full sm:hidden" />
-
             <p className="flex items-center gap-3 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
               <span aria-hidden className="h-px w-7 bg-royal" />
               {t("Fait en Tunisie, pour la Tunisie")}
             </p>
 
-            {/*
-              THE HEADLINE ADDRESSES THE PERSON WHO WAS CHOSEN, and it does it
-              in one colour. The second line used to be filled with a
-              three-stop gradient clipped through the glyphs — the single most
-              recognisable tell of a generated page, and on a serif it would be
-              worse. Royal is a colour the rest of the product already uses to
-              mean "this is the point".
-            */}
-            <ForOwner>
-              <h1 className="mt-6 text-[38px] md:text-[52px] lg:text-[58px]">
-                {t("Vos habitués reviennent.")}
-                <br />
-                <span className="text-royal">{t("Vous saurez enfin lesquels.")}</span>
-              </h1>
-              <p className="mt-6 max-w-[44ch] text-[16px] leading-[1.65] text-slate">
-                <Tpl
-                  tpl={t(
-                    "La carte de fidélité de votre commerce, dans le téléphone de vos clients. {none} — ni pour eux, ni pour vous.",
-                  )}
-                  slots={{
-                    none: (
-                      <span className="font-semibold text-charcoal">
-                        {t("Aucune application")}
-                      </span>
-                    ),
-                  }}
-                />
-              </p>
-            </ForOwner>
+            <h1 className="mt-6 text-[38px] md:text-[52px] lg:text-[58px]">
+              {t("Vos habitués reviennent.")}
+              <br />
+              <span className="text-royal">{t("Vous saurez enfin lesquels.")}</span>
+            </h1>
+            <p className="mt-6 max-w-[44ch] text-[16px] leading-[1.65] text-slate">
+              <Tpl
+                tpl={t(
+                  "La carte de fidélité de votre commerce, dans le téléphone de vos clients. {none} — ni pour eux, ni pour vous.",
+                )}
+                slots={{
+                  none: (
+                    <span className="font-semibold text-charcoal">
+                      {t("Aucune application")}
+                    </span>
+                  ),
+                }}
+              />
+            </p>
 
-            <ForCustomer>
-              <h1 className="mt-6 text-[38px] md:text-[52px] lg:text-[58px]">
-                {t("Vos points,")}
-                <br />
-                <span className="text-royal">{t("dans tous vos commerces.")}</span>
-              </h1>
-              <p className="mt-6 max-w-[44ch] text-[16px] leading-[1.65] text-slate">
-                <Tpl
-                  tpl={t("Un numéro, un code secret, et vos cartes sont là. {nothing}")}
-                  slots={{
-                    nothing: (
-                      <span className="font-semibold text-charcoal">
-                        {t("Rien à installer.")}
-                      </span>
-                    ),
-                  }}
-                />
-              </p>
-            </ForCustomer>
-
-            {/* A block, not a pill with a glow under it. Printed matter sets a
-                call to action as a solid rectangle of ink; the halo shadow was
-                doing the same job the gradient was — making a button look
-                expensive instead of making it look pressable. */}
             <div className="mt-10">
-              <ForOwner>
-                <Link
-                  href={cta.href}
-                  className="group inline-flex items-center gap-3 rounded-[3px] bg-royal px-8 py-4 text-[15px] font-bold text-white transition hover:bg-[#4c33b4] active:translate-y-px"
-                >
-                  {cta.label}
-                  <Arrow className="cta-arrow h-4 w-4" />
-                </Link>
-                <p className="mt-4 text-[13px] text-slate">
-                  {cta.note}
-                </p>
-              </ForOwner>
-
-              {/* A customer here is looking for their card, not for a pitch. */}
-              <ForCustomer>
-                <Link
-                  href="/moi"
-                  className="group inline-flex items-center gap-3 rounded-[3px] bg-royal px-8 py-4 text-[15px] font-bold text-white transition hover:bg-[#4c33b4] active:translate-y-px"
-                >
-                  {t("Ouvrir mes cartes")}
-                  <Arrow className="cta-arrow h-4 w-4" />
-                </Link>
-                <p className="mt-4 text-[13px] text-slate">
-                  {t("Ou scannez le QR posé sur votre table")}
-                </p>
-              </ForCustomer>
+              <Link
+                href={cta.href}
+                className="group inline-flex items-center gap-3 rounded-[3px] bg-royal px-8 py-4 text-[15px] font-bold text-white transition hover:bg-[#4c33b4] active:translate-y-px"
+              >
+                {cta.label}
+                <Arrow className="cta-arrow h-4 w-4" />
+              </Link>
+              <p className="mt-4 text-[13px] text-slate">{cta.note}</p>
             </div>
           </div>
 
           {/*
             The colour field is a child of the ART COLUMN, not of the section,
             so its left edge is the grid line — exactly where the type column
-            ends — at every viewport, with no percentage guessing. It bleeds
-            right past the container into the section's overflow-hidden, and on
-            phones -left-5 cancels the container padding so it becomes a plain
-            full-bleed band with the phone in it.
+            ends — at every viewport, with no percentage guessing.
           */}
           <div className="relative md:col-span-5">
-            {/* Logical, not physical. As `-left-5 … right-[-50vw]` this band
-                bled to the right whatever the direction — so in Arabic, where
-                the art column sits on the LEFT, it bled straight across the
-                text column and painted the headline out. start/end put the
-                bleed on the outside edge in both directions. */}
-            <div aria-hidden className="absolute -start-5 inset-y-0 -end-[50vw] bg-mist md:start-0" />
-            <div className="relative flex justify-center pt-10 md:h-full md:items-end md:pt-0">
+            <div className="absolute inset-y-0 -left-5 -right-5 bg-lilac-2 md:left-0 md:-right-[50vw]" />
+            <div className="relative flex justify-center pb-10 pt-2 md:h-full md:items-end md:pb-0 md:pt-16">
               <HeroPhone />
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── who it is for ────────────────────────────────────────────
-          One ruled line. It used to be five outlined icons in the social-proof
-          slot under the words "Utilisé par", which promised customers and
-          delivered a taxonomy. */}
-      <section className="border-b border-hair">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-6 md:flex-row md:items-baseline md:gap-10 md:px-8">
-          <p className="shrink-0 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-slate">
-            {t("Fait pour")}
-          </p>
-          {/* The separator TRAILS its word instead of leading the next one.
-              Leading, it wrapped onto the next line on a 390px screen and the
-              list ended "· Salons" — a dot hanging at the start of a line
-              reads as a bullet, or as a typo. Trailing, it can only ever
-              dangle at the end of a line, which is what punctuation does. */}
-          <ul className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[15px] text-charcoal">
-            {/* `trade`, not `t` — the map variable used to shadow the
-                translator, so every t("…") inside this list would have been a
-                call on a string. */}
-            {TRADES.map((trade, i) => (
-              <li key={trade}>
-                {t(trade)}
-                {i < TRADES.length - 1 && (
-                  <span aria-hidden className="ml-2 text-royal">·</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* ── the mechanic ─────────────────────────────────────────────
-          A field of deep ink, full bleed, numbered. This is the answer to the
-          first question anybody has about a loyalty product — what happens at
-          the till — and it used to be four screens down. */}
+      {/* ── the mechanic ───────────────────────────────────────────── */}
       <section className="bg-deep text-white">
         <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-lavender">
-            <ForOwner>{t("Au comptoir")}</ForOwner>
-            <ForCustomer>{t("Sur votre téléphone")}</ForCustomer>
+            {t("Au comptoir")}
           </p>
           <h2 className="mt-5 max-w-[20ch] text-[32px] text-white md:text-[44px]">
-            <ForOwner>{t("Trois gestes, cinq secondes.")}</ForOwner>
-            <ForCustomer>{t("Trois gestes, une seule fois.")}</ForCustomer>
+            {t("Trois gestes, cinq secondes.")}
           </h2>
           <p className="mt-5 max-w-[52ch] text-[15.5px] leading-relaxed text-white/60">
-            <ForOwner>
-              {t(
-                "Pendant que vous rendez la monnaie. Pas de matériel, pas de lecteur, pas de caisse à changer — votre téléphone suffit.",
-              )}
-            </ForOwner>
-            <ForCustomer>
-              {t(
-                "Après ça, votre carte est là à chaque passage : vous donnez votre numéro, et c'est tout.",
-              )}
-            </ForCustomer>
+            {t(
+              "Pendant que vous rendez la monnaie. Pas de matériel, pas de lecteur, pas de caisse à changer — votre téléphone suffit.",
+            )}
           </p>
 
-          <ForOwner>
-            <Steps steps={STEPS_OWNER} t={t} />
-          </ForOwner>
-          <ForCustomer>
-            <Steps steps={STEPS_CUSTOMER} t={t} />
-          </ForCustomer>
+          <Steps steps={STEPS_OWNER} t={t} />
         </div>
       </section>
 
-      {/* ── what you learn ───────────────────────────────────────────
-          Owner-only, and the one survivor of the three sections that all made
-          the hero's argument again. It survives because it stopped restating
-          the claim and started listing the evidence. */}
-      <ForOwner>
-        <section className="bg-mist">
-          <div className="mx-auto grid max-w-6xl gap-12 px-5 py-16 md:grid-cols-12 md:px-8 md:py-24">
-            <div className="md:col-span-5">
-              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
-                {t("Ce que vous ne savez pas")}
-              </p>
-              <h2 className="mt-5 text-[30px] md:text-[40px]">
-                {t("Vous connaissez vos habitués. Vous ne savez pas combien sont revenus.")}
-              </h2>
-              <p className="mt-5 max-w-[42ch] text-[15.5px] leading-relaxed text-charcoal/65">
-                {t(
-                  "Le carton ne compte pas, et personne n'a jamais tenu ce registre à la main. Voilà les quatre chiffres qui apparaissent dans votre espace, sans que vous ayez rien à saisir.",
-                )}
-              </p>
-            </div>
-
-            <ul className="border-t border-charcoal/15 md:col-span-7">
-              {LEARN.map(({ term, def }, i) => (
-                <li
-                  key={term}
-                  className="grid grid-cols-[auto_1fr] gap-x-5 border-b border-charcoal/15 py-5"
-                >
-                  <span className="mt-[3px] font-mono text-[12px] font-bold tabular-nums text-royal">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span>
-                    <span className="block text-[16px] font-bold text-charcoal">
-                      {t(term)}
-                    </span>
-                    <span className="mt-1 block text-[14.5px] leading-relaxed text-charcoal/65">
-                      {t(def)}
-                    </span>
-                  </span>
-                </li>
-              ))}
-              {/*
-                THE LIMIT, PRINTED WITH THE FEATURE. This is the honest half of
-                an analytics claim and it is genuinely in the code — under five
-                customers the screen refuses to give a rate. Saying so here
-                costs nothing and is the difference between a number you can
-                trust and a number you were sold.
-              */}
-              <li className="pt-5 text-[13.5px] leading-relaxed text-charcoal/55">
-                {t(
-                  "En dessous de cinq clients, l'écran affiche « Trop tôt pour conclure » au lieu d'un taux. Un chiffre sur quatre passages ne veut rien dire, et nous préférons le dire.",
-                )}
-              </li>
-            </ul>
-          </div>
-        </section>
-      </ForOwner>
-
-      {/* ── the product, filmed ──────────────────────────────────────── */}
+      {/* ── the product, filmed ────────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
           {t("Le produit, filmé")}
@@ -568,187 +345,104 @@ export default async function Landing({
         <p className="mt-5 max-w-[54ch] text-[15.5px] leading-relaxed text-slate">
           {t(
             "Chaque écran ci-dessous est le vrai produit, filmé en train de faire ce qu'il dit.",
-          )}{" "}
-          <ForOwner>
-            <span className="font-semibold text-charcoal">{t("Voici votre caisse.")}</span>
-          </ForOwner>
-          <ForCustomer>
-            <span className="font-semibold text-charcoal">{t("Voici votre téléphone.")}</span>
-          </ForCustomer>
+          )}
         </p>
 
+        {/*
+          TWO, NOT NINE.
+
+          Nine clips is nine screens arguing the same case over and over. These
+          two are the whole pitch: you take the money, and you learn the one
+          thing a carton could never tell you — which is what the headline
+          promises. A third (carte.webm, the customer's own card) was here and
+          came out because the hero is already a photograph of that exact
+          screen; showing it twice is not evidence, it is repetition.
+
+          The other seven are still filmed and still captioned in
+          components/Showcase. Putting one back is a word in this list.
+        */}
         <div className="mt-14">
-          <Showcase />
+          <Showcase lang={lang} only={["credit", "analyses"]} />
         </div>
       </section>
 
-      {/* ── whose card is it ────────────────────────────────────────
-          Straight after the filmed product, because the question the clips
-          raise is "yes, but that is YOUR card" — and the answer is three of
-          them. Shown to both audiences: a customer reading this page is being
-          told their card will look like the shop they already go to. */}
-      <Dressed lang={lang} />
+      {/* ── the price, and the way in ──────────────────────────────── */}
+      <section className="border-t border-hair bg-mist">
+        <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
+            {t("Le prix")}
+          </p>
+          <h2 className="mt-5 text-[32px] md:text-[44px]">{t("Un prix simple.")}</h2>
+          <p className="mt-5 max-w-[44ch] text-[15.5px] leading-relaxed text-slate">
+            {t(
+              "Pas de commission sur vos ventes. Pas de limite de clients. Pas de palier qui se déclenche le jour où ça marche.",
+            )}
+          </p>
 
-      {/* ── the objections, then the price ───────────────────────────
-          Both of these used to sit AFTER the closing call to action — the page
-          asked for the sale, then explained why. Owner-only, obviously: a
-          customer weighing Pointili against a paper punch card is not a person
-          who exists, and they never pay anything. */}
-      <ForOwner>
-        <Compare lang={lang} />
+          {/* ONE BLOCK, not two cards. The six-month offer is a line inside the
+              year rather than a second column asking to be compared: at this
+              length the page should be answering "how much", not "which". */}
+          <div className="mt-10 grid gap-8 rounded-[3px] bg-deep p-7 text-white md:grid-cols-2 md:items-start md:p-10">
+            <div>
+              <p className="display text-[68px] leading-[0.85] tabular-nums">
+                80
+                <span className="ml-2 align-super font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-lavender">
+                  {t("TND / an")}
+                </span>
+              </p>
+              <p className="mt-4 max-w-[26ch] text-[14px] leading-relaxed text-white/60">
+                {t("Tout ce dont vous avez besoin pour fidéliser vos clients.")}
+              </p>
+              <p className="mt-2 text-[13px] text-white/50">{t("Ou 65 TND pour 6 mois.")}</p>
 
-        <section className="border-t border-hair">
-          <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-royal">
-              {t("Le prix")}
-            </p>
-            <h2 className="mt-5 text-[32px] md:text-[44px]">{t("Un prix simple.")}</h2>
-            <p className="mt-5 max-w-[44ch] text-[15.5px] leading-relaxed text-slate">
-              {t(
-                "Pas de commission sur vos ventes. Pas de limite de clients. Pas de palier qui se déclenche le jour où ça marche.",
-              )}
-            </p>
-
-            {/*
-              HOW YOU ACTUALLY PAY — the question this page never answered.
-
-              Every price on it was a number with no mechanism behind it, and
-              the mechanism is the objection: a café owner in Tunisia does not
-              have a card they will type into a website, and a page that only
-              shows a price is quietly asking for one. D17, Flouci and a
-              transfer are what they already use, and the renewal screen in the
-              app now takes the receipt (voir /owner/renouveler).
-            */}
-            <p className="mt-4 max-w-[52ch] text-[14px] leading-relaxed text-slate">
-              <Tpl
-                tpl={t(
-                  "{how} Vous envoyez la photo du reçu depuis l'application, et votre compte est prolongé — pas de carte bancaire, pas de prélèvement qui se renouvelle tout seul.",
-                )}
-                slots={{
-                  how: (
-                    <span className="font-semibold text-charcoal">
-                      {t("Vous payez par D17, Flouci ou virement.")}
-                    </span>
-                  ),
-                }}
-              />
-            </p>
-
-            {/* items-start, so the smaller offer is only as tall as it needs to
-                be. Stretched to match the year it grew a 250px hole between its
-                one paragraph and a button pinned to the bottom by mt-auto. */}
-            <div className="mt-10 grid gap-5 md:grid-cols-[1.6fr_1fr] md:items-start">
-              {/* the year — a block of ink, not a three-stop gradient */}
-              <div className="rounded-[3px] bg-deep p-7 text-white md:p-9">
-                <p className="inline-block bg-royal px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-white">
-                  {t("Meilleure offre")}
-                </p>
-
-                <div className="mt-7 grid gap-8 sm:grid-cols-2 sm:items-start">
-                  <div>
-                    <p className="display text-[68px] leading-[0.85] tabular-nums">
-                      80
-                      <span className="ml-2 align-super font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-lavender">
-                        {t("TND / an")}
-                      </span>
-                    </p>
-                    <p className="mt-4 max-w-[24ch] text-[14px] leading-relaxed text-white/60">
-                      {t("Tout ce dont vous avez besoin pour fidéliser vos clients.")}
-                    </p>
-                  </div>
-
-                  <ul className="border-t border-white/15">
-                    {INCLUDED.map((f) => (
-                      <li
-                        key={f}
-                        className="flex items-center gap-3 border-b border-white/15 py-2.5 text-[14px] text-white"
-                      >
-                        <Check className="h-3.5 w-3.5 shrink-0 text-lavender" />
-                        {t(f)}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <Link
-                  href={cta.href}
-                  className="group mt-8 flex flex-col items-center rounded-[3px] bg-royal px-6 py-4 text-center transition hover:bg-[#4c33b4] active:translate-y-px"
-                >
-                  <span className="flex items-center gap-2.5 text-[15px] font-bold text-white">
-                    {cta.label} <Arrow className="cta-arrow h-4 w-4" />
-                  </span>
-                  <span className="mt-1.5 text-[12.5px] text-white/70">
-                    {cta.note}
-                  </span>
-                </Link>
-              </div>
-
-              {/* the half-year */}
-              <div className="flex flex-col rounded-[3px] border border-hair p-7">
-                <p className="display text-[44px] leading-[0.85] tabular-nums text-charcoal">
-                  65
-                  <span className="ml-2 align-super font-mono text-[12px] font-bold uppercase tracking-[0.1em] text-slate">
-                    {t("TND / 6 mois")}
-                  </span>
-                </p>
-                <p className="mt-4 text-[14px] leading-relaxed text-slate">
-                  {t(
-                    "Parfait pour commencer. Les mêmes fonctions, la même assistance — vous payez juste plus souvent.",
-                  )}
-                </p>
-                <Link
-                  href={cta.href}
-                  className="mt-7 rounded-[3px] border border-charcoal px-5 py-3.5 text-center text-[14px] font-bold text-charcoal transition hover:bg-charcoal hover:text-white active:translate-y-px"
-                >
-                  {ownerHere ? t("Ma caisse") : t("Choisir cette offre")}
-                </Link>
-              </div>
+              <Link
+                href={cta.href}
+                className="group mt-7 flex flex-col items-center rounded-[3px] bg-royal px-6 py-4 text-center transition hover:bg-[#4c33b4] active:translate-y-px"
+              >
+                <span className="flex items-center gap-2.5 text-[15px] font-bold text-white">
+                  {cta.label} <Arrow className="cta-arrow h-4 w-4" />
+                </span>
+                <span className="mt-1.5 text-[12.5px] text-white/70">{cta.note}</span>
+              </Link>
             </div>
-          </div>
-        </section>
-      </ForOwner>
 
-      {/* ── closing ──────────────────────────────────────────────────
-          The last field of ink, and the last word. The little drawn shop that
-          used to sit here called itself a placeholder in its own header and
-          read as clip art beside nine clips of the real thing, so it is gone
-          and its file with it — a closing argument is stronger set in type. */}
-      <section className="bg-deep text-white">
-        <div className="mx-auto grid max-w-6xl items-end gap-10 px-5 py-16 md:grid-cols-12 md:px-8 md:py-24">
-          <div className="md:col-span-7">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-lavender">
-              {t("Commencer")}
-            </p>
-            <h2 className="mt-5 text-[34px] text-white md:text-[46px]">
-              {t("La fidélité commence aujourd'hui.")}
-            </h2>
-            <p className="mt-5 max-w-[46ch] text-[15.5px] leading-relaxed text-white/60">
-              {t(
-                "Vous créez votre espace, vous réglez vos récompenses, vous imprimez votre QR. Aucun matériel, aucun engagement, et vos habitués n'ont rien à installer.",
+            <ul className="border-t border-white/15">
+              {INCLUDED.map((f) => (
+                <li
+                  key={f}
+                  className="flex items-center gap-3 border-b border-white/15 py-2.5 text-[14px] text-white"
+                >
+                  <Check className="h-3.5 w-3.5 shrink-0 text-lavender" />
+                  {t(f)}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/*
+            HOW YOU ACTUALLY PAY — the question a price alone never answers. A
+            café owner in Tunisia does not have a card they will type into a
+            website, and a page that shows only a number is quietly asking for
+            one.
+          */}
+          <p className="mt-6 max-w-[52ch] text-[14px] leading-relaxed text-slate">
+            <Tpl
+              tpl={t(
+                "{how} Vous envoyez la photo du reçu depuis l'application, et votre compte est prolongé — pas de carte bancaire, pas de prélèvement qui se renouvelle tout seul.",
               )}
-            </p>
-          </div>
-
-          <div className="md:col-span-5 md:justify-self-end md:text-right">
-            <Link
-              href={cta.href}
-              className="group inline-flex items-center gap-3 rounded-[3px] bg-white px-8 py-4 text-[15px] font-bold text-deep transition hover:bg-lilac active:translate-y-px"
-            >
-              {ownerHere ? t("Ma caisse") : t("Créer ma boutique")}
-              <Arrow className="cta-arrow h-4 w-4" />
-            </Link>
-            <p className="mt-4 text-[13px] text-white/60">
-              {cta.note}
-            </p>
-          </div>
+              slots={{
+                how: (
+                  <span className="font-semibold text-charcoal">
+                    {t("Vous payez par D17, Flouci ou virement.")}
+                  </span>
+                ),
+              }}
+            />
+          </p>
         </div>
       </section>
 
-      {/* ── footer ───────────────────────────────────────────────────
-          "Produit tunisien 🇹🇳" lost its flag on purpose: Windows ships no
-          regional-indicator glyphs, so on the desktop most of this audience
-          browses from it rendered as the two bare letters "TN" next to the
-          word — which reads as a rendering fault, not a credential. */}
+      {/* ── footer ─────────────────────────────────────────────────── */}
       <footer className="border-t border-hair">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-8 md:flex-row md:items-center md:justify-between md:px-8">
           <div>
@@ -758,8 +452,7 @@ export default async function Landing({
             </p>
           </div>
           {/* py-2 on the links, not just on the row: they were 22px tall, and a
-              22px target is a miss on a phone. The padding costs nothing here
-              and takes both to 40. */}
+              22px target is a miss on a phone. */}
           <nav className="flex flex-wrap items-center gap-x-8 text-[13.5px] text-slate">
             <Link href="/confidentialite" className="py-2 transition hover:text-charcoal">
               {t("Confidentialité")}
@@ -767,12 +460,15 @@ export default async function Landing({
             <Link href="/conditions" className="py-2 transition hover:text-charcoal">
               {t("Conditions")}
             </Link>
+            {/* the masthead drops this below sm — see the note up there */}
+            <Link href="/moi" className="py-2 transition hover:text-charcoal sm:hidden">
+              {t("Je suis client")}
+            </Link>
             <span className="py-2">{t("Contact")}</span>
           </nav>
         </div>
       </footer>
     </div>
-    </AudienceProvider>
   );
 }
 

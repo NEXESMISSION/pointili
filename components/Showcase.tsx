@@ -1,8 +1,4 @@
-"use client";
-
-import { CheckIcon } from "@/components/icons";
 import { DEMO_VERSION } from "@/components/demoVersion";
-import { useLang, useSide } from "@/components/Audience";
 import { translator, type Lang } from "@/lib/dict";
 
 /*
@@ -162,18 +158,26 @@ const SHOTS: Shot[] = [
 ];
 
 /**
- * Only the clips for the audience that is being spoken to.
+ * THE CLIPS THE PAGE ASKS FOR, in the order it asks for them.
  *
- * All eight used to run down one column regardless, so an owner sat through two
- * screens of the customer's phone before reaching their own analytics, and a
- * customer scrolled past five till screens to find the one thing that concerned
- * them. Filtering is not hiding: the other side is one tap away, at the top.
+ * It used to render all nine and filter them by a Commerce/Client switch. Nine
+ * clips is nine screens of scrolling, and the switch was a whole parallel page
+ * — a second hero, a second set of steps — maintained so that the visitor who
+ * almost never arrives here could be sold to. Customers reach their card by
+ * scanning the sticker on the table; the page keeps one quiet link for the one
+ * who lost it.
+ *
+ * SHOTS keeps all nine because they are filmed, captioned and true; the caller
+ * names the three that carry the argument. Adding one back is a word in a list,
+ * not a rebuild.
+ *
+ * No longer a client component. The audience switch was the only state on it —
+ * the clips play from plain HTML attributes.
  */
-export function Showcase() {
-  const side = useSide();
-  const lang = useLang();
-  const want = side === "owner" ? "Votre caisse" : "Le téléphone du client";
-  const shots = SHOTS.filter((s) => s.side === want);
+export function Showcase({ lang = "fr", only }: { lang?: Lang; only: string[] }) {
+  const shots = only
+    .map((clip) => SHOTS.find((s) => s.clip === `/demo/${clip}.webm`))
+    .filter((s): s is Shot => Boolean(s));
   return (
     <div className="space-y-14 md:space-y-20">
       {shots.map((s, i) => (
@@ -195,7 +199,10 @@ function Row({ shot, index, flip, lang }: { shot: Shot; index: number; flip: boo
     <section className="grid items-center gap-8 border-t border-hair pt-10 md:grid-cols-2 md:gap-14 md:pt-12">
       {/* the phone */}
       <div className={flip ? "md:order-2" : ""}>
-        <div className="mx-auto w-full max-w-[286px]">
+        {/* Narrower on a phone: at 286px the device alone was 619px of a
+              844px screen, so one clip filled the viewport and the words that
+              explain it never appeared beside it. */}
+          <div className="mx-auto w-full max-w-[228px] sm:max-w-[286px]">
           {/* The bezel stays round — it is a phone. Only the shadow changed:
               it was a 90px black bloom that made the device hover over the
               page, which is the same "floating card" effect the rest of this
@@ -242,18 +249,16 @@ function Row({ shot, index, flip, lang }: { shot: Shot; index: number; flip: boo
           {t(shot.lede)}
         </p>
 
-        {/* Hairline rows, not tinted circle-check bubbles. A round badge behind
-            every tick is decoration repeated three times per section, eighteen
-            times down the page; the rule already separates the facts and costs
-            nothing to read. */}
-        <ul className="mt-7 border-t border-hair">
-          {shot.facts.map((f) => (
-            <li key={f} className="flex items-start gap-3 border-b border-hair py-3">
-              <CheckIcon className="mt-[5px] h-3 w-3 shrink-0 text-royal" />
-              <span className="text-[14.5px] leading-snug text-charcoal">{t(f)}</span>
-            </li>
-          ))}
-        </ul>
+        {/*
+          THE FACTS LIST IS GONE FROM THE PAGE, and `facts` stays on the type.
+
+          Three ticked claims under every clip was nine lines of reading beside
+          three films of the thing doing exactly what they claimed. The clip is
+          the evidence; the list was the page explaining its own evidence. They
+          are kept in SHOTS because they are true and because the alternative —
+          deleting them — is the kind of thing that gets rewritten from memory
+          two months later, worse.
+        */}
       </div>
     </section>
   );

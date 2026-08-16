@@ -628,6 +628,79 @@ const TN: Record<string, string> = {
   "Confidentialité": "الخصوصية",
   "Conditions": "الشروط",
   "Contact": "اتصل بينا",
+
+  /* ── the early-access page (/early) ───────────────────────────────────
+     THE ONE PLACE THE OWNER-FACING PRODUCT SPEAKS TUNISIAN.
+
+     The note at the top of this file says only the CUSTOMER app is translated,
+     because the owner app and the console are one person's back office in one
+     language. This page is neither: it is read by a shop owner who has never
+     heard of us, on a phone, off a link in an Instagram bio — which is the
+     single most likely place in the whole product for the reader to be someone
+     who does not do business in French. Half a lead list is not worth a
+     consistency rule.
+
+     "كون من أوّل" rather than a transliteration of the campaign line. Somebody
+     who wants this language is not reading Latin letters for it — the same
+     reason components/LangToggle says تونسي and never "Tounsi".
+
+     BIZNESS, not "أعمال": the word a Tunisian shop owner uses about their own
+     shop out loud. أعمال is a business-school word and would land exactly the
+     way فصحى does everywhere else in this file. */
+  "Accès anticipé · Tunisie": "دخول مبكّر · تونس",
+  "Votre commerce a été cité": "المحلّ متاعك تسمّى",
+  "Vos clients vous réclament": "الحرفاء متاعك يطلبوا فيك",
+  "Quelqu'un a cité votre commerce sous une publication Pointili. On construit une nouvelle façon pour les commerces de récompenser leurs habitués — et on ouvre commerce par commerce.":
+    "فمّا شكون سمّى المحلّ متاعك تحت بوست متاع Pointili. أحنا نحضّرو طريقة جديدة باش المحلّات تكافئ حرفاءها الدايمين — ونحلّو محلّ بمحلّ.",
+  "Soyez parmi les premiers commerces sur Pointili": "كون من أوّل المحلّات مع Pointili",
+  "Fidélisez vos clients et faites-les revenir plus souvent. Pointili est la carte de fidélité digitale de votre commerce : vos clients cumulent des points à chaque achat et reviennent les dépenser chez vous.":
+    "خلّي حرفاءك يرجعولك أكثر. Pointili هو كارت الفيداليتي الديجيتال متاع محلّك: حرفاءك يجمّعوا نقاط في كلّ شرا، ويرجعوا يصرفوهم عندك.",
+  "Pointili n'est pas encore ouvert au public. Laissez-nous votre numéro et on vous écrit dès que c'est votre tour.":
+    "Pointili مازال ما حلّش للعامّة. خلّي نمرتك وأحنا نكتبولك كي توصل نوبتك.",
+
+  /* the form */
+  "Demander l'accès": "اطلب الدخول",
+  "Trois questions. Ça prend vingt secondes.": "ثلاث أسئلة برك. تاخذ عشرين ثانية.",
+  "Nom de votre commerce": "اسم المحلّ متاعك",
+  "Café El Manar": "قهوة المنار",
+  "Quel type de commerce ?": "شنوّة نوع المحلّ متاعك؟",
+  "Numéro WhatsApp": "نمرة الواتساب",
+  "On vous écrit ici quand l'accès anticipé ouvre. Rien d'autre.":
+    "نكتبولك هوني كي يحلّ الدخول المبكّر. حتّى حاجة أخرى.",
+  "Demander l'accès anticipé": "اطلب الدخول المبكّر",
+
+  /* what the form can refuse, and it must refuse in their language or the
+     three-field form becomes a wall */
+  "Écris le nom de ton commerce.": "أكتب اسم المحلّ متاعك.",
+  "Ce nom est trop long.": "هذا الاسم طويل برشا.",
+  "Choisis le type de ton commerce.": "اختار نوع المحلّ متاعك.",
+  "Ce numéro n'a pas l'air correct — 8 chiffres.": "النمرة هذي ما تبانش صحيحة — ثمانية أرقام.",
+  "Ça n'a pas marché. Réessaie dans un moment.": "ما مشاتش. عاود بعد شويّة.",
+
+  /* the thank-you, and the one question after it */
+  "Vous êtes sur la liste": "إنت في القايمة",
+  "Merci ! On vous écrit sur WhatsApp dès que Pointili ouvre pour votre commerce.":
+    "يعيشك! نكتبولك على الواتساب كي يحلّ Pointili للمحلّ متاعك.",
+  "Une dernière chose, si vous voulez :": "آخر حاجة، كان تحبّ:",
+  "Qu'est-ce qui vous intéresse le plus dans Pointili ?": "شنوّة أكثر حاجة تهمّك في Pointili؟",
+  "Faire revenir mes clients plus souvent": "نخلّي حرفائي يرجعوا أكثر",
+  "Avoir un vrai programme de fidélité": "نعمل système فيداليتي كيما يلزم",
+  "Savoir qui sont mes habitués": "نعرف شكون حرفائي الدايمين",
+  "Je veux juste en savoir plus": "نحبّ نعرف أكثر برك",
+  "Merci — ça nous aide vraiment.": "يعيشك — هذا يعاوننا برشا.",
+
+  /* what happens next */
+  "Ensuite": "من بعد",
+  "Ce qui se passe après votre demande.": "شنوّة يصير بعد الطلب متاعك.",
+  "On vous écrit sur WhatsApp": "نكتبولك على الواتساب",
+  "Pas d'e-mail, pas de démarchage. Un message quand votre tour arrive, et c'est vous qui décidez de la suite.":
+    "لا إيمايل لا تلفنة كلّ نهار. رسالة كي توصل نوبتك، والقرار من بعدها متاعك إنت.",
+  "On installe votre carte avec vous": "نركّبولك الكارت متاعك معاك",
+  "Vos couleurs, vos récompenses, votre taux de points. Ça prend une vingtaine de minutes, et rien à acheter.":
+    "ألوانك، الهدايا متاعك، والنسبة متاع النقاط. تاخذ عشرين دقيقة تقريب، وما تشري حتّى حاجة.",
+  "Vos clients scannent le QR": "حرفاءك يسكانيو الكود",
+  "Posé sur la table ou collé à la caisse. Ils n'ont aucune application à installer — leur carte s'ouvre dans le navigateur.":
+    "محطوط على الطاولة ولاّ ملصوق في الكاس. ما ينزّلوا حتّى أپليكاسيون — الكارت متاعهم تحلّ في النافيڨاتور.",
   "Le carton": "الكرتونة",
   "Pourquoi Pointili plutôt qu'un carnet ?": "علاش Pointili وموش الكرتونة؟",
   "La carte en carton a fait tourner des milliers de commerces et elle marche encore. Voilà simplement là où elle s'arrête.": "الكرتونة خدّمت آلاف المحلات ومازالت تخدم. أحنا نوريّولك برك وين توقف.",
@@ -717,6 +790,8 @@ const TN: Record<string, string> = {
   "Vos clients lisent leur carte en {fr} ou en {tn} — {ar}, pas en arabe littéraire. Chacun choisit, sur son téléphone.":
     "الحرفاء متاعك يقراو الكارت متاعهم {fr} ولا {tn}، موش بالعربية الفصحى. كلّ واحد يختار على تليفونو.",
   "La carte client": "كارت الحريف",
+  /* The six-month offer is a line inside the year now, not a second card. */
+  "Ou 65 TND pour 6 mois.": "ولا 65 دينار لـ6 شهور.",
   "Encaisser": "الخلاص",
   "Cinq secondes, pendant que vous rendez la monnaie": "خمس ثواني، وإنت تردّ الصرف",
   "Le client donne son numéro de téléphone. Vous tapez le montant en dinars. C'est fini.": "الحريف يعطيك نمرة تليفونو. إنت تكتب المبلغ بالدينار. وسالينا.",
