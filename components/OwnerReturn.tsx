@@ -29,9 +29,16 @@ import { TillIcon } from "./icons";
  * forged cookie buys is the sight of a link, and /owner then asks the auth
  * server the real question.
  *
- * BOTTOM LEFT, because bottom right is the wheel (boutique/WheelPlayer) and the
- * band across the bottom is the install prompt. Above the tab bar on a phone,
- * clear of it on a laptop, where there is no tab bar.
+ * BOTTOM, ON THE START SIDE, because the end side is the wheel
+ * (boutique/WheelPlayer) and the band across the bottom is the install prompt.
+ * Above the tab bar on a phone, clear of it on a laptop, where there is no tab
+ * bar.
+ *
+ * START, NOT LEFT. Written as `left-4` it stayed physically left while the page
+ * mirrored around it in Tunisian — and landed squarely on top of the join
+ * screen's own submit button, so the one screen where an owner most wants a way
+ * out was the screen where this covered the way in. A floating exit must never
+ * sit on the page's primary action, in either direction.
  */
 export async function OwnerReturn() {
   if (!(await hasOwnerCookie())) return null;
@@ -40,7 +47,7 @@ export async function OwnerReturn() {
     <Link
       href="/owner"
       prefetch={false}
-      className="fixed bottom-[86px] left-4 z-30 flex items-center gap-2 rounded-full bg-[#171223] py-2.5 pl-3 pr-4 text-[12.5px] font-bold text-white shadow-[0_10px_24px_-10px_rgba(23,18,31,.7)] transition active:scale-95 lg:bottom-6"
+      className="fixed bottom-[86px] start-4 z-30 flex items-center gap-2 rounded-full bg-[#171223] py-2.5 pl-3 pr-4 text-[12.5px] font-bold text-white shadow-[0_10px_24px_-10px_rgba(23,18,31,.7)] transition active:scale-95 lg:bottom-6"
     >
       <TillIcon className="h-[15px] w-[15px]" />
       Ma caisse
