@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import type { AuthState } from "./actions";
 
@@ -23,6 +24,16 @@ export function AuthForm({
     (The same fix is on the diner join form for the same reason.)
   */
   const [email, setEmail] = useState("");
+
+  /*
+    THE ADDRESS SURVIVES A REJECTION.
+
+    React 19 resets a <form> once its action resolves, so a rejected sign-up
+    came back with the e-mail box empty and the person retyped an address the
+    server had just been told. The action echoes it back in state.email; local
+    state wins the moment they touch the field again.
+  */
+  const shownEmail = email || state.email || "";
 
   return (
     <form action={formAction} className="space-y-3">
@@ -49,7 +60,7 @@ export function AuthForm({
           autoCorrect="off"
           spellCheck={false}
           required
-          value={email}
+          value={shownEmail}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="vous@boutique.tn"
           className="a-field"
@@ -94,6 +105,21 @@ export function AuthForm({
           className="rounded-xl border border-[#e5484d]/35 bg-[#e5484d]/12 px-3.5 py-2.5 text-[13px] font-semibold text-[#e5484d]"
         >
           {state.error}
+          {/*
+            AN ERROR THAT NAMES THE WAY OUT.
+
+            "Cette adresse a déjà un compte" is a dead end on a sign-up screen
+            unless it also says what to do about it. The link at the bottom of
+            the card already existed; nobody reading a red box looks there.
+          */}
+          {state.signIn && (
+            <>
+              {" "}
+              <Link href="/owner/login" className="underline underline-offset-2">
+                Se connecter
+              </Link>
+            </>
+          )}
         </p>
       )}
       {state.notice && (
