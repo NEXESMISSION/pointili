@@ -90,25 +90,40 @@ export function CreateCafeForm() {
         the moment one was typed, so the same line meant two different things
         depending on a field further down the page.
       */}
+      {/*
+        WHITE INK ON A DARK CARD. It was text-charcoal and text-slate — the two
+        dark-on-light colours — printed on a #2a1263→#150a33 gradient, so the
+        shop's own name and address were dark ink on a dark card and could
+        barely be read. This is the FIRST screen of the product an owner ever
+        sees, and the one thing on it that is supposed to sell them the idea.
+
+        The tap target for the logo is tinted from white rather than
+        var(--o-inset), which is a light-surface token and rendered as a pale
+        slab with an invisible "+" in it.
+      */}
       <div className="rounded-2xl border border-[var(--o-edge)] bg-gradient-to-br from-[#2a1263] to-[#150a33] p-4">
         <div className="flex items-center gap-3">
-          <label className="group relative grid h-14 w-14 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-2xl bg-[var(--o-inset)] text-[22px]">
+          <label className="group relative grid h-14 w-14 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-2xl bg-white/10 text-[22px] ring-1 ring-white/15 transition hover:bg-white/15">
             <input type="file" accept="image/*" onChange={pickLogo} className="hidden" />
             {logo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={logo} alt="" className="h-full w-full object-cover" />
             ) : (
-              <span className="text-slate">+</span>
+              <span className="font-light text-white/70">+</span>
             )}
-            <span className="pointer-events-none absolute inset-0 grid place-items-center bg-black/45 text-[10px] font-bold uppercase tracking-[0.06em] text-charcoal opacity-0 transition group-hover:opacity-100">
+            <span className="pointer-events-none absolute inset-0 grid place-items-center bg-black/55 text-[10px] font-bold uppercase tracking-[0.06em] text-white opacity-0 transition group-hover:opacity-100">
               logo
             </span>
           </label>
           <span className="min-w-0">
-            <span className="block truncate text-[16px] font-extrabold text-charcoal">
+            <span
+              className={`block truncate text-[16px] font-extrabold ${
+                name.trim() ? "text-white" : "text-white/45"
+              }`}
+            >
               {name.trim() || "Votre commerce"}
             </span>
-            <span className="block truncate font-mono text-[12px] text-slate">
+            <span className="block truncate font-mono text-[12px] text-white/55">
               pointili.online/{effective || "…"}
             </span>
           </span>
