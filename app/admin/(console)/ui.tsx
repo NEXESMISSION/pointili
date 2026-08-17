@@ -210,3 +210,32 @@ export const PLAN_LABEL: Record<string, string> = {
   pro: "Pro",
   free: "Gratuit",
 };
+
+/**
+ * The answer to something the operator just pressed.
+ *
+ * The queue's one-tap buttons (+6 mois, Réactiver) are plain <form action={…}>
+ * server actions, which have nowhere to return a value to — so they used to
+ * discard it, and a failed renewal repainted an unchanged row in silence. They
+ * now redirect with ?ok= or ?err= and this renders it.
+ *
+ * role="status" / role="alert" so the outcome is announced rather than only
+ * shown: the operator's eyes are on the row they just acted on, not on the top
+ * of the page where this appears.
+ */
+export function Flash({ ok, err }: { ok?: string; err?: string }) {
+  if (!ok && !err) return null;
+  const bad = Boolean(err);
+  return (
+    <p
+      role={bad ? "alert" : "status"}
+      className={`mb-4 rounded-lg px-4 py-2.5 text-[13px] font-semibold ${
+        bad
+          ? "bg-[#fdecec] text-[#c0341c]"
+          : "bg-[#e7f6ee] text-[#1f7a52]"
+      }`}
+    >
+      {err || ok}
+    </p>
+  );
+}

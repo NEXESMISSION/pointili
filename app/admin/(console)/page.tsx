@@ -5,7 +5,7 @@ import { businessType } from "@/lib/businessTypes";
 import { prettyPhone, whatsappLink } from "@/lib/early";
 import { tnd, offer as findOffer, method as payMethod } from "@/lib/billing";
 import { quickRenewAction, quickUnsuspendAction } from "./actions";
-import { ago, day, Dot, PageHead, Section, shopTone, Stat } from "./ui";
+import { ago, day, Dot, Flash, PageHead, Section, shopTone, Stat } from "./ui";
 
 export const metadata = { title: "Aujourd'hui" };
 
@@ -34,7 +34,14 @@ export const metadata = { title: "Aujourd'hui" };
  * On most days all of it is empty, and this page says so in one line. That is
  * the console working correctly, not a page that failed to load.
  */
-export default async function TodayPage() {
+export default async function TodayPage({
+  searchParams,
+}: {
+  /* Set by the queue's one-tap actions, which are plain server actions with
+     nowhere else to put an answer — see backWith() in ./actions. */
+  searchParams: Promise<{ ok?: string; err?: string }>;
+}) {
+  const { ok, err } = await searchParams;
   const [stats, cafes, renewals, leads] = await Promise.all([
     platformStats(),
     adminOverview(),
@@ -70,6 +77,9 @@ export default async function TodayPage() {
               } à traiter.`
         }
       />
+
+      {/* what the last one-tap action answered, if anything */}
+      <Flash ok={ok} err={err} />
 
       {clear && (
         <div className="k-card mb-6 px-5 py-8 text-center">

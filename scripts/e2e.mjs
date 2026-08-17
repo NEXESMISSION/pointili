@@ -39,7 +39,28 @@ const check = (name, pass, detail = "") => {
 const { ownerPassword: OWNER_PASSWORD } = await ensureTestCafe();
 
 const browser = await chromium.launch({ executablePath: CHROME });
-const diner = await browser.newPage({ viewport: { width: 390, height: 844 } });
+
+/*
+  ── EVERY PAGE IN THIS FILE READS FRENCH ─────────────────────────────────
+  The product's default language is TUNISIAN (lib/i18n: absent cookie → "tn").
+  Every assertion below is written against French copy — «J'ai déjà un compte»,
+  «Momentanément fermé» — so the language has to be STATED rather than inherited
+  from whatever the default happens to be this month, or the suite goes red on a
+  product change that is entirely correct.
+
+  Same convention as test-client.mjs, test-console.mjs and test-platform.mjs,
+  which hit this first. Applied here as one helper so no page can be created
+  without it: browser.newPage() gives each page its OWN context, so the cookie
+  has to be set per page rather than once.
+*/
+const LANG_FR = { name: "pointili_lang", value: "fr", url: BASE };
+const newFrenchPage = async (opts) => {
+  const page = await browser.newPage(opts);
+  await page.context().addCookies([LANG_FR]);
+  return page;
+};
+
+const diner = await newFrenchPage({ viewport: { width: 390, height: 844 } });
 
 // ── 1. Onboarding: phone + PIN → welcome bonus ──────────────────────
 await diner.goto(`${BASE}/${SLUG}/rejoindre`, { waitUntil: "networkidle" });
@@ -57,7 +78,7 @@ const balAfterJoin = await diner
 check("signup grants welcome bonus", balAfterJoin === 10, `balance=${balAfterJoin}`);
 
 // ── 2. Owner signs in (real Supabase Auth) ──────────────────────────
-const staff = await browser.newPage({ viewport: { width: 390, height: 844 } });
+const staff = await newFrenchPage({ viewport: { width: 390, height: 844 } });
 await staff.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
 if (staff.url().includes("/login")) {
   await staff.fill('input[name="email"]', OWNER_EMAIL);
@@ -438,7 +459,7 @@ if (redeemCode) {
 // ── 11c. A returning cardholder signs back in (new device / no cookie) ─
 {
   // browser.newPage() gets a fresh context — no diner cookie, like a new phone.
-  const back = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const back = await newFrenchPage({ viewport: { width: 390, height: 844 } });
   await back.goto(`${BASE}/${SLUG}/rejoindre`, { waitUntil: "networkidle" });
   await back.locator('button:has-text("déjà un compte")').click();
   await back.fill('input[name="phone"]', PHONE);
@@ -570,7 +591,7 @@ if (redeemCode) {
   // deleted here AND on failure — a suite that throws used to leave a live account
   onExit(() => admin.auth.admin.deleteUser(created.user.id));
 
-  const fresh = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const fresh = await newFrenchPage({ viewport: { width: 390, height: 844 } });
   const hops = [];
   fresh.on("framenavigated", (f) => {
     if (f === fresh.mainFrame()) hops.push(new URL(f.url()).pathname);
@@ -625,7 +646,7 @@ await admin.auth.admin.deleteUser(created.user.id);
 
 // ── 13. The wheel is gone, not just hidden — the endpoint must not exist ─
 // A points-only MVP has no /api/play; poking it should 404/405, never spin.
-const anon = await browser.newPage();
+const anon = await newFrenchPage();
 await anon.goto(BASE, { waitUntil: "domcontentloaded" });
 const playStatus = await anon.evaluate(async (slug) => {
   const r = await fetch("/api/play", {
@@ -653,6 +674,9 @@ check("wheel endpoint /api/play is removed", playStatus === 404 || playStatus ==
 {
   const shared = await browser.newContext();
   const page = await shared.newPage();
+  /* shared context, so the cookie goes on the CONTEXT rather than through the
+     per-page helper above — addCookies is idempotent. */
+  await shared.addCookies([LANG_FR]);
   const hasDiner = async () =>
     (await shared.cookies()).some((c) => c.name === "pointili_diner");
 

@@ -83,7 +83,7 @@ export default async function Clients({
             {RANGES.map((r) => (
               <Link
                 key={r.slug}
-                href={`/owner/analyses?p=${r.slug}`}
+                href={`/owner/clients?p=${r.slug}`}
                 scroll={false}
                 className={`rounded-xl py-2.5 text-center text-[13px] font-bold transition ${
                   r.slug === picked.slug ? "bg-[#5b3fd1] text-white shadow-lg" : "text-slate"

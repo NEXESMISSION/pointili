@@ -98,7 +98,8 @@ export default async function JournalPage({
       {!cafe && page === 0 && (
         <div className="mb-6 grid gap-2.5 lg:grid-cols-2">
           <Section title="Message à tous les cafés">
-            <Broadcast />
+            {/* the count makes "tous" a number before it is a promise */}
+            <Broadcast shops={cafes.length} />
           </Section>
 
           <Section title={`Annonces affichées (${notices.length})`}>

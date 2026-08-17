@@ -55,7 +55,24 @@ onExit(async () => {
 });
 
 const b = await chromium.launch({ executablePath: CHROME });
-const page = await b.newPage({ viewport: { width: 1280, height: 950 } });
+
+/*
+  ── EVERY PAGE IN THIS FILE READS FRENCH ─────────────────────────────────
+  The product's default language is TUNISIAN (lib/i18n: absent cookie → "tn").
+  Every check below asserts French copy, so the language has to be STATED here
+  rather than inherited from whatever the default happens to be this month —
+  otherwise the suite goes red on a product change that is entirely correct.
+
+  Same convention as scripts/test-client.mjs, which hit this first.
+*/
+const LANG_FR = { name: "pointili_lang", value: "fr", url: BASE };
+const newFrenchPage = async (target, opts) => {
+  const page = await target.newPage(opts);
+  await page.context().addCookies([LANG_FR]);
+  return page;
+};
+
+const page = await newFrenchPage(b, { viewport: { width: 1280, height: 950 } });
 
 await page.goto(`${BASE}/owner/login`, { waitUntil: "domcontentloaded" });
 await page.fill('input[name="email"]', SUPER.email);

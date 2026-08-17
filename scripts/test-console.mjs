@@ -36,6 +36,23 @@ const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_RO
 const sql = await connect();
 const b = await chromium.launch({ executablePath: CHROME });
 
+
+/*
+  ── EVERY PAGE IN THIS FILE READS FRENCH ─────────────────────────────────
+  The product's default language is TUNISIAN (lib/i18n: absent cookie → "tn").
+  Every check below asserts French copy, so the language has to be STATED here
+  rather than inherited from whatever the default happens to be this month —
+  otherwise the suite goes red on a product change that is entirely correct.
+
+  Same convention as scripts/test-client.mjs, which hit this first.
+*/
+const LANG_FR = { name: "pointili_lang", value: "fr", url: BASE };
+const newFrenchPage = async (target, opts) => {
+  const page = await target.newPage(opts);
+  await page.context().addCookies([LANG_FR]);
+  return page;
+};
+
 const login = async (page, email, password) => {
   await page.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
   await page.fill('input[name="email"]', email);
@@ -55,7 +72,7 @@ const login = async (page, email, password) => {
   super-admin with nothing but their session, and must be invisible — not
   merely refused — to everyone else.
 */
-const sa = await b.newPage({ viewport: { width: 390, height: 844 } });
+const sa = await newFrenchPage(b, { viewport: { width: 390, height: 844 } });
 await login(sa, SUPER.email, SUPER.password);
 await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
 check(
@@ -158,7 +175,7 @@ const pw = "Test-12345678";
 const { data: made } = await admin.auth.admin.createUser({ email, password: pw, email_confirm: true });
 // deleted here AND on failure — a suite that throws used to leave a live account
 onExit(() => admin.auth.admin.deleteUser(made.user.id));
-const plain = await b.newPage();
+const plain = await newFrenchPage(b);
 await login(plain, email, pw);
 const res = await plain.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
 check("plain owner gets 404 on the console", res?.status() === 404, `status=${res?.status()}`);
@@ -183,7 +200,7 @@ check("plain owner gets 404 on the console", res?.status() === 404, `status=${re
     { onConflict: "id" },
   );
 
-  const op = await b.newPage({ viewport: { width: 390, height: 844 } });
+  const op = await newFrenchPage(b, { viewport: { width: 390, height: 844 } });
   await login(op, opEmail, opPw);
   const landed = new URL(op.url()).pathname;
   check("an operator with no café is not sent to café setup",

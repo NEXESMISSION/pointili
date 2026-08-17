@@ -431,7 +431,7 @@ await clip(owner, "stamp", async (page) => {
 });
 
 await clip(owner, "analyses", async (page) => {
-  await ready(page, `${BASE}/owner/analyses`);
+  await ready(page, `${BASE}/owner/clients`);
   await beat(page, 1400);
   for (let i = 0; i < 3; i++) { await glide(page, 380, 1300); await beat(page, 900); }
 });

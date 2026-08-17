@@ -191,15 +191,29 @@ export default async function ShopPage({ params }: { params: Promise<{ id: strin
                     {/*
                       TAKEN, not just listed. A reward nobody has ever redeemed
                       is the most actionable fact about a shop's programme — it
-                      is either priced out of reach or nobody wants it — and no
-                      screen in this product has ever said so.
+                      is either priced out of reach or nobody wants it.
+
+                      Counted by reward_id since 0047. It used to match the
+                      ledger amount against the price, which credited a reward
+                      with another one's sales whenever two shared a price — so
+                      this line said "1×" about a reward that had never been
+                      taken, and the shop's own screen said 0.
                     */}
-                    <span
-                      className={`k-num shrink-0 text-[11.5px] ${
-                        r.taken === 0 ? "text-slate/50" : "text-charcoal"
-                      }`}
-                    >
-                      {r.taken === 0 ? "jamais prise" : `${r.taken}×`}
+                    <span className="shrink-0 text-end">
+                      <span
+                        className={`k-num block text-[11.5px] ${
+                          r.taken === 0 ? "text-slate/50" : "text-charcoal"
+                        }`}
+                      >
+                        {r.taken === 0 ? "jamais prise" : `${r.taken}×`}
+                      </span>
+                      {/* A code in circulation is a customer who is coming
+                          back. The shop has seen this since 0042. */}
+                      {r.pending > 0 && (
+                        <span className="k-num block text-[10.5px] text-slate">
+                          {r.pending} à récupérer
+                        </span>
+                      )}
                     </span>
                   </li>
                 ))}

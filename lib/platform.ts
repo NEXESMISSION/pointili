@@ -7,10 +7,17 @@ import { createAdminClient } from "./supabase/admin";
  * The platform layer — elevated super-admin only.
  *
  * Three independent gates, because this surface can disable someone's business:
- *   1. requireElevatedSuperAdmin() — signed in, role = super_admin, AND a
- *      step-up re-auth within the last 30 minutes (lib/auth/elevate.ts).
+ *   1. requireElevatedSuperAdmin() — signed in, role = super_admin, and the
+ *      session re-checked against the AUTH SERVER rather than the token alone,
+ *      so a revoked operator stops working immediately (lib/auth/owner).
  *   2. the RPC re-verifies the actor's role in Postgres against `profiles`.
- *   3. the RPCs are revoked from anon/authenticated entirely.
+ *   3. EXECUTE on every admin_* function is revoked from public, anon and
+ *      authenticated — service_role only (0036, and each migration after it).
+ *
+ * There is NO step-up re-authentication. This block used to describe one, with
+ * a 30-minute window and a `lib/auth/elevate.ts` — that screen was removed and
+ * that file has never existed since; the name survived only in comments, which
+ * is worse than no comment at all because it reads like a gate that is there.
  *
  * "Only reachable from /admin" is a routing detail, not a security boundary.
  * Reading the platform's books is privileged too, so the reads are gated the
@@ -89,8 +96,8 @@ export type AdminAction = {
 };
 
 export async function adminOverview(): Promise<AdminCafe[]> {
-  // Throws NEEDS_ELEVATION if the step-up has lapsed; the id is then re-verified
-  // against profiles inside the RPC.
+  // Throws UNAUTHORISED / FORBIDDEN via adminRpc's gate; the actor id is then
+  // re-verified against profiles inside the RPC itself.
   const data = await adminRpc<AdminCafe[]>("admin_overview");
   return (data as AdminCafe[] | null) ?? [];
 }
@@ -223,7 +230,13 @@ export type ShopDetail = {
     earns30d: number;
   };
   daily: { day: string; n: number }[];
-  rewards: { id: string; label: string; cost: number; active: boolean; taken: number }[];
+  rewards: {
+    id: string; label: string; cost: number; active: boolean;
+    /** Claimed at the counter. Counted by reward_id since 0047, not by price. */
+    taken: number;
+    /** Issued and not yet collected — customers with a booked reason to return. */
+    pending: number;
+  }[];
   /** Customer numbers arrive already masked to their last three digits. */
   ledger: { at: string; who: string; delta: number; reason: string; tnd: number | null }[];
   notices: {
@@ -369,10 +382,27 @@ export type Notice = {
   createdAt: string;
 };
 
-/** Notices an owner should see. NOT super-admin gated — owners read their own. */
-export async function ownerNotices(businessId: string): Promise<Notice[]> {
+/**
+ * Notices an owner should see. NOT super-admin gated — owners read their own.
+ *
+ * THE OWNER IS A REQUIRED ARGUMENT, and the RPC enforces it (0045).
+ *
+ * This ran on the service-role client with a caller-supplied business id and no
+ * predicate tying the two together: hand it any uuid and it returned that
+ * shop's notices — operator-written messages ABOUT them. Every call site passes
+ * ownerCafe()'s id, so nothing leaked in the shipped product. What it was is
+ * the exact footgun lib/adminRpc.ts exists to remove: one future caller reading
+ * an id out of a URL is a cross-tenant read that reviews as ordinary code.
+ *
+ * my_renewal_requests has taken an owner and joined on it since 0035. This is
+ * now the same shape.
+ */
+export async function ownerNotices(businessId: string, ownerId: string): Promise<Notice[]> {
   const db = createAdminClient();
-  const { data } = await db.rpc("owner_notices", { p_business_id: businessId });
+  const { data } = await db.rpc("owner_notices", {
+    p_business_id: businessId,
+    p_owner: ownerId,
+  });
   return (data as Notice[] | null) ?? [];
 }
 

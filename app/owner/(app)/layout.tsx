@@ -35,7 +35,9 @@ export default async function OwnerLayout({
   */
   if (!cafe) redirect(await ownerHome());
 
-  const notices = await ownerNotices(cafe.id);
+  /* owner.id is the owner OF this café by construction: ownerCafe() resolves
+     the shop by that same id. The RPC re-checks the pairing anyway (0045). */
+  const notices = await ownerNotices(cafe.id, owner.id);
 
   const left = remaining(cafe.planExpiresAt);
 

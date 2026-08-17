@@ -315,7 +315,7 @@ export async function creditAction(
   if (!res.ok) return { error: tillMessage(res.reason) };
 
   revalidatePath("/owner");
-  revalidatePath("/owner/analyses");
+  revalidatePath("/owner/clients");
   revalidatePath(`/${cafe.slug}`);
 
   /*
@@ -421,7 +421,7 @@ export async function collectAction(
   if (!res.ok) return { error: `Code ${res.reason}.` };
 
   revalidatePath("/owner");
-  revalidatePath("/owner/analyses");
+  revalidatePath("/owner/clients");
   revalidatePath(`/${cafe.slug}`); // the diner's history now shows what they collected
   return { ok: { label: res.label, code } };
 }

@@ -39,24 +39,29 @@ function verdict(r: PostState, done: string): string {
  */
 function guardMessage(e: unknown): string {
   const m = e instanceof Error ? e.message : "";
-  // NEEDS_ELEVATION is gone with the step-up screen, but a stale in-flight
-  // request can still carry it — treat it as "sign in again", which is now true.
+  /*
+    Two causes, two instructions. NEEDS_ELEVATION is gone with the step-up
+    screen, but a stale in-flight request can still carry it — and it now means
+    the same thing as UNAUTHORISED, so they share a branch.
+
+    There used to be a second `if (m === "UNAUTHORISED")` below this one,
+    unreachable because the line above already caught it. Harmless, but it read
+    as though the two cases were handled differently.
+  */
   if (m === "NEEDS_ELEVATION" || m === "UNAUTHORISED") {
     return "Session expirée — reconnectez-vous.";
   }
-  if (m === "UNAUTHORISED") {
-    return "Session expirée — reconnectez-vous.";
-  }
+  // FORBIDDEN: signed in, but not an operator.
   return "Non autorisé.";
 }
 
 /**
  * Super-admin actions.
  *
- * Guarded three ways: an unexpired step-up here, the role re-checked inside the
- * RPC, and EXECUTE revoked from anon/authenticated. Every action is written to
- * admin_audit with the actor's email — there is always a record of who
- * suspended whom.
+ * Guarded three ways: the session re-checked against the auth server here, the
+ * role re-checked inside the RPC, and EXECUTE revoked from public/anon/
+ * authenticated. Every action is written to admin_audit with the actor's email
+ * — there is always a record of who suspended whom.
  *
  * If the elevation has lapsed mid-session the action fails closed rather than
  * running with a stale grant.
@@ -175,8 +180,24 @@ export async function noticeAction(
     p_message: message,
     p_days: Number.isInteger(days) ? days : 14,
   });
-  if (error || !(data as { ok: boolean })?.ok) {
-    return { error: "Envoi impossible." };
+  /*
+    The RPC's reason, not a shrug.
+
+    admin_notice validates p_days (0–365) and, since 0045, p_kind and the
+    business id too — and every one of those failures used to arrive here as
+    "Envoi impossible.", which tells an operator nothing about which of the
+    three fields in front of them to change.
+  */
+  const res = data as PostState | null;
+  if (error || !res?.ok) {
+    const why: Record<string, string> = {
+      bad_days: "Durée d'affichage : 0 à 365 jours.",
+      bad_kind: "Type de message invalide.",
+      empty: "Message vide.",
+      introuvable: "Café introuvable.",
+      forbidden: "Non autorisé.",
+    };
+    return { error: (res?.reason && why[res.reason]) || "Envoi impossible." };
   }
 
   revalidatePath("/admin");
@@ -716,13 +737,34 @@ export async function adminLogoutAction() {
  * offer "+6 mois" as a single button instead of making the operator open a
  * drawer and fill three fields to do the most common thing on the screen.
  */
+/*
+  THE RESULT IS CARRIED BACK, because it used to be thrown away.
+
+  Both of these called the real action and returned void, discarding the
+  `{ error }` it answered with. A "+6 mois" that failed — not authorised, café
+  introuvable, RPC down — repainted an unchanged row and said NOTHING. The
+  operator's only clue was that the queue still listed the shop, which is also
+  what a successful renewal of a DIFFERENT shop looks like.
+
+  A plain <form action={…}> has nowhere to put a return value (no
+  useActionState, and making the queue a client component for this would pull
+  the whole roster over the wire). So the answer goes on the URL and the page
+  renders it — see Flash in ./ui and the banner on the queue page.
+*/
+function backWith(res: AdminState): never {
+  const q = res.error
+    ? `?err=${encodeURIComponent(res.error)}`
+    : `?ok=${encodeURIComponent(res.ok ?? "Fait.")}`;
+  redirect(`/admin${q}`);
+}
+
 export async function quickRenewAction(formData: FormData): Promise<void> {
-  await setPlanAction({}, formData);
+  backWith(await setPlanAction({}, formData));
 }
 
 /** Lift a suspension from the queue, without opening the drawer. */
 export async function quickUnsuspendAction(formData: FormData): Promise<void> {
-  await setSuspendedAction({}, formData);
+  backWith(await setSuspendedAction({}, formData));
 }
 
 /**

@@ -51,7 +51,7 @@ import { ChartIcon, GiftIcon, QrIcon, SlidersIcon, TillIcon } from "./icons";
 /* Real paths. The host split does not rewrite them — see proxy.ts. */
 const TABS = [
   { label: "Caisse", short: "Caisse", Icon: TillIcon, href: "/owner" },
-  { label: "Clients", short: "Clients", Icon: ChartIcon, href: "/owner/analyses" },
+  { label: "Clients", short: "Clients", Icon: ChartIcon, href: "/owner/clients" },
   { label: "Récompenses", short: "Cadeaux", Icon: GiftIcon, href: "/owner/recompenses" },
   { label: "Mon QR", short: "QR", Icon: QrIcon, href: "/owner/qr" },
   { label: "Réglages", short: "Réglages", Icon: SlidersIcon, href: "/owner/reglages" },

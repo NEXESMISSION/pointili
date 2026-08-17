@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { noticeAction, type AdminState } from "../actions";
 
 /**
@@ -14,9 +14,21 @@ import { noticeAction, type AdminState } from "../actions";
  *
  * No businessId field at all: the RPC treats a missing one as "everyone", so
  * there is nothing here that could be filled in wrongly.
+ *
+ * ── AND IT ASKS TWICE, WHICH NOTHING ELSE HERE DOES BY ACCIDENT ──────────
+ * Suspending ONE café makes the operator confirm. Deleting one makes them type
+ * its slug. This reaches EVERY owner's dashboard at once and went out on a
+ * single click — the widest-blast-radius control in the console was the only
+ * one with no second step.
+ *
+ * Two presses, in-page, and the second one carries the count so the operator
+ * reads what "tous" currently means before they commit. Not window.confirm():
+ * a browser dialog is the same OK button used to dismiss cookie banners all
+ * day, and the console already made that argument once (see ShopControls).
  */
-export function Broadcast() {
+export function Broadcast({ shops }: { shops?: number }) {
   const [state, act, pending] = useActionState<AdminState, FormData>(noticeAction, {});
+  const [armed, setArmed] = useState(false);
 
   return (
     <form action={act} className="k-card space-y-2 p-4">
@@ -46,9 +58,41 @@ export function Broadcast() {
         />
         <span className="text-[11px] text-slate">jours</span>
       </div>
-      <button type="submit" disabled={pending} className="k-btn w-full">
-        {pending ? "· ·" : "Envoyer à tous les cafés"}
-      </button>
+      {armed ? (
+        <div className="space-y-2">
+          <p role="status" className="k-note k-warn px-3 py-2">
+            Ce message s&apos;affichera sur le tableau de bord de{" "}
+            <b>
+              {shops === undefined
+                ? "tous les cafés"
+                : `${shops} café${shops === 1 ? "" : "s"}`}
+            </b>
+            .
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setArmed(false)}
+              className="k-btn k-btn--sm k-btn--ghost flex-1"
+            >
+              Annuler
+            </button>
+            <button type="submit" disabled={pending} className="k-btn k-btn--sm flex-1">
+              {pending ? "· ·" : "Confirmer l'envoi"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* type=button: it opens the question, it does not submit the form. */
+        <button
+          type="button"
+          onClick={() => setArmed(true)}
+          disabled={pending}
+          className="k-btn w-full"
+        >
+          Envoyer à tous les cafés
+        </button>
+      )}
       {state.error && (
         <p role="alert" className="k-note k-bad w-full  px-3 py-2">
           {state.error}

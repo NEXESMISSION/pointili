@@ -135,9 +135,20 @@ end $$;
   the argument type forbids a p_actor of its own. There is no longer a way to
   call an admin RPC without being checked, or to be checked as somebody else.
 
-  Also unfixed here, and worth doing next:
-    · `grant select on businesses to anon` has no column list, publishing
+  Also unfixed HERE, and both since addressed — noted so this list is not read
+  as still-open work:
+    · `grant select on businesses to anon` had no column list, publishing
       owner_id, plan, plan_expires_at and suspended_reason to the world.
-      owner_id is the uuid that made this exploit trivial.
-    · There is no rate limit in front of any code or PIN endpoint.
+      owner_id is the uuid that made this exploit trivial. CLOSED BY 0037,
+      which revokes the table grant and re-grants only the presentation
+      columns a café page actually shows a stranger.
+    · There was no rate limit in front of any code or PIN endpoint. The PIN
+      side is CLOSED BY 0038 (the gate counts before it judges).
+
+  ── AND ONE THING THIS FILE'S MECHANISM NO LONGER COVERS ─────────────────
+  The sweep above works because migrate.mjs replays the folder in sorted order
+  and this file used to sort LAST. It does not any more: 0037+ create security-
+  definer functions that this file never sees. Every migration after this one
+  therefore has to run its own revoke — they all do, and each ends with an
+  assertion that proves it. Check that before adding another.
 */

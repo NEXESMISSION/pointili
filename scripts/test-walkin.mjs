@@ -19,7 +19,24 @@ const { ownerPassword: OWNER_PASSWORD } = await ensureTestCafe();
 const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
 const b = await chromium.launch({ executablePath: CHROME });
-const s = await b.newPage({ viewport: { width: 390, height: 844 } });
+
+/*
+  ── EVERY PAGE IN THIS FILE READS FRENCH ─────────────────────────────────
+  The product's default language is TUNISIAN (lib/i18n: absent cookie → "tn").
+  Every check below asserts French copy, so the language has to be STATED here
+  rather than inherited from whatever the default happens to be this month —
+  otherwise the suite goes red on a product change that is entirely correct.
+
+  Same convention as scripts/test-client.mjs, which hit this first.
+*/
+const LANG_FR = { name: "pointili_lang", value: "fr", url: BASE };
+const newFrenchPage = async (target, opts) => {
+  const page = await target.newPage(opts);
+  await page.context().addCookies([LANG_FR]);
+  return page;
+};
+
+const s = await newFrenchPage(b, { viewport: { width: 390, height: 844 } });
 await s.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
 await s.fill('input[name="email"]', OWNER_EMAIL);
 await s.fill('input[name="password"]', OWNER_PASSWORD);
@@ -74,7 +91,7 @@ t("the walk-in is reachable by phone at the till", listed, listTxt.replace(/\n+/
 t("the till still never prints the phone", !listTxt.includes(LOCAL));
 
 /* 3 · they sign up later — the points are already there */
-const d = await b.newPage({ viewport: { width: 390, height: 844 } });
+const d = await newFrenchPage(b, { viewport: { width: 390, height: 844 } });
 await d.goto(`${BASE}/${TEST_SLUG}/rejoindre`, { waitUntil: "networkidle" });
 await d.fill('input[name="phone"]', LOCAL);
 await d.fill('input[name="pin"]', "4271");

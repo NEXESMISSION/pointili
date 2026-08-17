@@ -35,8 +35,25 @@ const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_RO
 
 const browser = await chromium.launch({ executablePath: CHROME });
 
+
+/*
+  ── EVERY PAGE IN THIS FILE READS FRENCH ─────────────────────────────────
+  The product's default language is TUNISIAN (lib/i18n: absent cookie → "tn").
+  Every check below asserts French copy, so the language has to be STATED here
+  rather than inherited from whatever the default happens to be this month —
+  otherwise the suite goes red on a product change that is entirely correct.
+
+  Same convention as scripts/test-client.mjs, which hit this first.
+*/
+const LANG_FR = { name: "pointili_lang", value: "fr", url: BASE };
+const newFrenchPage = async (target, opts) => {
+  const page = await target.newPage(opts);
+  await page.context().addCookies([LANG_FR]);
+  return page;
+};
+
 /* a real cardholder to manage */
-const diner = await browser.newPage({ viewport: { width: 390, height: 844 } });
+const diner = await newFrenchPage(browser, { viewport: { width: 390, height: 844 } });
 await diner.goto(`${BASE}/${TEST_SLUG}/rejoindre`, { waitUntil: "networkidle" });
 await diner.fill('input[name="phone"]', LOCAL);
 await diner.fill('input[name="pin"]', PIN);
@@ -47,7 +64,7 @@ const { data: card } = await admin
   .from("accounts").select("code").eq("phone", NORM).maybeSingle();
 
 /* ── 1. Owner signs in ─────────────────────────────────────────────── */
-const staff = await browser.newPage({ viewport: { width: 390, height: 844 } });
+const staff = await newFrenchPage(browser, { viewport: { width: 390, height: 844 } });
 await staff.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
 if (staff.url().includes("/login")) {
   await staff.fill('input[name="email"]', OWNER_EMAIL);
@@ -228,7 +245,7 @@ check("saving points did NOT clobber the stamp settings",
   `stamps=${prog.stamps_enabled}/${prog.stamps_required} reward=${JSON.stringify(prog.stamp_reward)}`);
 
 /* ── 9. Analyses renders with real data ────────────────────────────── */
-await staff.goto(`${BASE}/owner/analyses`, { waitUntil: "networkidle" });
+await staff.goto(`${BASE}/owner/clients`, { waitUntil: "networkidle" });
 const stats = await staff.locator("main").innerText();
 /* The page became "Vos clients" in the analytics rework — the word this
    asserts follows the heading, but the NaN guard is the check that matters. */

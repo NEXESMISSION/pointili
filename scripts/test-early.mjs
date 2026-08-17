@@ -34,7 +34,21 @@ onExit(wipe);
 await wipe();
 
 const b = await chromium.launch({ executablePath: CHROME });
-const ctx = () => b.newContext({ viewport: { width: 390, height: 844 } });
+/*
+  ── THIS SUITE READS FRENCH, SO IT SAYS SO ───────────────────────────────
+  /early carries its own language switch and the product's default is TUNISIAN
+  (lib/i18n: absent cookie → "tn"), so the submit button reads «نحب نكون من
+  الأوائل» and every :has-text('anticip') here missed it. The test was
+  under-specified rather than the page being wrong — a check on wording has to
+  control the language it expects.
+
+  Same convention as scripts/test-client.mjs, which hit this first.
+*/
+const ctx = async () => {
+  const context = await b.newContext({ viewport: { width: 390, height: 844 } });
+  await context.addCookies([{ name: "pointili_lang", value: "fr", url: BASE }]);
+  return context;
+};
 
 /** Fill the three fields and press the button. Returns the page. */
 async function apply(page, { name, type, phone, honeypot = null }) {

@@ -79,15 +79,28 @@ export default async function TrafficPage() {
         />
       </div>
 
+      {/*
+        The window on this panel is READ OFF THE DATA, not stated. admin_traffic's
+        `daily` series is hardcoded to 14 days and ignores p_days, while every
+        tile above honours p_days (30) — so a fixed label here would be a claim
+        about a window this panel does not control, and the two halves of one
+        screen would disagree the day anyone changes the range.
+      */}
       {daily.length > 0 && (
-        <Section title="Jour par jour" aside={`pic ${peak} visites`}>
+        <Section
+          title="Jour par jour"
+          aside={`${daily.length} jours · pic ${peak} visites`}
+        >
           <div className="k-card p-4">
             <div className="flex h-[80px] items-end gap-[3px]">
               {daily.map((d) => (
                 <span
                   key={d.day}
                   title={`${d.day} · ${d.visits} visite(s) · ${d.signups} compte(s)`}
-                  className="flex-1 rounded-t-[2px] bg-[var(--o-inset)]"
+                  /* --color-hair, not --o-inset: the bar sits on a white
+                      k-card, and #f1f0f5 on #ffffff is about 1.05:1 — a volume
+                      chart whose volume is invisible. */
+                  className="flex-1 rounded-t-[2px] bg-hair"
                   style={{ height: `${Math.max(3, (d.visits / peak) * 100)}%` }}
                 >
                   {/* The green cap is the share that converted — and it is only
@@ -173,7 +186,9 @@ function Breakdown({
               {/* the bar is volume; the green segment inside it is what converted */}
               <span className="mt-1 block h-[5px] overflow-hidden rounded-full bg-[var(--o-inset)]">
                 <span
-                  className="block h-full rounded-full bg-[var(--o-edge)]"
+                  /* same reason as the chart above: this is the bar, and it has
+                     to read against the white card behind its track. */
+                  className="block h-full rounded-full bg-hair"
                   style={{ width: `${top > 0 ? Math.max(4, (r.visits / top) * 100) : 0}%` }}
                 >
                   <span

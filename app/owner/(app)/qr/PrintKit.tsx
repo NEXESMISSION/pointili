@@ -178,7 +178,18 @@ export function PrintKit({
       <div className="@container mx-auto w-full max-w-[380px] print:max-w-none">
         <div
           style={{ aspectRatio: String(fmt.ratio) }}
-          className="flex w-full flex-col items-center justify-center overflow-hidden rounded-3xl bg-[#140d24] px-[7cqw] py-[6cqw] text-center text-charcoal print:h-screen print:rounded-none"
+          /*
+            text-white, NOT text-charcoal — and this was invisible ink.
+
+            The card is #140d24 and its default colour was #1a1330: a contrast
+            ratio of 1.06:1, measured. Everything that inherited it — the shop's
+            NAME, the offer, and "Scannez pour commencer" — was near-black on
+            near-black, on the one artwork in this product that gets printed and
+            stuck to a table. Only the lines that opted into text-slate were
+            legible at all, which is why it survived: the poster looked like a
+            deliberate minimal design with three grey lines on it.
+          */
+          className="flex w-full flex-col items-center justify-center overflow-hidden rounded-3xl bg-[#140d24] px-[7cqw] py-[6cqw] text-center text-white print:h-screen print:rounded-none"
         >
           <div className="flex items-center justify-center gap-[2.5cqw]">
             {/* Logo when the shop has one; NOTHING when it does not. The old
@@ -192,7 +203,7 @@ export function PrintKit({
             <span className="text-[6cqw] font-extrabold leading-none">{name}</span>
           </div>
 
-          <p className="mt-[6cqw] text-[2.8cqw] font-bold uppercase tracking-[0.14em] text-slate">
+          <p className="mt-[6cqw] text-[2.8cqw] font-bold uppercase tracking-[0.14em] text-white/70">
             Carte de fidélité
           </p>
           <p className="mt-[1.5cqw] max-w-[20ch] text-[6.4cqw] font-extrabold leading-tight">
@@ -207,8 +218,8 @@ export function PrintKit({
           </div>
 
           <p className="mt-[4cqw] text-[4cqw] font-bold">Scannez pour commencer</p>
-          <p className="mt-[0.8cqw] text-[2.9cqw] text-slate">Sans application · en 10 secondes</p>
-          <p className="mt-[4cqw] break-all font-mono text-[2.4cqw] tracking-[0.04em] text-slate">
+          <p className="mt-[0.8cqw] text-[2.9cqw] text-white/70">Sans application · en 10 secondes</p>
+          <p className="mt-[4cqw] break-all font-mono text-[2.4cqw] tracking-[0.04em] text-white/70">
             {url.replace(/^https?:\/\//, "")}
           </p>
         </div>

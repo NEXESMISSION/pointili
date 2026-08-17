@@ -51,6 +51,23 @@ const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_RO
 const sql = await connect();
 const b = await chromium.launch({ executablePath: CHROME });
 
+
+/*
+  ── EVERY PAGE IN THIS FILE READS FRENCH ─────────────────────────────────
+  The product's default language is TUNISIAN (lib/i18n: absent cookie → "tn").
+  Every check below asserts French copy, so the language has to be STATED here
+  rather than inherited from whatever the default happens to be this month —
+  otherwise the suite goes red on a product change that is entirely correct.
+
+  Same convention as scripts/test-client.mjs, which hit this first.
+*/
+const LANG_FR = { name: "pointili_lang", value: "fr", url: BASE };
+const newFrenchPage = async (target, opts) => {
+  const page = await target.newPage(opts);
+  await page.context().addCookies([LANG_FR]);
+  return page;
+};
+
 const login = async (page, email, password) => {
   await page.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
   await page.fill('input[name="email"]', email);
@@ -69,7 +86,7 @@ const openConsole = async (page) => {
 };
 
 // ── 1. super-admin reaches /admin ───────────────────────────────────
-const sa = await b.newPage({ viewport: { width: 390, height: 844 } });
+const sa = await newFrenchPage(b, { viewport: { width: 390, height: 844 } });
 await login(sa, SUPER.email, SUPER.password);
 await openConsole(sa);
 check("super-admin reaches /admin with one sign-in", new URL(sa.url()).pathname === "/admin", new URL(sa.url()).pathname);
@@ -96,7 +113,7 @@ const pw = "Test-12345678";
 const { data: made } = await admin.auth.admin.createUser({ email, password: pw, email_confirm: true });
 // deleted here AND on failure — a suite that throws used to leave a live account
 onExit(() => admin.auth.admin.deleteUser(made.user.id));
-const plain = await b.newPage();
+const plain = await newFrenchPage(b);
 await login(plain, email, pw);
 const plainRes = await plain.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
 check(
@@ -166,7 +183,7 @@ await sql.query(`update businesses set plan_expires_at = now() - interval '1 day
 const liveNow = (await sql.query(`select cafe_is_live(id) as live from businesses where slug='${SLUG}'`)).rows[0];
 check("expired plan → café not live", liveNow.live === false);
 
-const diner = await b.newPage({ viewport: { width: 390, height: 844 } });
+const diner = await newFrenchPage(b, { viewport: { width: 390, height: 844 } });
 await diner.goto(`${BASE}/${SLUG}`, { waitUntil: "networkidle" });
 const darkTxt = await diner.locator("body").innerText();
 check("expired café shows a real message, not a 404", /Momentanément fermé/i.test(darkTxt));
@@ -259,8 +276,30 @@ const noticeForm = row4.locator('form:has(textarea[name="message"])');
 await noticeForm.locator('textarea[name="message"]').fill("Test notice for the owner");
 await noticeForm.locator('button[type="submit"]').click();
 await row4.locator(RESULT).first().waitFor({ timeout: 20000 }).catch(() => {});
-await sa.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-check("owner sees the notice", /Test notice for the owner/.test(await sa.locator("body").innerText()));
+/*
+  ── ASSERTED ON THE CAFÉ IT WAS SENT TO, NOT ON /owner ───────────────────
+  This used to post a notice to the TEST café and then look for it on the
+  super-admin's own /owner page. That only works if the operator owns exactly
+  one shop — ownerCafe() resolves `order by created_at limit 1`, so the moment
+  the super-admin owns anything older than the test café (they own one), /owner
+  renders THAT shop and the notice can never appear there.
+
+  It is not a product bug: a notice addressed to shop A correctly does not show
+  on shop B's dashboard. The check was reading the wrong screen, and it went
+  unnoticed because the suite crashed before reaching it.
+
+  So it asks the same question the owner's dashboard asks — owner_notices, with
+  the shop and its owner — which is the path being tested, minus the guess
+  about which café /owner picks.
+*/
+const { rows: noticeRows } = await sql.query(
+  `select owner_notices(b.id, b.owner_id) as n from businesses b where b.slug = $1`,
+  [SLUG],
+);
+check(
+  "owner sees the notice",
+  (noticeRows[0]?.n ?? []).some((n) => n.message === "Test notice for the owner"),
+);
 
 // ── 9. everything privileged is written down ────────────────────────
 const audit = (await sql.query(`select count(*)::int as n from admin_audit`)).rows[0];

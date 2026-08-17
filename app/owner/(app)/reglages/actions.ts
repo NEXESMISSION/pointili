@@ -103,7 +103,7 @@ export async function saveEarnAction(
   // The earn rate + welcome also drive the caisse preview and the revenue/net
   // figures on Analyses — refresh both, or they contradict the new setting.
   revalidatePath("/owner");
-  revalidatePath("/owner/analyses");
+  revalidatePath("/owner/clients");
   return { saved: "Gagner" };
 }
 

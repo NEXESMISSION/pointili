@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { currentOwner } from "@/lib/auth/owner";
+import { requireSuperAdmin, type OwnerSession } from "@/lib/auth/owner";
 import { consoleCounts } from "@/lib/platform";
 import { adminLogoutAction } from "./actions";
 import { Nav } from "./Nav";
@@ -43,9 +43,34 @@ export default async function ConsoleLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const owner = await currentOwner();
-  if (!owner) redirect("/owner/login");
-  if (owner.role !== "super_admin") notFound();
+  /*
+    requireSuperAdmin, NOT currentOwner — and the difference is a network hop
+    that this one surface is supposed to pay for.
+
+    currentOwner() verifies the token's signature LOCALLY (see authUser), which
+    is right for a till: a shop cannot afford a round trip in front of every
+    screen. It also means a session signed out elsewhere keeps working until the
+    access token expires, up to an hour. requireSuperAdmin() adds the live
+    getUser() check for exactly that reason — lib/auth/owner says so: "This
+    surface can take a business offline, so 'was this session revoked?' is asked
+    of the auth server."
+
+    The console shell was reading the local one while every panel inside it went
+    through the live one, so a revoked operator got the chrome and then an error
+    boundary. Nothing leaked — the reads are gated — but the shell was claiming
+    a gate it was not applying.
+
+    It throws rather than returning null, so the two outcomes are separated
+    here: FORBIDDEN is a real account that is not an operator (404, so the
+    console never confirms it exists), anything else is "no usable session".
+  */
+  let owner: OwnerSession;
+  try {
+    owner = await requireSuperAdmin();
+  } catch (e) {
+    if (e instanceof Error && e.message === "FORBIDDEN") notFound();
+    redirect("/owner/login");
+  }
 
   const counts = await consoleCounts();
 
