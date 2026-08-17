@@ -3,6 +3,7 @@
 import { translator, type Lang } from "@/lib/dict";
 import { Tpl } from "@/components/Tpl";
 import { useActionState, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { spinAction, type SpinState } from "./actions";
 import type { Prize } from "@/lib/types";
 
@@ -78,6 +79,7 @@ export function WheelPlayer({
   lang?: Lang;
 }) {
   const t = translator(lang);
+  const router = useRouter();
   const [state, formAction, pending] = useActionState<SpinState, FormData>(
     spinAction.bind(null, slug),
     {},
@@ -90,6 +92,21 @@ export function WheelPlayer({
   const [confirming, setConfirming] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [revealed, setRevealed] = useState<SpinState["ok"] | null>(null);
+  /*
+    THE WIN THE CUSTOMER HAS FINISHED LOOKING AT.
+
+    Without this the wheel was a one-shot per page load. The result panel is the
+    `revealed ?` arm of the render, and the form that spins is the `: (` arm, so
+    once a prize landed there was no control left on the screen at all — a
+    customer who wanted a second turn had to know to reload the page, and the
+    balance under the prize went stale the moment they did anything else.
+
+    Clearing `revealed` alone is not enough: state.ok still holds the last
+    result, so the reveal effect would fire again and spin to the SAME prize.
+    Remembering which code has been dismissed is what lets the effect tell "a
+    result I have already shown" from "a new one".
+  */
+  const [dismissed, setDismissed] = useState<string | null>(null);
   const rafRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const wonRef = useRef<HTMLDivElement>(null);
@@ -127,7 +144,11 @@ export function WheelPlayer({
    */
   useEffect(() => {
     const ok = state.ok;
-    if (!ok || revealed?.code === ok.code) return;
+    /* `dismissed` is what stops a second turn replaying the first one: the
+       action state still holds the previous result after the panel is closed,
+       so without it the wheel would spin straight back to a prize the customer
+       has already collected. */
+    if (!ok || revealed?.code === ok.code || ok.code === dismissed) return;
 
     const i = Math.max(0, prizes.findIndex((p) => p.id === ok.prizeId));
     /* Bring segment i's CENTRE under the pointer at 12 o'clock. */
@@ -168,7 +189,7 @@ export function WheelPlayer({
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.ok, revealed]);
+  }, [state.ok, revealed, dismissed]);
 
   const spinning = pending || (state.ok != null && revealed == null);
 
@@ -312,6 +333,34 @@ export function WheelPlayer({
               n: t.n(revealed.balance, "point"),
             })}
           </p>
+          {/*
+            THE WAY BACK TO THE WHEEL.
+
+            There was none: the spin form is the other arm of this ternary, so a
+            landed prize replaced every control on the screen permanently. The
+            customer had paid, collected a code, and then had to guess that
+            reloading the page was how you take a second turn.
+
+            router.refresh() rather than local state alone, because the balance
+            this component prices a spin against is a SERVER prop. Clearing the
+            panel without it would offer "Tourner · 20 points" against the
+            balance from before the last spin was paid for.
+          */}
+          {revealed.balance >= spinCost && (
+            <button
+              type="button"
+              onClick={() => {
+                setDismissed(revealed.code);
+                setRevealed(null);
+                setConfirming(false);
+                setRotation((r) => r % 360);
+                router.refresh();
+              }}
+              className="d-card mt-4 min-h-[46px] w-full text-[13.5px] font-bold text-charcoal active:scale-[0.99]"
+            >
+              {t("Tourner encore · {n}", { n: t.n(spinCost, "point") })}
+            </button>
+          )}
         </div>
       ) : (
         <form action={formAction} className="mt-5">
