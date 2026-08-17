@@ -469,7 +469,15 @@ export async function enrollDiner(cafeId: string, phone: string): Promise<string
     p_business_id: cafeId,
     p_phone: phone,
   });
-  if (error) return null;
+  /*
+    Throw, do not return null. The comment above says null means "enrolment did
+    not work" and that the caller must check it — but `if (error) return null`
+    made a failed CALL wear the same face as a refusal, and /rejoindre then
+    redirected to /[slug], which bounces a non-member straight back here. That
+    is the forever-loop this function was shaped to prevent, reintroduced by the
+    line that was meant to prevent it.
+  */
+  if (error) throw new Error(`enrollDiner: ${error.message}`);
   return (data as string | null) ?? null;
 }
 

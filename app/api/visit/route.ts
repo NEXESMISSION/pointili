@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { currentDiner } from "@/lib/auth/diner";
 
 /**
  * Where the visit beacon lands.
@@ -56,7 +57,23 @@ export async function POST(req: Request) {
       p_utm_campaign: str(b?.uc, 120),
       p_device: device && DEVICES.has(device) ? device : null,
       p_side: side && SIDES.has(side) ? side : null,
-      p_signed_up: b?.up === true,
+      /*
+        A CONVERSION HAS TO BE WITNESSED, not asserted.
+
+        This was `b?.up === true` — a boolean out of the request body on an
+        unauthenticated endpoint, so anyone with curl could post signups all
+        afternoon and the platform's conversion figure would climb. That figure
+        is one of the numbers the business is steered by; a number a stranger
+        can write is not a measurement.
+
+        The cheapest honest test is the one the browser cannot fake: this
+        request must carry a real signed diner session. A visitor who has just
+        signed up has one, and a caller who has not cannot mint one — the
+        cookie is httpOnly and signed (lib/auth/crypto). Everything else on
+        this route stays best-effort, because a lost visit really is not worth
+        an error.
+      */
+      p_signed_up: b?.up === true && (await currentDiner()) !== null,
     });
   } catch {
     /* malformed body, database hiccup — a lost visit is not worth an error */

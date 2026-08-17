@@ -57,9 +57,28 @@ export async function startDinerSession(phone: string) {
   await rememberDevice(phone);
 }
 
+/*
+  SIGNED, like the session — because of what the hint is allowed to unlock.
+
+  This stored the bare phone number and lastDinerPhone() checked only its SHAPE.
+  /rejoindre uses the hint to greet a returning customer by name, and to print
+  the points they are holding at this shop, BEFORE any PIN is asked for. So
+  anyone could set one cookie to somebody else's number and read back that
+  person's first name and exact balance — and a Tunisian mobile is eight digits,
+  which is not a search space, it is a afternoon.
+
+  httpOnly never helped here: it stops a script on the page reading the cookie,
+  and this attack is somebody sending one they wrote themselves.
+
+  The same signSession/verifySession the identity token uses, so there is one
+  signing story in this file rather than two. Hints written before this change
+  hold a raw number, fail verification, and are simply ignored — the customer
+  gets the ordinary signup screen and types their number, which is exactly what
+  they would have got with no cookie at all.
+*/
 export async function rememberDevice(phone: string) {
   const jar = await cookies();
-  jar.set(DINER_HINT, phone, {
+  jar.set(DINER_HINT, signSession(phone, HINT_DAYS), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -71,8 +90,8 @@ export async function rememberDevice(phone: string) {
 /** The number this device last signed in with. NEVER treat this as identity. */
 export async function lastDinerPhone(): Promise<string | null> {
   const jar = await cookies();
-  const v = jar.get(DINER_HINT)?.value;
-  return v && /^\+\d{8,15}$/.test(v) ? v : null;
+  const phone = verifySession(jar.get(DINER_HINT)?.value);
+  return phone && /^\+\d{8,15}$/.test(phone) ? phone : null;
 }
 
 export async function clearDinerSession() {

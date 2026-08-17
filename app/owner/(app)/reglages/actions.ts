@@ -496,8 +496,20 @@ export async function saveWheelAction(
   const cafe = await ownerCafe();
   if (!cafe) return { error: "Non autorisé." };
 
-  const cost = num(formData.get("spinCost"), 0, 1_000_000);
-  if (cost === null) return { error: "Coût d'un tour : entre 0 et 1 000 000 points." };
+  /*
+    AT LEAST ONE POINT, because the price is the only thing rationing a spin.
+
+    0029 removed the cooldown deliberately — "a spin is no longer rationed by
+    time, it is bought with points" — so at a price of zero nothing limits it
+    at all: spin_wheel's balance check is `bal < 0`, never true, and it writes
+    no ledger row. Every other guard it applies is a property of the SHOP, not
+    of this customer. A wheel set to free could be spun in a loop, each turn
+    minting a real voucher the counter honours, drawn from the shop's own till.
+    Migration 0046 puts a CHECK on the column; this is the half that gives the
+    owner a sentence instead of a constraint violation.
+  */
+  const cost = num(formData.get("spinCost"), 1, 1_000_000);
+  if (cost === null) return { error: "Coût d'un tour : entre 1 et 1 000 000 points." };
 
   const db = await createClient();
   const { data, error } = await db

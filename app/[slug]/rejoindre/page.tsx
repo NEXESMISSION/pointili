@@ -78,7 +78,21 @@ export default async function Rejoindre({
       also what makes B appear in their wallet. credit_points is idempotent per
       café — re-visiting a café you already belong to grants nothing.
     */
-    await enrollDiner(cafe.id, phone);
+    /*
+      CHECK IT. enrollDiner returns the card so the caller can prove enrolment
+      happened, and this line threw that proof away — while /[slug] bounces a
+      non-member back to /rejoindre, which lands right here and redirects to
+      /[slug] again. A customer caught in that saw their browser flicker between
+      two URLs until they gave up, with no error anywhere.
+
+      A null now means the RPC ran and enrolled nobody, which is not something
+      the customer can fix by being redirected somewhere: it goes to the error
+      boundary, which at least says something happened and offers a retry.
+    */
+    const card = await enrollDiner(cafe.id, phone);
+    if (!card) {
+      throw new Error(`enrollDiner enrolled nobody for ${phone} at ${cafe.slug}`);
+    }
     if (program.active && program.welcomePoints > 0) {
       await creditPoints(cafe.id, phone, 0);
     }
