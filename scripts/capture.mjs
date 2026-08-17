@@ -23,7 +23,7 @@
  * number belongs to an account this script creates and deletes — filming a real
  * cardholder would publish a real person's phone number on the landing page.
  *
- * Output → public/demo/  (a .webm and a matching .png poster per clip)
+ * Output → public/demo/  (a .webm plus a .png and .webp poster per clip)
  */
 import { chromium } from "playwright-core";
 import { mkdir, rm, rename, writeFile } from "node:fs/promises";
@@ -624,7 +624,24 @@ if (!existsSync(FFMPEG)) {
          moment of playback are the same pixels. */
       await run(FFMPEG, ["-y", "-i", to, "-frames:v", "1", "-update", "1", `${OUT}/${name}.png`]);
 
-      console.log(`  ✓ ${to}  (cut ${cut.toFixed(1)}s of blank opening)`);
+      /*
+        AND AGAIN AS WEBP, WHICH IS THE ONE THE PAGE ACTUALLY LOADS.
+
+        Everywhere else on this site an image goes through next/image, which
+        negotiates WebP by itself. A <video poster> does not: the attribute
+        takes a raw URL and ships exactly the bytes it names. The nine PNGs
+        were 1,240 KB between them and 193 KB as WebP — on the frame every
+        visitor downloads whether or not the clip ever plays.
+
+        The PNG stays: it is what ffmpeg can write, it is the source this
+        converts, and scripts/posts.mjs still reads one of them.
+      */
+      const { default: sharp } = await import("sharp");
+      const webp = await sharp(`${OUT}/${name}.png`).webp({ quality: 82 }).toFile(`${OUT}/${name}.webp`);
+
+      console.log(
+        `  ✓ ${to}  (cut ${cut.toFixed(1)}s of blank opening · poster ${(webp.size / 1024).toFixed(0)} KB webp)`,
+      );
     } catch {
       await rename(from, to);
       console.log(`  ✓ ${to}  (uncut — ffmpeg failed)`);

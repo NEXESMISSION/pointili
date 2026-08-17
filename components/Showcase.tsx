@@ -19,6 +19,13 @@ import { LazyClip } from "@/components/LazyClip";
   ~120–430 KB each in full colour. On Tunisian 4G that is the difference between
   a page that loads and one that does not — and there are eight of them.
 
+  THE POSTERS ARE WEBP FOR THE SAME REASON, and it is easy to miss why they had
+  to be converted by hand: everywhere else on this site an image goes through
+  next/image, which serves WebP automatically. A <video poster> does not — the
+  attribute takes a raw URL and ships exactly the bytes it names. The nine PNGs
+  were 1,240 KB; as WebP they are 193 KB, and the poster is the frame every
+  visitor downloads whether or not the clip ever plays.
+
   EVERY CLIP IS LAZY. preload="none" means a visitor who never scrolls past the
   first section downloads none of them.
 */
@@ -46,7 +53,7 @@ const SHOTS: Shot[] = [
       "Le calcul se fait sur le serveur : personne n'invente un solde",
     ],
     clip: "/demo/credit.webm",
-    poster: "/demo/credit.png",
+    poster: "/demo/credit.webp",
     side: "Votre caisse",
   },
   {
@@ -59,7 +66,7 @@ const SHOTS: Shot[] = [
       "Rien à ranger, rien à retrouver",
     ],
     clip: "/demo/stamp.webm",
-    poster: "/demo/stamp.png",
+    poster: "/demo/stamp.webp",
     side: "Votre caisse",
   },
   {
@@ -72,7 +79,7 @@ const SHOTS: Shot[] = [
       "Aucun « bénéfice net » inventé — votre marge ne nous regarde pas",
     ],
     clip: "/demo/analyses.webm",
-    poster: "/demo/analyses.png",
+    poster: "/demo/analyses.webp",
     side: "Votre caisse",
   },
   {
@@ -85,7 +92,7 @@ const SHOTS: Shot[] = [
       "Le nom, le logo et le type de votre commerce",
     ],
     clip: "/demo/reglages.webm",
-    poster: "/demo/reglages.png",
+    poster: "/demo/reglages.webp",
     side: "Votre caisse",
   },
   {
@@ -98,7 +105,7 @@ const SHOTS: Shot[] = [
       "Imprimé chez vous, sans rien commander",
     ],
     clip: "/demo/qr.webm",
-    poster: "/demo/qr.png",
+    poster: "/demo/qr.webp",
     side: "Votre caisse",
   },
   {
@@ -111,7 +118,7 @@ const SHOTS: Shot[] = [
       "Le bonus de bienvenue arrive immédiatement",
     ],
     clip: "/demo/signup.webm",
-    poster: "/demo/signup.png",
+    poster: "/demo/signup.webp",
     side: "Le téléphone du client",
   },
   {
@@ -127,7 +134,7 @@ const SHOTS: Shot[] = [
       "Votre numéro n'est jamais affiché au comptoir",
     ],
     clip: "/demo/carte.webm",
-    poster: "/demo/carte.png",
+    poster: "/demo/carte.webp",
     side: "Le téléphone du client",
   },
   {
@@ -140,7 +147,7 @@ const SHOTS: Shot[] = [
       "Le code s'affiche en grand : il se lit à travers un comptoir",
     ],
     clip: "/demo/redeem.webm",
-    poster: "/demo/redeem.png",
+    poster: "/demo/redeem.webp",
     side: "Le téléphone du client",
   },
   {
@@ -153,7 +160,7 @@ const SHOTS: Shot[] = [
       "L'historique complet du client, depuis la caisse",
     ],
     clip: "/demo/correction.webm",
-    poster: "/demo/correction.png",
+    poster: "/demo/correction.webp",
     side: "Votre caisse",
   },
 ];
