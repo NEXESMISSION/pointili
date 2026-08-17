@@ -34,6 +34,36 @@ export const BUSINESS_TYPES: BusinessType[] = [
 ];
 
 /**
+ * THE FIVE OFFERED ON THE EARLY-ACCESS PAGE — a subset, never a second list.
+ *
+ * That page asks a stranger three questions and every extra second of reading
+ * is a chance to close the tab, so twenty-three categories in a <select> is the
+ * wrong instrument: it turns "what are you?" into a search. Five buttons is one
+ * glance.
+ *
+ * They are KEYS FROM THE LIST ABOVE, not strings of their own, and that is the
+ * whole point of putting them here. The day a lead becomes a real shop the
+ * category carries straight over into `businesses.business_type` — same key,
+ * same emoji, same label everywhere — instead of the owner being asked what
+ * kind of business they run for the second time.
+ *
+ * "Autre" is doing real work at this stage: before launch we do not actually
+ * know which trades want this, and forcing a florist to call themselves a
+ * boutique would hide exactly the thing the list is being collected to find
+ * out. The console reports what people chose, "Autre" included.
+ */
+export const EARLY_TYPE_KEYS = ["cafe", "restaurant", "boutique", "beaute", "other"] as const;
+
+export const EARLY_TYPES: BusinessType[] = EARLY_TYPE_KEYS.map(
+  (k) => BUSINESS_TYPES.find((t) => t.key === k)!,
+);
+
+/** Is this one of the five the page offered? The server never trusts the form. */
+export function isEarlyType(key: string): boolean {
+  return (EARLY_TYPE_KEYS as readonly string[]).includes(key);
+}
+
+/**
  * THE SHOP'S NAME USUALLY SAYS WHAT IT IS.
  *
  * "Boulangerie Nour" was being created as a Café, because the picker defaults

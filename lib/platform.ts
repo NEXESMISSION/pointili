@@ -109,6 +109,256 @@ export async function recentActions(limit = 20): Promise<AdminAction[]> {
 }
 
 /* -------------------------------------------------------------------------- */
+/* The console's navigation, and the journal as a page                         */
+/* -------------------------------------------------------------------------- */
+
+export type ConsoleCounts = {
+  cafes: number;
+  /** Shops that are dark now or go dark within the week. */
+  alerts: number;
+  renewals: number;
+  leads: number;
+  notices: number;
+  visits7d: number;
+};
+
+const NO_COUNTS: ConsoleCounts = {
+  cafes: 0, alerts: 0, renewals: 0, leads: 0, notices: 0, visits7d: 0,
+};
+
+/**
+ * The six numbers on the navigation.
+ *
+ * Every page in the console renders the nav, so this is the one read that runs
+ * on all of them — which is exactly why it is its own RPC and returns no rows.
+ * Deriving these from the full reads would make the traffic page load every
+ * café, every renewal and every lead in order to draw six badges.
+ */
+export async function consoleCounts(): Promise<ConsoleCounts> {
+  const data = await adminRpc<Record<string, unknown>>("admin_counts");
+  const d = data as (Record<string, unknown> & { ok?: boolean }) | null;
+  if (!d || d.ok === false) return NO_COUNTS;
+  return {
+    cafes: Number(d.cafes ?? 0),
+    alerts: Number(d.alerts ?? 0),
+    renewals: Number(d.renewals ?? 0),
+    leads: Number(d.leads ?? 0),
+    notices: Number(d.notices ?? 0),
+    visits7d: Number(d.visits7d ?? 0),
+  };
+}
+
+export type AuditEntry = {
+  at: string;
+  actor: string | null;
+  action: string;
+  businessId: string | null;
+  cafe: string | null;
+  detail: Record<string, unknown>;
+};
+
+/** The journal, paged and optionally narrowed to one shop. */
+export async function auditLog(
+  businessId: string | null = null,
+  limit = 100,
+  offset = 0,
+): Promise<AuditEntry[]> {
+  const data = await adminRpc<Record<string, unknown>[]>("admin_audit_log", {
+    p_business_id: businessId,
+    p_limit: limit,
+    p_offset: offset,
+  });
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    at: String(r.at),
+    actor: (r.actor as string | null) ?? null,
+    action: String(r.action),
+    businessId: (r.business_id as string | null) ?? null,
+    cafe: (r.cafe as string | null) ?? null,
+    detail: (r.detail as Record<string, unknown>) ?? {},
+  }));
+}
+
+/* -------------------------------------------------------------------------- */
+/* One shop, as a page                                                         */
+/* -------------------------------------------------------------------------- */
+
+export type ShopDetail = {
+  shop: {
+    id: string;
+    name: string;
+    slug: string;
+    status: AdminCafe["status"];
+    businessType: string | null;
+    primaryColor: string;
+    logoUrl: string | null;
+    phone: string | null;
+    plan: AdminCafe["plan"];
+    planExpiresAt: string | null;
+    suspendedAt: string | null;
+    suspendedReason: string | null;
+    live: boolean;
+    createdAt: string;
+    ownerId: string | null;
+    ownerEmail: string | null;
+  };
+  program: {
+    active: boolean;
+    pointsPerTnd: number;
+    welcomePoints: number;
+    redeemExpiryHours: number;
+    stampsEnabled: boolean;
+    stampsRequired: number;
+    stampReward: string | null;
+  } | null;
+  totals: {
+    customers: number;
+    issued: number;
+    /** Positive, even though the ledger stores redemptions negative. */
+    spent: number;
+    entries: number;
+    revenueTnd: number;
+    lastActivity: string | null;
+    newCards30d: number;
+    active30d: number;
+    earns30d: number;
+  };
+  daily: { day: string; n: number }[];
+  rewards: { id: string; label: string; cost: number; active: boolean; taken: number }[];
+  /** Customer numbers arrive already masked to their last three digits. */
+  ledger: { at: string; who: string; delta: number; reason: string; tnd: number | null }[];
+  notices: {
+    id: string; kind: string; message: string;
+    createdAt: string; expiresAt: string | null; active: boolean;
+  }[];
+  renewals: (RenewalRequest & { note: string | null })[];
+  audit: { at: string; actor: string | null; action: string; detail: Record<string, unknown> }[];
+};
+
+/**
+ * Everything one shop's page shows, in one round trip.
+ *
+ * Returns null for a café that does not exist, which the page turns into a 404
+ * — an id in the address bar is guessable and "no such shop" must not render as
+ * an empty shop with zeroes in it.
+ */
+export async function cafeDetail(id: string): Promise<ShopDetail | null> {
+  const data = await adminRpc<Record<string, unknown>>("admin_cafe_detail", { p_id: id });
+  const d = data as (Record<string, unknown> & { ok?: boolean }) | null;
+  if (!d || d.ok !== true || !d.shop) return null;
+
+  const t = (d.totals ?? {}) as Record<string, unknown>;
+  return {
+    shop: d.shop as ShopDetail["shop"],
+    program: (d.program ?? null) as ShopDetail["program"],
+    totals: {
+      customers: Number(t.customers ?? 0),
+      issued: Number(t.issued ?? 0),
+      spent: Number(t.spent ?? 0),
+      entries: Number(t.entries ?? 0),
+      revenueTnd: Number(t.revenueTnd ?? 0),
+      lastActivity: (t.lastActivity as string | null) ?? null,
+      newCards30d: Number(t.newCards30d ?? 0),
+      active30d: Number(t.active30d ?? 0),
+      earns30d: Number(t.earns30d ?? 0),
+    },
+    daily: (d.daily ?? []) as ShopDetail["daily"],
+    rewards: (d.rewards ?? []) as ShopDetail["rewards"],
+    ledger: (d.ledger ?? []) as ShopDetail["ledger"],
+    notices: (d.notices ?? []) as ShopDetail["notices"],
+    renewals: ((d.renewals ?? []) as Record<string, unknown>[]).map((r) => ({
+      ...mapRenewal(r),
+      note: (r.note as string | null) ?? null,
+    })),
+    audit: (d.audit ?? []) as ShopDetail["audit"],
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/* The customer, who used to be invisible to this console                      */
+/* -------------------------------------------------------------------------- */
+
+export type DinerHit = {
+  /** Ten opaque characters. The URL key, so no phone number is ever in one. */
+  publicId: string;
+  code: string;
+  name: string | null;
+  /** "•••741" — a search is browsing, and browsing does not get phone numbers. */
+  phoneMasked: string;
+  shops: number;
+  points: number;
+  lastSeen: string | null;
+  createdAt: string;
+};
+
+/**
+ * Find a person by phone fragment, card code, name, or their opaque id.
+ *
+ * All four at once, because a support message contains whichever one the person
+ * happened to have to hand and the operator should not have to know which kind
+ * of thing they were given.
+ */
+export async function findDiners(q: string, limit = 30): Promise<DinerHit[]> {
+  if (!q.trim()) return [];
+  const data = await adminRpc<Record<string, unknown>[]>("admin_find_diners", {
+    p_q: q,
+    p_limit: limit,
+  });
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    publicId: String(r.public_id),
+    code: String(r.code),
+    name: (r.name as string | null) ?? null,
+    phoneMasked: String(r.phone_masked),
+    shops: Number(r.shops ?? 0),
+    points: Number(r.points ?? 0),
+    lastSeen: (r.last_seen as string | null) ?? null,
+    createdAt: String(r.created_at),
+  }));
+}
+
+export type DinerDetail = {
+  person: {
+    publicId: string;
+    code: string;
+    name: string | null;
+    /** In full — see the header of migration 0041 for why only here. */
+    phone: string;
+    createdAt: string;
+    /** Seconds of sign-in lockout left, 0 when they are not locked out. */
+    lockedFor: number;
+  };
+  totals: { shops: number; held: number; earned: number; spent: number };
+  cards: {
+    businessId: string; name: string; slug: string; live: boolean;
+    balance: number; code: string | null; since: string; lastOpened: string | null;
+  }[];
+  ledger: {
+    at: string; shop: string | null; businessId: string | null;
+    delta: number; reason: string; tnd: number | null;
+  }[];
+};
+
+export async function dinerDetail(publicId: string): Promise<DinerDetail | null> {
+  const data = await adminRpc<Record<string, unknown>>("admin_diner_detail", {
+    p_public_id: publicId,
+  });
+  const d = data as (Record<string, unknown> & { ok?: boolean }) | null;
+  if (!d || d.ok !== true || !d.person) return null;
+
+  const t = (d.totals ?? {}) as Record<string, unknown>;
+  return {
+    person: d.person as DinerDetail["person"],
+    totals: {
+      shops: Number(t.shops ?? 0),
+      held: Number(t.held ?? 0),
+      earned: Number(t.earned ?? 0),
+      spent: Number(t.spent ?? 0),
+    },
+    cards: (d.cards ?? []) as DinerDetail["cards"],
+    ledger: (d.ledger ?? []) as DinerDetail["ledger"],
+  };
+}
+
+/* -------------------------------------------------------------------------- */
 /* Notices — the platform talking to an owner                                  */
 /* -------------------------------------------------------------------------- */
 

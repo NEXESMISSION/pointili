@@ -6,7 +6,7 @@ import { currentDiner } from "@/lib/auth/diner";
 import { Showcase } from "@/components/Showcase";
 import { hasOwnerCookie } from "@/lib/auth/owner";
 import { DESCRIPTION, JsonLd, organisation, product, SITE_URL } from "@/lib/seo";
-import { currentLang, dir, translator } from "@/lib/i18n";
+import { currentLang, dir, translator, type T } from "@/lib/i18n";
 import { LangToggle } from "@/components/LangToggle";
 import { Tpl } from "@/components/Tpl";
 import { platformSettings } from "@/lib/settings";
@@ -257,10 +257,23 @@ export default async function Landing({
 
       {/* ── masthead ───────────────────────────────────────────────── */}
       <header className="border-b border-hair">
+        {/*
+          ONE GAP, NOT TWO.
+
+          Three children under justify-between spread themselves evenly, so on
+          a 1900px screen the language toggle sat alone in the middle with 325px
+          of nothing on either side of it — three islands rather than a
+          masthead, which is what reads as "off balance" long before anybody can
+          say which element is wrong.
+
+          The mark on one side, everything you can press on the other. The row
+          then has a single piece of empty space in it, and that space grows
+          with the window instead of being divided into two stranded halves.
+        */}
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-4 md:px-8">
           <Brand tight />
-          <LangToggle current={lang} />
-          <div className="flex shrink-0 items-center gap-4">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+            <LangToggle current={lang} />
             {/*
               THE CUSTOMER SIDE IS ONE LINK NOW, not half a website.
 
@@ -468,7 +481,7 @@ export default async function Landing({
               />
             </div>
             <div className="relative flex justify-center pb-12 pt-4 md:h-full md:items-end md:pb-0 md:pt-16">
-              <HeroPhone />
+              <HeroPhone t={t} />
             </div>
           </div>
         </div>
@@ -672,19 +685,26 @@ export default async function Landing({
  * that stops short of true transparency looks like a rendering fault, so both
  * stops are absolute.
  */
-function HeroPhone() {
+function HeroPhone({ t }: { t: T }) {
   const HERO_FADE =
     "linear-gradient(to bottom, #000 0%, #000 var(--hero-fade), transparent 100%)";
 
+  /*
+    xl grows it, because the field it sits on does. The colour field bleeds to
+    the viewport edge, so on a 1900px screen a 340px device left roughly 500px
+    of empty dotted ground beyond it and the picture read as off-centre — the
+    eye takes the FIELD for the frame, not the grid column the device is
+    centred in.
+  */
   return (
-    <div className="w-full max-w-[260px] md:max-w-[310px] lg:max-w-[340px]">
+    <div className="w-full max-w-[260px] md:max-w-[310px] lg:max-w-[340px] xl:max-w-[392px]">
       <Image
         src="/hero-card.png"
-        alt="La carte de fidélité Pointili sur un téléphone : Yassine a 118 points chez Café El Manar, son code client MEEF, et une récompense à récupérer"
+        alt={t("La carte de fidélité Pointili sur un téléphone : Yassine a 118 points chez Café El Manar, son code client MEEF, et une récompense à récupérer")}
         width={904}
         height={1906}
         priority
-        sizes="(max-width: 767px) 260px, (max-width: 1023px) 310px, 340px"
+        sizes="(max-width: 767px) 260px, (max-width: 1023px) 310px, (max-width: 1279px) 340px, 392px"
         /* The desktop crop is the deeper one so the device fills its field
            instead of sitting in a pool of empty lilac; the phone crop is
            shallower because the band it sits in is only as tall as the art.

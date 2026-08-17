@@ -1,14 +1,15 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { currentOwner } from "@/lib/auth/owner";
+import { consoleCounts } from "@/lib/platform";
 import { adminLogoutAction } from "./actions";
+import { Nav } from "./Nav";
 
 export const dynamic = "force-dynamic";
 
 /**
- * The platform console shell.
+ * The console shell.
  *
- * TWO gates, and no ceremony:
+ * TWO GATES, and no ceremony:
  *   1. signed in          → else /owner/login
  *   2. role = super_admin → else 404, so the console never confirms it exists
  *
@@ -18,13 +19,24 @@ export const dynamic = "force-dynamic";
  * own tool, and locked them out mid-task. One sign-in at /owner/login is the
  * whole door now.
  *
- * The chrome is deliberately plain: no gradient header, no badges, no alarm
- * colours. This is an internal tool for one person and it should read like a
- * table of facts. Everything decorative in here was competing with the only
- * question that matters — which café needs a decision.
- *
  * The RPCs behind every action re-check is_super() in Postgres, so this layout
  * decides what is SHOWN, never what is ALLOWED.
+ *
+ * ── WHY THE COUNTS ARE READ HERE ──────────────────────────────────────────
+ *
+ * The rail is on every page and its badges are the reason a seven-page console
+ * beats the one-page one it replaced (see Nav). Reading them in the layout
+ * means one cheap RPC per navigation instead of each page assembling its own
+ * numbers — and it means the badges cannot disagree between pages, which they
+ * would the moment two pages counted "waiting" slightly differently.
+ *
+ * ── AND WHY THE SHELL IS NOT max-w-5xl ANY MORE ───────────────────────────
+ *
+ * It was, and that width was chosen for one screen that was mostly a café
+ * table. The roster still wants it; a shop's page wants two columns; the
+ * traffic page wants four tiles across. So the shell is full width with the
+ * rail pinned, and each PAGE declares its own measure — which is the correct
+ * place for that decision, since it depends on what is being read.
  */
 export default async function ConsoleLayout({
   children,
@@ -35,34 +47,42 @@ export default async function ConsoleLayout({
   if (!owner) redirect("/owner/login");
   if (owner.role !== "super_admin") notFound();
 
+  const counts = await consoleCounts();
+
   return (
-    /* max-w-5xl, not max-w-md: the point of the café table is comparing shops
-       side by side, and a 448px column around a 560px table scrolls sideways
-       forever with two thirds of a laptop screen empty. */
-    <div className="k-shell mx-auto flex min-h-dvh max-w-5xl flex-col">
-      <header className="flex items-center justify-between border-b border-[var(--o-edge)] px-5 py-3">
-        <span className="font-mono text-[13px] font-semibold tracking-tight text-slate">
-          pointili<span className="text-slate/60">/</span>console
-        </span>
-        <div className="flex items-center gap-4">
-          <span className="hidden font-mono text-[11px] text-slate sm:inline">
-            {owner.email}
+    <div className="k-shell flex min-h-dvh">
+      <Nav counts={counts} email={owner.email} />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* The brand line lives in the rail on desktop; on a phone the rail is
+            a bottom bar with no room for it, so it gets a slim top bar that
+            also carries the way out. */}
+        <header className="flex items-center justify-between gap-3 border-b border-[var(--o-edge)] bg-[var(--o-panel)] px-4 py-2.5 md:hidden">
+          <span className="k-num text-[12.5px] font-bold text-charcoal">
+            pointili<span className="text-slate/50">/</span>console
           </span>
-          <Link href="/" className="text-[12px] font-medium text-slate hover:text-charcoal">
-            Site
-          </Link>
           <form action={adminLogoutAction}>
-            <button
-              type="submit"
-              className="text-[12px] font-medium text-slate hover:text-[#b3202f]"
-            >
+            <button type="submit" className="text-[12px] font-semibold text-slate">
               Quitter
             </button>
           </form>
-        </div>
-      </header>
+        </header>
 
-      <main className="flex-1 px-5 py-6">{children}</main>
+        {/* pb-24 on phones so the last row of any page clears the bottom bar */}
+        <main className="flex-1 px-4 pb-24 pt-5 md:px-7 md:pb-10 md:pt-6">{children}</main>
+
+        <footer className="hidden items-center justify-between border-t border-[var(--o-edge)] px-7 py-3 md:flex">
+          <span className="k-num text-[10.5px] text-slate/70">{owner.email}</span>
+          <form action={adminLogoutAction}>
+            <button
+              type="submit"
+              className="text-[11.5px] font-semibold text-slate transition hover:text-[#b3202f]"
+            >
+              Quitter la console
+            </button>
+          </form>
+        </footer>
+      </div>
     </div>
   );
 }

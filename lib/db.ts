@@ -710,3 +710,94 @@ export async function nextPlayAt(gameId: string, phone: string, cooldownHours: n
   const next = new Date(data.created_at).getTime() + cooldownHours * 3600_000;
   return next > Date.now() ? new Date(next) : null;
 }
+
+/* -------------------------------------------------------------------------- */
+/* What the shop's own screens can finally say                                 */
+/* -------------------------------------------------------------------------- */
+
+export type OwnerToday = {
+  /** Dinars through the till today, from `earn` rows only. */
+  takings: number;
+  visits: number;
+  points: number;
+  newCards: number;
+  rewards: number;
+  /** Yesterday to the SAME HOUR — see 0042 for why not the whole day. */
+  yTakings: number;
+  yVisits: number;
+  /** The last twelve operations at this counter. Names shown, numbers masked. */
+  feed: {
+    at: string;
+    who: string;
+    /** Last three digits — the till has never shown a full number. */
+    tail: string;
+    delta: number;
+    reason: string;
+    tnd: number | null;
+  }[];
+};
+
+const NO_DAY: OwnerToday = {
+  takings: 0, visits: 0, points: 0, newCards: 0, rewards: 0,
+  yTakings: 0, yVisits: 0, feed: [],
+};
+
+/**
+ * How the shift is going — the four numbers the till could never say.
+ *
+ * "Today" is the calendar day in Tunis, not the last 24 hours: an owner asking
+ * how today went means the day they are standing in. See 0042.
+ */
+export async function ownerToday(businessId: string): Promise<OwnerToday> {
+  const db = createAdminClient();
+  const { data, error } = await db.rpc("owner_today", { p_business_id: businessId });
+  if (error || !data) return NO_DAY;
+  const d = data as Record<string, unknown>;
+  return {
+    takings: Number(d.takings ?? 0),
+    visits: Number(d.visits ?? 0),
+    points: Number(d.points ?? 0),
+    newCards: Number(d.newCards ?? 0),
+    rewards: Number(d.rewards ?? 0),
+    yTakings: Number(d.yTakings ?? 0),
+    yVisits: Number(d.yVisits ?? 0),
+    feed: (d.feed ?? []) as OwnerToday["feed"],
+  };
+}
+
+export type OwnerReward = {
+  id: string;
+  label: string;
+  cost: number;
+  active: boolean;
+  position: number;
+  imageUrl: string | null;
+  /** Claimed at the counter. */
+  taken: number;
+  /** Issued and not yet collected — people with a reason to come back. */
+  pending: number;
+  lastTaken: string | null;
+};
+
+/**
+ * The reward ladder, with how often each one is actually taken.
+ *
+ * The owner picks four rewards and four prices at setup and has never had any
+ * feedback at all. The console has had this since 0040; the shop it is about
+ * has not.
+ */
+export async function ownerRewards(businessId: string): Promise<OwnerReward[]> {
+  const db = createAdminClient();
+  const { data } = await db.rpc("owner_rewards", { p_business_id: businessId });
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    id: String(r.id),
+    label: String(r.label),
+    cost: Number(r.points_cost),
+    active: Boolean(r.active),
+    position: Number(r.position),
+    imageUrl: (r.image_url as string | null) ?? null,
+    taken: Number(r.taken ?? 0),
+    pending: Number(r.pending ?? 0),
+    lastTaken: (r.last_taken as string | null) ?? null,
+  }));
+}

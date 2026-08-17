@@ -35,7 +35,13 @@ function device(): "mobile" | "tablet" | "desktop" {
 
 function side(path: string): "landing" | "diner" | "owner" {
   if (path.startsWith("/owner") || path.startsWith("/admin")) return "owner";
-  if (path === "/" || path === "") return "landing";
+  /* /early is a marketing page for SHOPS, not a diner's card. Without it named
+     here the fallback below filed every early-access visitor under "diner",
+     because the rule is "anything with a path segment is a shop's page" — which
+     is true of /cafe-el-manar and of nothing else on this list. It also makes
+     the visit countable against the leads it produced: admin_early_access_stats
+     divides submissions by sessions whose ENTRY path was this page. */
+  if (path === "/" || path === "" || path === "/early") return "landing";
   return "diner";
 }
 

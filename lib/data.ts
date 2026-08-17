@@ -26,7 +26,7 @@ import type { Cafe, Diner, Game, LoyaltyProgram, Prize, Reward } from "./types";
  * the create_cafe RPC.
  */
 export const RESERVED_SLUGS = new Set([
-  "owner", "admin", "api", "auth", "cartes", "moi", "conditions", "confidentialite", "login", "signup", "logout", "app", "static",
+  "owner", "admin", "api", "auth", "cartes", "moi", "early", "conditions", "confidentialite", "login", "signup", "logout", "app", "static",
   "_next", "favicon.ico", "icon.png", "apple-icon.png", "robots.txt", "sitemap.xml",
 ]);
 

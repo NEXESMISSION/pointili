@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { BackLink } from "@/components/BackLink";
 import { currentOwner, ownerCafe, ownerHome } from "@/lib/auth/owner";
-import { REQUEST_STATUS, method as payMethod, offer as findOffer, tnd } from "@/lib/billing";
+import { REQUEST_STATUS, tnd } from "@/lib/billing";
+import { pickMethod, pickOffer, platformSettings } from "@/lib/settings";
 import { myRenewals, remaining } from "@/lib/platform";
 import { RenewForm } from "./RenewForm";
 
@@ -23,7 +24,11 @@ export const dynamic = "force-dynamic";
  * what actually extends the plan).
  */
 export default async function Renouveler() {
-  const [owner, cafe] = await Promise.all([currentOwner(), ownerCafe()]);
+  const [owner, cafe, settings] = await Promise.all([
+    currentOwner(),
+    ownerCafe(),
+    platformSettings(),
+  ]);
   if (!cafe || !owner) redirect(await ownerHome());
 
   const requests = await myRenewals(owner.id, cafe.id);
@@ -61,8 +66,9 @@ export default async function Renouveler() {
             Demande envoyée
           </p>
           <p className="mt-2 text-[15px] font-bold text-charcoal">
-            {findOffer(pending.offer)?.label} · {tnd(pending.amount)} ·{" "}
-            {payMethod(pending.method)?.label}
+            {pickOffer(settings, pending.offer)?.label ?? pending.offer} ·{" "}
+            {tnd(pending.amount)} ·{" "}
+            {pickMethod(settings, pending.method)?.label ?? pending.method}
           </p>
           <p className="mt-1 text-[12.5px] leading-relaxed text-slate">
             Reçue le{" "}
@@ -80,7 +86,11 @@ export default async function Renouveler() {
           </p>
         </section>
       ) : (
-        <RenewForm />
+        <RenewForm
+          offers={settings.offers}
+          methods={settings.methods}
+          paymentsLive={settings.paymentsLive}
+        />
       )}
 
       {/* what happened before — short, and only if there is anything */}
@@ -98,7 +108,7 @@ export default async function Renouveler() {
                   <li key={r.id} className="flex items-center gap-3 px-4 py-3">
                     <span className="min-w-0 flex-1">
                       <span className="block text-[14px] font-semibold text-charcoal">
-                        {findOffer(r.offer)?.label} · {tnd(r.amount)}
+                        {pickOffer(settings, r.offer)?.label ?? r.offer} · {tnd(r.amount)}
                       </span>
                       <span className="block text-[11.5px] text-slate">
                         {new Date(r.createdAt).toLocaleDateString("fr-FR", {

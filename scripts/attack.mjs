@@ -269,6 +269,157 @@ t("café B survived intact", after?.name === victim.name, after?.name ?? "GONE")
   t("anon cannot read platform-wide traffic",
     await shut("admin_traffic", { p_actor: actor, p_days: 7 }),
     "admin_traffic");
+
+  /*
+    ── THE EARLY-ACCESS LIST (0039) ────────────────────────────────────────
+
+    Worth its own block, because of what is in the table rather than what it
+    can do: it is a list of Tunisian business owners' names and WhatsApp
+    numbers, collected by a PUBLIC form. Nothing in it moves money, so it would
+    not show up in a threat model built around plans and points — and it is the
+    single most directly saleable thing in this database. A scrapeable lead
+    list is the failure mode here, not privilege escalation.
+
+    submit_early_access is included deliberately even though the form it backs
+    is open to the world. The page reaches it through the SERVER (service role),
+    which normalises the phone, checks the category against the five offered and
+    trips the honeypot first. Reachable with the browser key it would be a
+    direct write with none of that in front of it.
+  */
+  const lead = "00000000-0000-0000-0000-000000000000";
+
+  t("anon cannot read the early-access list",
+    (await anon.from("early_access_requests").select("business_name, phone")).error !== null,
+    "early_access_requests — names and WhatsApp numbers");
+  t("anon cannot list early-access leads",
+    await shut("admin_early_access", { p_actor: actor, p_limit: 5 }),
+    "admin_early_access");
+  t("anon cannot read the early-access funnel",
+    await shut("admin_early_access_stats", { p_actor: actor, p_days: 30 }),
+    "admin_early_access_stats");
+  t("anon cannot move a lead through the pipeline",
+    await shut("admin_set_early_status", { p_actor: actor, p_id: lead, p_status: "client", p_note: null }),
+    "admin_set_early_status");
+  t("anon cannot delete a lead",
+    await shut("admin_delete_early", { p_actor: actor, p_id: lead }),
+    "admin_delete_early — would erase a real request to be contacted");
+  t("anon cannot write a lead directly",
+    await shut("submit_early_access", {
+      p_business_name: "Attack", p_business_type: "cafe",
+      p_phone: "+21600000000", p_source: null,
+    }),
+    "submit_early_access — bypasses the server's validation and honeypot");
+  t("anon cannot answer for somebody else's lead",
+    await shut("answer_early_access", { p_id: lead, p_want: "curieux" }),
+    "answer_early_access");
+
+  /*
+    ── THE OPERATOR'S WRITE SURFACE (0041) ─────────────────────────────────
+
+    This is the most dangerous block in the file, and it is last because it was
+    added last. Everything above either reads something or moves a plan; these
+    DELETE a shop with its customers' cards, mint points into a balance, take
+    over a business by changing its owner, and rewrite the account number that
+    every café is told to transfer money to.
+
+    Every one authorises on a caller-supplied p_actor, the pattern 0036 closed by
+    revoking EXECUTE. So this block is not testing the is_super() check — it is
+    testing that the door is shut, because with the door open that check is a
+    suggestion (an owner_id is readable, and a super-admin owns a public shop).
+
+    admin_reset_pin is worth its own line: it takes a hash, so reaching it would
+    not merely be privilege escalation — it would be account takeover for every
+    cardholder on the platform, one call at a time.
+  */
+  const person = "AAAAAAAAAA";
+
+  t("anon cannot search the customer directory",
+    await shut("admin_find_diners", { p_actor: actor, p_q: "2", p_limit: 50 }),
+    "admin_find_diners — names, codes and balances");
+  t("anon cannot open a customer's record",
+    await shut("admin_diner_detail", { p_actor: actor, p_public_id: person }),
+    "admin_diner_detail — the one place a full phone number is returned");
+  t("anon cannot mint points into a balance",
+    await shut("admin_adjust_points", {
+      p_actor: actor, p_business_id: bid, p_public_id: person, p_delta: 1000000, p_note: null,
+    }),
+    "admin_adjust_points");
+  t("anon cannot take over an account by resetting its PIN",
+    await shut("admin_reset_pin", { p_actor: actor, p_public_id: person, p_pin_hash: "x" }),
+    "admin_reset_pin — would be account takeover, not just escalation");
+  t("anon cannot rewrite a shop's identity",
+    await shut("admin_update_shop", {
+      p_id: bid, p_actor: actor, p_name: "pwned", p_slug: null,
+      p_phone: null, p_type: null, p_color: null,
+    }),
+    "admin_update_shop");
+  t("anon cannot seize a shop by transferring it",
+    await shut("admin_transfer_shop", { p_actor: actor, p_id: bid, p_email: "attacker@example.com" }),
+    "admin_transfer_shop");
+  t("anon cannot delete a shop",
+    await shut("admin_delete_shop", { p_actor: actor, p_id: bid, p_confirm: "x" }),
+    "admin_delete_shop — takes every customer card with it");
+  t("anon cannot rewrite a shop's loyalty programme",
+    await shut("admin_set_program", {
+      p_actor: actor, p_id: bid, p_welcome: 99999,
+      p_expiry_hours: 1, p_stamps: false, p_stamps_req: 2, p_stamp_reward: null,
+    }),
+    "admin_set_program");
+  t("anon cannot act on every shop at once",
+    await shut("admin_bulk_plan", { p_actor: actor, p_ids: [bid], p_plan: "free", p_amount: 0, p_unit: "months" }),
+    "admin_bulk_plan");
+  t("anon cannot broadcast to every shop at once",
+    await shut("admin_bulk_notice", { p_actor: actor, p_ids: [bid], p_kind: "urgent", p_message: "x", p_days: 1 }),
+    "admin_bulk_notice");
+  /*
+    THE ONE THAT WOULD REDIRECT THE MONEY. admin_save_settings writes the RIB
+    every café is told to transfer to; reaching it is a payment-fraud primitive,
+    not a defacement.
+  */
+  t("anon cannot rewrite where the money is sent",
+    await shut("admin_save_settings", {
+      p_actor: actor, p_live: true, p_offers: [], p_methods: [], p_phone: null, p_email: null,
+    }),
+    "admin_save_settings");
+  /*
+    …and the READ of those settings is deliberately open to the service role
+    without a super-admin check, because an owner's renewal screen has to render
+    the coordinates. It must still be unreachable with the browser key.
+  */
+  t("anon cannot read the platform settings directly",
+    await shut("platform_settings_read", {}),
+    "platform_settings_read");
+  t("anon cannot read the whole audit log",
+    await shut("admin_audit_log", { p_actor: actor, p_business_id: null, p_limit: 500, p_offset: 0 }),
+    "admin_audit_log");
+  t("anon cannot read a shop's full dossier",
+    await shut("admin_cafe_detail", { p_actor: actor, p_id: bid }),
+    "admin_cafe_detail — ledger, owner email, settings");
+  t("anon cannot read the console's counters",
+    await shut("admin_counts", { p_actor: actor }),
+    "admin_counts");
+
+  /* And the table behind the settings, not just the functions over it. */
+  t("anon cannot read the settings table",
+    (await anon.from("platform_settings").select("methods")).error !== null,
+    "platform_settings");
+
+  /*
+    ── THE SHOP'S OWN READS (0042) ─────────────────────────────────────────
+
+    owner_today returns a named feed of who bought what at a specific café, and
+    owner_rewards returns its programme's performance. Neither takes an actor:
+    the server resolves the café from the OWNER'S SESSION before calling them,
+    which is the same shape as every other owner_* function here. That makes the
+    revoke the only thing between them and the world — with EXECUTE open, the
+    business_id is the sole argument and one is readable with the browser key.
+  */
+  t("anon cannot read a shop's takings and customer feed",
+    await shut("owner_today", { p_business_id: bid }),
+    "owner_today — names, amounts, times");
+  t("anon cannot read a shop's programme performance",
+    await shut("owner_rewards", { p_business_id: bid }),
+    "owner_rewards");
 }
 
 await svc.from("businesses").delete().eq("id", mine.id);

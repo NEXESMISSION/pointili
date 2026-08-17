@@ -201,6 +201,499 @@ export async function dismissNoticeAction(id: string): Promise<void> {
   revalidatePath("/owner"); // the owner's banner should disappear too
 }
 
+/* -------------------------------------------------------------------------- */
+/* The shop: its identity, its owner, its programme, its existence             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Rename a shop, move its address, change its category or its colour.
+ *
+ * Every field is optional and an untouched one is sent as null, so the same
+ * action serves "fix the accent in my name" and a full rewrite. The SLUG is the
+ * one that matters: it is printed on stickers, and the interface says so — this
+ * only makes sure the change is legal and recorded.
+ */
+export async function updateShopAction(
+  _prev: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  try {
+    await requireElevatedSuperAdmin();
+  } catch (e) {
+    return { error: guardMessage(e) };
+  }
+
+  const id = String(formData.get("businessId") ?? "");
+  if (!id) return { error: "Café introuvable." };
+
+  const pick = (k: string) => {
+    const v = formData.get(k);
+    return v === null ? null : String(v).trim();
+  };
+
+  const { data, error } = await adminWrite<{ ok?: boolean; reason?: string; slug?: string }>(
+    "admin_update_shop",
+    {
+      p_id: id,
+      p_name: pick("name"),
+      p_slug: pick("slug"),
+      p_phone: pick("phone"),
+      p_type: pick("type"),
+      p_color: pick("color"),
+    },
+  );
+  const res = data as { ok?: boolean; reason?: string; slug?: string } | null;
+  if (error || !res?.ok) {
+    return { error: SHOP_ERRORS[res?.reason ?? ""] ?? "Modification impossible." };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath(`/admin/cafes/${id}`);
+  revalidatePath("/owner");
+  /* The shop's own public page too — its name and colours are on it. */
+  if (res.slug) revalidatePath(`/${res.slug}`);
+  return { ok: "Enregistré." };
+}
+
+const SHOP_ERRORS: Record<string, string> = {
+  introuvable: "Café introuvable.",
+  bad_name: "Le nom doit faire entre 2 et 60 caractères.",
+  slug_invalid: "Adresse invalide : minuscules, chiffres et tirets.",
+  slug_reserved: "Cette adresse est réservée par la plateforme.",
+  slug_taken: "Cette adresse est déjà prise par un autre café.",
+  bad_color: "Couleur invalide (format #a1b2c3).",
+  no_account: "Aucun compte Pointili avec cet email — il doit s'inscrire d'abord.",
+  mismatch: "L'adresse saisie ne correspond pas.",
+};
+
+/** Hand a shop to another account, by the email its new owner signs in with. */
+export async function transferShopAction(
+  _prev: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  try {
+    await requireElevatedSuperAdmin();
+  } catch (e) {
+    return { error: guardMessage(e) };
+  }
+
+  const id = String(formData.get("businessId") ?? "");
+  const email = String(formData.get("email") ?? "").trim();
+  if (!id) return { error: "Café introuvable." };
+  if (!email.includes("@")) return { error: "Email invalide." };
+
+  const { data, error } = await adminWrite<{ ok?: boolean; reason?: string; to?: string }>(
+    "admin_transfer_shop",
+    { p_id: id, p_email: email },
+  );
+  const res = data as { ok?: boolean; reason?: string; to?: string } | null;
+  if (error || !res?.ok) {
+    return { error: SHOP_ERRORS[res?.reason ?? ""] ?? "Transfert impossible." };
+  }
+
+  revalidatePath(`/admin/cafes/${id}`);
+  revalidatePath("/owner");
+  return { ok: `Transféré à ${res.to}.` };
+}
+
+/**
+ * Delete a shop.
+ *
+ * Redirects to the roster on success, because the page the operator is standing
+ * on has just ceased to exist — leaving them on it would render a 404 that
+ * looks like the delete failed. redirect() throws a control-flow exception, so
+ * it must come after everything that matters.
+ */
+export async function deleteShopAction(
+  _prev: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  try {
+    await requireElevatedSuperAdmin();
+  } catch (e) {
+    return { error: guardMessage(e) };
+  }
+
+  const id = String(formData.get("businessId") ?? "");
+  const confirm = String(formData.get("confirm") ?? "").trim();
+  if (!id) return { error: "Café introuvable." };
+
+  const { data, error } = await adminWrite<{ ok?: boolean; reason?: string }>(
+    "admin_delete_shop",
+    { p_id: id, p_confirm: confirm },
+  );
+  const res = data as { ok?: boolean; reason?: string } | null;
+  if (error || !res?.ok) {
+    return { error: SHOP_ERRORS[res?.reason ?? ""] ?? "Suppression impossible." };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/cafes");
+  redirect("/admin/cafes");
+}
+
+/** Set the loyalty programme — the four numbers behind "why only 3 points?". */
+export async function setProgramAction(
+  _prev: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  try {
+    await requireElevatedSuperAdmin();
+  } catch (e) {
+    return { error: guardMessage(e) };
+  }
+
+  const id = String(formData.get("businessId") ?? "");
+  if (!id) return { error: "Café introuvable." };
+
+  const { data, error } = await adminWrite<{ ok?: boolean; reason?: string }>(
+    "admin_set_program",
+    {
+      p_id: id,
+      /* No rate: 0031 pinned it to 1 dinar = 1 point with a CHECK constraint,
+         platform-wide. See admin_set_program. */
+      p_welcome: Number(formData.get("welcome") ?? 0),
+      p_expiry_hours: Number(formData.get("expiry") ?? 48),
+      p_stamps: formData.get("stamps") === "on",
+      p_stamps_req: Number(formData.get("stampsRequired") ?? 8),
+      p_stamp_reward: String(formData.get("stampReward") ?? ""),
+    },
+  );
+  const res = data as { ok?: boolean; reason?: string } | null;
+  if (error || !res?.ok) {
+    return {
+      error:
+        {
+          bad_welcome: "Bienvenue : entre 0 et 10 000 points.",
+          bad_expiry: "Expiration : entre 1 h et 1 an.",
+          bad_stamps: "Tampons : entre 2 et 50.",
+        }[res?.reason ?? ""] ?? "Enregistrement impossible.",
+    };
+  }
+
+  revalidatePath(`/admin/cafes/${id}`);
+  revalidatePath("/owner");
+  return { ok: "Programme enregistré." };
+}
+
+/* -------------------------------------------------------------------------- */
+/* The customer                                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Move a customer's balance at one shop.
+ *
+ * The person is named by their opaque public id, never by phone: the number is
+ * resolved inside Postgres (see admin_adjust_points), so a support action does
+ * not put a customer's phone number into a form post.
+ */
+export async function adjustPointsAction(
+  _prev: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  try {
+    await requireElevatedSuperAdmin();
+  } catch (e) {
+    return { error: guardMessage(e) };
+  }
+
+  const publicId = String(formData.get("publicId") ?? "");
+  const businessId = String(formData.get("businessId") ?? "");
+  const delta = Number(formData.get("delta") ?? 0);
+  const note = String(formData.get("note") ?? "").trim().slice(0, 200);
+
+  if (!publicId || !businessId) return { error: "Client introuvable." };
+  if (!Number.isFinite(delta) || delta === 0) return { error: "Indiquez un nombre de points." };
+
+  const { data, error } = await adminWrite<{ ok?: boolean; reason?: string; balance?: number }>(
+    "admin_adjust_points",
+    { p_business_id: businessId, p_public_id: publicId, p_delta: delta, p_note: note || null },
+  );
+  const res = data as { ok?: boolean; reason?: string; balance?: number } | null;
+  if (error || !res?.ok) {
+    return {
+      error:
+        {
+          introuvable: "Client introuvable.",
+          no_card: "Ce client n'a pas de carte dans ce café.",
+          too_big: "Correction trop grande (max 100 000).",
+          zero: "Indiquez un nombre de points.",
+        }[res?.reason ?? ""] ?? "Correction impossible.",
+    };
+  }
+
+  revalidatePath(`/admin/clients/${publicId}`);
+  revalidatePath(`/admin/cafes/${businessId}`);
+  return {
+    ok: `${delta > 0 ? "+" : ""}${delta} — nouveau solde : ${res.balance ?? "?"} points.`,
+  };
+}
+
+/**
+ * Give a customer a new secret code.
+ *
+ * The PIN is MINTED HERE and shown back exactly once. The alternative — letting
+ * the operator choose it — produces "1234" on every reset, and this code is the
+ * only thing standing between a phone number and somebody's cards on a device
+ * they have never used.
+ *
+ * Hashing is scrypt with a per-account salt (lib/auth/crypto). Postgres receives
+ * the hash and never the digits.
+ */
+export async function resetDinerPinAction(
+  _prev: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  try {
+    await requireElevatedSuperAdmin();
+  } catch (e) {
+    return { error: guardMessage(e) };
+  }
+
+  const publicId = String(formData.get("publicId") ?? "");
+  if (!publicId) return { error: "Client introuvable." };
+
+  const { randomInt } = await import("node:crypto");
+  const { hashPin } = await import("@/lib/auth/crypto");
+  /* randomInt, not Math.random: this is a credential. */
+  const pin = String(randomInt(0, 10000)).padStart(4, "0");
+
+  const { data, error } = await adminWrite<{ ok?: boolean; reason?: string }>("admin_reset_pin", {
+    p_public_id: publicId,
+    p_pin_hash: await hashPin(pin),
+  });
+  const res = data as { ok?: boolean; reason?: string } | null;
+  if (error || !res?.ok) {
+    return { error: res?.reason === "introuvable" ? "Client introuvable." : "Réinitialisation impossible." };
+  }
+
+  revalidatePath(`/admin/clients/${publicId}`);
+  /* The digits are in the success line and nowhere else — not in the database,
+     not in the audit log, and not on the page after a reload. */
+  return { ok: `Nouveau code : ${pin} — dictez-le maintenant, il ne sera plus affiché.` };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Many shops at once                                                          */
+/* -------------------------------------------------------------------------- */
+
+/** The ids arrive as repeated `ids` fields — one per checked row. */
+function selected(formData: FormData): string[] {
+  return formData.getAll("ids").map(String).filter(Boolean);
+}
+
+export async function bulkPlanAction(
+  _prev: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  try {
+    await requireElevatedSuperAdmin();
+  } catch (e) {
+    return { error: guardMessage(e) };
+  }
+
+  const ids = selected(formData);
+  const amount = Number(formData.get("amount") ?? 0);
+  const unit = String(formData.get("unit") ?? "months");
+  const plan = String(formData.get("plan") ?? "pro");
+
+  if (ids.length === 0) return { error: "Aucun café sélectionné." };
+  if (!["trial", "free", "pro"].includes(plan)) return { error: "Formule invalide." };
+  if (!["hours", "days", "months"].includes(unit)) return { error: "Unité invalide." };
+  if (!Number.isInteger(amount) || amount < 0 || amount > 1000) return { error: "Durée : 0 à 1000." };
+
+  const { data, error } = await adminWrite<{ ok?: boolean; done?: number; failed?: number }>(
+    "admin_bulk_plan",
+    { p_ids: ids, p_plan: plan, p_amount: amount, p_unit: unit },
+  );
+  const res = data as { ok?: boolean; done?: number; failed?: number } | null;
+  if (error || !res?.ok) return { error: "Action groupée impossible." };
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/cafes");
+  /* The failures are reported, not swallowed. A bulk action that says "done"
+     while three of twelve silently did nothing is worse than one that fails. */
+  return {
+    ok: `${res.done} café(s) prolongé(s)${res.failed ? ` · ${res.failed} en échec` : ""}.`,
+  };
+}
+
+export async function bulkNoticeAction(
+  _prev: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  try {
+    await requireElevatedSuperAdmin();
+  } catch (e) {
+    return { error: guardMessage(e) };
+  }
+
+  const ids = selected(formData);
+  const kind = String(formData.get("kind") ?? "info");
+  const message = String(formData.get("message") ?? "").trim().slice(0, 500);
+  const days = Number(formData.get("days") ?? 14);
+
+  if (ids.length === 0) return { error: "Aucun café sélectionné." };
+  if (!message) return { error: "Message vide." };
+  if (!["info", "warning", "urgent"].includes(kind)) return { error: "Type invalide." };
+
+  const { data, error } = await adminWrite<{ ok?: boolean; done?: number }>("admin_bulk_notice", {
+    p_ids: ids,
+    p_kind: kind,
+    p_message: message,
+    p_days: Number.isInteger(days) ? days : 14,
+  });
+  const res = data as { ok?: boolean; done?: number } | null;
+  if (error || !res?.ok) return { error: "Envoi groupé impossible." };
+
+  revalidatePath("/admin");
+  revalidatePath("/owner");
+  return { ok: `Message envoyé à ${res.done} café(s).` };
+}
+
+/* -------------------------------------------------------------------------- */
+/* The platform's own settings                                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Save the prices and the payment coordinates.
+ *
+ * The two lists arrive as JSON from a small editor rather than as a hundred
+ * flat form fields, because both are variable-length and nested. They are
+ * parsed and validated by lib/settings before anything is written — see there
+ * for why that validation is not a check constraint.
+ */
+export async function saveSettingsAction(
+  _prev: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  try {
+    await requireElevatedSuperAdmin();
+  } catch (e) {
+    return { error: guardMessage(e) };
+  }
+
+  const { parseOffers, parseMethods } = await import("@/lib/settings");
+
+  let rawOffers: unknown;
+  let rawMethods: unknown;
+  try {
+    rawOffers = JSON.parse(String(formData.get("offers") ?? "[]"));
+    rawMethods = JSON.parse(String(formData.get("methods") ?? "[]"));
+  } catch {
+    return { error: "Données illisibles — rechargez la page." };
+  }
+
+  const offers = parseOffers(rawOffers);
+  if (!offers.ok) return { error: offers.error };
+  const methods = parseMethods(rawMethods);
+  if (!methods.ok) return { error: methods.error };
+
+  const live = formData.get("live") === "on";
+
+  const { data, error } = await adminWrite<{ ok?: boolean; reason?: string }>(
+    "admin_save_settings",
+    {
+      p_live: live,
+      p_offers: offers.offers,
+      p_methods: methods.methods,
+      p_phone: String(formData.get("supportPhone") ?? "").trim() || null,
+      p_email: String(formData.get("supportEmail") ?? "").trim() || null,
+    },
+  );
+  const res = data as { ok?: boolean; reason?: string } | null;
+  if (error || !res?.ok) {
+    return {
+      error:
+        res?.reason === "no_methods"
+          ? "Impossible de passer en direct sans moyen de paiement."
+          : "Enregistrement impossible.",
+    };
+  }
+
+  /* Everything that prints a price or a payment coordinate. */
+  revalidatePath("/admin/reglages");
+  revalidatePath("/owner/renouveler");
+  revalidatePath("/owner/reglages");
+  revalidatePath("/");
+  return {
+    ok: live ? "Enregistré — les paiements sont en direct." : "Enregistré (mode test).",
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/* The early-access list                                                       */
+/* -------------------------------------------------------------------------- */
+
+const EARLY_STATUS = ["new", "contacted", "demo", "client", "lost"];
+
+/**
+ * Move a lead along the pipeline, and/or leave a note on it.
+ *
+ * ONE FORM DOES BOTH, which is why the note is not wiped when it is absent: the
+ * status buttons post the whole row's form, note field included, and the "save
+ * the note" button posts the status the row already has. An empty note field
+ * means "I did not touch the note" far more often than it means "delete the
+ * note", so admin_set_early_status coalesces it. Clearing a note is not
+ * offered — nobody has needed it, and losing one by pressing Contacté would be
+ * the more common accident by a distance.
+ */
+export async function setEarlyStatusAction(
+  _prev: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  try {
+    await requireElevatedSuperAdmin();
+  } catch (e) {
+    return { error: guardMessage(e) };
+  }
+
+  const id = String(formData.get("id") ?? "");
+  const status = String(formData.get("status") ?? "");
+  const note = String(formData.get("note") ?? "").trim().slice(0, 300);
+
+  if (!id) return { error: "Demande introuvable." };
+  if (!EARLY_STATUS.includes(status)) return { error: "Statut invalide." };
+
+  const { data, error } = await adminWrite<{ ok?: boolean; reason?: string }>(
+    "admin_set_early_status",
+    { p_id: id, p_status: status, p_note: note || null },
+  );
+  const res = data as { ok?: boolean; reason?: string } | null;
+  if (error || !res?.ok) {
+    return { error: res?.reason === "introuvable" ? "Demande introuvable." : "Action impossible." };
+  }
+
+  revalidatePath("/admin");
+  return { ok: "Enregistré." };
+}
+
+/**
+ * Delete a lead. The junk door — see the header of migration 0039 for why a
+ * public form with no rate limit in front of it needs one, and why marking it
+ * 'lost' instead would be wrong: the counts on this panel are the point, and a
+ * test submission left in them quietly makes the conversion rate a lie.
+ */
+export async function deleteEarlyAction(
+  _prev: AdminState,
+  formData: FormData,
+): Promise<AdminState> {
+  try {
+    await requireElevatedSuperAdmin();
+  } catch (e) {
+    return { error: guardMessage(e) };
+  }
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Demande introuvable." };
+
+  const { error } = await adminWrite("admin_delete_early", { p_id: id });
+  if (error) return { error: "Suppression impossible." };
+
+  revalidatePath("/admin");
+  return { ok: "Supprimé." };
+}
+
 /**
  * Leave the console and sign out entirely.
  *

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { METHODS, OFFERS, PLACEHOLDER, tnd, type MethodId, type OfferId } from "@/lib/billing";
+import { tnd, type Method, type MethodId, type Offer, type OfferId } from "@/lib/billing";
 import { submitRenewalAction, type RenewState } from "./actions";
 
 /**
@@ -13,9 +13,30 @@ import { submitRenewalAction, type RenewState } from "./actions";
  * screen where they upload the proof — which is exactly when they want to check
  * it again. Everything stays visible; the page is short enough.
  */
-export function RenewForm() {
-  const [chosen, setChosen] = useState<OfferId>("12m");
-  const [how, setHow] = useState<MethodId>("d17");
+export function RenewForm({
+  offers,
+  methods,
+  paymentsLive,
+}: {
+  offers: Offer[];
+  methods: Method[];
+  /** false → every coordinate on this screen is labelled as an example. */
+  paymentsLive: boolean;
+}) {
+  /*
+    THE DEFAULTS ARE DERIVED, NOT NAMED.
+
+    These were useState("12m") and useState("d17") — literals that assumed a
+    particular offer and a particular wallet exist. Both lists are editable from
+    the console now (0041), so an operator who renames an offer or drops D17
+    would have shipped a screen whose selected value matches nothing: the total
+    reads NaN and the submit is refused with "choisissez une formule" while a
+    formula is visibly chosen.
+  */
+  const [chosen, setChosen] = useState<OfferId>(
+    (offers.find((o) => o.best) ?? offers[0])?.id,
+  );
+  const [how, setHow] = useState<MethodId>(methods[0]?.id);
   const [proof, setProof] = useState<string | null>(null);
   const [imgErr, setImgErr] = useState("");
   const [state, action, pending] = useActionState<RenewState, FormData>(
@@ -23,8 +44,11 @@ export function RenewForm() {
     {},
   );
 
-  const total = OFFERS.find((o) => o.id === chosen)!.price;
-  const detail = METHODS.find((m) => m.id === how)!;
+  /* No non-null assertion: with an editable list the selected id can genuinely
+     go missing, and a crash on a payment screen is the worst possible failure
+     mode here. */
+  const total = offers.find((o) => o.id === chosen)?.price ?? 0;
+  const detail = methods.find((m) => m.id === how) ?? methods[0];
 
   async function pick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -58,7 +82,7 @@ export function RenewForm() {
           Votre formule
         </p>
         <div className="grid grid-cols-2 gap-2.5">
-          {OFFERS.map((o) => {
+          {offers.map((o) => {
             const on = o.id === chosen;
             return (
               <label
@@ -105,7 +129,7 @@ export function RenewForm() {
           Comment payez-vous ?
         </p>
         <div className="grid grid-cols-3 gap-2">
-          {METHODS.map((m) => {
+          {methods.map((m) => {
             const on = m.id === how;
             return (
               <label
@@ -132,13 +156,16 @@ export function RenewForm() {
 
         {/*
           ── THE COORDINATES ───────────────────────────────────────────
-          While lib/billing says PLACEHOLDER, this block is built to be
-          impossible to mistake for a real account: a warning above it, a
-          hatched panel, "EXEMPLE" beside every value, and no copy button —
-          a copy button is an instruction, and the instruction here is DO NOT
-          PAY. Setting PLACEHOLDER to false removes all four at once.
+          Until the platform's settings say the payments are live, this block is
+          built to be impossible to mistake for a real account: a warning above
+          it, a hatched panel, "EXEMPLE" beside every value, and no copy button
+          — a copy button is an instruction, and the instruction here is DO NOT
+          PAY. Throwing the switch in /admin/reglages removes all four at once.
+
+          That switch used to be `PLACEHOLDER` in lib/billing.ts, so opening the
+          platform for real money was a source change and a deploy.
         */}
-        {PLACEHOLDER && (
+        {!paymentsLive && (
           <p className="mt-3 rounded-2xl bg-[#e5484d]/10 px-3.5 py-3 text-[12.5px] font-semibold leading-relaxed text-[#e5484d]">
             ⚠ Coordonnées de démonstration — ne faites aucun virement. Les vraies
             coordonnées seront affichées ici avant l&apos;ouverture des paiements.
@@ -147,7 +174,7 @@ export function RenewForm() {
 
         <dl
           className={`mt-2 space-y-2 rounded-2xl px-3.5 py-3 ${
-            PLACEHOLDER ? "bg-[repeating-linear-gradient(135deg,var(--o-inset),var(--o-inset)10px,transparent_10px,transparent_20px)] ring-1 ring-dashed ring-[var(--o-edge)]" : "bg-[var(--o-inset)]"
+            !paymentsLive ? "bg-[repeating-linear-gradient(135deg,var(--o-inset),var(--o-inset)10px,transparent_10px,transparent_20px)] ring-1 ring-dashed ring-[var(--o-edge)]" : "bg-[var(--o-inset)]"
           }`}
         >
           {detail.lines.map((l) => (
@@ -156,12 +183,12 @@ export function RenewForm() {
               <dd className="min-w-0 text-right">
                 <span
                   className={`break-all font-mono text-[13px] font-bold ${
-                    PLACEHOLDER ? "text-slate line-through decoration-[#e5484d]/50" : "text-charcoal"
+                    !paymentsLive ? "text-slate line-through decoration-[#e5484d]/50" : "text-charcoal"
                   }`}
                 >
                   {l.value}
                 </span>
-                {PLACEHOLDER && (
+                {!paymentsLive && (
                   <span className="ml-2 inline-block rounded-full bg-[#e5484d]/12 px-2 py-0.5 align-middle text-[9.5px] font-bold uppercase tracking-wider text-[#e5484d]">
                     exemple
                   </span>
@@ -239,7 +266,8 @@ export function RenewForm() {
       </button>
       <p className="px-1 pb-2 text-center text-[11.5px] leading-relaxed text-slate">
         Rien n&apos;est prélevé ici. Nous vérifions le paiement, puis votre
-        abonnement est prolongé de {OFFERS.find((o) => o.id === chosen)!.label.toLowerCase()}.
+        abonnement est prolongé de{" "}
+        {(offers.find((o) => o.id === chosen)?.label ?? "la durée choisie").toLowerCase()}.
       </p>
     </form>
   );

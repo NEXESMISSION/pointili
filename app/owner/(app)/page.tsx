@@ -1,51 +1,54 @@
 import { redirect } from "next/navigation";
 import { ownerCafe, ownerHome } from "@/lib/auth/owner";
 import { getLoyaltyProgram } from "@/lib/data";
-import QRCode from "qrcode";
-import { SITE_URL } from "@/lib/seo";
+import { ownerToday } from "@/lib/db";
 import { CaisseDesk } from "./caisse/CaisseForms";
+import { Today } from "./caisse/Today";
 
 export const metadata = { title: "Caisse" };
 
 /**
  * The owner's HOME is the Caisse — the one thing they do every shift.
  *
- * It behaves like a terminal, not a page: two modes (a client, or a code), the
- * camera live by default, a keypad when it isn't, and the identified customer
- * taking over the whole screen so it stays readable at arm's length. The old
- * separate "Clients" page folded in here as the recents strip.
+ * It behaves like a terminal, not a page: the camera on demand, the client
+ * field and the voucher field both present, and the identified customer taking
+ * over the whole screen so it stays readable at arm's length.
+ *
+ * ── AND, ON A LAPTOP, THE DAY BESIDE IT ───────────────────────────────────
+ *
+ * The till is a phone-shaped tool and it should stay one. What it should not be
+ * is a phone-shaped tool alone in the middle of a 1900px screen — which is what
+ * an owner opening their own admin on a laptop actually saw: two small cards
+ * and two thirds of the display carrying nothing.
+ *
+ * So the width that the till does not want goes to the thing the till could
+ * never say: how the shift is going. Takings, passages, new cards, and the last
+ * twelve operations at this counter — the four numbers an owner checks at six
+ * in the evening, which until now required leaving the till, opening the
+ * customers screen and doing arithmetic on a seven-day window.
+ *
+ * The QR that used to sit here has its own tab now. It creates every card in
+ * the shop; it was a line at the bottom of one screen.
  */
 export default async function OwnerHome() {
   const cafe = await ownerCafe();
   // No café yet → set one up. NOT /owner/login: that would see a valid session
   // and bounce straight back here, forever.
   if (!cafe) redirect(await ownerHome());
-  const program = await getLoyaltyProgram(cafe.id);
 
-  /*
-    The shop's own QR, drawn HERE and handed down.
-
-    The till used to link to it behind a generic icon on a grey strip — a
-    picture of a QR standing in for a QR, on the one screen where the real
-    thing is two centimetres from the owner's hand. It is small, it costs
-    nothing to render, and a shop that has not yet printed its code recognises
-    it instantly. Same URL as /owner/qr, from SITE_URL for the same reason:
-    the apex 308s to www and that redirect gets printed into the sticker.
-  */
-  const qr = await QRCode.toString(`${SITE_URL}/${cafe.slug}`, {
-    type: "svg",
-    errorCorrectionLevel: "M",
-    margin: 0,
-    color: { dark: "#14101f", light: "#00000000" },
-  });
+  const [program, day] = await Promise.all([
+    getLoyaltyProgram(cafe.id),
+    ownerToday(cafe.id),
+  ]);
 
   return (
     <CaisseDesk
       pointsPerTnd={program.pointsPerTnd}
       stampsEnabled={program.stampsEnabled}
       stampsRequired={program.stampsRequired}
-      qr={qr}
-      slug={cafe.slug}
+      /* Rendered here and handed down: CaisseDesk is a Client Component and
+         these figures are a server read. */
+      today={<Today day={day} pointsPerTnd={program.pointsPerTnd} />}
     />
   );
 }

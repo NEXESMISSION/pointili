@@ -16,7 +16,23 @@ import { createClient } from "@supabase/supabase-js";
 import { connect, env } from "./db.mjs";
 import { shopLogo } from "./shop-logo.mjs";
 
-export const TEST_SLUG = "e2etest";
+/**
+ * ONE SLUG, AND THAT IS A PROBLEM WHEN TWO PEOPLE TEST AT ONCE.
+ *
+ * Every suite here provisions its fixture at this address, against a database
+ * that IS production. Two runs at the same time therefore fight over one café:
+ * the second run's ensureTestCafe resets the plan the first one just granted,
+ * and its teardown deletes the shop mid-assertion. The symptom is a suite that
+ * fails eight checks with plausible-looking values — "trial → trial, +0 days",
+ * "suspended café blocks diners" — every one of which reads as a real
+ * regression in the code under test. That has now cost two debugging sessions.
+ *
+ * TEST_SLUG=whatever gives a run its own café. The default is unchanged, so a
+ * normal `node scripts/e2e.mjs` behaves exactly as before; the sweeper
+ * (sweep-test-data.mjs) still recognises the default name, so an abandoned
+ * custom fixture is the one thing to clean up by hand.
+ */
+export const TEST_SLUG = process.env.TEST_SLUG ?? "e2etest";
 /** The fixture shop's brand colour — deliberately not the house purple, so a
     screenshot proves the per-shop theming rather than the default. */
 export const BRAND = "#0f6b4f";
@@ -54,8 +70,24 @@ export const TEST_NAME = "Café Test";
  *
  * OWNER_EMAIL/OWNER_PASSWORD in the environment still override, for pointing
  * a suite at some specific account on purpose.
+ *
+ * ── THE ACCOUNT FOLLOWS THE SLUG ──────────────────────────────────────────
+ *
+ * TEST_SLUG gives a run its own café so two sessions cannot fight over one.
+ * That is not enough on its own, and the gap is subtle: with one shared owner,
+ * a second fixture puts TWO cafés under that account, and ownerCafe() resolves
+ * "the owner's café" as the OLDEST one they own — while every fixture is
+ * backdated to 2000-01-01 to win exactly that race. So the owner app served the
+ * OTHER run's shop, and /owner/renouveler showed a pending request belonging to
+ * a suite in another session. Four checks failed against a screen that was
+ * behaving perfectly.
+ *
+ * So a custom slug gets a custom account. The default is untouched, so a plain
+ * `node scripts/e2e.mjs` still signs in as e2e@pointili.test.
  */
-export const OWNER_EMAIL = process.env.OWNER_EMAIL ?? "e2e@pointili.test";
+export const OWNER_EMAIL =
+  process.env.OWNER_EMAIL ??
+  (TEST_SLUG === "e2etest" ? "e2e@pointili.test" : `${TEST_SLUG}@pointili.test`);
 
 const svc = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },

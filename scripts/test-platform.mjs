@@ -30,6 +30,23 @@ const check = (name, pass, detail = "") => {
   console.log(`${pass ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
 };
 
+/*
+  ── WAIT FOR OUR OWN RESULT LINE, NOT FOR ANY LIVE REGION ─────────────────
+
+  These waits were '[role="status"], [role="alert"]'. In development Next.js
+  mounts an empty <div role="alert"> for its error overlay, so that selector
+  matched something that was ALREADY on the page: every wait resolved instantly,
+  the suite read the database before the server action had landed, and eight
+  checks failed with values that looked like real regressions ("trial → trial,
+  +0 days"). It only worked before because the old console put every control in
+  a modal, and the wait was scoped to that dialog.
+
+  The console's own result lines are always <p> (see Result in ShopControls), so
+  naming the element is enough — and it stays honest if the overlay changes,
+  because a <div> can never satisfy it.
+*/
+const RESULT = 'p[role="status"], p[role="alert"]';
+
 const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 const sql = await connect();
 const b = await chromium.launch({ executablePath: CHROME });
@@ -56,11 +73,22 @@ const sa = await b.newPage({ viewport: { width: 390, height: 844 } });
 await login(sa, SUPER.email, SUPER.password);
 await openConsole(sa);
 check("super-admin reaches /admin with one sign-in", new URL(sa.url()).pathname === "/admin", new URL(sa.url()).pathname);
+/*
+  THE ROSTER MOVED, AND SO DID THIS CHECK.
+
+  It used to read /admin, because /admin was everything — the queue, the table,
+  the traffic and the log in one scroll. The front page is now only what needs a
+  decision, so a café that is perfectly healthy is CORRECTLY absent from it; the
+  list of every shop lives at /admin/cafes.
+
+  Still asserted on the café this suite provisions ("Café Test") rather than on
+  a real one: the admin query has no owner filter, so the fixture appearing
+  proves the roster lists every café, and no live café's name is hardcoded into
+  a test that would drift as the data changes.
+*/
+await sa.goto(`${BASE}/admin/cafes`, { waitUntil: "networkidle" });
 const adminTxt = await sa.locator("main").innerText();
-// Assert on the café this test provisions ("Café Test"). The admin query has no
-// owner filter, so the fixture appearing proves the console lists every café —
-// no hardcoded real café name, which drifts as the live data changes.
-check("admin lists every café", /Café Test/.test(adminTxt), adminTxt.slice(0, 40).replace(/\n/g, " "));
+check("the roster lists every café", /Café Test/.test(adminTxt), adminTxt.slice(0, 40).replace(/\n/g, " "));
 
 // ── 2. a plain owner is bounced ─────────────────────────────────────
 const email = `plain${Date.now()}@example.com`;
@@ -91,26 +119,31 @@ check("admin RPC refuses a non-super-admin", !!direct.error, direct.error?.code 
   connection, so SQL calls are (correctly) refused. The UI is the real path.
 */
 /*
-  The console is a sortable TABLE now: click the café's row, and act inside the
-  drawer that opens. Returns the drawer so every form is scoped to it.
-*/
-/*
-  BY SLUG, NEVER BY NAME.
+  ── A CAFÉ IS AN ADDRESS NOW, NOT A ROW THAT OPENS A DRAWER ───────────────
 
-  This used to click `tr:has-text("Café Test")`.first(). A real café in the
-  database is also called "Café Test" — /coffeelain — and it sorts above the
-  fixture, so every run of this suite granted plans to, suspended, and messaged
-  somebody's live shop while asserting against /e2etest, which never changed.
-  Six checks failed for the right reason and the wrong café paid for it.
+  This used to click `tr:has-text("/<slug>")` on /admin and wait for
+  [role="dialog"]. The console is many pages and a café has one of its own, so
+  there is no modal — and no row to hunt for in a table that may be filtered,
+  sorted or paged away from the fixture.
 
-  A slug is unique by definition and the table prints it under the name.
+  BY ID, FROM THE DATABASE. Earlier still it clicked `tr:has-text("Café Test")`,
+  and a real café in this database is ALSO called "Café Test" — /coffeelain —
+  which sorts above the fixture. Every run granted plans to, suspended and
+  messaged somebody's live shop while asserting against a fixture that never
+  changed. Resolving the id in SQL makes landing on the wrong café impossible
+  rather than unlikely.
+
+  The full plan form is folded behind "Autre durée…", because the common case is
+  the one-tap +6 mois / +1 an buttons; the checks below drive the arbitrary
+  amount/unit fields, so it is opened on the way in.
 */
 const openCafe = async (slug = SLUG) => {
-  await sa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
-  await sa.locator(`tr:has-text("/${slug}")`).first().click();
-  const drawer = sa.locator('[role="dialog"]');
-  await drawer.waitFor({ timeout: 15000 });
-  return drawer;
+  const { rows } = await sql.query(`select id from businesses where slug = $1`, [slug]);
+  await sa.goto(`${BASE}/admin/cafes/${rows[0].id}`, { waitUntil: "networkidle" });
+  const custom = sa.locator('button:has-text("Autre durée")');
+  if (await custom.count()) await custom.first().click();
+  await sa.locator('select[name="unit"]').first().waitFor({ timeout: 15000 });
+  return sa;
 };
 
 const before = (await sql.query(`select plan, plan_expires_at from businesses where slug='${SLUG}'`)).rows[0];
@@ -120,7 +153,7 @@ await planForm.locator('select[name="plan"]').selectOption("pro");
 await planForm.locator('input[name="amount"]').fill("3");
 await planForm.locator('select[name="unit"]').selectOption("months");
 await planForm.locator('button[type="submit"]').click();
-await demoRow.locator('[role="status"], [role="alert"]').first().waitFor({ timeout: 20000 }).catch(() => {});
+await demoRow.locator(RESULT).first().waitFor({ timeout: 20000 }).catch(() => {});
 const after = (await sql.query(`select plan, plan_expires_at from businesses where slug='${SLUG}'`)).rows[0];
 check(
   "super-admin grants a 3-month pro plan",
@@ -162,7 +195,7 @@ check("expired café cannot mint points", credit.ok === false, credit.reason);
   await f.locator('input[name="amount"]').fill("12");
   await f.locator('select[name="unit"]').selectOption("hours");
   await f.locator('button[type="submit"]').click();
-  await r.locator('[role="status"], [role="alert"]').first().waitFor({ timeout: 20000 }).catch(() => {});
+  await r.locator(RESULT).first().waitFor({ timeout: 20000 }).catch(() => {});
 
   const { rows } = await sql.query(
     `select round(extract(epoch from (plan_expires_at - now())) / 3600)::int as hours
@@ -177,7 +210,7 @@ check("expired café cannot mint points", credit.ok === false, credit.reason);
   await f2.locator('input[name="amount"]').fill("5");
   await f2.locator('select[name="unit"]').selectOption("days");
   await f2.locator('button[type="submit"]').click();
-  await r2.locator('[role="status"], [role="alert"]').first().waitFor({ timeout: 20000 }).catch(() => {});
+  await r2.locator(RESULT).first().waitFor({ timeout: 20000 }).catch(() => {});
   const { rows: d } = await sql.query(
     `select round(extract(epoch from (plan_expires_at - now())) / 86400)::int as days
        from businesses where slug='${SLUG}'`,
@@ -192,11 +225,20 @@ check("renewing brings the café back", !/Momentanément fermé/i.test(await din
 
 // ── 7. suspension through the UI cuts access immediately ────────────
 const row2 = await openCafe();
-sa.once("dialog", (d) => d.accept()); // "les clients perdront l'accès"
+/*
+  NO dialog handler any more, and its absence is the assertion.
+
+  Suspending used to pop a window.confirm() — a browser dialog dismissed by
+  muscle memory, guarding the one control here that takes a paying shop's
+  customers offline instantly. The guard is the reason field now: the button is
+  inert until one is typed, so the deliberate act and the audit record are the
+  same keystrokes. If a confirm() ever comes back, this click hangs and this
+  suite says so.
+*/
 const susForm = row2.locator('form:has(input[name="reason"])');
 await susForm.locator('input[name="reason"]').fill("test suspension");
 await susForm.locator('button[type="submit"]').click();
-await row2.locator('[role="status"], [role="alert"]').first().waitFor({ timeout: 20000 }).catch(() => {});
+await row2.locator(RESULT).first().waitFor({ timeout: 20000 }).catch(() => {});
 
 const suspended = (await sql.query(`select suspended_at from businesses where slug='${SLUG}'`)).rows[0];
 check("super-admin suspends a café from the panel", suspended.suspended_at !== null);
@@ -207,7 +249,7 @@ check("suspended café blocks diners", /Momentanément fermé/i.test(await diner
 // unsuspend via the panel too
 const row3 = await openCafe();
 await row3.locator('form:has(input[name="suspend"][value="0"]) button[type="submit"]').click();
-await row3.locator('[role="status"], [role="alert"]').first().waitFor({ timeout: 20000 }).catch(() => {});
+await row3.locator(RESULT).first().waitFor({ timeout: 20000 }).catch(() => {});
 const back = (await sql.query(`select suspended_at from businesses where slug='${SLUG}'`)).rows[0];
 check("super-admin lifts the suspension", back.suspended_at === null);
 
@@ -216,7 +258,7 @@ const row4 = await openCafe();
 const noticeForm = row4.locator('form:has(textarea[name="message"])');
 await noticeForm.locator('textarea[name="message"]').fill("Test notice for the owner");
 await noticeForm.locator('button[type="submit"]').click();
-await row4.locator('[role="status"], [role="alert"]').first().waitFor({ timeout: 20000 }).catch(() => {});
+await row4.locator(RESULT).first().waitFor({ timeout: 20000 }).catch(() => {});
 await sa.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
 check("owner sees the notice", /Test notice for the owner/.test(await sa.locator("body").innerText()));
 

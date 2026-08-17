@@ -5,6 +5,7 @@ import { businessType } from "@/lib/businessTypes";
 import { getLoyaltyProgram, getOwnerGame, getRewards } from "@/lib/data";
 import { cafeAvgTicket } from "@/lib/db";
 import { remaining } from "@/lib/platform";
+import { platformSettings } from "@/lib/settings";
 import { logoutAction } from "../../(auth)/login/actions";
 import { SettingsList } from "./SettingsList";
 import { BackLink } from "@/components/BackLink";
@@ -19,13 +20,51 @@ const PLAN_LABEL: Record<string, string> = { trial: "Essai", pro: "Pro", free: "
  * This page only states the shop's identity and account; every knob lives one
  * tap deeper, in a focused editor. See SettingsList for why.
  */
-export default async function Reglages() {
+/** The six editors this screen can open, so ?panel= cannot name anything else. */
+const PANELS = ["points", "rewards", "stamps", "wheel", "shop", "theme"] as const;
+type PanelId = (typeof PANELS)[number];
+
+export default async function Reglages({
+  searchParams,
+}: {
+  searchParams: Promise<{ panel?: string }>;
+}) {
+  /* Validated against the list above, never passed through: an unknown value
+     would open nothing and a crafted one should not reach component state. */
+  const asked = (await searchParams).panel;
+  const panel = (PANELS as readonly string[]).includes(asked ?? "")
+    ? (asked as PanelId)
+    : null;
+
   const cafe = await ownerCafe();
   // No café yet → set one up. NOT /owner/login: that would see a valid session
   // and bounce straight back here, forever.
   if (!cafe) redirect(await ownerHome());
 
   const left = remaining(cafe.planExpiresAt);
+
+  /*
+    THE PRICES COME FROM THE CATALOGUE, NOT FROM THIS FILE.
+
+    They were three hardcoded numbers in the JSX below — 65, 80, and a "dès 7
+    TND / mois" derived from them by hand. lib/billing.ts exists specifically to
+    stop that; its own header says these numbers "were scattered across the
+    settings screen as hard-coded JSX" and that an offer saying one thing on one
+    screen and another on the next "is worse than no offer".
+
+    It happened anyway, and the day the year went to 120 this screen was still
+    advertising 80 to the people who pay it, while the renewal flow two taps
+    away invoiced the real figure. An owner comparing the two would be right to
+    stop trusting both.
+
+    The cheapest month across all offers is computed, never typed.
+  */
+  const { offers } = await platformSettings();
+  const byMonths = [...offers].sort((a, b) => a.months - b.months);
+  const perMonth = (o: (typeof offers)[number]) => o.price / o.months;
+  const cheapest = offers.length
+    ? offers.reduce((best, o) => (perMonth(o) < perMonth(best) ? o : best))
+    : null;
   const [owner, program, rewards, game, ticket] = await Promise.all([
     currentOwner(),
     getLoyaltyProgram(cafe.id),
@@ -140,6 +179,7 @@ export default async function Reglages() {
       </section>
 
       <SettingsList
+        openPanel={panel}
         cafe={cafe}
         program={program}
         rewards={rewards}
@@ -183,27 +223,43 @@ export default async function Reglages() {
           <span className="min-w-0 flex-1 text-[15px] font-semibold text-charcoal">
             Formules et tarifs
           </span>
-          <span className="shrink-0 text-[13px] font-bold text-slate">dès 7 TND / mois</span>
+          {cheapest && (
+            <span className="shrink-0 text-[13px] font-bold text-slate">
+              dès {Math.round(perMonth(cheapest))} TND / mois
+            </span>
+          )}
           <span className="shrink-0 text-[17px] leading-none text-slate transition group-open:rotate-90">
             ›
           </span>
         </summary>
         <div className="a-card mt-1.5 p-4">
-          <div className="grid grid-cols-2 gap-2.5">
-            <div className="rounded-2xl bg-[var(--o-inset)] px-3 py-3 text-center">
-              <p className="text-[12px] font-semibold text-slate">6 mois</p>
-              <p className="mt-0.5 font-display text-[24px] font-extrabold leading-none text-charcoal">
-                65 <span className="text-[12px] font-bold text-slate">TND</span>
-              </p>
-              <p className="mt-0.5 text-[10px] text-slate">≈ 11 TND / mois</p>
-            </div>
-            <div className="rounded-2xl bg-[#5b3fd1]/25 px-3 py-3 text-center ring-1 ring-[#5b3fd1]/40">
-              <p className="text-[12px] font-semibold text-[#5b3fd1]">1 an</p>
-              <p className="mt-0.5 font-display text-[24px] font-extrabold leading-none text-charcoal">
-                80 <span className="text-[12px] font-bold text-slate">TND</span>
-              </p>
-              <p className="mt-0.5 text-[10px] text-[#5b3fd1]">≈ 7 TND / mois</p>
-            </div>
+          {/* One tile per offer the operator actually sells — the best value is
+              the highlighted one, decided by arithmetic rather than by which
+              div somebody typed the violet class onto. */}
+          <div className={`grid gap-2.5 ${byMonths.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+            {byMonths.map((o) => {
+              const best = cheapest?.id === o.id;
+              return (
+                <div
+                  key={o.id}
+                  className={
+                    best
+                      ? "rounded-2xl bg-[#5b3fd1]/25 px-3 py-3 text-center ring-1 ring-[#5b3fd1]/40"
+                      : "rounded-2xl bg-[var(--o-inset)] px-3 py-3 text-center"
+                  }
+                >
+                  <p className={`text-[12px] font-semibold ${best ? "text-[#5b3fd1]" : "text-slate"}`}>
+                    {o.label}
+                  </p>
+                  <p className="mt-0.5 font-display text-[24px] font-extrabold leading-none text-charcoal">
+                    {o.price} <span className="text-[12px] font-bold text-slate">TND</span>
+                  </p>
+                  <p className={`mt-0.5 text-[10px] ${best ? "text-[#5b3fd1]" : "text-slate"}`}>
+                    ≈ {Math.round(perMonth(o))} TND / mois
+                  </p>
+                </div>
+              );
+            })}
           </div>
           <p className="mt-3 text-[12px] leading-relaxed text-slate">
             Tout est compris : points, récompenses, tampons, analyses et le kit QR

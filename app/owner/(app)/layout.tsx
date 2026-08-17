@@ -71,6 +71,7 @@ export default async function OwnerLayout({
         initial={cafe.name.charAt(0).toUpperCase()}
         colour={cafe.primaryColor}
         plan={planChip}
+        slug={cafe.slug}
       />
 
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col">

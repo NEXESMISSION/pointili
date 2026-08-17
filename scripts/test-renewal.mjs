@@ -16,7 +16,7 @@ import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import { chromium } from "playwright-core";
 import { env } from "./db.mjs";
-import { ensureTestCafe, dropTestCafe } from "./fixture.mjs";
+import { ensureTestCafe, dropTestCafe, TEST_SLUG } from "./fixture.mjs";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
@@ -181,7 +181,11 @@ try {
   const opCtx = await b.newContext({ viewport: { width: 1280, height: 900 } });
   const op = await opCtx.newPage();
   await login(op, SUPER.email, SUPER.password);
-  await op.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+  /* /admin/argent, not /admin. The console is many pages now: the front page
+     shows that a payment is waiting and links here, but deciding on one means
+     LOOKING at the receipt, so the queue and the image live together on the
+     money page. */
+  await op.goto(`${BASE}/admin/argent`, { waitUntil: "networkidle" });
   const consoleTxt = await op.locator("body").innerText();
   check("the console queues the request", /Renouvellements/i.test(consoleTxt));
   check(
@@ -209,12 +213,39 @@ try {
     .eq("id", cafeId)
     .single();
 
-  await op.locator('button:has-text("Valider")').first().click();
-  await op.waitForFunction(
-    () => /Renouvellement validé/i.test(document.body.innerText),
-    undefined,
-    { timeout: 20000 },
-  ).catch(() => {});
+  /*
+    OUR OWN ROW, NOT THE FIRST ONE.
+
+    This was `button:has-text("Valider")`.first(). The queue holds every shop's
+    pending request, so with a leftover from an earlier run — or another suite
+    running in a second session — .first() approved SOMEBODY ELSE'S renewal and
+    left this one pending. The suite then failed three checks about a request it
+    had never touched, which reads as a broken console.
+
+    Scoped by SLUG, not by name. Every fixture in this repo is called "Café
+    Test", so a second session's run produces a row with an identical name and
+    the filter matched theirs just as happily — TEST_SLUG isolates the shop but
+    not what it is called. The slug is unique by definition and the queue prints
+    it under the name, which is the same reasoning openCafe in test-platform.mjs
+    already had to arrive at.
+  */
+  const ours = op.locator("li.k-card").filter({ hasText: `/${TEST_SLUG}` }).first();
+  await ours.locator('button:has-text("Valider")').click();
+  /*
+    ── WAIT FOR THE ROW TO LEAVE THE QUEUE, NOT FOR A PHRASE ────────────────
+
+    This waited for /Renouvellement validé/i anywhere in document.body.innerText
+    — and the money page's own empty state reads "aucun renouvellement validé
+    sur les 60 dernières demandes". Case-insensitively that is a match, on a
+    page that had not been clicked yet: the wait resolved in about 130ms, the
+    suite read the database before the server action had committed, and three
+    checks failed reporting values from BEFORE the thing they were testing.
+
+    The observable outcome is that this shop's request stops being pending, so
+    that is what is waited for. It cannot collide with static copy, and it is
+    the assertion's own subject rather than a sentence near it.
+  */
+  await ours.waitFor({ state: "detached", timeout: 20000 }).catch(() => {});
 
   const { data: after } = await admin
     .from("businesses")

@@ -223,19 +223,35 @@ h4 {
 }
 
 /*
-  The one owner screen that earns a wider column.
+  ══ HOW WIDE AN OWNER PAGE IS ═════════════════════════════════════════════
 
-  The owner layout caps its content at 680px, which is right for the till — a
-  one-handed terminal used at a counter — and wrong for Analyses, the screen an
-  owner opens a laptop specifically to read. A page asks for the room by
-  rendering [data-owner-wide]; nothing else changes.
+  Every page in this app was capped at 680px, because the FIRST page — the till
+  — is a one-handed terminal used at a counter and 680px is right for it. On a
+  laptop that made the whole product a phone screen floating in the middle of a
+  1900px window: two small cards, and about two thirds of the display carrying
+  nothing at all. That is what a shop owner opening their own admin on a laptop
+  saw first.
+
+  The cap is a decision each page makes now, because the right answer differs by
+  what the page IS:
+
+    (default)          680px — a form, a settings list, a receipt. Prose and
+                       controls read badly past ~70 characters and no amount of
+                       screen changes that.
+    [data-owner-wide]  1080px — the pages read at a desk: the customer lists,
+                       the reward ladder, the till's own day beside it.
+    [data-owner-full]  no cap — the QR sheet, which is a poster being laid out
+                       for printing and wants the paper.
 
   Written here rather than as a CSS variable set by the page, because the cap
   lives on the page's PARENT and custom properties only inherit downward.
 */
 @media (min-width: 1024px) {
   .owner-main:has([data-owner-wide]) > div {
-    max-width: 980px;
+    max-width: 1080px;
+  }
+  .owner-main:has([data-owner-full]) > div {
+    max-width: none;
   }
 }
 
@@ -470,7 +486,64 @@ h4 {
   transition: transform 0.1s, background 0.15s;
 }
 .a-btn:active { transform: scale(0.99); }
-.a-btn:disabled { opacity: 0.45; box-shadow: none; }
+/*
+  A DISARMED BUTTON IS OUTLINED, NOT FADED — the same correction the console's
+  .k-btn needed, for the same reason.
+
+  At 45% opacity a filled violet button becomes a pale lilac slab, which reads
+  as BROKEN rather than as "not yet". The till's "Chercher" sits like that
+  permanently until something is typed — the very first thing an owner sees on
+  their own home screen was a button that looks like a rendering fault. The
+  cashier's next move is to press it anyway, then wonder if the app is stuck.
+
+  Outlined says the same thing honestly, and the moment the field has content it
+  fills with colour: the change is what tells you it is ready.
+*/
+.a-btn:disabled {
+  opacity: 1;
+  box-shadow: none;
+  background: var(--o-panel);
+  border: 1px solid var(--o-edge);
+  color: color-mix(in oklab, var(--color-slate) 70%, transparent);
+  cursor: not-allowed;
+}
+/*
+  THE TILL'S SCANNER: primary on a phone, secondary on a laptop.
+
+  Not a Tailwind responsive utility, because `md:a-btn--ghost` is not a thing —
+  variants only compose with Tailwind's own classes, and a plain class name
+  cannot be prefixed with a breakpoint. It silently does nothing, which is how
+  it got shipped in the first draft of this change.
+
+  Behind the counter the camera is the tool and this is a full-width violet
+  button. In the back office there is usually no usable camera at all, and a
+  56px slab above the search field made the screen shout the control that would
+  not work.
+*/
+/*
+  BOTH SIZES LIVE HERE, not half here and half in a Tailwind `!min-h-[56px]`.
+  An important utility beats a plain rule, so the phone height was winning at
+  every width and the desktop button stayed 56px tall while everything else
+  about it had gone quiet.
+*/
+.a-scan {
+  min-height: 56px;
+  font-size: 16px;
+}
+@media (min-width: 768px) {
+  .a-scan {
+    width: auto;
+    min-height: 44px;
+    font-size: 14px;
+    padding-inline: 16px;
+    background: var(--o-panel);
+    border: 1px solid var(--o-edge);
+    color: var(--color-charcoal);
+    box-shadow: none;
+  }
+  .a-scan:hover { background: var(--o-inset); }
+}
+
 /* the secondary — an outlined white button, which on a light surface is the
    only version of "quiet" that still looks pressable */
 .a-btn--ghost {
@@ -486,41 +559,172 @@ h4 {
   box-shadow: none;
 }
 
-/* ── the super-admin console: deliberately NOT the owner app ──────────────
-   A dark technical surface — flat, square-ish, monospace ids. You should be
-   able to tell at a glance that you are somewhere that can suspend a café. */
-/* ══ the platform console ═════════════════════════════════════════════════
-   LIGHT, like everything else the operator uses.
+/* ══ THE PLATFORM CONSOLE ═════════════════════════════════════════════════
 
-   This was the last dark surface in the product. The till, the settings, the QR
-   screen and the landing page all moved to white, so the console had become the
-   one screen that looked like a different application — and it is the screen a
-   platform operator sits in longest.
+   WHAT THIS USED TO BE, and why it stopped working.
 
-   It borrows the owner app's tokens rather than inventing a third palette:
-   --o-panel / --o-inset / --o-edge, charcoal ink, royal for anything that acts.
-   A console is a dense table of facts; the job of the surface is to get out of
-   the way of the numbers. */
+   One page. Everything the platform can say, stacked on it in the order it was
+   built: a stat line, the alert queue, the renewal queue, the early-access
+   list, the whole café table with a modal drawer, the traffic panel, then three
+   folded <details> holding broadcast, notices and the audit log. Roughly a
+   thousand lines of interface in one scroll, and NOT ONE OF IT HAD AN ADDRESS —
+   nothing could be linked, bookmarked, or returned to after a reload.
+
+   The styling had drifted with it. .k-quick was still a dark-navy button left
+   over from when this screen was dark, sitting on white rows; the queue used
+   14px radius cards, the traffic panel 22px ones, and the drawer a third value.
+   Six greys were in play where two would do.
+
+   ── WHAT IT IS NOW ────────────────────────────────────────────────────────
+
+   Seven pages behind a persistent rail, and a design system small enough to
+   hold in your head. The rules, in the order they matter:
+
+   1. ONE ACCENT, AND IT MEANS "THIS ACTS". Royal is a button, a link or the
+      current page. Nothing decorative is royal, which is what makes a royal
+      thing findable in a dense table.
+   2. STATUS IS A SEPARATE, FOUR-VALUE SYSTEM. ok / warn / bad / idle, drawn as
+      a dot and a pill from the same three tokens, so a green dot in the roster
+      and a green pill on a shop's page are the same claim. Status is never
+      royal and actions are never green.
+   3. TWO SURFACES AND ONE LINE. --o-panel is a card, --o-inset is a panel
+      inside a card, --o-edge is every border on the screen. There is no third
+      grey and no shadow doing the job of a border.
+   4. NUMBERS ARE MONO AND TABULAR. A column of figures that shifts by a pixel
+      per digit cannot be scanned, and scanning is the entire job.
+   5. ONE RADIUS SCALE: 10px for controls, 14px for cards. Anything else is a
+      mistake, not a decision.
+
+   The surface stays LIGHT and stays close to the owner app's tokens. This was
+   the last dark screen in the product; making it dark again to feel
+   "administrative" would be the same mistake in reverse. */
+
 .k-shell {
   background: var(--o-surface);
   color: var(--color-charcoal);
   /* the operator taps fast through a table; double-tap zoom is never wanted */
   touch-action: manipulation;
 }
+
+/* ── surfaces ─────────────────────────────────────────────────────────── */
 .k-card {
   background: var(--o-panel);
   border: 1px solid var(--o-edge);
   border-radius: 14px;
 }
+/* a panel INSIDE a card — a step down, never a second card */
+.k-inset {
+  background: var(--o-inset);
+  border: 1px solid var(--o-edge);
+  border-radius: 10px;
+}
+/* One row of a dense list. The console is mostly rows; they get a name. */
+.k-row { border-top: 1px solid var(--o-edge); }
+.k-row:first-child { border-top: 0; }
+
+/* The label above every section and every figure. One size, one weight, one
+   colour, everywhere — a console with four heading levels is a console where
+   the operator has to work out the hierarchy on each new screen. */
+.k-h {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-slate);
+}
+
+/* ── numbers ──────────────────────────────────────────────────────────── */
+.k-num {
+  font-family: var(--font-mono, ui-monospace), monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── status: four values, and they are not the accent ─────────────────── */
+.k-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--k-tone, var(--color-slate));
+}
+.k-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: var(--k-tone-soft, var(--o-inset));
+  color: var(--k-tone-ink, var(--color-slate));
+}
+/*
+  A PILL IS A LABEL. A NOTE IS A SENTENCE.
+
+  .k-pill is display:inline-flex with a gap, which is right for "En ligne" and
+  wrong for anything longer: every text node and every <b> inside it becomes a
+  separate FLEX ITEM, so a warning like "Les QR déjà imprimés pointent vers
+  /cafe-el-manar et cesseront de fonctionner" laid itself out as four ragged
+  columns with 6px gutters. It was unreadable exactly where being read matters —
+  it is the only thing standing between a slug change and a shop's printed QR
+  codes.
+
+  Same four tones, same tokens; a block that wraps like prose.
+*/
+.k-note {
+  display: block;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  background: var(--k-tone-soft, var(--o-inset));
+  color: var(--k-tone-ink, var(--color-slate));
+}
+.k-note b { font-weight: 800; }
+
+.k-ok   { --k-tone: #2f9e6e; --k-tone-soft: #e7f6ee; --k-tone-ink: #1f7a52; }
+.k-warn { --k-tone: #e0a52e; --k-tone-soft: #fdf3dd; --k-tone-ink: #8a5a00; }
+.k-bad  { --k-tone: #c0341c; --k-tone-soft: #fdecec; --k-tone-ink: #b3202f; }
+.k-idle { --k-tone: #a9a3ba; --k-tone-soft: var(--o-inset); --k-tone-ink: var(--color-slate); }
+
+/* ── controls ─────────────────────────────────────────────────────────── */
+/*
+  ── NO width HERE, AND THAT IS A BUG FIX ──────────────────────────────────
+
+  This rule used to declare `width: 100%`. It is UNLAYERED, and Tailwind's
+  width utilities live in @layer utilities — which lose to unlayered CSS no
+  matter what the class list says. So `className="k-field w-auto"` and
+  `className="k-field w-[64px]"` did nothing at all: the plan form's three
+  controls, the notice form's type select and its day count all rendered full
+  width and stacked, and the layout looked like a mistake nobody made. It is
+  the same cascade trap already written up on .safe-t and .landing-light in
+  this file.
+
+  Width belongs to the call site anyway — this class is what a field LOOKS
+  like, not how much room it takes.
+
+  ── AND IT IS NOT MONOSPACE ANY MORE ──────────────────────────────────────
+
+  Every field wore Space Mono, which was right for the one thing the console
+  originally typed into them — ids and durations — and wrong for everything it
+  has grown since: a search box, a suspension reason, an operator's note, a
+  message to a shop owner. Mono is 20% wider per character, so "Raison — le
+  propriétaire la verra" was truncated mid-word in its own input. Numbers get
+  .k-field--num, which is the small set that actually wanted it.
+*/
 .k-field {
-  width: 100%;
   border-radius: 10px;
   border: 1px solid var(--o-edge);
   background: var(--o-panel);
-  padding: 10px 12px;
+  padding: 9px 12px;
   font-size: 16px; /* 16px so iOS never zooms on focus */
   color: var(--color-charcoal);
+}
+.k-field--num {
   font-family: var(--font-mono, ui-monospace), monospace;
+  font-variant-numeric: tabular-nums;
 }
 .k-field::placeholder { color: color-mix(in oklab, var(--color-slate) 70%, transparent); }
 .k-field:focus {
@@ -528,29 +732,113 @@ h4 {
   border-color: var(--color-royal);
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-royal) 14%, transparent);
 }
+
 .k-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   border-radius: 10px;
   background: var(--color-royal);
+  border: 1px solid transparent;
   color: #fff;
   font-weight: 700;
   font-size: 12.5px;
   padding: 9px 14px;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, transform 0.08s;
 }
+.k-btn:hover { background: #4c33b4; }
+.k-btn:active { transform: scale(0.98); }
+/*
+  A DISARMED BUTTON IS OUTLINED, NOT FADED — for every variant, not just the
+  destructive one.
+
+  At 45% opacity a filled button becomes a pale slab of its own colour, which
+  reads as BROKEN: the operator's next move is to click it again, then reload
+  the page. Several buttons in this console are deliberately inert until a
+  field is filled — "Indiquez un nombre", "Suspendre <shop>", "Supprimer" — and
+  every one of them was announcing a fault instead of a precondition. Outlined
+  reads as "not yet", and the moment the condition is met it fills with colour
+  and the change is unmissable.
+
+  :hover is neutralised too: a dead button that lights up under the cursor is
+  a dead button that gets clicked.
+*/
+.k-btn:disabled,
+.k-btn:disabled:hover {
+  opacity: 1;
+  background: var(--o-panel);
+  border-color: var(--o-edge);
+  color: color-mix(in oklab, var(--color-slate) 65%, transparent);
+  cursor: not-allowed;
+}
+/*
+  The quiet button, and it is WHITE now.
+
+  It was #1a1f2b — a dark-navy chip from when this console was a dark surface,
+  which survived the conversion to light and has been sitting on white rows ever
+  since. On a light screen a filled dark button is the LOUDEST thing available,
+  so every secondary action in the console (renew, reactivate, mark contacted)
+  outranked the primary ones. Outlined white is what "quiet but pressable"
+  looks like here.
+*/
 .k-btn--ghost {
-  background: var(--o-inset);
-  border: 1px solid var(--o-edge);
+  background: var(--o-panel);
+  border-color: var(--o-edge);
   color: var(--color-charcoal);
 }
-.k-btn--danger {
-  background: #fdeced;
-  border: 1px solid #f3c2c7;
-  color: #b3202f;
+.k-btn--ghost:hover { background: var(--o-inset); border-color: #cfcadd; }
+.k-btn--ok     { background: #2f9e6e; }
+.k-btn--ok:hover { background: #268a5e; }
+.k-btn--danger { background: #c0341c; }
+.k-btn--danger:hover { background: #a82c17; }
+/* The destructive one keeps a red-tinted outline while disarmed, so "not yet"
+   still reads as "not yet DESTROYING something". */
+.k-btn--danger:disabled,
+.k-btn--danger:disabled:hover {
+  border-color: #f0c4bd;
+  color: #c78d82;
 }
-/* One row of a dense list. The console is mostly rows; they get a name. */
-.k-row {
-  border-top: 1px solid var(--o-edge);
+/* smaller, for buttons that live inside a table row */
+.k-btn--sm { padding: 6px 10px; font-size: 11.5px; border-radius: 8px; }
+
+/* ── the rail ─────────────────────────────────────────────────────────── */
+.k-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-slate);
+  transition: background 0.12s, color 0.12s;
 }
-.k-row:first-child { border-top: 0; }
+.k-nav:hover { background: var(--o-inset); color: var(--color-charcoal); }
+.k-nav[aria-current="page"] {
+  background: color-mix(in oklab, var(--color-royal) 10%, transparent);
+  color: var(--color-royal);
+}
+/*
+  A badge is a COUNT OF WORK, never an ornament — so it renders only when it is
+  non-zero, and it is coloured by urgency rather than by which section it sits
+  in. A permanent grey "0" beside every item trains the eye to ignore the one
+  that turns red.
+*/
+.k-badge {
+  margin-inline-start: auto;
+  min-width: 20px;
+  border-radius: 999px;
+  padding: 2px 6px;
+  text-align: center;
+  font-family: var(--font-mono, ui-monospace), monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--k-tone-soft, var(--o-inset));
+  color: var(--k-tone-ink, var(--color-slate));
+}
 
 /* ══ the diner app, in white ══════════════════════════════════════════════
    WHY IT IS NOT DARK ANY MORE.
@@ -881,21 +1169,9 @@ h4 {
   }
 }
 
-/* A queue action in the console: small, plain, and identical whether it renews
-   or reactivates. The console has one visual weight on purpose — nothing in an
-   internal tool should look more important than the row it sits on. */
-.k-quick {
-  border-radius: 6px;
-  border: 1px solid #2b3145;
-  background: #1a1f2b;
-  padding: 6px 10px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #c9cfdd;
-  white-space: nowrap;
-}
-.k-quick:hover { border-color: #3d465e; color: #fff; }
-.k-quick:active { transform: scale(0.97); }
+/* `.k-quick` is gone: it was a dark-navy chip left over from the dark console,
+   and it is `.k-btn.k-btn--ghost.k-btn--sm` now. See the console block above
+   for why a filled dark button was the wrong "quiet" on a white row. */
 
 /* The landing is dark while the app's default page surface is light lavender.
    Without this the BODY behind the page stays light, which shows as a pale

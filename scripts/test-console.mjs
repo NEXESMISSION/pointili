@@ -65,8 +65,83 @@ check(
 );
 
 const consoleTxt = await sa.locator("body").innerText();
-check("the console shows the work queue", /À traiter/i.test(consoleTxt));
+/*
+  THE FRONT PAGE ANSWERS ONE QUESTION, EITHER WAY.
+
+  This used to assert the literal heading "À traiter", which broke the day the
+  console became seven pages and the queue split into three named sections
+  (paiements / cafés / accès anticipé). Testing for a specific string was
+  testing the wording, not the behaviour — and the behaviour is the contract:
+  /admin either names work waiting or says plainly that none is, and it never
+  leaves an operator staring at a screen that could mean either.
+*/
+check(
+  "the front page says whether anything needs a decision",
+  /Tout est à jour|à traiter|à valider|à rappeler/i.test(consoleTxt),
+  consoleTxt.split("\n").find((l) => l.trim()) ?? "",
+);
 check("the console does not shout", !/ZONE SENSIBLE|Confirmez votre mot de passe/i.test(consoleTxt));
+
+/*
+  ── THE CONSOLE IS MANY PAGES, AND THEY ALL RESOLVE ───────────────────────
+
+  The point of the split is that every section has an ADDRESS. A section that
+  404s or bounces to the login page is worse than the single scroll it replaced,
+  and nothing else in this suite would notice — the front page renders fine
+  whether or not /admin/journal exists.
+*/
+for (const path of ["/admin/cafes", "/admin/argent", "/admin/leads", "/admin/trafic", "/admin/journal"]) {
+  const r = await sa.goto(BASE + path, { waitUntil: "networkidle" });
+  check(
+    `${path} is a real page`,
+    r?.status() === 200 && new URL(sa.url()).pathname === path,
+    `status=${r?.status()} → ${new URL(sa.url()).pathname}`,
+  );
+}
+
+/*
+  ── AND A CAFÉ IS ONE OF THEM ─────────────────────────────────────────────
+
+  The whole reason for the rebuild: a shop used to be a row that opened a modal
+  with four numbers in it. Its page has to exist, be reachable BY CLICKING THE
+  ROSTER (not just by typing a uuid), and carry the things the modal could not —
+  the ledger, the programme settings, the levers.
+*/
+{
+  await sa.goto(`${BASE}/admin/cafes`, { waitUntil: "networkidle" });
+  /* :visible matters — this page is 390px wide here, so the roster renders as
+     cards and the desktop table is display:none with an identical set of links
+     inside it. Taking .first() without the filter clicks the hidden one, which
+     is a hang rather than a failure. */
+  const row = sa.locator('a[href^="/admin/cafes/"]:visible').first();
+  /* waitForURL alongside the click, not after it: this is a client-side
+     navigation, so networkidle can settle on the page we are LEAVING and the
+     assertion reads the old address. */
+  const onShop = await Promise.all([
+    sa.waitForURL(/\/admin\/cafes\/[0-9a-f-]{36}/, { timeout: 20000 }).then(() => true),
+    row.click(),
+  ])
+    .then(() => true)
+    .catch(() => false);
+  await sa.waitForLoadState("networkidle");
+  check("a café row opens the café's own page", onShop, new URL(sa.url()).pathname);
+
+  const shopTxt = await sa.locator("body").innerText();
+  check(
+    "the café page shows what the drawer could not",
+    /Dernières opérations/i.test(shopTxt) &&
+      /Programme/i.test(shopTxt) &&
+      /Récompenses/i.test(shopTxt),
+    "ledger + programme + récompenses",
+  );
+  /* Masked, exactly as the shop's own till masks them. A console that prints
+     full customer numbers is a console that leaks them into screenshots. */
+  check(
+    "customer numbers stay masked in the console",
+    !/\+216\d{8}/.test(shopTxt),
+    "no raw phone on the page",
+  );
+}
 
 // the owner app must not advertise it
 await sa.goto(`${BASE}/owner`, { waitUntil: "networkidle" });

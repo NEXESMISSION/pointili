@@ -1,55 +1,52 @@
-import { activeNotices, adminOverview, platformStats, recentActions, remaining, renewalQueue, traffic } from "@/lib/platform";
-import { Traffic } from "./Traffic";
-import type { AdminCafe } from "@/lib/platform";
-import { dismissNoticeAction, quickRenewAction, quickUnsuspendAction } from "./actions";
-import { BroadcastForm } from "./CafeControls";
-import { CafeTable } from "./CafeTable";
-import { Renewals } from "./Renewals";
+import Link from "next/link";
+import { adminOverview, platformStats, remaining, renewalQueue, type AdminCafe } from "@/lib/platform";
+import { earlyLeads } from "@/lib/earlyAccess";
+import { businessType } from "@/lib/businessTypes";
+import { prettyPhone, whatsappLink } from "@/lib/early";
+import { tnd, offer as findOffer, method as payMethod } from "@/lib/billing";
+import { quickRenewAction, quickUnsuspendAction } from "./actions";
+import { ago, day, Dot, PageHead, Section, shopTone, Stat } from "./ui";
 
-const KIND_LABEL: Record<string, string> = { info: "Info", warning: "Attention", urgent: "Urgent" };
-
-export const metadata = { title: "Console" };
+export const metadata = { title: "Aujourd'hui" };
 
 /**
- * The platform console — a QUEUE to clear, not a dashboard to read.
+ * AUJOURD'HUI — the only page that is allowed to interrupt.
  *
- * The old page opened with a title, a five-tile stat grid, then the whole café
- * table, then a broadcast form, then notices, then the journal: everything the
- * console can do, all at once, in the order it was built. But an operator does
- * not open this to browse. They open it to answer one question — "is anything
- * waiting on me?" — and on most days the honest answer is no.
+ * The console used to be one screen holding everything it could say, in the
+ * order it was built. This page is the opposite discipline: it shows what needs
+ * A DECISION FROM A PERSON TODAY, and nothing else. No roster, no traffic, no
+ * audit log, no totals that are merely interesting.
  *
- * So the page is now: the answer, then the work, then the archive.
+ * The test for anything on this page is: if the operator does nothing about it
+ * this week, does something get worse? A suspended shop is dark right now. An
+ * expired one went dark on its own. A shop that has TRANSFERRED MONEY is
+ * waiting on us and getting nothing. A shop that left its WhatsApp number
+ * yesterday goes cold. Everything else lives on a page you choose to open.
  *
- *   1. one line of context, small, no headline
- *   2. À TRAITER — one row per café that needs a decision, WITH the decision on
- *      the row. Renewing used to mean opening a drawer and filling three
- *      fields to do the most common thing on the screen; it is one button now.
- *   3. everything else — the searchable table
- *   4. occasional tools (broadcast, notices, journal), folded away
+ * ── THE ORDER IS THE ARGUMENT ─────────────────────────────────────────────
  *
- * When nothing needs attention the screen says so in one line, and that is the
- * console working correctly.
+ * Money already paid comes FIRST, above the shops that are dark. That is a
+ * change from the old page and it is deliberate: an expired shop is a
+ * situation, but a shop that paid eighty dinars four days ago and is still
+ * switched off is us failing to hold up our end — and it is the one thing here
+ * that costs trust rather than revenue.
+ *
+ * On most days all of it is empty, and this page says so in one line. That is
+ * the console working correctly, not a page that failed to load.
  */
-export default async function AdminPage() {
-  const [stats, cafes, actions, notices, trafficData, renewals] = await Promise.all([
+export default async function TodayPage() {
+  const [stats, cafes, renewals, leads] = await Promise.all([
     platformStats(),
     adminOverview(),
-    recentActions(12),
-    activeNotices(),
-    traffic(30),
     renewalQueue(),
+    earlyLeads(60),
   ]);
 
-  const cafeName = new Map(cafes.map((c) => [c.id, c.name]));
   const rows = cafes.map((c) => ({ ...c, left: remaining(c.planExpiresAt) }));
 
-  /*
-    The queue, in the order an operator should deal with it: a suspended café is
-    dark right now, an expired one went dark on its own, and "expires soon" is
-    the only one that is still merely a warning.
-  */
-  const queue = [
+  /* Ordered by how dark the shop is, not by name: suspended is a decision we
+     made, expired is one that made itself, "soon" is still only a warning. */
+  const alerts = [
     ...rows.filter((r) => r.suspendedAt).map((r) => ({ row: r, kind: "suspended" as const })),
     ...rows.filter((r) => !r.suspendedAt && r.left.expired).map((r) => ({ row: r, kind: "expired" as const })),
     ...rows
@@ -57,127 +54,162 @@ export default async function AdminPage() {
       .map((r) => ({ row: r, kind: "soon" as const })),
   ];
 
+  const waiting = renewals.filter((r) => r.status === "pending");
+  const fresh = leads.filter((l) => l.status === "new");
+  const clear = alerts.length === 0 && waiting.length === 0 && fresh.length === 0;
+
   return (
-    <div className="space-y-7">
-      {/* ── context, deliberately one quiet line ─────────────────────── */}
-      <p className="font-mono text-[12px] text-slate">
-        {stats.cafes} café{stats.cafes === 1 ? "" : "s"}
-        <span className="text-slate/40"> · </span>
-        {stats.live} en ligne
-        <span className="text-slate/40"> · </span>
-        {stats.diners} diner{stats.diners === 1 ? "" : "s"}
-        <span className="text-slate/40"> · </span>
-        {stats.pointsIssued.toLocaleString("fr-FR")} points émis
-      </p>
+    <div className="mx-auto max-w-4xl">
+      <PageHead
+        title="Aujourd'hui"
+        context={
+          clear
+            ? "Rien ne demande de décision."
+            : `${alerts.length + waiting.length + fresh.length} chose${
+                alerts.length + waiting.length + fresh.length === 1 ? "" : "s"
+              } à traiter.`
+        }
+      />
 
-      {/* ── 1. the work ──────────────────────────────────────────────── */}
-      <section>
-        <h2 className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.1em] text-slate">
-          À traiter{queue.length > 0 && ` (${queue.length})`}
-        </h2>
-
-        {queue.length === 0 ? (
-          <p className="rounded-lg border border-[var(--o-edge)] bg-[var(--o-panel)] px-4 py-5 text-[13px] text-slate">
-            Rien à traiter. Aucun café expiré, suspendu, ni proche de l&apos;échéance.
+      {clear && (
+        <div className="k-card mb-6 px-5 py-8 text-center">
+          <p className="text-[15px] font-bold text-charcoal">Tout est à jour.</p>
+          <p className="mt-1.5 text-[13px] text-slate">
+            Aucun café suspendu ou expiré, aucun paiement en attente, aucune demande
+            d&apos;accès à rappeler.
           </p>
-        ) : (
-          <ul className="space-y-2">
-            {queue.map(({ row, kind }) => (
-              <QueueRow key={row.id} row={row} kind={kind} />
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* ── 1b. the money queue ──────────────────────────────────────
-              Above the table and below the alerts: a shop that has PAID and is
-              waiting is more urgent than one that is merely expiring, and it is
-              the only thing here somebody is actively waiting on. */}
-      <Renewals rows={renewals} />
-
-      {/* ── 2. everything else ───────────────────────────────────────── */}
-      {cafes.length > 0 && (
-        <section>
-          <h2 className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.1em] text-slate">
-            Tous les cafés
-          </h2>
-          {/* remaining() is server-only, so each row carries its own verdict */}
-          <CafeTable rows={rows} />
-        </section>
+        </div>
       )}
 
-      {/* ── 3. the trafic — the only part of the console about people who
-              have NOT signed up yet, which is exactly what ad money buys ── */}
-      <Traffic data={trafficData} />
-
-      {/* ── 4. occasional tools, folded away ─────────────────────────── */}
-      <Drawer label="Message à tous les cafés">
-        <BroadcastForm />
-      </Drawer>
-
-      {notices.length > 0 && (
-        <Drawer label={`Annonces actives (${notices.length})`}>
+      {/* ── 1. somebody has paid and is waiting ─────────────────────────
+              Above the dark shops on purpose — see the header. */}
+      {waiting.length > 0 && (
+        <Section title={`Paiements à valider (${waiting.length})`}>
           <ul className="space-y-2">
-            {notices.map((n) => (
-              <li
-                key={n.id}
-                className="flex items-start justify-between gap-3 rounded-lg border border-[var(--o-edge)] bg-[var(--o-inset)] px-3.5 py-2.5"
-              >
-                <span className="min-w-0">
-                  <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-slate">
-                    {n.businessId ? (cafeName.get(n.businessId) ?? "café") : "tous les cafés"}
-                    {" · "}
-                    {KIND_LABEL[n.kind] ?? n.kind}
-                  </span>
-                  <span className="mt-0.5 block text-[13px] text-charcoal">{n.message}</span>
-                  <span className="mt-0.5 block text-[10.5px] text-slate">
-                    {n.expiresAt ? `expire dans ${remaining(n.expiresAt).label}` : "sans expiration"}
-                  </span>
-                </span>
-                <form action={dismissNoticeAction.bind(null, n.id)} className="shrink-0">
-                  <button
-                    type="submit"
-                    className="rounded border border-[var(--o-edge)] px-2.5 py-1.5 text-[11px] font-medium text-slate hover:text-charcoal"
+            {waiting.map((r) => (
+              <li key={r.id} className="k-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+                <Dot tone="warn" />
+                <span className="min-w-0 flex-1">
+                  <Link
+                    href={`/admin/cafes/${r.businessId}`}
+                    className="block truncate text-[14px] font-bold text-charcoal hover:text-royal"
                   >
-                    Retirer
-                  </button>
-                </form>
+                    {r.name}
+                  </Link>
+                  <span className="k-num block truncate text-[11.5px] text-slate">
+                    {tnd(r.amount)} · {findOffer(r.offer)?.label ?? r.offer} ·{" "}
+                    {payMethod(r.method)?.label ?? r.method} · {ago(r.createdAt)}
+                  </span>
+                </span>
+                {/* The receipt has to be LOOKED at before a green button, so the
+                    decision itself lives on the money page next to the image
+                    rather than as a one-tap approve here. */}
+                <Link href="/admin/argent" className="k-btn k-btn--sm">
+                  Voir le reçu
+                </Link>
               </li>
             ))}
           </ul>
-        </Drawer>
+        </Section>
       )}
 
-      {actions.length > 0 && (
-        <Drawer label={`Journal (${actions.length})`}>
-          <ul className="divide-y divide-[var(--o-edge)]">
-            {actions.map((a, i) => (
-              <li key={i} className="flex items-baseline justify-between gap-2 py-2">
-                <span className="min-w-0">
-                  <span className="text-[12px] text-charcoal">
-                    {actionLabel(a.action)}
-                    {actionTarget(a.action, a.cafe) && (
-                      <span className="text-slate">{" · "}{actionTarget(a.action, a.cafe)}</span>
-                    )}
-                  </span>
-                  <span className="block truncate font-mono text-[10.5px] text-slate/60">
-                    {a.actor ?? "—"}
-                  </span>
-                </span>
-                <span className="shrink-0 font-mono text-[10.5px] text-slate/60">
-                  {new Date(a.at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
-                </span>
-              </li>
+      {/* ── 2. shops that are dark, or about to be ──────────────────── */}
+      {alerts.length > 0 && (
+        <Section title={`Cafés à traiter (${alerts.length})`}>
+          <ul className="space-y-2">
+            {alerts.map(({ row, kind }) => (
+              <AlertRow key={row.id} row={row} kind={kind} />
             ))}
           </ul>
-        </Drawer>
+        </Section>
       )}
+
+      {/* ── 3. shops that are not customers yet ─────────────────────── */}
+      {fresh.length > 0 && (
+        <Section
+          title={`Accès anticipé à rappeler (${fresh.length})`}
+          aside={<Link href="/admin/leads" className="text-royal">tout voir →</Link>}
+        >
+          <ul className="space-y-2">
+            {fresh.slice(0, 5).map((l) => {
+              const kind = businessType(l.type);
+              return (
+                <li key={l.id} className="k-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+                  <Dot tone="warn" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[14px] font-bold text-charcoal">
+                      <span aria-hidden>{kind.emoji}</span> {l.name}
+                    </span>
+                    <span className="block truncate text-[11.5px] text-slate">
+                      {kind.label} · {ago(l.createdAt)}
+                    </span>
+                  </span>
+                  {/* The whole lead exists to produce this tap. */}
+                  <a
+                    href={whatsappLink(l.phone)}
+                    target="_blank"
+                    rel="noopener"
+                    dir="ltr"
+                    className="k-btn k-btn--sm k-btn--ok"
+                  >
+                    {prettyPhone(l.phone)}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+          {fresh.length > 5 && (
+            <p className="mt-2 text-[12px] text-slate">
+              et {fresh.length - 5} autre{fresh.length - 5 === 1 ? "" : "s"} sur{" "}
+              <Link href="/admin/leads" className="font-semibold text-royal">
+                la page accès anticipé
+              </Link>
+              .
+            </p>
+          )}
+        </Section>
+      )}
+
+      {/* ── the pulse ────────────────────────────────────────────────────
+              LAST, and small. These four are context, not work: they change
+              slowly, nobody acts on them, and at the top of the page they were
+              the first thing read every morning by an operator looking for
+              something to do. */}
+      <Section title="La plateforme">
+        <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+          <Stat
+            label="Cafés"
+            value={stats.cafes}
+            sub={`${stats.live} en ligne`}
+            tone={stats.live < stats.cafes ? "warn" : undefined}
+          />
+          <Stat label="Clients" value={stats.diners.toLocaleString("fr-FR")} sub="cartes créées" />
+          <Stat
+            label="Points émis"
+            value={stats.pointsIssued.toLocaleString("fr-FR")}
+            sub="depuis le début"
+          />
+          <Stat
+            label="Dernière activité"
+            value={
+              <span className="text-[15px]">
+                {ago(
+                  rows.reduce<string | null>(
+                    (best, r) =>
+                      r.lastActivity && (!best || r.lastActivity > best) ? r.lastActivity : best,
+                    null,
+                  ),
+                )}
+              </span>
+            }
+            sub="un point crédité quelque part"
+          />
+        </div>
+      </Section>
     </div>
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════ */
-/*  THE QUEUE                                                             */
 /* ══════════════════════════════════════════════════════════════════════ */
 
 type Kind = "suspended" | "expired" | "soon";
@@ -186,49 +218,52 @@ type Kind = "suspended" | "expired" | "soon";
  * One café that needs a decision, with the decision attached.
  *
  * The two renew buttons are the whole point: extending by six months or a year
- * is what an operator does nearly every time, and it used to cost a drawer, a
- * plan select, an amount and a unit. The drawer still exists in the table below
- * for anything unusual.
+ * is what an operator does nearly every time, and before the queue existed it
+ * cost a modal, a plan select, an amount and a unit. Anything unusual is one
+ * tap away on the shop's own page, which is a real page now.
  */
-function QueueRow({
+function AlertRow({
   row,
   kind,
 }: {
   row: AdminCafe & { left: ReturnType<typeof remaining> };
   kind: Kind;
 }) {
-  const tone =
-    kind === "suspended"
-      ? { dot: "bg-[#c0341c]", text: "text-[#b3202f]" }
-      : kind === "expired"
-        ? { dot: "bg-[#c0341c]", text: "text-[#b3202f]" }
-        : { dot: "bg-[#e0a52e]", text: "text-[#8a5a00]" };
-
+  const { tone } = shopTone(row);
   const why =
     kind === "suspended"
       ? `Suspendu — ${row.suspendedReason || "sans raison"}`
       : kind === "expired"
-        ? "Abonnement expiré — accès coupé"
+        ? `Abonnement expiré ${row.planExpiresAt ? `le ${day(row.planExpiresAt)}` : ""} — accès coupé`
         : `Expire dans ${row.left.label}`;
 
   return (
-    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--o-edge)] bg-[var(--o-panel)] px-4 py-3">
-      <span className={`h-2 w-2 shrink-0 rounded-full ${tone.dot}`} />
+    <li className="k-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+      <Dot tone={tone} />
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[14px] font-semibold text-charcoal">{row.name}</span>
-        <span className={`block truncate text-[11.5px] ${tone.text}`}>{why}</span>
+        <Link
+          href={`/admin/cafes/${row.id}`}
+          className="block truncate text-[14px] font-bold text-charcoal hover:text-royal"
+        >
+          {row.name}
+        </Link>
+        <span
+          className={`block truncate text-[11.5px] ${
+            kind === "soon" ? "text-[#8a5a00]" : "text-[#b3202f]"
+          }`}
+        >
+          {why}
+        </span>
       </span>
 
-      <span className="hidden shrink-0 font-mono text-[11px] text-slate/60 sm:block">
-        /{row.slug}
-      </span>
+      <span className="k-num hidden shrink-0 text-[11px] text-slate/60 sm:block">/{row.slug}</span>
 
       {kind === "suspended" ? (
         <form action={quickUnsuspendAction} className="shrink-0">
           <input type="hidden" name="businessId" value={row.id} />
           <input type="hidden" name="suspend" value="0" />
-          <button type="submit" className="k-quick">
+          <button type="submit" className="k-btn k-btn--sm k-btn--ghost">
             Réactiver
           </button>
         </form>
@@ -261,55 +296,9 @@ function Renew({
       <input type="hidden" name="plan" value={plan === "trial" ? "pro" : plan} />
       <input type="hidden" name="amount" value={amount} />
       <input type="hidden" name="unit" value="months" />
-      <button type="submit" className="k-quick">
+      <button type="submit" className="k-btn k-btn--sm k-btn--ghost">
         {label}
       </button>
     </form>
   );
-}
-
-/* ══════════════════════════════════════════════════════════════════════ */
-
-/** A section that is occasionally useful and never urgent. Native <details>, so
- *  it costs no JavaScript and remembers nothing — which is correct here. */
-function Drawer({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <details className="group rounded-lg border border-[var(--o-edge)] bg-[var(--o-panel)]">
-      <summary className="cursor-pointer list-none px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-slate hover:text-charcoal [&::-webkit-details-marker]:hidden">
-        <span className="inline-block w-3 text-slate/60 transition-transform group-open:rotate-90">
-          ›
-        </span>
-        {label}
-      </summary>
-      <div className="border-t border-[var(--o-edge)] px-4 py-3.5">{children}</div>
-    </details>
-  );
-}
-
-/**
- * The audit log stores raw action codes (set_plan, notice, …). An operator
- * scanning the journal wants to read what happened, not decode it — so map each
- * code to plain French, and fall back to the raw code for anything new.
- */
-const ACTION_LABELS: Record<string, string> = {
-  set_plan: "Abonnement modifié",
-  suspend: "Café suspendu",
-  unsuspend: "Café réactivé",
-  notice: "Message envoyé",
-  dismiss_notice: "Annonce retirée",
-};
-
-function actionLabel(action: string): string {
-  return ACTION_LABELS[action] ?? action;
-}
-
-/**
- * The target line, honest about scope: a notice with no café is a genuine
- * platform-wide broadcast, while plan/suspend are ALWAYS café-scoped, so a
- * missing café means it was since deleted — say so rather than implying it hit
- * everyone.
- */
-function actionTarget(action: string, cafe: string | null): string | null {
-  if (cafe) return cafe;
-  return action === "notice" ? "tous les cafés" : "café supprimé";
 }

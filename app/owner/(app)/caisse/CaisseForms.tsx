@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useTransition } from "react";
 import { QrScanner } from "@/components/QrScanner";
 import { CheckIcon, QrIcon, StampIcon } from "@/components/icons";
@@ -148,15 +147,24 @@ export function CaisseDesk({
   pointsPerTnd,
   stampsEnabled,
   stampsRequired,
-  qr,
-  slug,
+  today,
 }: {
   pointsPerTnd: number;
   stampsEnabled: boolean;
   stampsRequired: number;
-  /** The shop's own QR as SVG markup — drawn by the page, see there. */
-  qr: string;
-  slug: string;
+  /*
+    THE SHIFT, RENDERED BY THE PAGE AND HANDED IN.
+
+    This is a Client Component and the day's figures come from a server read
+    (lib/db ownerToday), so the page renders <Today> and passes the finished
+    element down. The alternative — fetching it from here — would put a
+    loading state and an effect on the one screen that must be instant.
+
+    It replaces the QR card that used to sit in this column. The QR has its own
+    tab now, which is where a thing that creates every card in the shop
+    belongs; leaving a copy here would have been the third place it appears.
+  */
+  today: React.ReactNode;
 }) {
   /* No `mode` any more — see the note where the tabs used to be. */
   const [stage, setStage] = useState<Stage>("keypad");
@@ -231,11 +239,11 @@ export function CaisseDesk({
       data-owner-wide (globals.css) — but ONLY the cap moves.
 
       The till is a one-handed terminal and every phone pixel of it stays where
-      it is. What changed is the laptop on the back counter: three cards down a
-      680px ribbon with seven hundred pixels of empty screen beside them, and
-      the collect field below the fold. At lg the two jobs sit side by side —
-      the person paying on the left, the person collecting on the right — so
-      neither one is a scroll away when there is a queue.
+      it is. What changed is the laptop on the back counter: a 680px ribbon of
+      small cards with seven hundred pixels of empty screen beside it. At lg the
+      till keeps the left seven columns and the shop's own day takes the five it
+      never wanted — so the width finally carries something, and the thing it
+      carries is the one thing a terminal cannot tell you.
     */
     <div data-owner-wide className="space-y-4">
       {/*
@@ -277,24 +285,43 @@ export function CaisseDesk({
           </button>
         </section>
       ) : (
-        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
-          <div className="space-y-4">
+        /*
+          SEVEN AND FIVE, NOT SIX AND SIX.
+
+          The two halves of this screen are not equals. The left is the till —
+          what a cashier touches — and the right is the day, which is read.
+          Splitting them evenly made the working half narrower than it needed to
+          be while the reading half had more room than it could use.
+        */
+        <div className="space-y-4 lg:grid lg:grid-cols-12 lg:items-start lg:gap-5 lg:space-y-0">
+          <div className="space-y-4 lg:col-span-7">
             {/*
               THE SCANNER SITS ABOVE BOTH JOBS, because it now does both.
 
-              It used to live inside the "Ajouter des points" card, which was true
-              when the only scannable thing was a customer's card. A reward code
-              is scannable too — so a button buried under that heading was a
-              button the cashier collecting a reward had no reason to read, and
-              they went on typing six characters while the queue waited.
+              It used to live inside the "Ajouter des points" card, which was
+              true when the only scannable thing was a customer's card. A reward
+              code is scannable too — so a button buried under that heading was
+              a button the cashier collecting a reward had no reason to read,
+              and they went on typing six characters while the queue waited.
 
-              One lens, at the top, before the two things you might reach for when
-              the camera is not the answer.
+              ── AND IT IS NOT THE LOUDEST THING ON A LAPTOP ─────────────────
+
+              On a phone at the counter the camera IS the tool: full width,
+              filled, first. On the laptop in the back office there is usually
+              no usable camera at all, and this was a 56px violet slab spanning
+              seven columns above a search field rendered in pale lilac — the
+              screen shouted the one control that would not work and whispered
+              the one that would.
+
+              Filled and full-height below md; outlined and compact from md up,
+              where the field beneath it is what actually gets used. The switch
+              is `.a-scan` in globals.css — a Tailwind breakpoint variant cannot
+              apply a plain class, which is worth knowing before trying.
             */}
             <button
               type="button"
               onClick={() => setStage("scan")}
-              className="a-btn flex !min-h-[56px] items-center justify-center gap-2 !text-[16px]"
+              className="a-btn a-scan flex items-center justify-center gap-2"
             >
               <QrIcon className="h-5 w-5" /> Scanner le QR
             </button>
@@ -333,72 +360,22 @@ export function CaisseDesk({
                 {error}
               </p>
             )}
-          </div>
+            {/* ── this person is collecting ───────────────────────
+                BOTH JOBS IN ONE COLUMN, because both are the till.
 
-          {/* ── this person is collecting ─────────────────────────── */}
-          <div className="space-y-4">
+                Paying and collecting used to be left and right, which read as
+                two equal halves of the screen and left the actual second half —
+                how the day is going — with nowhere to be. They are the same job
+                done by the same hands, one after the other; the day is the
+                other thing in the room. */}
             <ValidateForm scanned={voucher} />
-            {/*
-            ── THE SHOP'S QR, AS ITSELF ──────────────────────────────────────
-            This was a grey strip: a generic icon, a title, a sentence, and a
-            chevron a thousand pixels away on a laptop. Three small things marooned
-            in a very wide box, and the one thing it is about — the code — was not
-            on it. An icon of a QR is a worse picture of a QR than a QR.
-
-            So the code is the object now: printed small, on white (it has to be
-            dark-on-light or no camera reads it), next to what it does and the two
-            things an owner ever wants — open it, or print it. It is a CARD, so at
-            1440 it sits in the right-hand column beside the till instead of
-            stretching across the page.
-          */}
-          <section className="a-card flex items-center gap-4 p-4">
-            <Link
-              href="/owner/qr"
-              aria-label="Ouvrir mon QR"
-              className="grid h-[76px] w-[76px] shrink-0 place-items-center rounded-2xl bg-white p-2 ring-1 ring-[var(--o-edge)] transition active:scale-95 [&>svg]:h-full [&>svg]:w-full"
-              dangerouslySetInnerHTML={{ __html: qr }}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-bold text-charcoal">Mon QR</p>
-              <p className="mt-0.5 text-[12px] leading-snug text-slate">
-                À poser sur les tables — c&apos;est lui qui crée les cartes.
-              </p>
-              <p className="mt-1 truncate font-mono text-[11px] text-slate">
-                pointili.online/{slug}
-              </p>
-              <div className="mt-2.5 flex flex-wrap gap-2">
-                <Link
-                  href="/owner/qr"
-                  className="rounded-xl bg-[var(--o-inset)] px-3 py-1.5 text-[12px] font-bold text-charcoal transition active:scale-95"
-                >
-                  Ouvrir en grand
-                </Link>
-                <Link
-                  href="/owner/qr?print=1"
-                  className="rounded-xl border border-[var(--o-edge)] px-3 py-1.5 text-[12px] font-bold text-slate transition active:scale-95"
-                >
-                  Imprimer
-                </Link>
-              </div>
-            </div>
-          </section>
           </div>
+
+          {/* ── and how the shift is going ────────────────────────── */}
+          <div className="lg:col-span-5">{today}</div>
         </div>
       )}
 
-      {/*
-        The shop's own QR, which used to be a fourth tab.
-
-        A tab is a place you go back to. Nobody goes back to their QR code —
-        they print it once, stick it on the tables, and then need it again only
-        to show somebody. Meanwhile it sat permanently in the thumb row of a
-        screen used dozens of times a shift, and the till had a hand's width of
-        empty page under the keypad.
-
-        So it is a line at the bottom of the till instead: still one tap on day
-        one, when putting the QR on the tables IS the job, and out of the way
-        every day after. /owner/qr is unchanged and still deep-linkable.
-      */}
       {customer && (
         <CustomerSheet
           key={customer.ref}

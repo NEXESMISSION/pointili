@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { currentOwner, ownerCafe } from "@/lib/auth/owner";
-import { offer, method } from "@/lib/billing";
+import { pickMethod, pickOffer, platformSettings } from "@/lib/settings";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type RenewState = { ok?: string; error?: string };
@@ -11,10 +11,15 @@ export type RenewState = { ok?: string; error?: string };
  * Send a renewal for review.
  *
  * Everything that decides money is resolved HERE, from the offer id: the
- * months and the amount are read out of lib/billing, never off the form. A
- * form that carried its own price would let anyone renew for a year at 1 TND
- * by editing one hidden field, and the operator approving it would have no way
- * to notice — the console shows what the row says.
+ * months and the amount are read out of the PLATFORM SETTINGS, never off the
+ * form. A form that carried its own price would let anyone renew for a year at
+ * 1 TND by editing one hidden field, and the operator approving it would have
+ * no way to notice — the console shows what the row says.
+ *
+ * The prices used to come from lib/billing's constants, which meant changing
+ * one was a deploy. They come from the settings row now (0041) and the rule is
+ * unchanged: whatever the owner's browser sent, the amount written down is the
+ * one the platform currently charges.
  */
 export async function submitRenewalAction(
   _prev: RenewState,
@@ -23,8 +28,9 @@ export async function submitRenewalAction(
   const [me, cafe] = await Promise.all([currentOwner(), ownerCafe()]);
   if (!me || !cafe) return { error: "Non autorisé." };
 
-  const chosen = offer(String(formData.get("offer") ?? ""));
-  const pay = method(String(formData.get("method") ?? ""));
+  const settings = await platformSettings();
+  const chosen = pickOffer(settings, String(formData.get("offer") ?? ""));
+  const pay = pickMethod(settings, String(formData.get("method") ?? ""));
   if (!chosen) return { error: "Choisissez une formule." };
   if (!pay) return { error: "Choisissez un moyen de paiement." };
 
