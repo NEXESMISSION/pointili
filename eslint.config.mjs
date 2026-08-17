@@ -22,6 +22,19 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Any build output, not just the default one.
+    //
+    // .gitignore already covers these with a ".next-" prefix pattern — a
+    // verification build writes .next-verify — but ESLint keeps its own ignore
+    // list and did not. So `npx eslint .` walked 310 generated files and
+    // reported 546 errors in code nobody wrote, which is what a person sees
+    // when they run the lint command this project documents. A lint that is
+    // always red is a lint nobody reads.
+    //
+    // Line comments, not a block: the pattern itself contains the two
+    // characters that close one, which is how this file was briefly a syntax
+    // error rather than a config.
+    ".next-*/**",
   ]),
 ]);
 

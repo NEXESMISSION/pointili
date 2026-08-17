@@ -10,6 +10,7 @@ import { createClient } from "@supabase/supabase-js";
 import { deleteAccount, env, onExit } from "./db.mjs";
 import { ensureTestCafe, dropTestCafe, TEST_SLUG, OWNER_EMAIL } from "./fixture.mjs";
 import { chromium } from "playwright-core";
+import { readFileSync } from "node:fs";
 
 const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
@@ -689,11 +690,37 @@ check("wheel endpoint /api/play is removed", playStatus === 404 || playStatus ==
   await page.waitForURL("**/cartes**", { timeout: 20000 }).catch(() => {});
   check("shared phone holds a diner session", await hasDiner(), page.url());
 
-  // the owner doors must be reachable ANYWAY — they are what the split used
-  // to guarantee by living on another host
+  /*
+    The owner doors must be reachable ANYWAY — they are what the split used to
+    guarantee by living on another host.
+
+    WHAT "REACHABLE" MEANS FOR /owner/signup DEPENDS ON THE OPERATOR.
+
+    While payments are off, signing up is deliberately closed and the door
+    sends people to the waiting list instead: a trial nobody can pay to finish
+    ends with a dark shop and a customer base locked inside it. So this cannot
+    assert a fixed pathname without asserting the operator's current switch.
+
+    What it CAN assert either way is the thing the check is actually for — a
+    diner cookie must not change where an owner lands. So the expected
+    destination is read from the same setting the page reads, and the check
+    fails if the wrong ONE of the two happens, rather than passing whenever
+    either does.
+  */
+  const paymentsLive = /paymentsLive:\s*!PLACEHOLDER/.test(
+    readFileSync("lib/settings.ts", "utf8"),
+  )
+    ? !/export const PLACEHOLDER = true/.test(readFileSync("lib/billing.ts", "utf8"))
+    : true;
+
   for (const p of ["/owner/login", "/owner/signup"]) {
+    const want = p === "/owner/signup" && !paymentsLive ? "/early" : p;
     await page.goto(BASE + p, { waitUntil: "networkidle" });
-    check(`a diner cookie does not block ${p}`, new URL(page.url()).pathname === p, new URL(page.url()).pathname);
+    check(
+      `a diner cookie does not block ${p}`,
+      new URL(page.url()).pathname === want,
+      `${new URL(page.url()).pathname} (expected ${want})`,
+    );
   }
 
   // and signing in must work from that same jar
