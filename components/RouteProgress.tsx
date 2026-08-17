@@ -39,6 +39,28 @@ import { usePathname } from "next/navigation";
  *   · var(--cafe) with a fallback: inside a shop it is that shop's colour,
  *     everywhere else it is ours. One component, no props, right on both.
  */
+/*
+  ── THE NAVIGATIONS A CLICK LISTENER CANNOT SEE ───────────────────────────
+
+  The listener below covers <a> and <form>, which is most of the product. It
+  cannot see router.push(): there is no anchor to catch and no submit event,
+  so a programmatic navigation left the screen perfectly still — and those are
+  not obscure call sites. BackLink is the back arrow on every diner screen and
+  on owner Réglages, which makes it one of the most-pressed controls here.
+  ScrollTop's own comment has said "router.push() fires no event" all along.
+
+  So a navigation can announce itself. An event on window rather than a
+  callback or a context: the callers are scattered across client components
+  that have no relationship to this one, and a component that is not mounted
+  simply means nobody is listening, which is the correct outcome.
+*/
+export const NAVIGATING = "pointili:navigating";
+
+/** Call immediately before router.push()/replace() so the bar can appear. */
+export function signalNavigation() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(NAVIGATING));
+}
+
 export function RouteProgress() {
   const pathname = usePathname();
   const [value, setValue] = useState<number | null>(null); // null = hidden
@@ -119,12 +141,15 @@ export function RouteProgress() {
 
     document.addEventListener("click", onClick, true);
     document.addEventListener("submit", onSubmit, true);
+    /* router.push() and friends — see signalNavigation above. */
+    window.addEventListener(NAVIGATING, start);
     /* Leaving for a real page load (or the back button restoring a bfcache
        entry) must not leave a bar behind. */
     window.addEventListener("pagehide", finish);
     return () => {
       document.removeEventListener("click", onClick, true);
       document.removeEventListener("submit", onSubmit, true);
+      window.removeEventListener(NAVIGATING, start);
       window.removeEventListener("pagehide", finish);
       clear();
     };

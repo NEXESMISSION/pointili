@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signalNavigation } from "@/components/RouteProgress";
 import { useMemo, useState } from "react";
 import { businessType } from "@/lib/businessTypes";
 import type { WalletCafe } from "@/lib/db";
@@ -147,7 +148,7 @@ export function WalletView({
              router.back() on a page with no other exit. */
           onClick={() => {
             const target = backSlug ?? shown[0]?.slug ?? cards[0]?.slug;
-            if (target) router.push(`/${target}`);
+            if (target) { signalNavigation(); router.push(`/${target}`); }
             else router.back();
           }}
           aria-label="Retour"

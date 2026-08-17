@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { signalNavigation } from "@/components/RouteProgress";
 
 /**
  * The way out of a sub-screen.
@@ -47,7 +48,7 @@ export function BackLink({
       aria-label={label}
       onClick={() => {
         if (!exact && typeof window !== "undefined" && window.history.length > 1) router.back();
-        else router.push(fallback);
+        else { signalNavigation(); router.push(fallback); }
       }}
       className={`-ml-1.5 grid h-10 w-10 shrink-0 place-items-center rounded-full text-slate transition hover:bg-[var(--track)] active:scale-[0.95] ${className}`}
     >

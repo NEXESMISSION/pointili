@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { signalNavigation } from "@/components/RouteProgress";
 
 /**
  * Mon QR — the simplest version, kept simple on purpose.
@@ -42,7 +43,7 @@ export function QrScreen({
       <div className="flex items-center print:hidden">
         <button
           type="button"
-          onClick={() => router.push("/owner")}
+          onClick={() => { signalNavigation(); router.push("/owner"); }}
           aria-label="Retour"
           className="grid h-11 w-11 place-items-center rounded-full text-slate transition active:scale-95"
         >
