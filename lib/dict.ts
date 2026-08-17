@@ -13,6 +13,18 @@
  * تنجم, ما…ش. If a sentence would make a Tunisian smile at how formal it is, it
  * is wrong and should be rewritten.
  *
+ * ── FRENCH WORDS STAY IN FRENCH, IN LATIN LETTERS ─────────────────────────
+ *
+ * This is how the language is actually written here, and the landing page was
+ * rewritten by the owner to match: application, commission, écran, engagement,
+ * connecté, caisse, virement, Statistiques, Programme fidélité. Transliterating
+ * them into Arabic script — أبليكاسيون, كوميسيون — is a translator's instinct
+ * and it reads as a foreigner's guess at derja. A Tunisian writing to another
+ * Tunisian types the French word.
+ *
+ * The test is whether the word arrived in Tunisia in French: قهوة and كارت are
+ * Arabic here and stay Arabic; commission and application never were.
+ *
  * Words this file commits to, because the near-synonym is the tell:
  *
  *   باقيلك    not متبقي and not just باقي — "you have N left" is one word here
@@ -569,21 +581,25 @@ const TN: Record<string, string> = {
   "Combien de cartes créées, et à quel rythme elles arrivent.": "قدّاش من كارت جديدة تعملت، وبأيّ سرعة قاعدين يجيو.",
   "Récompenses utilisées": "الهدايا اللي تاخذات",
   "Laquelle marche vraiment, et laquelle dort depuis trois mois.": "أنهي وحدة ماشية بالحقّ، وأنهي وحدة راقدة من ثلاثة شهور.",
-  "Programme fidélité": "برنامج فيداليتي",
-  "QR Code illimité": "كود QR بلا حدّ",
-  "Carte à vos couleurs": "كارت بالألوان متاعك",
-  "Français et tunisien": "بالفرنسية وبالتونسي",
-  "Analyses et statistiques": "أرقام وستاتيستيك",
-  "Support en Tunisie": "مساعدة من تونس",
-  "Aller à ma caisse": "أمشي للكاس متاعي",
-  "Vous êtes déjà connecté": "راك داخل ديجا",
+  "Programme fidélité": "Programme fidélité",
+  "QR Code illimité": "QR Code من غير limite",
+  "Carte à vos couleurs": "كارت على كيفك",
+  "Français et tunisien": "بالفرنسي وبالتونسي",
+  "Analyses et statistiques": "Statistiques وتحاليل",
+  "Support en Tunisie": "Support من تونس",
+  "Aller à ma caisse": "إمشي للcaisse متاعك",
+  "Vous êtes déjà connecté": "إنت connecté من قبل؟",
   "Commencer gratuitement": "ابدا بلاش",
   "14 jours gratuits · Sans carte bancaire": "14 نهار بلاش · من غير كارت بنكية",
   "Ma caisse": "الكاس متاعي",
-  "Fait en Tunisie, pour la Tunisie": "معمول في تونس، وللتوانسة",
-  "Vos habitués reviennent.": "حرفاءك الدايمين يرجعولك.",
+  "Fait en Tunisie, pour la Tunisie": "مصنوع في تونس، للتوانسة",
+  "Vos habitués reviennent.": "حرفاك يرجعولك.",
+  /* The hero photograph's alt text — the largest image on the site, and it was
+     the one string on this page a screen reader still heard in French. */
+  "La carte de fidélité Pointili sur un téléphone : Yassine a 118 points chez Café El Manar, son code client MEEF, et une récompense à récupérer":
+    "كارت Pointili في تلفون الحريف: ياسين عندو 118 point عند Café El Manar، الـcode client متاعو MEEF، وعندو récompense يستنّى باش ياخوها.",
   "Vous saurez enfin lesquels.": "وأخيرا باش تعرف شكون فيهم.",
-  "La carte de fidélité de votre commerce, dans le téléphone de vos clients.": "كارت الفيداليتي متاع محلّك، في تليفون حرفاءك.",
+  "La carte de fidélité de votre commerce, dans le téléphone de vos clients.": "كارت fidélité متاع حانوتك، في تلفون حرفاك.",
   "Aucune application": "من غير أبليكاسيون",
   "— ni pour eux, ni pour vous.": "— لا ليهم ولا ليك.",
   "Vos points,": "النقاط متاعك،",
@@ -603,20 +619,19 @@ const TN: Record<string, string> = {
   "Vous connaissez vos habitués. Vous ne savez pas combien sont revenus.": "تعرف حرفاءك الدايمين. أمّا ما تعرفش قدّاش منهم رجعو.",
   "Le carton ne compte pas, et personne n'a jamais tenu ce registre à la main. Voilà les quatre chiffres qui apparaissent dans votre espace, sans que vous ayez rien à saisir.": "الكرتونة ما تحسبش، وحتّى حدّ عمرو ما عمل هذا الحساب بيدو. هاذم الأربعة أرقام اللي يبانو في الفضاء متاعك، من غير ما تكتب حتّى حاجة.",
   "En dessous de cinq clients, l'écran affiche « Trop tôt pour conclure » au lieu d'un taux. Un chiffre sur quatre passages ne veut rien dire, et nous préférons le dire.": "كان عندك أقلّ من خمسة حرفاء، الإيكران يكتب «مازال بكري باش نحكمو» بلاصة النسبة. رقم مبني على أربع زيارات ما يقول حتّى حاجة، وأحنا نحبّو نقولوها.",
-  "La carte de fidélité Pointili sur un téléphone : Yassine a 118 points chez Café El Manar, son code client MEEF, et une récompense à récupérer": "كارت الفيداليتي متاع Pointili في تليفون: ياسين عندو 118 نقطة عند Café El Manar، الكود متاعو MEEF، وهدية تستنّاه",
   "Le produit, filmé": "المنتج، متصوّر",
-  "Rien n'est dessiné ici.": "ما فمّا حتّى حاجة مرسومة هوني.",
-  "Chaque écran ci-dessous est le vrai produit, filmé en train de faire ce qu'il dit.": "كلّ إيكران تحت هو المنتج الحقيقي، متصوّر وهو يعمل اللي يقولو.",
+  "Rien n'est dessiné ici.": "موش animation وخلاص.",
+  "Chaque écran ci-dessous est le vrai produit, filmé en train de faire ce qu'il dit.": "كل écran تشوفو لتحت هو المنتج بالحق، متصوّر وهو يخدم كيف ما هو.",
   "Voici votre caisse.": "هذا الكاس متاعك.",
   "Voici votre téléphone.": "هذا تليفونك.",
   "Le prix": "السومة",
-  "Un prix simple.": "سومة واضحة.",
+  "Un prix simple.": "سوم واضح.",
   "Pas de commission sur vos ventes. Pas de limite de clients. Pas de palier qui se déclenche le jour où ça marche.": "ما فمّاش كوميسيون على اللي تبيعو. ما فمّاش حدّ لعدد الحرفاء. وما فمّاش سومة تطلع نهار اللي تبدا الحكاية تمشي.",
   "Vous payez par D17, Flouci ou virement.": "تخلّص بـD17 ولا Flouci ولا فيرمان.",
   "Vous envoyez la photo du reçu depuis l'application, et votre compte est prolongé — pas de carte bancaire, pas de prélèvement qui se renouvelle tout seul.": "تصوّر الوصل وتبعثو من الأبليكاسيون، والحساب متاعك يتمدّد — من غير كارت بنكية، ومن غير ما يتسحبولك فلوس وحدهم.",
   "Meilleure offre": "أحسن عرض",
   "TND / an": "TND / عام",
-  "Tout ce dont vous avez besoin pour fidéliser vos clients.": "كلّ اللي تحتاجو باش تخلّي حرفاءك يرجعولك.",
+  "Tout ce dont vous avez besoin pour fidéliser vos clients.": "كل اللي تحتاجو باش حرفاك يرجعولك.",
   "TND / 6 mois": "TND / 6 شهور",
   "Parfait pour commencer. Les mêmes fonctions, la même assistance — vous payez juste plus souvent.": "باهي باش تبدا. نفس الخدمات ونفس المساعدة — كان إنّك تخلّص أكثر مرّات.",
   "Choisir cette offre": "اختار هذا العرض",
@@ -624,7 +639,7 @@ const TN: Record<string, string> = {
   "La fidélité commence aujourd'hui.": "الفيداليتي تبدا اليوم.",
   "Vous créez votre espace, vous réglez vos récompenses, vous imprimez votre QR. Aucun matériel, aucun engagement, et vos habitués n'ont rien à installer.": "تعمل الفضاء متاعك، تظبّط الهدايا متاعك، وتطبع الكود متاعك. من غير ماتيريال، من غير عقد يشدّك، وحرفاءك ما ينزّلوش حتّى حاجة.",
   "Créer ma boutique": "اعمل المحلّ متاعي",
-  "Conçu et hébergé pour la Tunisie": "معمول ومستضاف لتونس",
+  "Conçu et hébergé pour la Tunisie": "متصمّم ومُستضاف في تونس، للتوانسة",
   "Confidentialité": "الخصوصية",
   "Conditions": "الشروط",
   "Contact": "اتصل بينا",
@@ -794,43 +809,43 @@ const TN: Record<string, string> = {
   /* Templated, because the figures come from lib/billing — the page must not
      be able to advertise a price the renewal screen does not charge. */
   "Ou {n} TND pour 6 mois — sans engagement.": "ولا {n} دينار لـ6 شهور — من غير التزام.",
-  "Économisez {n} TND": "توفّر {n} دينار",
+  "Économisez {n} TND": "توفّر {n} د.ت",
   /* The two price boxes. "1 an" and "6 mois" also exist in lib/billing as the
      offer labels; these are the headings above the numbers. */
   "1 an": "عام",
   "6 mois": "6 شهور",
-  TND: "دينار",
-  "Choisir 6 mois": "نختار 6 شهور",
+  TND: "د.ت",
+  "Choisir 6 mois": "إختار 6 شهور",
   /* The landing page is read by both audiences; this is the customer's line.
      /moi carries the mirror of it — "Vous êtes commerçant ?" */
   "Vous êtes client ?": "إنت حريف؟",
-  "Retrouvez vos cartes": "لقى الكوارط متاعك",
-  "Sans engagement": "من غير التزام",
+  "Retrouvez vos cartes": "إلقى الكارطات متاعك",
+  "Sans engagement": "من غير engagement",
   /* The comparison lines, as lib/billing writes them. They are keyed on the
      exact French so a change to the catalogue shows up here as untranslated
      rather than as a stale figure in Arabic. */
-  "≈ 10 TND / mois": "≈ 10 دينار / شهر",
-  "≈ 13 TND / mois": "≈ 13 دينار / شهر",
+  "≈ 10 TND / mois": "قرابة 10 د.ت في الشهر",
+  "≈ 13 TND / mois": "قرابة 13 د.ت في الشهر",
   /*
     The hero's second line. "Simplement." replaced "Vous saurez enfin lesquels."
     — بساطة would be the noun; ".وبكل بساطة" is how the promise is actually
     said, and it keeps the full stop the design sets it with.
   */
-  "Simplement.": "وبكل بساطة.",
+  "Simplement.": "بكل سهولة.",
   "Découvrir Pointili": "شوف Pointili",
-  "Voir comment ça marche": "شوف كيفاش يخدم",
+  "Voir comment ça marche": "شوف كيفاش تخدم",
   /* The hero's three reasons. Short on purpose — they sit under an icon. */
-  "Ultra rapide": "سريع برشا",
-  "Encaissez en 5 secondes": "تخلّص في 5 ثواني",
-  "Sans application": "من غير أبليكاسيون",
-  "Ni pour vous, ni pour vos clients": "لا ليك لا لحرفاءك",
-  "Zéro frais caché": "ما فمّاش مصاريف مخبّية",
-  "Pas de commission sur vos ventes": "ما ناخذوش كوميسيون على البيع متاعك",
+  "Ultra rapide": "سريع برشة",
+  "Encaissez en 5 secondes": "تكمّل الخلاص في 5 ثواني",
+  "Sans application": "من غير application",
+  "Ni pour vous, ni pour vos clients": "لا إنت يلزمك application، لا حريفك.",
+  "Zéro frais caché": "من غير مصاريف مخبّية",
+  "Pas de commission sur vos ventes": "ما فما حتى commission على مبيعاتك.",
   /* The four columns under the price, and the two lines above it. */
   "Pas de commission sur vos ventes. Pas de limite de clients.":
-    "ما ناخذوش كوميسيون على البيع متاعك. وما فمّاش حدّ للحرفاء.",
+    "ما فماش commission على مبيعاتك. وما فماش حدّ في عدد الحرفاء.",
   "D17, Flouci ou virement — vous envoyez la photo du reçu depuis l'application.":
-    "D17 ولا Flouci ولا فيرمان — تبعث تصويرة الوصل من الأبليكاسيون.",
+    "D17، Flouci ولا virement — تبعت تصويرة الوصل من داخل التطبيق.",
   "Points, visites et récompenses": "نقاط، زيارات وهدايا",
   "Un coût maîtrisé": "ثمن واضح",
   "Un seul paiement par an, rien d'autre": "خلاص وحيد في العام، وخلاص",
@@ -838,8 +853,8 @@ const TN: Record<string, string> = {
   "Qui revient, et à quel rythme": "شكون يرجعلك، وقدّاش من مرّة",
   "Une équipe là pour vous aider": "فمّا فريق هوني باش يعاونك",
   "Encaisser": "الخلاص",
-  "Cinq secondes, pendant que vous rendez la monnaie": "خمس ثواني، وإنت تردّ الصرف",
-  "Le client donne son numéro de téléphone. Vous tapez le montant en dinars. C'est fini.": "الحريف يعطيك نمرة تليفونو. إنت تكتب المبلغ بالدينار. وسالينا.",
+  "Cinq secondes, pendant que vous rendez la monnaie": "5 ثواني، وإنت تعطي في الصرف",
+  "Le client donne son numéro de téléphone. Vous tapez le montant en dinars. C'est fini.": "الحريف يعطيك رقم تلفونو. تدخل المبلغ بالدينار. وهكّا وفّينا.",
   "Le numéro suffit — le client n'a rien à sortir": "النمرة تكفي — الحريف ما يحتاجش يخرّج حتّى حاجة",
   "Vous tapez des DINARS, jamais des points": "إنت تكتب الدنانير، وعمرك ما تكتب نقاط",
   "Le calcul se fait sur le serveur : personne n'invente un solde": "الحساب يتعمل في السيرفور: حتّى حدّ ما ينجّمش يخترع رصيد",
@@ -849,9 +864,9 @@ const TN: Record<string, string> = {
   "Vous choisissez le nombre de visites": "إنت اللّي تختار قدّاش من زيارة",
   "Carte pleine : le code de récompense part tout seul": "كارت كامل: كود الهديّة يمشي وحدو",
   "Rien à ranger, rien à retrouver": "ما فمّا حتّى حاجة ترتّبها، ولا حتّى حاجة تلوّج عليها",
-  "Savoir": "الأرقام",
-  "Enfin le chiffre que vous n'avez jamais eu": "أخيرا الرقم اللّي عمرك ما كان عندك",
-  "Combien de vos clients reviennent ? Sur 7 jours, 30 jours, ou depuis le début — avec l'écart par rapport à la période d'avant.": "قدّاش من حريف يرجعلك؟ في 7 أيام، 30 نهار، ولا من البداية — ومعاه الفرق مع الفترة اللّي قبل.",
+  "Savoir": "إعرف",
+  "Enfin le chiffre que vous n'avez jamais eu": "أخيرًا تعرف شكون من حرفاك يرجع يشري عندك",
+  "Combien de vos clients reviennent ? Sur 7 jours, 30 jours, ou depuis le début — avec l'écart par rapport à la période d'avant.": "قدّاش من حريف رجعلك؟ في آخر 7 أيّام، 30 يوم، ولا من نهار بديت — وتشوف الفرق بين الفترة هاذي واللي قبلها.",
   "Taux de retour, visites, clients servis, nouveaux": "نسبة الرجوع، الزيارات، الحرفاء اللّي خدمتهم، والجداد",
   "En dessous de 5 clients : « Trop tôt pour conclure »": "أقلّ من 5 حرفاء: «مازال بكري باش نحكمو»",
   "Aucun « bénéfice net » inventé — votre marge ne nous regarde pas": "ما نخترعولكش «ربح صافي» — الربح متاعك ما يخصّناش",
