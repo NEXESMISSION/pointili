@@ -43,6 +43,11 @@
  * the shop's address stays the shop's address.
  */
 
+/* The one way a points figure is written — see counted() below for why this
+   file, of all files, has to go through it. points.ts imports nothing, so
+   there is no cycle. */
+import { fmtPoints } from "./points";
+
 export type Lang = "fr" | "tn";
 
 export const LANG_COOKIE = "pointili_lang";
@@ -158,7 +163,31 @@ function unitWord(lang: Lang, count: number, unit: Unit): string {
 
 /** "30 نقطة", "10 نقاط", "3 points", "1 point". The number is never dropped. */
 function counted(lang: Lang, count: number, unit: Unit): string {
-  return `${count} ${unitWord(lang, count, unit)}`;
+  /*
+    fmtPoints, not `${count}`.
+
+    This interpolated the raw JavaScript number, and every counted phrase in the
+    customer app comes through here — the card's nudge, the history total, the
+    wallet, the redeem confirmation. Points have been numeric(12,2) since 0027,
+    so the values arriving are genuinely fractional AND they are arrived at by
+    subtraction in JS: a reward priced 20 against a balance of 2,01 gives
+    17.990000000000002, and the card printed exactly that.
+
+    It was wrong twice over even when the float was clean. `${12.5}` writes
+    "12.5", and a French or Tunisian reader parses a dot as a THOUSANDS
+    separator — so a 12,5-point balance read as 125. One sheet showed both
+    spellings at once: RewardPicker prints fmtPoints(balance) and, four lines
+    below, this function's "12.5 points".
+
+    lib/points.ts was written for exactly this ("or 0.7500000000000001 if
+    anything ever touches a float" … "the comma is not decoration") and this
+    was the one path around it.
+
+    unitWord already rounds for agreement, so the NOUN was always right; only
+    the numeral was raw. Counts that are whole — visits, stamps, shops — come
+    back out of fmtPoints unchanged.
+  */
+  return `${fmtPoints(count)} ${unitWord(lang, count, unit)}`;
 }
 
 /**

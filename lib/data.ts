@@ -160,11 +160,12 @@ export const getCafe = cache(async (slug: string): Promise<Cafe | null> => {
 
 export const getCafeById = cache(async (id: string): Promise<Cafe | null> => {
   const db = createAdminClient();
-  const { data } = await db
+  const { data, error } = await db
     .from("businesses")
     .select(CAFE_COLS)
     .eq("id", id)
     .maybeSingle();
+  if (error) throw new Error(`getCafeById: ${error.message}`);
   return data ? toCafe(data as unknown as BusinessRow) : null;
 })
 
@@ -174,12 +175,13 @@ export const getCafeById = cache(async (id: string): Promise<Cafe | null> => {
  */
 export const getAnyCafe = cache(async (): Promise<Cafe | null> => {
   const db = createAdminClient();
-  const { data } = await db
+  const { data, error } = await db
     .from("businesses")
     .select(CAFE_COLS)
     .order("created_at")
     .limit(1)
     .maybeSingle();
+  if (error) throw new Error(`getAnyCafe: ${error.message}`);
   return data ? toCafe(data as unknown as BusinessRow) : null;
 });
 
@@ -218,12 +220,13 @@ export const getOwnedCafe = cache(async (ownerId: string): Promise<Cafe | null> 
 
 export const getRewards = cache(async (cafeId: string): Promise<Reward[]> => {
   const db = createAdminClient();
-  const { data } = await db
+  const { data, error } = await db
     .from("loyalty_rewards")
     .select("id, label, points_cost, image_url, active, position")
     .eq("business_id", cafeId)
     .eq("active", true)
     .order("position");
+  if (error) throw new Error(`getRewards: ${error.message}`);
 
   return (data ?? []).map((r) => ({
     id: r.id,
@@ -237,13 +240,14 @@ export const getRewards = cache(async (cafeId: string): Promise<Reward[]> => {
 
 export const getLoyaltyProgram = cache(async (cafeId: string): Promise<LoyaltyProgram> => {
   const db = createAdminClient();
-  const { data } = await db
+  const { data, error } = await db
     .from("loyalty_programs")
     .select(
       "active, points_per_tnd, welcome_points, redeem_expiry_hours, stamps_enabled, stamps_required, stamp_reward, stamp_expiry_days",
     )
     .eq("business_id", cafeId)
     .maybeSingle();
+  if (error) throw new Error(`getLoyaltyProgram: ${error.message}`);
 
   // Defaults per §09, so a café without a program row still works.
   return {

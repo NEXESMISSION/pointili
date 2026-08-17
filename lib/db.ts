@@ -32,11 +32,12 @@ export type AccountRow = {
 
 export async function getAccount(phone: string): Promise<AccountRow | null> {
   const db = createAdminClient();
-  const { data } = await db
+  const { data, error } = await db
     .from("accounts")
     .select("phone, pin_hash, name, public_id, code")
     .eq("phone", phone)
     .maybeSingle();
+  if (error) throw new Error(`getAccount: ${error.message}`);
   return data ?? null;
 }
 
@@ -53,7 +54,8 @@ export async function cardByCode(
   code: string,
 ): Promise<{ phone: string; name: string | null; code: string | null } | null> {
   const db = createAdminClient();
-  const { data } = await db.rpc("card_by_code", { p_business_id: businessId, p_code: code });
+  const { data, error } = await db.rpc("card_by_code", { p_business_id: businessId, p_code: code });
+  if (error) throw new Error(`cardByCode: ${error.message}`);
   return (data as { phone: string; name: string | null; code: string | null } | null) ?? null;
 }
 
@@ -67,12 +69,13 @@ export async function cardByCode(
  */
 export async function isCardholder(businessId: string, phone: string): Promise<boolean> {
   const db = createAdminClient();
-  const { data } = await db
+  const { data, error } = await db
     .from("diner_cafes")
     .select("phone")
     .eq("business_id", businessId)
     .eq("phone", phone)
     .maybeSingle();
+  if (error) throw new Error(`isCardholder: ${error.message}`);
   return Boolean(data);
 }
 
@@ -92,11 +95,12 @@ export async function createAccount(
   const db = createAdminClient();
   // Through the RPC, never a raw insert: minting the 4-char code needs a retry
   // loop on collision, and a column DEFAULT cannot retry.
-  const { data } = await db.rpc("create_account", {
+  const { data, error } = await db.rpc("create_account", {
     p_phone: phone,
     p_pin_hash: pinHash,
     p_name: name,
   });
+  if (error) throw new Error(`createAccount: ${error.message}`);
   return { ok: data === true };
 }
 
@@ -118,13 +122,15 @@ export async function createAccount(
  */
 export async function pinGate(phone: string): Promise<number> {
   const db = createAdminClient();
-  const { data } = await db.rpc("pin_gate", { p_phone: phone });
+  const { data, error } = await db.rpc("pin_gate", { p_phone: phone });
+  if (error) throw new Error(`pinGate: ${error.message}`);
   return (data as number | null) ?? 0;
 }
 
 export async function pinLockedFor(phone: string): Promise<number> {
   const db = createAdminClient();
-  const { data } = await db.rpc("pin_locked_for", { p_phone: phone });
+  const { data, error } = await db.rpc("pin_locked_for", { p_phone: phone });
+  if (error) throw new Error(`pinLockedFor: ${error.message}`);
   return (data as number | null) ?? 0;
 }
 
@@ -173,12 +179,13 @@ export async function getStamps(
   phone: string,
 ): Promise<{ count: number; startedAt: string | null }> {
   const db = createAdminClient();
-  const { data } = await db
+  const { data, error } = await db
     .from("loyalty_stamps")
     .select("count, started_at")
     .eq("business_id", businessId)
     .eq("phone", phone)
     .maybeSingle();
+  if (error) throw new Error(`getStamps: ${error.message}`);
   return { count: data?.count ?? 0, startedAt: data?.started_at ?? null };
 }
 
@@ -208,10 +215,11 @@ export async function pointsPreviewInputs(
   phone: string,
 ): Promise<{ multiplier: number; carry: number }> {
   const db = createAdminClient();
-  const { data } = await db.rpc("points_preview_inputs", {
+  const { data, error } = await db.rpc("points_preview_inputs", {
     p_business_id: businessId,
     p_phone: phone,
   });
+  if (error) throw new Error(`pointsPreviewInputs: ${error.message}`);
   const r = (data ?? {}) as { multiplier?: number; carry?: number };
   return { multiplier: Number(r.multiplier ?? 1) || 1, carry: Number(r.carry ?? 0) || 0 };
 }
@@ -303,10 +311,11 @@ export async function redeemAtCounter(
 
 export async function getCodes(businessId: string, phone: string): Promise<ActiveCode[]> {
   const db = createAdminClient();
-  const { data } = await db.rpc("diner_codes", {
+  const { data, error } = await db.rpc("diner_codes", {
     p_business_id: businessId,
     p_phone: phone,
   });
+  if (error) throw new Error(`getCodes: ${error.message}`);
   return (data as ActiveCode[] | null) ?? [];
 }
 
@@ -476,7 +485,8 @@ export async function enrollDiner(cafeId: string, phone: string): Promise<string
    lists them for the same switcher — one RPC, asked twice, every render. */
 export const dinerWallet = cache(async function dinerWallet(phone: string): Promise<WalletCafe[]> {
   const db = createAdminClient();
-  const { data } = await db.rpc("diner_wallet", { p_phone: phone });
+  const { data, error } = await db.rpc("diner_wallet", { p_phone: phone });
+  if (error) throw new Error(`dinerWallet: ${error.message}`);
   return (data as WalletCafe[] | null) ?? [];
 });
 
@@ -516,11 +526,12 @@ export async function getActivity(
   limit = 8,
 ): Promise<Activity[]> {
   const db = createAdminClient();
-  const { data } = await db.rpc("diner_history", {
+  const { data, error } = await db.rpc("diner_history", {
     p_business_id: businessId,
     p_phone: phone,
     p_limit: limit,
   });
+  if (error) throw new Error(`getActivity: ${error.message}`);
   return (data as Activity[] | null) ?? [];
 }
 
@@ -620,12 +631,13 @@ export async function createCafe(
  */
 export async function cafeAvgTicket(businessId: string): Promise<Ticket> {
   const db = createAdminClient();
-  const { data } = await db
+  const { data, error } = await db
     .from("points_ledger")
     .select("amount_tnd")
     .eq("business_id", businessId)
     .eq("reason", "earn")
     .not("amount_tnd", "is", null);
+  if (error) throw new Error(`cafeAvgTicket: ${error.message}`);
 
   const amounts = ((data ?? []) as { amount_tnd: number }[]).map((r) => Number(r.amount_tnd));
   if (amounts.length < MIN_TICKET_SAMPLE) return DEFAULT_TICKET_INFO;
@@ -697,7 +709,7 @@ export async function ownerSetStamps(
 /** When may this diner spin again? null = now. */
 export async function nextPlayAt(gameId: string, phone: string, cooldownHours: number) {
   const db = createAdminClient();
-  const { data } = await db
+  const { data, error } = await db
     .from("plays")
     .select("created_at")
     .eq("game_id", gameId)
@@ -705,6 +717,7 @@ export async function nextPlayAt(gameId: string, phone: string, cooldownHours: n
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (error) throw new Error(`nextPlayAt: ${error.message}`);
 
   if (!data) return null;
   const next = new Date(data.created_at).getTime() + cooldownHours * 3600_000;
@@ -788,7 +801,8 @@ export type OwnerReward = {
  */
 export async function ownerRewards(businessId: string): Promise<OwnerReward[]> {
   const db = createAdminClient();
-  const { data } = await db.rpc("owner_rewards", { p_business_id: businessId });
+  const { data, error } = await db.rpc("owner_rewards", { p_business_id: businessId });
+  if (error) throw new Error(`ownerRewards: ${error.message}`);
   return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
     id: String(r.id),
     label: String(r.label),
