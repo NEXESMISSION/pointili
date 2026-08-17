@@ -16,6 +16,11 @@
 # next.js
 /.next/
 /out/
+# A verification build cannot use /.next while `next dev` owns it — it corrupts
+# the running server's output and every route starts 500ing. next.config.ts
+# reads NEXT_DIST_DIR for exactly that, so the dirs it can point at are ignored
+# too; without this, one `git add -A` stages a whole build.
+/.next-*/
 
 # production
 /build

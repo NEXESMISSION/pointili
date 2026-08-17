@@ -6,7 +6,7 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import { chromium } from "playwright-core";
-import { connect, env, onExit } from "./db.mjs";
+import { connect, deleteAccount, env, onExit } from "./db.mjs";
 import { ensureTestCafe, dropTestCafe } from "./fixture.mjs";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
@@ -174,7 +174,7 @@ const email = `plain${Date.now()}@example.com`;
 const pw = "Test-12345678";
 const { data: made } = await admin.auth.admin.createUser({ email, password: pw, email_confirm: true });
 // deleted here AND on failure — a suite that throws used to leave a live account
-onExit(() => admin.auth.admin.deleteUser(made.user.id));
+onExit(() => deleteAccount(admin, made.user.id, email));
 const plain = await newFrenchPage(b);
 await login(plain, email, pw);
 const res = await plain.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
@@ -194,7 +194,7 @@ check("plain owner gets 404 on the console", res?.status() === 404, `status=${re
     email: opEmail, password: opPw, email_confirm: true,
   });
   // deleted here AND on failure — a suite that throws used to leave a live account
-  onExit(() => admin.auth.admin.deleteUser(opMade.user.id));
+  onExit(() => deleteAccount(admin, opMade.user.id, opEmail));
   await admin.from("profiles").upsert(
     { id: opMade.user.id, email: opEmail, role: "super_admin" },
     { onConflict: "id" },
@@ -211,7 +211,7 @@ check("plain owner gets 404 on the console", res?.status() === 404, `status=${re
     new URL(op.url()).pathname.startsWith("/admin"), new URL(op.url()).pathname);
 
   await op.close();
-  await admin.auth.admin.deleteUser(opMade.user.id);
+  await deleteAccount(admin, opMade.user.id, opEmail);
 }
 
 // ── 8. an unelevated action fails closed at the server ──────────────
@@ -227,7 +227,7 @@ const after = target
   : before;
 check("a non-super-admin cannot change a plan", before === after, `${before} → ${after} (POST ${forged})`);
 
-await admin.auth.admin.deleteUser(made.user.id);
+await deleteAccount(admin, made.user.id, email);
 await sql.end();
 await b.close();
 await dropTestCafe();

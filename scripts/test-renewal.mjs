@@ -49,6 +49,7 @@ const { id: cafeId, ownerEmail: OWNER_EMAIL, ownerPassword: OWNER_PASSWORD } =
 const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
 const results = [];
+let crashed = null;
 const check = (name, pass, detail = "") => {
   results.push({ name, pass });
   console.log(`${pass ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
@@ -285,13 +286,26 @@ try {
   const closing = await p.locator("main").innerText();
   check("the owner sees it was validated", /Validée/i.test(closing));
 } catch (e) {
+  crashed = e;
   console.error("--- suite crashed ---");
   console.error(String(e).slice(0, 600));
 } finally {
   const passed = results.filter((r) => r.pass).length;
   console.log(`\n${passed}/${results.length} renewal checks passed`);
   await cleanup();
-  if (passed !== results.length) process.exit(1);
+  /*
+    A crash is a FAILURE, and so is running nothing.
+
+    This used to be `if (passed !== results.length) process.exit(1)`, which is
+    green whenever the suite dies before its first check: 0 === 0, exit 0. The
+    run that found it crashed on the login screen and reported "0/0 renewal
+    checks passed" with a success code — the one suite standing between a shop's
+    payment and its plan, silently waved through. Nothing downstream reads the
+    text; they all read the exit code.
+  */
+  if (crashed) console.error("  !! exiting 1: the suite crashed before it finished");
+  else if (!results.length) console.error("  !! exiting 1: no checks ran at all");
+  process.exit(crashed || !results.length || passed !== results.length ? 1 : 0);
 }
 
 /** A small valid PNG, built by hand — no fixture file to keep in the repo. */

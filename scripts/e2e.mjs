@@ -7,7 +7,7 @@
  * welcome-once, cooldown, claim-once. Exits non-zero if any check fails.
  */
 import { createClient } from "@supabase/supabase-js";
-import { env, onExit } from "./db.mjs";
+import { deleteAccount, env, onExit } from "./db.mjs";
 import { ensureTestCafe, dropTestCafe, TEST_SLUG, OWNER_EMAIL } from "./fixture.mjs";
 import { chromium } from "playwright-core";
 
@@ -589,7 +589,7 @@ if (redeemCode) {
     email_confirm: true,
   });
   // deleted here AND on failure — a suite that throws used to leave a live account
-  onExit(() => admin.auth.admin.deleteUser(created.user.id));
+  onExit(() => deleteAccount(admin, created.user.id, email));
 
   const fresh = await newFrenchPage({ viewport: { width: 390, height: 844 } });
   const hops = [];
@@ -641,7 +641,7 @@ if (redeemCode) {
   if (biz) await admin.from("businesses").delete().eq("id", biz.id);
   /* Registered as well as called: a suite that throws before this line used to
    leave a live, sign-in-able account in the production database. */
-await admin.auth.admin.deleteUser(created.user.id);
+await deleteAccount(admin, created.user.id, email);
 }
 
 // ── 13. The wheel is gone, not just hidden — the endpoint must not exist ─
