@@ -18,9 +18,22 @@ import { LANG_COOKIE, type Lang } from "./dict";
  * and replace a handled error screen with an unhandled one.
  */
 export function langFromCookie(): Lang {
-  if (typeof document === "undefined") return "fr";
+  /*
+    THE DEFAULT HAS TO MATCH THE SERVER'S, and the server's is Tunisian.
+
+    lib/i18n's currentLang() reads `=== "fr" ? "fr" : "tn"` — absent means
+    Tunisian. This read the same cookie and defaulted the other way, so a
+    customer with no cookie got a Tunisian app and a FRENCH error screen: the
+    one moment the two disagreed was the one moment the disagreement was
+    visible.
+
+    The two defaults are written as the same expression on purpose. If the
+    product's default language changes again, these are the two lines to change
+    together, and they now look alike enough to find.
+  */
+  if (typeof document === "undefined") return "tn";
   const hit = document.cookie
     .split("; ")
     .find((c) => c.startsWith(`${LANG_COOKIE}=`));
-  return hit?.slice(LANG_COOKIE.length + 1) === "tn" ? "tn" : "fr";
+  return hit?.slice(LANG_COOKIE.length + 1) === "fr" ? "fr" : "tn";
 }

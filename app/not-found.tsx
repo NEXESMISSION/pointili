@@ -41,6 +41,22 @@ export default async function NotFound() {
   const phone = await currentDiner();
   const cards = phone ? await dinerWallet(phone) : [];
 
+  /*
+    THE MOST RECENT ONE, which is not the first one.
+
+    diner_wallet sorts alphabetically (`order by card->>'name'`), because the
+    wallet is a list somebody scans. This screen used cards[0] and told the
+    customer it was "the shop they were most recently at" — so a person who had
+    just been to Socrate was offered "Rouvrir Boulangerie Amine", and the one
+    tap that was supposed to rescue them took them somewhere they were not.
+
+    lastOpenedAt is already on the card. Nulls sort last: a shop they have never
+    opened is the worst possible guess.
+  */
+  const recent = [...cards].sort(
+    (a, b) => (b.lastOpenedAt ?? "").localeCompare(a.lastOpenedAt ?? ""),
+  )[0];
+
   return (
     <div
       className="app-shell app-shell--light d-shell safe-t safe-b flex min-h-dvh flex-col items-center justify-center px-6 text-center [--safe-pb:2rem] [--safe-pt:2rem]"
@@ -81,12 +97,12 @@ export default async function NotFound() {
             </Link>
             {/* the shop they were most recently at — one tap, and usually the
                 one they were trying to reach */}
-            {cards[0] && (
+            {recent && (
               <Link
-                href={`/${cards[0].slug}`}
+                href={`/${recent.slug}`}
                 className="d-card block w-full px-4 py-3 text-[13.5px] font-semibold text-charcoal"
               >
-                Rouvrir {cards[0].name}
+                Rouvrir {recent.name}
               </Link>
             )}
           </>

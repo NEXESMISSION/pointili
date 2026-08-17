@@ -143,11 +143,35 @@ const TN_MONTHS = [
   "جويلية", "أوت", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
 ];
 
-/** "Août 2026" · "أوت 2026" — the heading a month of rows sits under. */
+/**
+ * The shops are in Tunisia, so the months are Tunisia's.
+ *
+ * This read getMonth()/getFullYear(), which are the SERVER's local time, and
+ * the server is UTC. Tunisia is UTC+1 all year (no daylight saving), so every
+ * purchase between midnight and 1am local fell into the previous day — and on
+ * the first of the month, into the previous MONTH. A coffee bought just after
+ * midnight on 1 August appeared under "Juillet", below every July row, which
+ * to the customer is simply a purchase that went missing from this month.
+ *
+ * Africa/Tunis by name rather than a +1 offset: a fixed offset is a bet that
+ * the country never adopts DST again, and Tunisia has done exactly that before.
+ */
+const TZ = "Africa/Tunis";
+
 export function monthYear(lang: Lang, iso: string): string {
   const d = new Date(iso);
-  if (lang === "tn") return `${TN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-  const s = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  if (lang === "tn") {
+    /* The parts, in Tunis — not the server's idea of what month it is. */
+    const p = new Intl.DateTimeFormat("en", {
+      timeZone: TZ,
+      month: "numeric",
+      year: "numeric",
+    }).formatToParts(d);
+    const month = Number(p.find((x) => x.type === "month")?.value ?? "1");
+    const year = p.find((x) => x.type === "year")?.value ?? "";
+    return `${TN_MONTHS[month - 1]} ${year}`;
+  }
+  const s = d.toLocaleDateString("fr-FR", { timeZone: TZ, month: "long", year: "numeric" });
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
