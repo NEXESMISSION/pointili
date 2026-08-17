@@ -54,7 +54,27 @@ await admin.from("loyalty_programs").insert({
 });
 
 const browser = await chromium.launch({ executablePath: CHROME });
-const d = await browser.newPage({ viewport: { width: 390, height: 844 } });
+
+/*
+  THIS SUITE ASSERTS FRENCH, SO IT HAS TO ASK FOR FRENCH.
+
+  The diner app now opens in Tunisian for a visitor with no preference — the
+  country it is built for — and every check below reads copy: "Numéro ou code
+  secret incorrect", "Bon retour", "déjà un compte". They started failing the
+  moment the default flipped, which is the test being under-specified rather
+  than the product being wrong: a check on wording must control the language it
+  expects, not inherit whatever the default happens to be this month.
+
+  Set once on the context, so every page this file opens carries it.
+*/
+const LANG_FR = { name: "pointili_lang", value: "fr", url: BASE };
+const newFrenchPage = async (opts) => {
+  const page = await browser.newPage(opts);
+  await page.context().addCookies([LANG_FR]);
+  return page;
+};
+
+const d = await newFrenchPage({ viewport: { width: 390, height: 844 } });
 
 /* ── 1. Join shop A with a bare local number ──────────────────────── */
 await d.goto(`${BASE}/${TEST_SLUG}/rejoindre`, { waitUntil: "networkidle" });
@@ -96,7 +116,7 @@ for (const [path, needle] of [
    The classic duplicate-account trap: this must sign them back IN, not create a
    second identity that orphans their points. */
 {
-  const back = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const back = await newFrenchPage({ viewport: { width: 390, height: 844 } });
   await back.goto(`${BASE}/${TEST_SLUG}/rejoindre`, { waitUntil: "networkidle" });
   await back.locator('button:has-text("déjà un compte")').click();
   await back.fill('input[name="phone"]', `216${LOCAL}`); // country code, no '+'
@@ -118,7 +138,7 @@ for (const [path, needle] of [
    trying to reach (and squats a stranger's number with a PIN they don't know). */
 {
   const typo = `${LOCAL.slice(0, -1)}${(Number(LOCAL.slice(-1)) + 1) % 10}`;
-  const t = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const t = await newFrenchPage({ viewport: { width: 390, height: 844 } });
   await t.goto(`${BASE}/${TEST_SLUG}/rejoindre`, { waitUntil: "networkidle" });
   await t.locator('button:has-text("déjà un compte")').click();
   await t.fill('input[name="phone"]', typo);
