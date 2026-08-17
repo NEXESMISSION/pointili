@@ -13,6 +13,7 @@ import {
   type Ticket,
 } from "@/lib/rewards";
 import { BRAND_COLOR } from "@/lib/brand";
+import { Sheet } from "./SettingsList";
 import { businessType } from "@/lib/businessTypes";
 import { BRAND_SWATCHES, inkOn, textOnWhite } from "@/lib/theme";
 import type { Cafe, Game, LoyaltyProgram, Reward } from "@/lib/types";
@@ -1213,17 +1214,28 @@ export function RewardsEditor({
         <span className="text-[17px] leading-none">+</span> Ajouter une récompense
       </button>
 
+      {/*
+        ONE SCREEN, ONE JOB. Adding used to push a whole form in above the list;
+        editing pushed another one between two rows. Both are their own sheet
+        now, over the list rather than inside it.
+      */}
       {adding && (
-        <div className="mb-3">
-          <RewardEditor
-            reward={null}
-            ticket={ticket}
-            ideas={ideas}
-            // a shop with nothing on the ladder is adding its first rung
-            isFirst={order.filter((r) => r.active).length === 0}
-            onDone={() => setAdding(false)}
-          />
-        </div>
+        <Sheet
+          title="Nouvelle récompense"
+          sub="Ce que vos clients gagnent en revenant."
+          onClose={() => setAdding(false)}
+        >
+          <div className="px-4 py-4">
+            <RewardEditor
+              reward={null}
+              ticket={ticket}
+              ideas={ideas}
+              // a shop with nothing on the ladder is adding its first rung
+              isFirst={order.filter((r) => r.active).length === 0}
+              onDone={() => setAdding(false)}
+            />
+          </div>
+        </Sheet>
       )}
 
       <div className="space-y-2.5">
@@ -1239,15 +1251,21 @@ export function RewardsEditor({
               onGrab={(e) => onGrab(e, r.id)}
             />
             {editing === r.id && (
-              <div className="mt-2">
-                <RewardEditor
-                  reward={r}
-                  ticket={ticket}
-                  ideas={ideas}
-                  isFirst={r.id === firstId}
-                  onDone={() => setEditing(null)}
-                />
-              </div>
+              <Sheet
+                title={r.label || "Récompense"}
+                sub="Le nom, le nombre de visites, les points."
+                onClose={() => setEditing(null)}
+              >
+                <div className="px-4 py-4">
+                  <RewardEditor
+                    reward={r}
+                    ticket={ticket}
+                    ideas={ideas}
+                    isFirst={r.id === firstId}
+                    onDone={() => setEditing(null)}
+                  />
+                </div>
+              </Sheet>
             )}
           </div>
         ))}

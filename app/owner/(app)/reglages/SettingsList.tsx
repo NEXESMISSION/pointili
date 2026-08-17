@@ -50,6 +50,7 @@ export function SettingsList({
   game,
   typeLabel,
   ticket,
+  openPanel,
 }: {
   cafe: Cafe;
   program: LoyaltyProgram;
@@ -59,8 +60,19 @@ export function SettingsList({
   typeLabel: string;
   /** What one visit is worth here — rewards are priced in visits now. */
   ticket: Ticket;
+  /**
+   * A panel to open on arrival, from ?panel= on the URL.
+   *
+   * These editors were reachable only by tapping a row on this screen, which
+   * made every one of them un-linkable: /owner/recompenses can tell an owner
+   * that a reward has never been taken and then had no way to send them to the
+   * form that fixes it — the best it could do was "go to Réglages and look for
+   * it". A deep link into a sheet is worth having precisely because the sheet
+   * is where the decision gets acted on.
+   */
+  openPanel?: PanelId | null;
 }) {
-  const [open, setOpen] = useState<PanelId | null>(null);
+  const [open, setOpen] = useState<PanelId | null>(openPanel ?? null);
 
   /* The cheapest VISIBLE one, to match what the editor marks as "1re" — a
      masked reward is not something any customer is working towards. */
@@ -430,7 +442,15 @@ function Row({
 
 /* ── one subject, filling the screen ─────────────────────────────────── */
 
-function Sheet({
+/*
+  EXPORTED, because the reward editor needs the same thing.
+
+  It used to open INSIDE the list, as an accordion between two rows: the screen
+  then held a list, a form, and the rest of the list underneath — which is the
+  "too much on one screen" the owner reported. One sheet at a time is the rule
+  this file already follows for every other setting.
+*/
+export function Sheet({
   title,
   sub,
   onClose,
