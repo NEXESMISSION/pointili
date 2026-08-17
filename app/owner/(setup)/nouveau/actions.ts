@@ -24,6 +24,20 @@ export async function createCafeAction(
   const owner = await currentOwner();
   if (!owner) redirect("/owner/login");
 
+  /*
+    ALREADY HAVE ONE? THEN THIS IS A SECOND SUBMIT, NOT A SECOND SHOP.
+
+    The page redirects an owner who has a café (page.tsx), and a page guard is
+    not a guard: a server action is a public endpoint, and a form left open in
+    another tab posts to it just as well. getOwnedCafe() returns the OLDEST
+    café, so the extra one was invisible to the person who made it while
+    holding its slug for ever and showing in the console as a real shop.
+
+    v1 is one café per owner. That rule now lives where the write happens.
+  */
+  const { ownerCafe } = await import("@/lib/auth/owner");
+  if (await ownerCafe()) redirect("/owner");
+
   const name = String(formData.get("name") ?? "").trim().slice(0, 60);
   const rawSlug = String(formData.get("slug") ?? "").trim().toLowerCase();
 
@@ -32,13 +46,40 @@ export async function createCafeAction(
   const slug = slugify(rawSlug || name);
   if (!slug) return { error: "Adresse invalide — utilisez des lettres et des chiffres." };
 
-  const res = await createCafe(owner.id, name, slug);
+  /*
+    TWO SHOPS MAY HAVE THE SAME NAME. TUNISIA HAS MORE THAN ONE CAFÉ CENTRAL.
+
+    The address is derived from the name, so the second owner to type a common
+    one was stopped by « cafe-central » est déjà pris — a string they never
+    typed, naming a field folded away inside "Adresse et téléphone · facultatif".
+    To get in, they had to work out that the shop has a URL, that the URL can be
+    edited, where that control is, and what to put in it — on the first screen
+    of the product, before anything of theirs existed.
+
+    A DERIVED address steps aside on its own: cafe-central, cafe-central-2,
+    cafe-central-3. The owner keeps the name they wanted and finds out what
+    their address is on the next screen, where changing it is one tap.
+
+    A TYPED address still refuses, and it must: somebody who opened that panel
+    and chose their address is asking for that one, and silently handing them a
+    different one would put a number on the sticker they are about to print.
+  */
+  let claimed = slug;
+  let res = await createCafe(owner.id, name, claimed);
+  if (!res.ok && res.reason === "slug_taken" && !rawSlug) {
+    for (let n = 2; n <= 40; n += 1) {
+      claimed = `${slug}-${n}`;
+      res = await createCafe(owner.id, name, claimed);
+      if (res.ok || res.reason !== "slug_taken") break;
+    }
+  }
+
   if (!res.ok) {
     if (res.reason === "slug_taken") {
-      return { error: `« ${slug} » est déjà pris. Essayez autre chose.` };
+      return { error: `« ${claimed} » est déjà pris. Essayez autre chose.` };
     }
     if (res.reason === "slug_reserved") {
-      return { error: `« ${slug} » est réservé. Choisissez un autre nom.` };
+      return { error: `« ${claimed} » est réservé. Choisissez un autre nom.` };
     }
     return { error: "Adresse invalide : 3 à 40 caractères, lettres et chiffres." };
   }

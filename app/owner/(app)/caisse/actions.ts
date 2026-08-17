@@ -72,6 +72,28 @@ async function resolveCustomer(cafeId: string, raw: string): Promise<Resolved | 
     : { error: "Code client ou numéro invalide." };
 }
 
+/**
+ * A refusal a cashier can act on.
+ *
+ * The RPCs answer in French already ("café indisponible", "déjà utilisé"). The
+ * data layer answers with whatever Postgres said when the CALL failed, and that
+ * is the one nobody should ever read across a counter: a connection reset, a
+ * schema-cache miss, a statement timeout. Anything that is not one of ours
+ * becomes a sentence, and the original is left on the server log where it is
+ * useful.
+ */
+function tillMessage(reason: string | undefined): string {
+  const r = String(reason ?? "");
+  if (!r) return "Opération impossible. Réessayez.";
+  if (r === "insufficient") return "Points insuffisants.";
+  if (r === "off" || r === "unavailable") return "Programme indisponible.";
+  /* ours are sentences: French, lower case, no underscores, no SQLSTATE */
+  const ours = /^[a-zà-ÿ][a-zà-ÿ '’éèêëàâîïôöûüç-]{3,60}$/i.test(r) && !/[_{}();]/.test(r);
+  if (ours) return r.charAt(0).toUpperCase() + r.slice(1) + ".";
+  console.error("[till] unmapped failure:", r);
+  return "Opération impossible. Réessayez.";
+}
+
 /** "+216 24 ••• 123" — enough to confirm the right person, never the full number. */
 function maskPhone(phone: string): string {
   const d = phone.replace(/[^\d]/g, "");
@@ -284,7 +306,13 @@ export async function creditAction(
   if (!program.active) return { error: "Programme de fidélité désactivé." };
 
   const res = await creditPoints(cafe.id, who.phone, amount);
-  if (!res.ok) return { error: res.reason };
+  /*
+    NEVER THE DATABASE'S OWN WORDS. lib/db returns `reason: error.message` when
+    the call itself fails, so a pooler timeout used to print PostgREST's error
+    string onto the till mid-service. The RPC's own refusals are already French
+    sentences and pass through; anything else becomes one.
+  */
+  if (!res.ok) return { error: tillMessage(res.reason) };
 
   revalidatePath("/owner");
   revalidatePath("/owner/analyses");
@@ -338,7 +366,7 @@ export async function addStampAction(
   if (!program.stampsEnabled) return { error: "Carte à tampons désactivée." };
 
   const res = await addStamp(cafe.id, who.phone, 1);
-  if (!res.ok) return { error: res.reason };
+  if (!res.ok) return { error: tillMessage(res.reason) };
 
   revalidatePath("/owner");
   revalidatePath(`/${cafe.slug}`);
@@ -458,6 +486,37 @@ export async function resetPinAction(ref: string, newPin: string): Promise<Reset
 
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const db = createAdminClient();
+
+  /*
+    RECORDED, AND RATIONED — because of what a reset actually hands over.
+
+    The membership check above is real, and it is not the whole story:
+    pin_hash lives on `accounts`, which is GLOBAL. After this call the shop
+    knows a customer's number and their secret code, which is the credential
+    for that person's whole Pointili identity — their cards and their points at
+    every OTHER shop.
+
+    The feature stays: it is the only recovery path in the product, and the
+    customer is standing at the counter. What it gets is a trace and a ceiling.
+    pin_reset_gate (0043) counts and inserts in one statement, so five resets a
+    day is the budget and the sixth is refused — a café resets a code now and
+    then; somebody working through a list of numbers does not.
+  */
+  const { data: gate } = await db.rpc("pin_reset_gate", {
+    p_business_id: cafe.id,
+    p_phone: who.phone,
+  });
+  const g = gate as { ok?: boolean; reason?: string } | null;
+  if (!g?.ok) {
+    return {
+      ok: false,
+      error:
+        g?.reason === "rate_limited"
+          ? "Trop de réinitialisations aujourd'hui. Réessayez demain."
+          : "Impossible de changer le code.",
+    };
+  }
+
   const { data, error } = await db
     .from("accounts")
     .update({ pin_hash: await hashPin(pin) })

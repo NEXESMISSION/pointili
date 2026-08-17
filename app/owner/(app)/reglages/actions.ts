@@ -46,6 +46,26 @@ function num(v: FormDataEntryValue | null, min: number, max: number): number | n
   return n;
 }
 
+/**
+ * The next free position in a shop's own list.
+ *
+ * Both editors used a hardcoded 99, which is not a position — it is the same
+ * position for everything, and a list ordered by it is in no order at all.
+ * One small read, on a table with at most a few dozen rows per shop.
+ */
+async function nextPosition(table: string, key: string, id: string): Promise<number> {
+  const db = await createClient();
+  const { data } = await db
+    .from(table)
+    .select("position")
+    .eq(key, id)
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const last = (data as { position?: number } | null)?.position;
+  return typeof last === "number" ? last + 1 : 0;
+}
+
 export async function saveEarnAction(
   _prev: SettingsState,
   formData: FormData,
@@ -336,7 +356,15 @@ export async function saveRewardAction(
           label,
           points_cost: Math.round(cost),
           active: true, // a new reward is born visible
-          position: 99,
+          /*
+            AFTER THE LAST ONE, not on top of it.
+
+            Every new reward was born at 99, so a shop with three of them had
+            three rows tied — and the customer's list is `order by position`,
+            which means Postgres decided, differently between renders. The
+            menu reshuffled on its own until somebody happened to drag a row.
+          */
+          position: await nextPosition("loyalty_rewards", "business_id", cafe.id),
           // a drawn illustration when the name matches one — see lib/rewardArt
           image_url: rewardArtFor(label),
         })
@@ -506,7 +534,12 @@ export async function savePrizeAction(
     ? await db.from("prizes").update({ label }).eq("id", id).eq("game_id", game.id).select("id")
     : await db
         .from("prizes")
-        .insert({ game_id: game.id, label, active: true, position: 99 })
+        .insert({
+          game_id: game.id,
+          label,
+          active: true,
+          position: await nextPosition("prizes", "game_id", game.id),
+        })
         .select("id");
 
   const failed = assertWrote(data, error);
