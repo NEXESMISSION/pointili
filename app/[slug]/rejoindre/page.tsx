@@ -118,8 +118,16 @@ export default async function Rejoindre({
   const lang = await currentLang();
   const t = await translation();
 
+  /* pb-28, not pb-8: this screen has no tab bar, so OwnerReturn's floating
+     pill sits 86px off the bottom edge — straight across the submit button.
+     The room is reserved here rather than the pill being moved, because the
+     pill is right where it is on every other customer screen.
+
+     Written as a plain comment ABOVE the return, not as {/* … *­/} below it:
+     a brace directly after `return (` opens an OBJECT LITERAL, so the comment
+     parses as a member and the <div> after it is a syntax error. */
   return (
-    <div className="relative flex flex-1 flex-col overflow-hidden px-5 pb-8 pt-7">
+    <div className="relative flex flex-1 flex-col overflow-hidden px-5 pb-28 pt-7">
       {/*
         The shop, as a local business. Typed properly — a café marked
         CafeOrCoffeeShop reads far better in a local result, and in an AI answer,
