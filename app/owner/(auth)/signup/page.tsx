@@ -3,12 +3,33 @@ import { redirect } from "next/navigation";
 import { currentOwner, ownerCafe } from "@/lib/auth/owner";
 import { AuthForm } from "../login/AuthForm";
 import { signupAction } from "../login/actions";
+import { platformSettings } from "@/lib/settings";
 
 export const metadata = { title: "Créer mon compte" };
 
 export default async function Signup() {
   const owner = await currentOwner();
   if (owner) redirect((await ownerCafe()) ? "/owner" : "/owner/nouveau");
+
+  /*
+    ── NO TRIAL WE CANNOT LET THEM FINISH ────────────────────────────────────
+
+    While payments are off, this door was open and the exit was not. A shop
+    could sign up today, spend fourteen days putting their rewards in and their
+    QR on the tables, and then reach /owner/renouveler — which, with
+    paymentsLive false, tells them in as many words NOT to pay because the
+    transfer details are a placeholder. Trial over, shop dark, no way back in,
+    and their customers' cards along with it.
+
+    That is worse than being closed. So while payments are off, the way in is
+    the waiting list at /early, which is the real funnel and says so honestly.
+
+    SIGNING IN IS UNTOUCHED. This gates creating a NEW shop, never reaching an
+    existing one: an owner who already has a trial running still has an app,
+    and locking them out of it would be the same mistake pointing the other way.
+  */
+  const { paymentsLive } = await platformSettings();
+  if (!paymentsLive) redirect("/early");
 
   return (
     <div className="a-card px-6 py-7">
