@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { CardIcon, CheckIcon, Sparkle } from "@/components/icons";
-import { fmtPoints } from "@/lib/points";
+import { fmtDinars, fmtPoints } from "@/lib/points";
 
 /**
  * The receipt, for the one action a shop performs hundreds of times a week.
@@ -353,9 +353,4 @@ function Fact({ icon, label, value }: { icon: React.ReactNode; label: string; va
       <span className="mt-0.5 block truncate text-[15px] font-extrabold tabular-nums">{value}</span>
     </span>
   );
-}
-
-/** 12.5 → "12,5", 60 → "60". Dinars, read aloud, in French. */
-function fmtDinars(n: number): string {
-  return (Math.round(n * 100) / 100).toString().replace(".", ",");
 }

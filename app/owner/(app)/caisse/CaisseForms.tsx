@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { QrScanner } from "@/components/QrScanner";
 import { CheckIcon, QrIcon, StampIcon } from "@/components/icons";
 import { DoneSheet, type Done } from "./DoneSheet";
 import type { Activity } from "@/lib/db";
-import { fmtPoints } from "@/lib/points";
+import { fmtDinars, fmtPoints } from "@/lib/points";
 import {
   addStampAction,
   adjustByCodeAction,
@@ -21,22 +21,37 @@ import {
 } from "./actions";
 
 /*
-  The till, on one screen.
+  The till, on one screen — THE AMOUNT FIRST, THEN THE SCAN.
 
-  Behind a counter you do one of two things: identify a customer, or validate a
-  code they show you. Both are PRESENT at once now — a scanner button, the
-  client field, and the voucher field, with nothing to scroll and no tab to
-  guess. (They used to be two tabbed modes with a drawn keypad; the keypad is
-  gone because the phone's own keyboard is better and its height is exactly
-  what forced the scroll.)
+  This is the order the counter already works in and it was the wrong way round
+  here. A cashier knows the total before they know who is paying: the coffee is
+  rung up, THEN the phone comes out. The till asked for the customer first, so
+  every sale went scan → wait for a lookup → read a sheet → type the amount →
+  press Créditer, with the queue standing through a full round trip that had
+  told them nothing they needed. Five acts for one sale.
+
+  Now: key the dinars, point the lens, done. The read IS the sale — one round
+  trip, no sheet, no second button. What used to be the confirmation step is a
+  RECEIPT instead: it names the customer, which is the only fact a cashier could
+  not check beforehand anyway (a scanned card shows a name they have never
+  seen), and it carries Annuler — as does the status line underneath it, which
+  outlives the receipt's four seconds.
+
+  AN EMPTY AMOUNT BOX IS THE OTHER DOOR. With nothing keyed, a scan or a code
+  opens the customer sheet exactly as before: stamps, corrections, history, the
+  code reset. None of those is a sale, and that is precisely why they hang off
+  the state where no sale is armed.
+
+  And a REWARD VOUCHER still goes to the voucher panel from either door, whether
+  it arrived through the lens or was typed into the client field by mistake. It
+  is checked before the amount, and it leaves the amount alone: handing over a
+  free coffee in the middle of a sale is an ordinary thing to do.
 
   The camera still opens only when asked. Lighting the lens the moment someone
   opens the till drains the battery through a whole shift, and on the very
   first visit it throws a permission prompt at a cashier who was only trying
-  to type a number.
-
-  Once identified, the customer takes over the whole screen: at arm's length,
-  mid-service, a small inline panel is not readable.
+  to type a number. It now also SHUTS itself the instant a read becomes a sale,
+  which it never had to do while a read was only a lookup.
 */
 
 type Customer = NonNullable<ResolveState["customer"]>;
@@ -143,13 +158,39 @@ function Keypad({ onKey, decimal = false }: { onKey: (k: string) => void; decima
 
 /* ══════════════════════════════════════════════════════════════════════ */
 
+/**
+ * A sale that has just landed, still reversible, on the till's own status line.
+ *
+ * THE UNDO BELONGS TO THE MESSAGE, never to the screen. The customer sheet
+ * learned this the expensive way (see its Flash type): an undo held in its own
+ * state outlives the line that earned it, and the next tap reverses a sale the
+ * cashier is no longer looking at. Here it matters more, not less — a direct
+ * credit has no sheet to sit in, so this line is the only place a mis-scan can
+ * be taken back once the receipt has closed itself.
+ */
+type DeskFlash = {
+  text: string;
+  undo?: { ref: string; points: number; amount: number };
+};
+
 export function CaisseDesk({
   pointsPerTnd,
+  multiplier,
   stampsEnabled,
   stampsRequired,
   today,
 }: {
   pointsPerTnd: number;
+  /**
+   * An active "points doublés" event, read shop-wide by the page.
+   *
+   * The preview has to be the number that LANDS, and it is now shown before
+   * anyone is identified — so it cannot be looked up per customer any more. It
+   * does not have to be: the multiplier is a property of the shop and the hour
+   * (pointili_active_multiplier), and the per-customer half of the old preview
+   * has been a constant 0 since 0027.
+   */
+  multiplier: number;
   stampsEnabled: boolean;
   stampsRequired: number;
   /*
@@ -159,15 +200,15 @@ export function CaisseDesk({
     (lib/db ownerToday), so the page renders <Today> and passes the finished
     element down. The alternative — fetching it from here — would put a
     loading state and an effect on the one screen that must be instant.
-
-    It replaces the QR card that used to sit in this column. The QR has its own
-    tab now, which is where a thing that creates every card in the shop
-    belongs; leaving a copy here would have been the third place it appears.
   */
   today: React.ReactNode;
 }) {
-  /* No `mode` any more — see the note where the tabs used to be. */
   const [stage, setStage] = useState<Stage>("keypad");
+  /*
+    THE MONEY, KEYED BEFORE ANYBODY IS IDENTIFIED — the whole change of order.
+    See the note at the top of the file.
+  */
+  const [sale, setSale] = useState("");
   const [typed, setTyped] = useState("");
   /*
     Bumped after every successful read, to REMOUNT the scanner.
@@ -190,22 +231,167 @@ export function CaisseDesk({
     customer's reward with a live Collecter button under it.
   */
   const [voucher, setVoucher] = useState<Scanned | null>(null);
+  /* The receipt for a sale that never opened a customer sheet. */
+  const [done, setDone] = useState<Done | null>(null);
+  const [flash, setFlash] = useState<DeskFlash | null>(null);
+
+  const saleField = useRef<HTMLInputElement>(null);
+  const codeField = useRef<HTMLInputElement>(null);
+  /*
+    THE LOCK IS A REF, NOT `busy`.
+
+    `busy` is transition state: it is not true on the line after start(), so two
+    reads arriving in the same tick both pass a `if (busy) return` and the
+    customer is charged twice. That is not hypothetical now that a read spends
+    money — a held Enter key repeats, and a card left in front of the lens is
+    decoded by the remounted scanner on its very first frame. A ref flips
+    synchronously, which is the only thing that can refuse the second one.
+  */
+  const sending = useRef(false);
+
+  /*
+    An amount is USABLE, not merely typed.
+
+    10 000 is the server's ceiling (creditAction), mirrored here so a slipped
+    keypress is named at the counter instead of after a scan. Anything typed and
+    unusable ARMS NOTHING and says so — falling back to a plain lookup would
+    open a fiche while the cashier believed they had just sold something.
+  */
+  const amount = sale.trim() ? Number(sale.replace(",", ".")) : NaN;
+  const armed = Number.isFinite(amount) && amount > 0 && amount <= 10_000;
+  const badAmount = sale.trim() !== "" && !armed;
+  /*
+    The same arithmetic the server does — rate × event, rounded at the
+    hundredth, exactly as credit_points (0027). A cashier reads this figure out
+    loud before the customer's card is even out of their pocket, so it has to be
+    the one the receipt will show.
+  */
+  const earned = Math.round(amount * pointsPerTnd * multiplier * 100) / 100;
+
+  /** Hand a sale back. Same shape as the sheet's undo, for the same reasons. */
+  function undo(u: NonNullable<DeskFlash["undo"]>) {
+    // drop the offer immediately — a double tap must not reverse twice
+    setFlash({ text: `Annulation de ${fmtPoints(u.points)} points…` });
+    start(async () => {
+      // negative dinars too, so Analyses subtracts the sale and not only the
+      // points it derived from it (0025)
+      const r = await adjustByCodeAction(u.ref, -u.points, -u.amount);
+      if (r.ok && typeof r.balance === "number") {
+        setFlash({ text: `Annulé : −${fmtPoints(u.points)} points · solde ${fmtPoints(r.balance)}` });
+      } else {
+        // put the offer back: the reversal did not happen
+        setFlash({ text: `+${fmtPoints(u.points)} points`, undo: u });
+        setError(r.error ?? "Échec.");
+      }
+    });
+  }
+
+  /**
+   * Credit the keyed amount to whoever this code belongs to, with no
+   * confirmation step in between.
+   *
+   * THE CONFIRMATION IS THE RECEIPT, after the fact — it names the customer and
+   * carries Annuler. A step before the write could only ask "is this the right
+   * person?", which is a question the cashier cannot answer: a scanned card
+   * shows a name they have never seen. A prompt nobody can evaluate is a prompt
+   * that gets tapped through, and it costs a second on every sale of the day.
+   */
+  function creditDirect(code: string) {
+    sending.current = true;
+    setTyped("");
+    setFlash({ text: "Crédit en cours…" });
+    start(async () => {
+      try {
+        const fd = new FormData();
+        fd.set("customer", code);
+        fd.set("amount", String(amount));
+        const res = await creditAction({}, fd);
+        if (res.error) {
+          /*
+            THE AMOUNT SURVIVES A REFUSAL. "Client introuvable" means the code
+            was wrong, not the total — clearing it would make the cashier key
+            the sale again because the customer's screen was smudged.
+          */
+          setFlash(null);
+          setError(res.error);
+          return;
+        }
+        if (res.ok) {
+          setSale("");
+          const back =
+            res.ok.earned > 0 ? { ref: code, points: res.ok.earned, amount: res.ok.amount } : undefined;
+          setDone({
+            kind: "credit",
+            who: res.ok.label,
+            earned: res.ok.earned,
+            welcome: res.ok.welcome,
+            balance: res.ok.balance,
+            amount: res.ok.amount,
+            unlocked: res.ok.unlocked,
+            next: res.ok.next,
+            // only the earned points are reversible — a one-time welcome bonus
+            // is not part of the mistake and taking it back would be a second one
+            onUndo: back ? () => undo(back) : undefined,
+          });
+          setFlash({
+            undo: back,
+            text:
+              `${res.ok.label} · +${fmtPoints(res.ok.earned)} points` +
+              (res.ok.welcome > 0 ? ` · +${fmtPoints(res.ok.welcome)} de bienvenue` : "") +
+              ` · solde ${fmtPoints(res.ok.balance)}`,
+          });
+        }
+      } catch {
+        /* A dropped connection must not leave the lock on: the till would
+           refuse every later read in silence for the rest of the shift. */
+        setFlash(null);
+        setError("Connexion perdue. Réessayez.");
+      } finally {
+        sending.current = false;
+      }
+    });
+  }
 
   function find(raw: string) {
     const code = extractCode(raw);
     if (!code) return;
+    /* One sale per read — see `sending`. */
+    if (sending.current) return;
     setError("");
+    setDone(null);
+    /*
+      A READ ALWAYS HANDS THE SCREEN BACK, whatever it turns out to mean.
+
+      Two reasons, and the second one predates this file's new order.
+
+      SHUT THE LENS BEFORE THE ROUND TRIP, not after it: the scanner is
+      remounted on every read, and a card still sitting in the frame decodes
+      again on its first frame — which, now that a read can spend money, is a
+      second sale nobody keyed.
+
+      And every ANSWER to a read is rendered on the till, not on the
+      viewfinder. A card this shop cannot resolve used to set an error into a
+      branch that was not being rendered: the cashier saw an unchanged camera,
+      no message anywhere, and scanned the same card until they gave up. The
+      refusal, the receipt, the fiche and the voucher panel all live one screen
+      back, so that is where a read leaves you.
+    */
+    setStage("keypad");
 
     /*
       A REWARD CODE GOES TO THE REWARD PANEL. It does not matter which door it
       came through — the camera, or the client field somebody typed it into by
       mistake. Six characters is a voucher, and the only thing anyone ever
       wants to do with a voucher is collect it.
+
+      Checked BEFORE the amount, and the amount is left where it is: handing
+      over a free coffee in the middle of a sale is ordinary, and the dinars
+      still owed are none of the voucher's business.
     */
     if (isVoucher(code)) {
       const c = code.toUpperCase();
       setTyped("");
-      setStage("keypad"); // the panel lives on the till screen, not the viewfinder
+      setFlash(null);
       start(async () => {
         // Read-only: peek says WHAT the code is. Nothing is claimed until the
         // cashier presses Collecter, exactly as when they type it by hand.
@@ -222,6 +408,24 @@ export function CaisseDesk({
       return;
     }
 
+    if (badAmount) {
+      // Reachable from the code field's Enter key, which no `disabled` covers.
+      setError("Montant invalide — corrigez-le ou videz la case.");
+      return;
+    }
+
+    /* MONEY KEYED ⇒ THIS READ IS THE SALE. */
+    if (armed) {
+      creditDirect(code);
+      return;
+    }
+
+    /*
+      NO AMOUNT ⇒ THE FICHE. Stamps, corrections, the history and the code reset
+      all live in the customer sheet and none of them is a sale, so an empty
+      amount box is how a cashier asks for them.
+    */
+    setFlash(null);
     start(async () => {
       const res = await resolveCustomerAction(code);
       if (res.error) {
@@ -246,22 +450,6 @@ export function CaisseDesk({
       carries is the one thing a terminal cannot tell you.
     */
     <div data-owner-wide className="space-y-4">
-      {/*
-        NO TABS AND NO KEYPAD — the whole till on one screen.
-
-        The tabs made the cashier CHOOSE before they could act: "Ajouter des
-        points" or "Valider une récompense", two names for screens that each
-        held one field. Guess wrong and the error blamed the customer, in front
-        of a queue. With both fields simply present, there is nothing to guess
-        — the 4-character code goes in the top one, the 6-character voucher in
-        the bottom one, and each says which it is.
-
-        The drawn keypad went with them. It existed to LOOK like a till, but
-        the phone already has a keyboard — a better one, with letters for the
-        codes that contain letters — and the fake pad cost the exact screen
-        height that forced this page to scroll. The field alone brings the
-        phone's own keyboard up, which is the tool the cashier already knows.
-      */}
       {stage === "scan" ? (
         <section>
           <div className="overflow-hidden rounded-3xl border border-[var(--o-edge)]">
@@ -275,10 +463,21 @@ export function CaisseDesk({
               onUnavailable={() => setStage("keypad")}
             />
           </div>
-          {/* ONE lens, TWO jobs — say so, or half the shop never points it at a
-              reward and keeps typing six characters by hand. */}
-          <p className="mt-3 text-center text-[13px] text-slate">
-            {busy ? "Recherche…" : "Pointez le QR — carte client ou récompense"}
+          {/*
+            THE VIEWFINDER CARRIES THE PRICE.
+
+            It is the last thing on screen before money moves and the amount box
+            is not on it any more, so the figure has to travel here — otherwise
+            the one moment where a forgotten "45" could be spent on the wrong
+            customer is the one moment nobody can see it. The lens still does
+            both jobs, so the line says so whenever no sale is armed.
+          */}
+          <p className="mt-3 text-center text-[13px] font-semibold text-slate">
+            {busy
+              ? "Un instant…"
+              : armed
+                ? `Pointez la carte — ${fmtDinars(amount)} DT · +${fmtPoints(earned)} points`
+                : "Pointez le QR — carte client ou récompense"}
           </p>
           <button type="button" onClick={() => setStage("keypad")} className="a-btn a-btn--ghost mt-3">
             Fermer la caméra
@@ -295,47 +494,113 @@ export function CaisseDesk({
         */
         <div className="space-y-4 lg:grid lg:grid-cols-12 lg:items-start lg:gap-5 lg:space-y-0">
           <div className="space-y-4 lg:col-span-7">
-            {/*
-              THE SCANNER SITS ABOVE BOTH JOBS, because it now does both.
+            {/* ── 1 · the sale ──────────────────────────────────────── */}
+            <section className="a-card p-4">
+              <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
+                1 · Le montant
+              </p>
+              <input
+                /*
+                  name="sale", NOT "amount".
 
-              It used to live inside the "Ajouter des points" card, which was
-              true when the only scannable thing was a customer's card. A reward
-              code is scannable too — so a button buried under that heading was
-              a button the cashier collecting a reward had no reason to read,
-              and they went on typing six characters while the queue waited.
+                  The customer sheet's own amount box is still called that and
+                  the sheet is a dialog rendered over this screen, so two
+                  input[name="amount"] would exist in one document. That is an
+                  ambiguous selector for every screenshot script and end-to-end
+                  check that drives this till, and it fails as a strict-mode
+                  error fifteen files away rather than as anything visible here.
+                */
+                name="sale"
+                ref={saleField}
+                value={sale}
+                onChange={(e) => {
+                  setSale(e.target.value);
+                  setError("");
+                }}
+                /* Enter hands over to the client field — the next step of the
+                   same job. It deliberately does NOT open the camera: on the
+                   laptop where Enter is a habit, there usually is not one. */
+                onKeyDown={(e) => e.key === "Enter" && codeField.current?.focus()}
+                placeholder="0"
+                inputMode="decimal"
+                aria-label="Montant en dinars"
+                className="w-full rounded-2xl bg-[var(--o-inset)] px-4 py-4 text-center text-[30px] font-extrabold tabular-nums text-charcoal outline-none placeholder:text-slate"
+              />
+              {/*
+                THE UNIT NEVER LEAVES THE SCREEN — «58 dinars · +174 points»,
+                two facts in the order they happen. This line used to swap to
+                the points alone the moment anything was typed, which took the
+                one word saying DINARS off the screen at exactly the keystroke
+                where it matters.
+              */}
+              <p
+                className={`mt-1.5 text-center text-[12px] font-semibold ${
+                  badAmount ? "text-[#e5484d]" : "text-slate"
+                }`}
+              >
+                {badAmount
+                  ? "Montant invalide — de 0,01 à 10 000 DT"
+                  : armed
+                    ? `${fmtDinars(amount)} dinars · +${fmtPoints(earned)} points` +
+                      (multiplier > 1 ? ` · ×${multiplier} en cours` : "")
+                    : `Montant en dinars · ${pointsPerTnd} pt/DT`}
+              </p>
+            </section>
+
+            {/*
+              THE SCANNER IS THE SECOND STEP NOW, AND IT IS THE LAST ONE.
+
+              It used to be the first control on the screen, because identifying
+              somebody was the first thing you did. With the amount keyed first
+              the lens is what CLOSES the sale — so it reads as step 2 and
+              everything it needs to know is already on the screen above it.
 
               ── AND IT IS NOT THE LOUDEST THING ON A LAPTOP ─────────────────
 
               On a phone at the counter the camera IS the tool: full width,
-              filled, first. On the laptop in the back office there is usually
-              no usable camera at all, and this was a 56px violet slab spanning
-              seven columns above a search field rendered in pale lilac — the
-              screen shouted the one control that would not work and whispered
-              the one that would.
-
-              Filled and full-height below md; outlined and compact from md up,
-              where the field beneath it is what actually gets used. The switch
-              is `.a-scan` in globals.css — a Tailwind breakpoint variant cannot
+              filled. On the laptop in the back office there is usually no usable
+              camera at all, so it is outlined and compact from md up, where the
+              field beneath it is what actually gets used. The switch is
+              `.a-scan` in globals.css — a Tailwind breakpoint variant cannot
               apply a plain class, which is worth knowing before trying.
             */}
             <button
               type="button"
-              onClick={() => setStage("scan")}
-              className="a-btn a-scan flex items-center justify-center gap-2"
+              disabled={badAmount}
+              onClick={() => {
+                setError("");
+                setDone(null);
+                setStage("scan");
+              }}
+              className="a-btn a-scan flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <QrIcon className="h-5 w-5" /> Scanner le QR
+              <QrIcon className="h-5 w-5" />
+              {/*
+                IT SAYS THE POINTS, AND IT AVOIDS THE WORD « Créditer ».
+
+                Not a style preference — the client field's button is called
+                that, and so is the customer sheet's, and `has-text` matching is
+                case-insensitive and substring-based. "Scanner et créditer" made
+                every existing selector for the sheet's Créditer resolve to two
+                elements the moment a sale was armed, which is a strict-mode
+                failure in files that have nothing to do with this screen. The
+                points are the better label anyway: they are what the customer
+                is about to be handed.
+              */}
+              {armed ? `Scanner · +${fmtPoints(earned)} points` : "Scanner le QR"}
             </button>
 
-            {/* ── this person is paying ─────────────────────────────── */}
+            {/* ── 2 · who is paying ─────────────────────────────────── */}
             <section className="a-card p-4">
               <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
-                Ajouter des points
+                2 · Le client
               </p>
-              {/* field + button on ONE row — the height the keypad used to eat
-                  is what lets both jobs fit one screen */}
+              {/* field + button on ONE row — the height the drawn keypad used to
+                  eat is what lets every job fit one screen */}
               <div className="flex gap-2">
                 <input
                   name="customer"
+                  ref={codeField}
                   value={typed}
                   onChange={(e) => setTyped(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && find(typed)}
@@ -344,15 +609,28 @@ export function CaisseDesk({
                   autoCapitalize="characters"
                   className="min-w-0 flex-1 rounded-2xl bg-[var(--o-inset)] px-4 py-3.5 text-[18px] font-extrabold tracking-[0.05em] text-charcoal outline-none placeholder:text-[14px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-slate"
                 />
+                {/*
+                  THE BUTTON SAYS WHICH OF THE TWO THINGS IT IS ABOUT TO DO.
+
+                  With an amount keyed it credits on the spot, exactly like the
+                  lens; with the box empty it only opens the fiche. One label for
+                  both states would be a lie in one of them, and the expensive
+                  direction of that lie is « Chercher » spending money.
+                */}
                 <button
                   type="button"
                   onClick={() => find(typed)}
-                  disabled={busy || !typed.trim()}
+                  disabled={busy || !typed.trim() || badAmount}
                   className="a-btn !w-auto shrink-0 px-5"
                 >
-                  {busy ? "· · ·" : "Chercher"}
+                  {busy ? "· · ·" : armed ? "Créditer" : "Chercher"}
                 </button>
               </div>
+              <p className="mt-2 text-[12px] leading-snug text-slate">
+                {armed
+                  ? "Les points partent dès la lecture — le reçu nomme le client et garde l'annulation."
+                  : "Sans montant : ouvre la fiche — tampons, corrections, historique."}
+              </p>
             </section>
 
             {error && (
@@ -360,6 +638,35 @@ export function CaisseDesk({
                 {error}
               </p>
             )}
+
+            {/*
+              THE LINE THAT OUTLIVES THE RECEIPT.
+
+              The receipt closes itself after four seconds, usually while the
+              cashier is bagging the order. Before the amount moved first, the
+              undo survived that inside the customer sheet; a direct credit has
+              no sheet, so without this line a mis-scan would become permanent
+              the moment nobody was looking at it.
+            */}
+            {flash && (
+              <div
+                role="status"
+                className="flex items-center justify-between gap-3 rounded-2xl bg-[#2f9e6e]/12 px-4 py-3"
+              >
+                <p className="min-w-0 text-[13px] font-bold text-[#2f9e6e]">{flash.text}</p>
+                {flash.undo && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => undo(flash.undo!)}
+                    className="shrink-0 rounded-full bg-[var(--o-inset)] px-3.5 py-1.5 text-[12px] font-bold text-charcoal active:scale-95"
+                  >
+                    Annuler
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* ── this person is collecting ───────────────────────
                 BOTH JOBS IN ONE COLUMN, because both are the till.
 
@@ -374,6 +681,25 @@ export function CaisseDesk({
           {/* ── and how the shift is going ────────────────────────── */}
           <div className="lg:col-span-5">{today}</div>
         </div>
+      )}
+
+      {/*
+        The receipt for a sale that never opened a fiche.
+
+        onNext empties nothing and releases nobody — the direct path never bound
+        the till to a person, which is the failure the sheet's own onNext exists
+        to undo. It just puts the cursor back in the amount box, where the next
+        customer starts.
+      */}
+      {done && (
+        <DoneSheet
+          done={done}
+          onClose={() => setDone(null)}
+          onNext={() => {
+            setDone(null);
+            saleField.current?.focus();
+          }}
+        />
       )}
 
       {customer && (

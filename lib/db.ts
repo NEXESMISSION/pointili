@@ -224,6 +224,33 @@ export async function pointsPreviewInputs(
   return { multiplier: Number(r.multiplier ?? 1) || 1, carry: Number(r.carry ?? 0) || 0 };
 }
 
+/**
+ * The same multiplier, with NOBODY IN HAND.
+ *
+ * The till asks for the amount before it knows who is paying — so the "+12
+ * points" it promises while the cashier is still keying dinars has to be
+ * computed without a phone. It can be, and exactly: the multiplier comes from
+ * cafe_events and is a property of the SHOP and the hour, not of the customer
+ * (pointili_active_multiplier, 0003_rpcs.sql), and the per-customer half of
+ * points_preview_inputs was retired in 0027 — `carry` has been a constant 0
+ * ever since. The empty phone is therefore not a placeholder standing in for a
+ * real one; it is an argument the function no longer reads.
+ *
+ * Falls back to 1 rather than throwing. This feeds a preview on the owner's
+ * home screen, and the number that actually lands is computed server-side by
+ * credit_points either way. A shop whose events table hiccups should see the
+ * base rate for a second, not a till that will not open.
+ */
+export async function activePointsMultiplier(businessId: string): Promise<number> {
+  try {
+    const { multiplier } = await pointsPreviewInputs(businessId, "");
+    return multiplier;
+  } catch (e) {
+    console.error("[till] active multiplier unreadable:", e);
+    return 1;
+  }
+}
+
 export type CreditResult =
   | { ok: true; earned: number; welcome: number; balance: number; multiplier: number }
   | { ok: false; reason: string };

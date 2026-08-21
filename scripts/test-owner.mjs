@@ -107,6 +107,86 @@ const badAmount = await staff
   .catch(() => "");
 check("a negative amount is refused", /invalide/i.test(badAmount), badAmount);
 
+/* ── 3b. THE ONE-STEP SALE — the amount first, then the read ────────
+   This is what the till does all day now: key the dinars, read the card, done.
+   No lookup, no fiche, no second button — the read IS the sale, and the only
+   confirmation is the receipt that follows it.
+
+   The camera cannot be driven from a test, and it does not need to be: the lens
+   and the code field pour into the same find(), so the typed door exercises
+   every line downstream of a read. What the camera adds on top of this is the
+   decode itself.
+
+   `Créditer` is matched EXACTLY here. The sheet has a button of that name too,
+   and `has-text` is a case-insensitive substring — the till's own scan button
+   is deliberately worded to avoid the collision, and this is the check that
+   would catch it coming back. */
+const balanceNow = async () => {
+  const { data } = await admin.rpc("pointili_balance", { p_business_id: cafeId, p_phone: NORM });
+  return Number(data ?? 0);
+};
+/* Poll, never sleep: every one of these round-trips to Postgres in Zurich. */
+const balanceReaches = async (want) => {
+  let b = 0;
+  for (let i = 0; i < 20; i++) {
+    b = await balanceNow();
+    if (b === want) break;
+    await staff.waitForTimeout(1000);
+  }
+  return b;
+};
+
+const beforeSale = await balanceNow();
+await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+await staff.locator('input[name="sale"]').waitFor({ timeout: 15000 });
+check("the amount is the first field on the till",
+  (await staff.locator('input[name="sale"]').count()) === 1);
+await staff.fill('input[name="sale"]', "7");
+await staff.fill('input[name="customer"]', card.code);
+await staff.getByRole("button", { name: "Créditer", exact: true }).click();
+
+/*
+  READ THE RECEIPT BEFORE ASSERTING ANYTHING ABOUT IT.
+
+  It takes itself off the screen after four seconds, so every check has to be
+  performed on values already in hand — and no auto-waiting locator call may sit
+  between the wait and the read. A `.textContent()` on an absent [role="alert"]
+  (a plausible way to describe a failure) blocks for thirty seconds first, which
+  is long enough for the receipt this line is about to read to be gone.
+*/
+const oneStep = staff.locator("[data-receipt]");
+await oneStep.waitFor({ timeout: 20000 }).catch(() => {});
+const receiptSeen = (await oneStep.count()) === 1;
+const receiptEarned = receiptSeen ? Number(await oneStep.getAttribute("data-earned")) : NaN;
+const fiches = await staff.locator(DESK).count();
+check("a keyed amount + a code is one step", receiptSeen,
+  receiptSeen ? "" : (await staff.locator("main").innerText()).split("\n").slice(0, 5).join(" · "));
+check("it credits without opening a fiche", fiches === 0, `${fiches} dialog(s)`);
+check("the receipt carries what it just gave", receiptEarned === 7, `data-earned=${receiptEarned}`);
+check("the ledger moved by exactly that", (await balanceReaches(beforeSale + 7)) === beforeSale + 7,
+  `${beforeSale} → ${await balanceNow()}`);
+check("the amount box emptied itself, so the next read cannot spend it again",
+  (await staff.inputValue('input[name="sale"]')) === "");
+/* The field is called `sale` and not `amount` for exactly this reason: the
+   sheet's own box keeps that name, and two of them in one document is an
+   ambiguous selector for every script in this folder. */
+check("only one input[name=amount] exists in the document",
+  (await staff.locator('input[name="amount"]').count()) <= 1);
+
+/* The receipt hands the till back after four seconds — usually while the
+   cashier is bagging the order. The undo has to survive that, because a direct
+   credit has no fiche to keep it in. */
+await staff.waitForTimeout(5500);
+const undoLine = staff.locator('main [role="status"]').first();
+const undoBtn = undoLine.locator('button:has-text("Annuler")');
+check("the undo outlives the receipt", (await undoBtn.count()) === 1,
+  (await undoLine.innerText().catch(() => "")).replace(/\n/g, " · "));
+if (await undoBtn.count()) {
+  await undoBtn.click();
+  check("...and it puts the sale back", (await balanceReaches(beforeSale)) === beforeSale,
+    `balance=${await balanceNow()}`);
+}
+
 /* ── 4. An unknown code is refused ─────────────────────────────────── */
 /*
   Codes are platform-wide now, so a hard-coded "ZZZZ" is no longer safely

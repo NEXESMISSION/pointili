@@ -21,3 +21,17 @@ export function fmtPoints(n: number): string {
 export function pointsLabel(n: number): string {
   return `${fmtPoints(n)} point${Math.abs(Number(n) || 0) >= 2 ? "s" : ""}`;
 }
+
+/**
+ * "12,5" / "60" — a DINAR figure, read aloud, in French.
+ *
+ * The same two rules as fmtPoints and for the same reason: the whole interface
+ * is French, so "12.5" is a thousands separator to the person holding the card,
+ * and a trailing zero on "2,50" reads as a price tag on something that is not
+ * one. It lives beside the points so the till and the receipt cannot drift
+ * apart — the receipt had its own private copy, which is how two spellings of
+ * the same number start.
+ */
+export function fmtDinars(n: number): string {
+  return (Math.round((Number(n) || 0) * 100) / 100).toString().replace(".", ",");
+}
