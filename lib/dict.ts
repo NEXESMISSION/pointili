@@ -929,12 +929,15 @@ const TN: Record<string, string> = {
   "Points par dinar, bonus de bienvenue, validité des codes": "النقاط في كلّ دينار، هديّة التسجيل، وقتاش يفوت وقت الكود",
   "L'échelle des récompenses, avec photo": "سلّم الهدايا، بالتصويرة",
   "Le nom, le logo et le type de votre commerce": "الإسم، اللوڨو، ونوع المحلّ متاعك",
-  "Imprimer": "الطباعة",
-  "Le kit, prêt ce soir": "الكيت، حاضر هالليلة",
-  "Chevalet de table, affiche A5, autocollant, story. Votre QR, à vos couleurs, prêt à imprimer.": "شوفالي متاع الطاولة، أفيش A5، ستيكر، وستوري. الكود متاعك، بالألوان متاعك، حاضر باش تطبعو.",
-  "Quatre formats, générés depuis votre espace": "أربع مقاسات، يتعملوا من الفضاء متاعك",
+  /* The poster kit is gone (see QrScreen); this slide is about the code and the
+     link now. The old keys are left out rather than kept as dead weight — the
+     dictionary is keyed by the French string, so an unused key is invisible. */
+  "Votre QR": "الكود متاعك",
+  "Un code, une adresse": "كود واحد، وعنوان واحد",
+  "Le QR de votre boutique — à afficher au comptoir, ou à envoyer en lien. Un scan, et la carte existe.": "الكود متاع المحلّ متاعك — علّقو على الكونتوار، ولّا ابعث اللينك. سكان واحد، والكارط يولّي موجود.",
+  "Un seul code pour toute la boutique": "كود واحد للمحلّ الكل",
   "Le QR reste sur fond blanc — pour qu'il scanne toujours": "الكود يبقى على أرضية بيضة — باش يتسكانى ديما",
-  "Imprimé chez vous, sans rien commander": "تطبعو عندك، من غير ما تكوموندي حتّى حاجة",
+  "Ou partagez simplement l'adresse de votre carte": "ولّا برك ابعث عنوان الكارط متاعك",
   "S'inscrire": "التسجيل",
   "Dix secondes, sans application et sans e-mail": "عشر ثواني، من غير أبليكاسيون ومن غير إيميل",
   "Le client scanne le QR posé sur la table. Un numéro, un code secret, et sa carte existe.": "الحريف يسكاني الكود اللّي على الطاولة. نمرة، كود سرّي، والكارت متاعو ولّى موجود.",

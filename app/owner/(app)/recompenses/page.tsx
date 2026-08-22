@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BackLink } from "@/components/BackLink";
 import { ownerCafe, ownerHome } from "@/lib/auth/owner";
+import { guardArea } from "@/lib/auth/staff";
 import { ownerRewards } from "@/lib/db";
 import { getLoyaltyProgram } from "@/lib/data";
 
@@ -43,6 +44,10 @@ export const metadata = { title: "Récompenses" };
 export default async function Recompenses() {
   const cafe = await ownerCafe();
   if (!cafe) redirect(await ownerHome());
+
+  /* Roles: a cashier does not open this one. Enforced here AND in every action
+     behind it — a server action is a public endpoint (lib/auth/staff). */
+  await guardArea(cafe.id, "recompenses");
 
   const [rewards, program] = await Promise.all([
     ownerRewards(cafe.id),

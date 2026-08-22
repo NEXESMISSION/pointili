@@ -104,7 +104,7 @@ export function product() {
       "Récompenses personnalisables",
       "Cartes à tampons",
       "Analyses : taux de retour, chiffre passé en caisse",
-      "Kit QR à imprimer (chevalet, affiche, autocollant)",
+      "QR et lien de boutique, à afficher ou à partager",
       "Un seul code client valable dans tous les commerces Pointili",
     ],
   };

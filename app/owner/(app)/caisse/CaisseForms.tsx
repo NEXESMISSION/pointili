@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { QrScanner } from "@/components/QrScanner";
 import { CheckIcon, QrIcon, StampIcon } from "@/components/icons";
 import { DoneSheet, type Done } from "./DoneSheet";
@@ -19,6 +20,7 @@ import {
   type PeekState,
   type ResolveState,
 } from "./actions";
+import { signOutAction } from "../equipe/actions";
 
 /*
   THE TILL IS A MENU OF TWO ACTS, NOT A DASHBOARD OF FIELDS.
@@ -279,6 +281,7 @@ export function CaisseDesk({
   stampsEnabled,
   stampsRequired,
   today,
+  onDuty,
 }: {
   pointsPerTnd: number;
   /**
@@ -302,6 +305,14 @@ export function CaisseDesk({
     on the one screen that must be instant.
   */
   today: React.ReactNode;
+  /**
+   * Who is signed in at the counter, when the shop asks (0048).
+   *
+   * null covers both "this shop has not switched staff codes on" and "nobody
+   * has said who they are" — and the second cannot reach this screen, because
+   * the layout renders the sign-in gate instead of the app.
+   */
+  onDuty: { name: string; role: string } | null;
 }) {
   const [view, setView] = useState<View>("home");
   const [intent, setIntent] = useState<Intent | null>(null);
@@ -682,6 +693,25 @@ export function CaisseDesk({
               </div>
             )}
             {errorLine}
+
+            {/*
+              THE WAY OUT, AND IT IS RED ON PURPOSE.
+
+              One phone lives behind a counter and it gets handed over. Without
+              this, everything the next person does carries the last person's
+              name — which is worse than no record at all, because it is a
+              record that reads as true.
+
+              So leaving is one tap from the screen they are already looking at,
+              it says whose name is on the till right now, and it is the colour
+              of a thing you press deliberately. Anything quieter and nobody
+              presses it; anything further away and nobody finds it.
+
+              The session also expires after twelve hours, for the evening
+              somebody forgets — but an expiry is not a substitute for a button,
+              because the handover happens mid-shift.
+            */}
+            {onDuty && <LeaveButton name={onDuty.name} role={onDuty.role} />}
           </div>
 
           <div className="lg:col-span-5">{today}</div>
@@ -947,6 +977,39 @@ export function CaisseDesk({
     </div>
   );
 
+}
+
+/** "C'est Sami qui tient la caisse" — and the tap that ends that. */
+function LeaveButton({ name, role }: { name: string; role: string }) {
+  const router = useRouter();
+  const [busy, start] = useTransition();
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() =>
+        start(async () => {
+          await signOutAction();
+          /* The layout renders the gate again the moment the cookie is gone —
+             same URL, different screen. There is nothing to navigate to. */
+          router.refresh();
+        })
+      }
+      className="flex w-full items-center justify-between gap-3 rounded-2xl border border-[#e5484d]/35 bg-[#e5484d]/[0.07] px-4 py-3 text-left active:scale-[0.99] disabled:opacity-60"
+    >
+      <span className="min-w-0">
+        <span className="block truncate text-[13px] font-extrabold text-[#e5484d]">
+          {busy ? "À bientôt…" : `Quitter — ${name}`}
+        </span>
+        <span className="block text-[11.5px] font-semibold text-[#e5484d]/80">
+          {role} · les opérations sont à votre nom
+        </span>
+      </span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0 text-[#e5484d]">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+      </svg>
+    </button>
+  );
 }
 
 /* ══════════════════════════════════════════════════════════════════════ */

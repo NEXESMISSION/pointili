@@ -1,62 +1,56 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 
 /**
  * Mon QR — the simplest version, kept simple on purpose.
  *
- * One code, two buttons. This page briefly became the printable sticker
- * itself (name, offer, address, all of it) and the owner sent it back:
- * when you open "Mon QR" you want the QR, not a poster. So: the code, big,
- * on white; copy the link; open the card as a customer sees it.
+ * One code, two buttons. This page briefly became the printable sticker itself
+ * (name, offer, address, all of it) and the owner sent it back: when you open
+ * "Mon QR" you want the QR, not a poster.
  *
- * The print kit still exists — behind a row that SAYS "Imprimer ou
- * télécharger", not behind a "…" icon. The dots were the first thing the
- * owner asked to remove, and they were right: an unlabeled menu on a
- * one-job screen is where features go to be forgotten.
+ * ── AND THE POSTER KIT IS GONE ────────────────────────────────────────────
  *
- * No logo badge and no ✨ up top either — the fallback emoji for an
- * untyped shop was a sparkle pretending to be branding.
+ * "Imprimer ou télécharger l'affiche" hid four generated objects — table tent,
+ * A5, sticker, story — behind a row on the phone and opened them on a laptop.
+ * The owner asked for it to go, and the shape of this screen was the argument:
+ * every version of it has drifted back towards being a poster, and every time
+ * the answer has been the same. A shop that wants a sign takes the link, or the
+ * code, to whoever prints their menus.
  *
- * The glow is not decoration: it is what stops a white slab on a dark app
- * reading as a broken image placeholder.
+ * No logo badge and no ✨ up top either — the fallback emoji for an untyped
+ * shop was a sparkle pretending to be branding.
  *
- * ── IT IS A TAB NOW, NOT A DETOUR ─────────────────────────────────────────
+ * The glow is not decoration: it is what stops a white slab reading as a broken
+ * image placeholder.
  *
- * Two things changed when the QR got its own place in the navigation.
+ * ── IT IS A TAB, NOT A DETOUR ─────────────────────────────────────────────
  *
- * The BACK ARROW went. It pushed to /owner, which was right while this screen
- * was only ever reached from the till — but a back arrow on a top-level tab
- * navigates to a SIBLING and calls it a parent. The tab bar is the way out.
- *
- * And the 430px column became a column ONLY on a phone. On a laptop this was a
- * narrow strip in the middle of an empty screen, which is the same mistake the
- * whole owner app was making; and printing — the one job you would open a
- * laptop for — was hidden behind a toggle. From lg the code and what you do
- * with it sit side by side, and the print kit is already open, because on that
- * machine it is the reason you came.
+ * The BACK ARROW went when the QR got its own place in the navigation: it
+ * pushed to /owner, which was right while this screen was only ever reached
+ * from the till, but a back arrow on a top-level tab navigates to a SIBLING and
+ * calls it a parent. The tab bar is the way out.
  */
 export function QrScreen({
   url,
   svg,
-  children,
 }: {
   url: string;
   /** The QR as inline SVG — rendered server-side so there is no flash. */
   svg: string;
-  /** The print kit — behind a labelled row on a phone, always open on a laptop. */
-  children: ReactNode;
 }) {
-  const [more, setMore] = useState(false);
   const [copied, setCopied] = useState(false);
 
   return (
     <div
       data-owner-wide
-      className="mx-auto w-full max-w-[430px] lg:grid lg:max-w-none lg:grid-cols-12 lg:items-start lg:gap-6 print:block print:max-w-none"
+      /* One column at every width now. The 12-column split existed to seat the
+         print kit beside the code; with the kit gone, a 430px card in the middle
+         of a laptop is the right amount of screen for one QR and two buttons. */
+      className="mx-auto w-full max-w-[430px]"
     >
       {/* ── the code, which is the page ── */}
-      <div className="rounded-[30px] border border-[var(--o-edge)] bg-[var(--o-inset)] px-5 py-5 lg:col-span-5 print:hidden">
+      <div className="rounded-[30px] border border-[var(--o-edge)] bg-[var(--o-inset)] px-5 py-5">
         <div className="relative mx-auto w-full max-w-[min(300px,46vh)]">
           <span
             aria-hidden
@@ -73,7 +67,7 @@ export function QrScreen({
       </div>
 
       {/* ── the two things you do with it ── */}
-      <div className="mt-3 space-y-2.5 lg:col-span-7 lg:mt-0 print:hidden">
+      <div className="mt-3 space-y-2.5">
         {/* The address, in full and selectable. It is what an owner reads out
             over the phone and types into another device, and the only place it
             appeared was inside the QR itself. */}
@@ -124,33 +118,7 @@ export function QrScreen({
           Voir la carte client
         </a>
 
-        {/* On a phone printing is a day-one job and then a rare one, so it
-            stays behind a labelled row. On a laptop it is why you are here. */}
-        <button
-          type="button"
-          onClick={() => setMore((v) => !v)}
-          aria-expanded={more}
-          className="w-full py-2 text-center text-[13px] font-bold text-slate transition hover:text-slate lg:hidden"
-        >
-          {more ? "Masquer" : "Imprimer ou télécharger l'affiche"}
-        </button>
-
-        {/*
-          INSIDE this column, not a second grid row.
-
-          As a sibling it was placed on row 2 of the grid, and row 1's height is
-          set by the QR card — so the poster began a card's height below the
-          buttons it belongs to, with two hundred pixels of nothing between
-          them. Nested, it simply follows them.
-
-          Two renders rather than one conditional: the phone reveals it under
-          everything, the laptop never hides it. Only one is in the layout at a
-          given width.
-        */}
-        <div className="hidden lg:block print:block">{children}</div>
       </div>
-
-      {more && <div className="mt-1 lg:hidden print:mt-0">{children}</div>}
     </div>
   );
 }

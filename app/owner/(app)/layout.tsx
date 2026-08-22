@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 import { OwnerSidebar, OwnerTabs } from "@/components/OwnerNav";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { ownerAccess, ownerCafe, ownerHome } from "@/lib/auth/owner";
+import { ROLE_LABEL, can, currentStaff, type Area } from "@/lib/auth/staff";
+import { listStaff } from "@/lib/db";
 import { ownerNotices, remaining } from "@/lib/platform";
+import { StaffGate } from "./equipe/StaffGate";
 
 export const metadata = { title: "Espace café" };
 
@@ -34,6 +37,38 @@ export default async function OwnerLayout({
     redirect. The page-level guards stay — they are what narrows the type.
   */
   if (!cafe) redirect(await ownerHome());
+
+  /*
+    ── WHO IS HOLDING THE PHONE ───────────────────────────────────
+
+    ONE CHOKE POINT, HERE, ABOVE EVERY SCREEN IN THE GROUP. A gate that each
+    page opts into is a gate with a page somebody forgot to add it to — and the
+    forgotten one is always the new one.
+
+    When the shop has not switched this on (the default), currentStaff() is null
+    and nothing below changes: the app renders exactly as it did, every tab is
+    present, and the record of who did what says "Propriétaire", which is the
+    truth because the owner's login is the only identity there is.
+  */
+  const staff = cafe.staffPinsEnabled ? await currentStaff(cafe.id) : null;
+  if (cafe.staffPinsEnabled && !staff) {
+    const people = await listStaff(cafe.id);
+    /*
+      An empty team would be a locked door with no handle. The actions refuse to
+      switch the gate on without somebody who can open it, and refuse to remove
+      the last of them — this is the third guard, for a row deleted in the
+      database, and it opens the app rather than stranding the owner in it.
+    */
+    if (people.length) return <StaffGate shop={cafe.name} people={people} />;
+  }
+
+  /* What this person's role allows. undefined when the gate is off — the nav
+     reads it as "everything", and every page re-asks server-side anyway. */
+  const areas: Area[] | undefined = staff
+    ? (["caisse", "qr", "clients", "recompenses", "analyses", "reglages", "equipe"] as Area[]).filter((a) =>
+        can(staff, a),
+      )
+    : undefined;
 
   /* owner.id is the owner OF this café by construction: ownerCafe() resolves
      the shop by that same id. The RPC re-checks the pairing anyway (0045). */
@@ -74,6 +109,8 @@ export default async function OwnerLayout({
         colour={cafe.primaryColor}
         plan={planChip}
         slug={cafe.slug}
+        areas={areas}
+        staff={staff ? { name: staff.name, role: ROLE_LABEL[staff.role] } : null}
       />
 
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
@@ -190,7 +227,7 @@ export default async function OwnerLayout({
         <div className="mx-auto w-full max-w-[680px]">{children}</div>
       </main>
 
-      <OwnerTabs />
+      <OwnerTabs areas={areas} />
       {/* the till is opened dozens of times a shift, on one phone */}
       <InstallPrompt audience="owner" />
       </div>

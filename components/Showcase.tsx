@@ -96,13 +96,19 @@ const SHOTS: Shot[] = [
     side: "Votre caisse",
   },
   {
-    eyebrow: "Imprimer",
-    title: "Le kit, prêt ce soir",
-    lede: "Chevalet de table, affiche A5, autocollant, story. Votre QR, à vos couleurs, prêt à imprimer.",
+    /*
+      THIS SLIDE USED TO SELL A POSTER KIT that the owner app generated — table
+      tent, A5, sticker, story. That feature is gone (see QrScreen), and a
+      landing page advertising it would be selling something a new shop cannot
+      find. What is left is the thing that never moved: one code, one address.
+    */
+    eyebrow: "Votre QR",
+    title: "Un code, une adresse",
+    lede: "Le QR de votre boutique — à afficher au comptoir, ou à envoyer en lien. Un scan, et la carte existe.",
     facts: [
-      "Quatre formats, générés depuis votre espace",
+      "Un seul code pour toute la boutique",
       "Le QR reste sur fond blanc — pour qu'il scanne toujours",
-      "Imprimé chez vous, sans rien commander",
+      "Ou partagez simplement l'adresse de votre carte",
     ],
     clip: "/demo/qr.webm",
     poster: "/demo/qr.webp",

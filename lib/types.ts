@@ -123,6 +123,16 @@ export type Cafe = {
    * the owner keeps their data and their panel, but the QR stops working.
    */
   live: boolean;
+
+  /**
+   * Does this shop ask WHICH PERSON is holding the phone before it renders?
+   *
+   * Off by default (0048). A one-person café should not unlock its own till
+   * twice a day, and a feature that makes the first run worse is one nobody
+   * switches on. It lives on the café rather than in loyalty_programs because
+   * it is about the shop's staff, not about what a point is worth.
+   */
+  staffPinsEnabled: boolean;
 };
 
 /** Per-café points config (loyalty_programs). Defaults per §09. */

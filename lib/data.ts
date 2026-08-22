@@ -48,10 +48,11 @@ type BusinessRow = {
   plan_expires_at: string | null;
   suspended_at: string | null;
   suspended_reason: string | null;
+  staff_pins_enabled?: boolean | null;
 };
 
 const CAFE_COLS =
-  "id, name, slug, status, primary_color, logo_url, phone, business_type, design_settings, plan, plan_expires_at, suspended_at, suspended_reason";
+  "id, name, slug, status, primary_color, logo_url, phone, business_type, design_settings, plan, plan_expires_at, suspended_at, suspended_reason, staff_pins_enabled";
 
 /** One of `allowed`, or the fallback — never whatever the column happened to hold. */
 function pick<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
@@ -130,6 +131,7 @@ function toCafe(b: BusinessRow): Cafe {
     suspendedAt: b.suspended_at,
     suspendedReason: b.suspended_reason,
     live,
+    staffPinsEnabled: b.staff_pins_enabled === true,
   };
 }
 

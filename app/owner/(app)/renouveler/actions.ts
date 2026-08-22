@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { currentOwner, ownerCafe } from "@/lib/auth/owner";
+import { requireArea } from "@/lib/auth/staff";
 import { pickMethod, pickOffer, platformSettings } from "@/lib/settings";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -26,6 +27,9 @@ export async function submitRenewalAction(
   formData: FormData,
 ): Promise<RenewState> {
   const [me, cafe] = await Promise.all([currentOwner(), ownerCafe()]);
+  /* Paying for the shop is the owner's business, not a cashier's — and this
+     posts a receipt the console acts on. Same door as Réglages. */
+  if (cafe) await requireArea(cafe.id, "reglages");
   if (!me || !cafe) return { error: "Non autorisé." };
 
   const settings = await platformSettings();

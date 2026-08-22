@@ -850,3 +850,122 @@ export async function ownerRewards(businessId: string): Promise<OwnerReward[]> {
     lastTaken: (r.last_taken as string | null) ?? null,
   }));
 }
+
+/* -------------------------------------------------------------------------- */
+/* The people behind the counter (0048)                                        */
+/* -------------------------------------------------------------------------- */
+
+export type StaffMember = {
+  id: string;
+  name: string;
+  role: "owner" | "manager" | "cashier";
+};
+
+/**
+ * The tiles on the sign-in screen.
+ *
+ * NEVER SELECTS pin_hash. That column has exactly one legitimate reader — the
+ * verify path in the sign-in action — and this list is rendered into HTML that
+ * every person behind the counter is looking at. Naming the columns rather than
+ * `select("*")` is what keeps that true when somebody adds a column later.
+ */
+export async function listStaff(businessId: string): Promise<StaffMember[]> {
+  const db = createAdminClient();
+  const { data, error } = await db
+    .from("staff")
+    .select("id, name, role")
+    .eq("business_id", businessId)
+    .eq("active", true)
+    .order("created_at");
+  if (error) throw new Error(`listStaff: ${error.message}`);
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    id: String(r.id),
+    name: String(r.name),
+    role: r.role as StaffMember["role"],
+  }));
+}
+
+export type StaffEntry = {
+  id: string;
+  name: string;
+  role: "owner" | "manager" | "cashier";
+  createdAt: string;
+  /** How many recorded actions carry this person's id — "did they ever work?" */
+  actions: number;
+  lastAt: string | null;
+};
+
+/** The team, with enough history beside each name to be worth reading. */
+export async function staffTeam(businessId: string): Promise<StaffEntry[]> {
+  const db = createAdminClient();
+  const [people, feed] = await Promise.all([
+    db
+      .from("staff")
+      .select("id, name, role, created_at")
+      .eq("business_id", businessId)
+      .eq("active", true)
+      .order("created_at"),
+    db
+      .from("staff_actions")
+      .select("staff_id, at")
+      .eq("business_id", businessId)
+      .not("staff_id", "is", null)
+      .order("at", { ascending: false })
+      .limit(2000),
+  ]);
+  if (people.error) throw new Error(`staffTeam: ${people.error.message}`);
+
+  const counts = new Map<string, { n: number; last: string }>();
+  for (const row of (feed.data ?? []) as { staff_id: string; at: string }[]) {
+    const seen = counts.get(row.staff_id);
+    /* The feed is ordered newest first, so the FIRST row for a person is their
+       most recent one — no comparison needed. */
+    if (seen) seen.n += 1;
+    else counts.set(row.staff_id, { n: 1, last: row.at });
+  }
+
+  return ((people.data ?? []) as Record<string, unknown>[]).map((r) => {
+    const c = counts.get(String(r.id));
+    return {
+      id: String(r.id),
+      name: String(r.name),
+      role: r.role as StaffEntry["role"],
+      createdAt: String(r.created_at),
+      actions: c?.n ?? 0,
+      lastAt: c?.last ?? null,
+    };
+  });
+}
+
+export type StaffAction = {
+  who: string;
+  role: string | null;
+  kind: string;
+  customer: string | null;
+  points: number | null;
+  amountTnd: number | null;
+  label: string | null;
+  at: string;
+};
+
+/** Who did what, newest first. The answer to "who gave that away?" */
+export async function staffJournal(businessId: string, limit = 60): Promise<StaffAction[]> {
+  const db = createAdminClient();
+  const { data, error } = await db
+    .from("staff_actions")
+    .select("staff_name, staff_role, kind, customer, points, amount_tnd, label, at")
+    .eq("business_id", businessId)
+    .order("at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`staffJournal: ${error.message}`);
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    who: String(r.staff_name),
+    role: (r.staff_role as string | null) ?? null,
+    kind: String(r.kind),
+    customer: (r.customer as string | null) ?? null,
+    points: r.points === null || r.points === undefined ? null : Number(r.points),
+    amountTnd: r.amount_tnd === null || r.amount_tnd === undefined ? null : Number(r.amount_tnd),
+    label: (r.label as string | null) ?? null,
+    at: String(r.at),
+  }));
+}

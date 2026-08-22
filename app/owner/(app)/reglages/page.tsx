@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentOwner, ownerCafe, ownerHome } from "@/lib/auth/owner";
+import { guardArea } from "@/lib/auth/staff";
 import { businessType } from "@/lib/businessTypes";
 import { getLoyaltyProgram, getOwnerGame, getRewards } from "@/lib/data";
 import { cafeAvgTicket } from "@/lib/db";
@@ -40,6 +41,10 @@ export default async function Reglages({
   // No café yet → set one up. NOT /owner/login: that would see a valid session
   // and bounce straight back here, forever.
   if (!cafe) redirect(await ownerHome());
+  /* Roles: a cashier does not open this one. Enforced here AND in every action
+     behind it — a server action is a public endpoint (lib/auth/staff). */
+  await guardArea(cafe.id, "reglages");
+
 
   const left = remaining(cafe.planExpiresAt);
 
@@ -203,6 +208,36 @@ export default async function Reglages({
       <h2 className="mb-1.5 px-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-slate">
         Votre compte
       </h2>
+
+      {/*
+        L'ÉQUIPE — a row, not a panel.
+
+        Every other knob on this screen opens a focused editor over the page,
+        which is right for one subject with one Save. This one is a list of
+        people, their codes, their roles and a journal of what they did; it is a
+        screen, and pretending otherwise would put a scrolling log inside a
+        modal.
+
+        It sits under "Votre compte" rather than "Votre programme" because it is
+        about who may use this app, not about what a point is worth.
+      */}
+      <Link href="/owner/equipe" className="a-card flex items-center gap-3 px-4 py-3.5">
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-semibold text-charcoal">L&apos;équipe</span>
+          <span className="mt-0.5 block text-[12px] leading-snug text-slate">
+            {cafe.staffPinsEnabled
+              ? "Un code par personne · chaque opération est à son nom"
+              : "Savoir qui a fait quoi à la caisse"}
+          </span>
+        </span>
+        <span
+          className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+            cafe.staffPinsEnabled ? "bg-[#2f9e6e]/12 text-[#2f9e6e]" : "bg-[var(--o-inset)] text-slate"
+          }`}
+        >
+          {cafe.staffPinsEnabled ? "Activé" : "Désactivé"}
+        </span>
+      </Link>
       {/*
         The prices, in the product — but not in the way.
 

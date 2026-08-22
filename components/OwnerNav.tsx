@@ -50,12 +50,26 @@ import { ChartIcon, GiftIcon, QrIcon, SlidersIcon, TillIcon } from "./icons";
 */
 /* Real paths. The host split does not rewrite them — see proxy.ts. */
 const TABS = [
-  { label: "Caisse", short: "Caisse", Icon: TillIcon, href: "/owner" },
-  { label: "Clients", short: "Clients", Icon: ChartIcon, href: "/owner/clients" },
-  { label: "Récompenses", short: "Cadeaux", Icon: GiftIcon, href: "/owner/recompenses" },
-  { label: "Mon QR", short: "QR", Icon: QrIcon, href: "/owner/qr" },
-  { label: "Réglages", short: "Réglages", Icon: SlidersIcon, href: "/owner/reglages" },
-];
+  { label: "Caisse", short: "Caisse", Icon: TillIcon, href: "/owner", area: "caisse" },
+  { label: "Clients", short: "Clients", Icon: ChartIcon, href: "/owner/clients", area: "clients" },
+  { label: "Récompenses", short: "Cadeaux", Icon: GiftIcon, href: "/owner/recompenses", area: "recompenses" },
+  { label: "Mon QR", short: "QR", Icon: QrIcon, href: "/owner/qr", area: "qr" },
+  { label: "Réglages", short: "Réglages", Icon: SlidersIcon, href: "/owner/reglages", area: "reglages" },
+] as const;
+
+/**
+ * WHICH TABS THIS PERSON GETS.
+ *
+ * `areas` is the list the layout worked out from their role; undefined means
+ * the shop has not switched staff PINs on, and everyone is the owner.
+ *
+ * This is a COURTESY, not a gate. Every screen it hides re-asks the question
+ * server-side and every action behind it does too — a tab bar is markup, and
+ * the person it is hiding things from is holding the device it renders on.
+ */
+function visible(areas?: readonly string[]) {
+  return areas ? TABS.filter((t) => areas.includes(t.area)) : TABS;
+}
 
 /**
  * /owner is the till and matches only itself now.
@@ -88,13 +102,14 @@ function useLit(active: boolean) {
 
 /* ── phone: thumb-height tabs at the bottom ───────────────────────────── */
 
-export function OwnerTabs() {
+export function OwnerTabs({ areas }: { areas?: readonly string[] }) {
   const pathname = usePathname();
+  const tabs = visible(areas);
 
   return (
     <nav className="sticky bottom-0 z-20 border-t border-[var(--o-edge)] bg-[var(--o-panel)]/92 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden print:hidden">
       <ul className="flex">
-        {TABS.map(({ short, Icon, href }) => {
+        {tabs.map(({ short, Icon, href }) => {
           const active = isActive(pathname, href);
           return (
             <li key={href} className="flex-1">
@@ -178,6 +193,8 @@ export function OwnerSidebar({
   colour,
   plan,
   slug,
+  areas,
+  staff,
 }: {
   name: string | null;
   initial: string;
@@ -185,6 +202,10 @@ export function OwnerSidebar({
   plan: { text: string; cls: string } | null;
   /** The shop's public address — the rail links to the card customers see. */
   slug: string;
+  /** The areas this person's role allows; undefined = staff PINs are off. */
+  areas?: readonly string[];
+  /** Who is signed in at the counter, when anybody is. */
+  staff?: { name: string; role: string } | null;
 }) {
   const pathname = usePathname();
 
@@ -215,7 +236,7 @@ export function OwnerSidebar({
 
       <nav>
         <ul className="space-y-1">
-          {TABS.map(({ label, Icon, href }) => {
+          {visible(areas).map(({ label, Icon, href }) => {
             const active = isActive(pathname, href);
             return (
               <li key={href}>
@@ -229,6 +250,20 @@ export function OwnerSidebar({
       </nav>
 
       <div className="mt-auto space-y-1">
+        {/*
+          WHO IS AT THE COUNTER, where the rail already says which shop.
+
+          The till carries the red button — that is the screen somebody is
+          looking at when they hand the phone over. This is the quiet copy for
+          the laptop in the back office, where the same question ("whose name is
+          on this afternoon?") is asked while reading the numbers.
+        */}
+        {staff && (
+          <span className="mb-1 block rounded-xl bg-[var(--o-inset)] px-3 py-2">
+            <span className="block truncate text-[12px] font-extrabold text-charcoal">{staff.name}</span>
+            <span className="block text-[10.5px] font-semibold text-slate">{staff.role}</span>
+          </span>
+        )}
         {/*
           THE CARD THE CUSTOMER SEES, one click away.
 

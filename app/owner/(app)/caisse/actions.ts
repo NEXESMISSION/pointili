@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { isValidPhone, normalisePhone } from "@/lib/auth/crypto";
 import { ownerCafe } from "@/lib/auth/owner";
+import { logStaffAction } from "@/lib/auth/staff";
 import { getLoyaltyProgram } from "@/lib/data";
 import {
   addStamp,
@@ -107,6 +108,17 @@ function customerLabel(r: Resolved): string {
 }
 
 /**
+ * How a customer is written into the OPERATIONS LOG (0048).
+ *
+ * Their 4-character code when they have one, a masked number when they do not.
+ * Never the digits — a shop's own record of who did what must not become the
+ * customer list the till itself deliberately refuses to print.
+ */
+function customerRef(r: Resolved): string {
+  return r.code ?? maskPhone(r.phone);
+}
+
+/**
  * WHO WAS JUST SERVED — the facts a cashier cannot read off a card.
  *
  * The till identifies people by a scan now: it hands the code to the server and
@@ -183,6 +195,12 @@ export async function adjustByCodeAction(
   );
   if (!res.ok) return { ok: false, error: "Échec." };
 
+  await logStaffAction(cafe.id, "adjust", {
+    customer: customerRef(who),
+    points: Math.round(delta * 100) / 100,
+    amountTnd: amountTnd ?? null,
+  });
+
   revalidatePath("/owner");
   revalidatePath(`/${cafe.slug}`);
   return { ok: true, balance: res.balance };
@@ -198,6 +216,11 @@ export async function setStampsByCodeAction(code: string, count: number): Promis
 
   const res = await ownerSetStamps(cafe.id, who.phone, Math.round(count));
   if (!res.ok) return { ok: false, error: "Échec." };
+
+  await logStaffAction(cafe.id, "set_stamps", {
+    customer: customerRef(who),
+    label: `${res.count} tampons`,
+  });
 
   revalidatePath("/owner");
   revalidatePath(`/${cafe.slug}`);
@@ -386,6 +409,14 @@ export async function creditAction(
     .map((r) => r.label);
   const nudge = nextRewardNudge(res.balance, rewards);
 
+  /* WHO DID THAT. Never throws — the points are already credited, and a failure
+     to write the note must not turn a finished sale into an error. */
+  await logStaffAction(cafe.id, "credit", {
+    customer: customerRef(who),
+    points: res.earned,
+    amountTnd: amount,
+  });
+
   return {
     ok: {
       who: who2,
@@ -433,6 +464,10 @@ export async function addStampAction(
     answer it. One read costs less than that.
   */
   const who2 = await whomIs(cafe.id, who, await getBalance(cafe.id, who.phone));
+  await logStaffAction(cafe.id, "stamp", {
+    customer: customerRef(who),
+    label: res.completed ? `carte pleine · ${res.label}` : `${res.count} / ${res.required}`,
+  });
   return {
     ok: {
       who: who2,
@@ -482,6 +517,10 @@ export async function collectAction(
 
   const res = await claimCode(cafe.id, code);
   if (!res.ok) return { error: `Code ${res.reason}.` };
+
+  /* The one operation with no customer attached: a voucher is bearer paper, so
+     the code IS the identity of what was handed over. */
+  await logStaffAction(cafe.id, "collect", { customer: code, label: res.label });
 
   revalidatePath("/owner");
   revalidatePath("/owner/clients");
@@ -594,6 +633,12 @@ export async function resetPinAction(ref: string, newPin: string): Promise<Reset
 
   // Clear any lockout: the whole point is that they can get back in now.
   await db.from("pin_attempts").delete().eq("phone", who.phone);
+
+  /* The most sensitive thing anybody can do at this counter: it hands over the
+     credential to a customer's whole Pointili identity. It is already rationed
+     and audited platform-side (pin_reset_gate); this is the half the SHOP can
+     read, which is the half that names the person who did it. */
+  await logStaffAction(cafe.id, "pin_reset", { customer: customerRef(who) });
 
   revalidatePath("/owner");
   return { ok: true, message: `Code réinitialisé pour ${customerLabel(who)}.` };

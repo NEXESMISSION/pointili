@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { BackLink } from "@/components/BackLink";
 import { currentOwner, ownerCafe, ownerHome } from "@/lib/auth/owner";
+import { guardArea } from "@/lib/auth/staff";
 import { REQUEST_STATUS, tnd } from "@/lib/billing";
 import { pickMethod, pickOffer, platformSettings } from "@/lib/settings";
 import { myRenewals, remaining } from "@/lib/platform";
@@ -30,6 +31,10 @@ export default async function Renouveler() {
     platformSettings(),
   ]);
   if (!cafe || !owner) redirect(await ownerHome());
+  /* Roles: a cashier does not open this one. Enforced here AND in every action
+     behind it — a server action is a public endpoint (lib/auth/staff). */
+  await guardArea(cafe.id, "reglages");
+
 
   const requests = await myRenewals(owner.id, cafe.id);
   const pending = requests.find((r) => r.status === "pending") ?? null;

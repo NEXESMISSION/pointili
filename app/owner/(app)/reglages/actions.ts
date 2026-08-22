@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { ownerCafe } from "@/lib/auth/owner";
+import { requireArea } from "@/lib/auth/staff";
 import { rewardArtFor } from "@/lib/rewardArt";
 import { BUSINESS_TYPES } from "@/lib/businessTypes";
 import { createClient } from "@/lib/supabase/server";
@@ -22,6 +23,27 @@ export type SettingsState = { error?: string; saved?: string };
  * ownerCafe() resolves the café from the session too, so no café id ever crosses
  * the wire for a caller to tamper with.
  */
+
+/**
+ * The café, and the RIGHT TO CHANGE ITS SETTINGS — one call, so neither can be
+ * done without the other.
+ *
+ * Every action in this file goes through it instead of ownerCafe(). A server
+ * action is a public HTTP endpoint: hiding Réglages from a cashier's tab bar
+ * stops them wandering in, and stops nothing else. This screen holds the switch
+ * that records who did what, so a role that could POST to it could switch off
+ * the record of its own actions — which is the one thing the whole feature is
+ * for (lib/auth/staff, 0048).
+ *
+ * When the shop has not turned staff PINs on there is no staff row, requireArea
+ * answers yes, and this is ownerCafe() with an extra function call.
+ */
+async function settingsCafe() {
+  const cafe = await ownerCafe();
+  if (!cafe) return null;
+  await requireArea(cafe.id, "reglages");
+  return cafe;
+}
 
 /**
  * A write that touched no rows is NOT a success.
@@ -70,7 +92,7 @@ export async function saveEarnAction(
   _prev: SettingsState,
   formData: FormData,
 ): Promise<SettingsState> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return { error: "Non autorisé." };
 
   /*
@@ -115,7 +137,7 @@ export async function saveStampsAction(
   _prev: SettingsState,
   formData: FormData,
 ): Promise<SettingsState> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return { error: "Non autorisé." };
 
   const required = num(formData.get("stampsRequired"), 1, 100);
@@ -157,7 +179,7 @@ export async function saveCafeAction(
   _prev: SettingsState,
   formData: FormData,
 ): Promise<SettingsState> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return { error: "Non autorisé." };
 
   const name = String(formData.get("name") ?? cafe.name).trim().slice(0, 60) || cafe.name;
@@ -203,7 +225,7 @@ const LOGO_PREFIX = /^data:image\/(png|jpe?g|webp);base64,/i;
 const LOGO_MAX_CHARS = 500_000; // ~360 KB decoded — generous for a 256px logo
 
 export async function saveLogoAction(dataUri: string): Promise<SettingsState> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return { error: "Non autorisé." };
 
   if (typeof dataUri !== "string" || !LOGO_PREFIX.test(dataUri)) {
@@ -233,7 +255,7 @@ export async function saveLogoAction(dataUri: string): Promise<SettingsState> {
 }
 
 export async function removeLogoAction(): Promise<SettingsState> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return { error: "Non autorisé." };
 
   const db = await createClient();
@@ -257,7 +279,7 @@ export async function removeLogoAction(): Promise<SettingsState> {
  * and we still validate type + byte cap on the server.
  */
 export async function saveRewardImageAction(rewardId: string, dataUri: string): Promise<SettingsState> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return { error: "Non autorisé." };
   if (typeof dataUri !== "string" || !LOGO_PREFIX.test(dataUri)) {
     return { error: "Image invalide (PNG, JPG ou WebP)." };
@@ -286,7 +308,7 @@ export async function saveRewardImageAction(rewardId: string, dataUri: string): 
 }
 
 export async function removeRewardImageAction(rewardId: string): Promise<SettingsState> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return { error: "Non autorisé." };
 
   const db = await createClient();
@@ -314,7 +336,7 @@ export async function saveRewardAction(
   _prev: SettingsState,
   formData: FormData,
 ): Promise<SettingsState> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return { error: "Non autorisé." };
 
   const id = String(formData.get("id") ?? "");
@@ -406,7 +428,7 @@ export async function saveRewardAction(
  * list must not be able to renumber somebody else's catalogue.
  */
 export async function reorderRewardsAction(ids: string[]): Promise<void> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return;
   // a bounded list of plausible ids, not whatever was posted
   const clean = ids.filter((id) => typeof id === "string" && id.length <= 64).slice(0, 100);
@@ -436,7 +458,7 @@ export async function reorderRewardsAction(ids: string[]): Promise<void> {
  * out at 11am and has to come off the list until tomorrow.
  */
 export async function toggleRewardActiveAction(id: string, active: boolean): Promise<void> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return;
 
   const db = await createClient();
@@ -452,7 +474,7 @@ export async function toggleRewardActiveAction(id: string, active: boolean): Pro
 }
 
 export async function deleteRewardAction(id: string): Promise<void> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return;
 
   const db = await createClient();
@@ -493,7 +515,7 @@ export async function saveWheelAction(
   _prev: SettingsState,
   formData: FormData,
 ): Promise<SettingsState> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return { error: "Non autorisé." };
 
   /*
@@ -531,7 +553,7 @@ export async function savePrizeAction(
   _prev: SettingsState,
   formData: FormData,
 ): Promise<SettingsState> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return { error: "Non autorisé." };
 
   const db = await createClient();
@@ -570,7 +592,7 @@ export async function savePrizeAction(
  * code in their hand would point at nothing.
  */
 export async function deletePrizeAction(prizeId: string): Promise<SettingsState> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return { error: "Non autorisé." };
 
   const db = await createClient();
@@ -621,7 +643,7 @@ export async function saveThemeAction(
   _prev: SettingsState,
   formData: FormData,
 ): Promise<SettingsState> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return { error: "Non autorisé." };
 
   const rawColor = String(formData.get("primaryColor") ?? "").trim();
@@ -675,7 +697,7 @@ export async function saveThemeAction(
 const COVER_MAX_CHARS = 160_000; // ~118 KB decoded — a 900px WebP lands far under
 
 export async function saveCoverAction(dataUri: string): Promise<SettingsState> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return { error: "Non autorisé." };
 
   if (typeof dataUri !== "string" || !LOGO_PREFIX.test(dataUri)) {
@@ -713,7 +735,7 @@ export async function saveCoverAction(dataUri: string): Promise<SettingsState> {
 }
 
 export async function removeCoverAction(): Promise<SettingsState> {
-  const cafe = await ownerCafe();
+  const cafe = await settingsCafe();
   if (!cafe) return { error: "Non autorisé." };
 
   const db = await createClient();

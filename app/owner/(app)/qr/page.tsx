@@ -1,9 +1,7 @@
 import { redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { ownerCafe, ownerHome } from "@/lib/auth/owner";
-import { getLoyaltyProgram } from "@/lib/data";
 import { SITE_URL } from "@/lib/seo";
-import { PrintKit } from "./PrintKit";
 import { QrScreen } from "./QrScreen";
 
 export const metadata = { title: "Mon QR" };
@@ -11,10 +9,10 @@ export const metadata = { title: "Mon QR" };
 /**
  * The QR — the front door of the whole product.
  *
- * This page only computes the ingredients; PrintKit turns them into the four
- * objects a shop actually needs (table tent, A5, sticker, story). The promise
- * line is generated from the shop's own settings, so what a customer reads on
- * the table always matches what they'll actually get.
+ * It computes one thing: the address a customer lands on. The generated poster
+ * kit that used to hang off this page (table tent, A5, sticker, story) is gone
+ * — see QrScreen for why — and with it the shop's promise line, which existed
+ * only to be printed on those objects.
  */
 export default async function QrPage() {
   const cafe = await ownerCafe();
@@ -22,7 +20,6 @@ export default async function QrPage() {
   // and bounce straight back here, forever.
   if (!cafe) redirect(await ownerHome());
 
-  const program = await getLoyaltyProgram(cafe.id);
   /*
     SITE_URL, not a second copy of the env read — this one fell back to the
     APEX, which 308s to www. That redirect is free in a browser and permanent on
@@ -38,22 +35,5 @@ export default async function QrPage() {
     color: { dark: "#14101f", light: "#00000000" },
   });
 
-  // What the customer gets — read from the shop's real settings, never invented.
-  const promise = program.stampsEnabled
-    ? `${program.stampsRequired} visites = ${program.stampReward.toLowerCase()}`
-    : program.welcomePoints > 0
-      ? `${program.welcomePoints} points offerts à l'inscription`
-      : "Cumulez des points à chaque visite";
-
-  return (
-    <QrScreen url={url} svg={svg}>
-      <PrintKit
-        url={url}
-        svg={svg}
-        name={cafe.name}
-        logoUrl={cafe.logoUrl}
-        promise={promise}
-      />
-    </QrScreen>
-  );
+  return <QrScreen url={url} svg={svg} />;
 }

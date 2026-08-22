@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ownerCafe, ownerHome } from "@/lib/auth/owner";
+import { guardArea } from "@/lib/auth/staff";
 import { cafeCardCount } from "@/lib/db";
 import { getStats, MIN_SAMPLE, type Person, type Range, type Stats } from "@/lib/stats";
 import { BackLink } from "@/components/BackLink";
@@ -42,6 +43,10 @@ export default async function Clients({
 }) {
   const cafe = await ownerCafe();
   if (!cafe) redirect(await ownerHome());
+
+  /* Roles: a cashier does not open this one. Enforced here AND in every action
+     behind it — a server action is a public endpoint (lib/auth/staff). */
+  await guardArea(cafe.id, "clients");
 
   const { p } = await searchParams;
   const picked = RANGES.find((r) => r.slug === p) ?? RANGES[1];

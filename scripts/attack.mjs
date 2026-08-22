@@ -66,6 +66,30 @@ r = await anon.rpc("create_account", {
 });
 t("create_account()", !!r.error, r.error?.code ?? "SUCCEEDED");
 
+/*
+  4d. THE TILL CODES OF EVERY SHOP ON THE PLATFORM (0048).
+
+  `staff.pin_hash` is the four digits a cashier types to become somebody. A
+  readable row here is not an information leak, it is a shop's keyring — and
+  `staff_actions` beside it is a record of who served whom, which is a staff
+  roster and a customer list in one table.
+
+  Both are RLS-on with NO policy and every privilege revoked from PUBLIC (the
+  grant `anon` and `authenticated` inherit from). The migration proves the
+  grants; this proves the door, from the key that ships in the browser.
+*/
+for (const table of ["staff", "staff_actions", "staff_attempts"]) {
+  r = await anon.from(table).select("*");
+  t(`read ${table}`, !!r.error || (r.data?.length ?? 0) === 0, r.error?.code ?? `${r.data?.length ?? 0} rows`);
+}
+
+// 4e. or simply add yourself to somebody's payroll, with a code you chose
+r = await anon.from("staff").insert({
+  business_id: "00000000-0000-0000-0000-000000000001",
+  name: "attacker", pin_hash: "x", role: "owner",
+});
+t("insert into staff", !!r.error, r.error?.code ?? "SUCCEEDED");
+
 // 5. write points straight into the ledger
 r = await anon.from("points_ledger").insert({
   business_id: "00000000-0000-0000-0000-000000000001",
@@ -129,6 +153,17 @@ t("owner A zeroes café B's prices", denied(x), detail(x));
 
 x = await evil.from("games").update({ config: { rigged: true } }).eq("business_id", victim.id).select("id");
 t("owner A rigs café B's wheel odds", denied(x), detail(x));
+
+/* A signed-in owner is `authenticated`, which is where a table-level grant
+   would land — so ask the same question again with a real session. */
+x = await evil.from("staff").select("id, pin_hash").eq("business_id", victim.id);
+t("owner A reads café B's till codes", denied(x), detail(x));
+
+x = await evil.from("staff_actions").select("id").eq("business_id", victim.id);
+t("owner A reads café B's operations log", denied(x), detail(x));
+
+x = await evil.from("businesses").update({ staff_pins_enabled: false }).eq("id", victim.id).select("id");
+t("owner A switches off café B's record of who did what", denied(x), detail(x));
 
 x = await evil.from("points_ledger").select("id").eq("business_id", victim.id);
 t("owner A reads café B's ledger", denied(x), detail(x));
