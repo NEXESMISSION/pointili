@@ -252,20 +252,32 @@ function Step({
       elements instead of one.
     */
     <div className="mx-auto w-full max-w-[520px]">
-      <div className="mb-3 flex items-center gap-3">
+      {/*
+        THE TITLE IS THE MIDDLE OF THE SCREEN; THE WAY BACK IS THE EDGE.
+
+        They used to be a row — arrow, then title, both pushed left — which reads
+        as a toolbar, two controls of equal weight, when only one of them is what
+        the screen is about. Taking the arrow out of the flow lets the title sit
+        on the centre line everything below it already shares: the amount, the
+        keypad, the button.
+
+        px-12 on the text so a long title wraps before it reaches the arrow
+        rather than under it. `start-0`, not `left-0`, because the shell flips.
+      */}
+      <div className="relative mb-4 flex min-h-[44px] items-center justify-center">
         <button
           type="button"
           onClick={onBack}
           aria-label="Retour"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--o-inset)] text-charcoal active:scale-95"
+          className="absolute start-0 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-[var(--o-inset)] text-charcoal active:scale-95"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
             <path d="M19 12H5m6-6-6 6 6 6" />
           </svg>
         </button>
-        <div className="min-w-0">
-          <h2 className="truncate text-[19px] font-extrabold leading-tight text-charcoal">{title}</h2>
-          {hint && <p className="truncate text-[12px] font-semibold text-slate">{hint}</p>}
+        <div className="min-w-0 px-12 text-center">
+          <h2 className="text-[19px] font-extrabold leading-tight text-charcoal">{title}</h2>
+          {hint && <p className="mt-0.5 text-[12px] font-semibold text-slate">{hint}</p>}
         </div>
       </div>
       {children}
@@ -585,7 +597,7 @@ export function CaisseDesk({
   }
 
   const errorLine = error && (
-    <p role="alert" className="mt-3 rounded-2xl bg-[#e5484d]/12 px-4 py-3 text-[13px] font-semibold leading-snug text-[#e5484d]">
+    <p role="alert" className="mt-3 rounded-2xl bg-[#e5484d]/12 px-4 py-3 text-center text-[13px] font-semibold leading-snug text-[#e5484d]">
       {error}
     </p>
   );
@@ -604,7 +616,17 @@ export function CaisseDesk({
           reading half had more room than it could use.
         */
         <div className="space-y-4 lg:grid lg:grid-cols-12 lg:items-start lg:gap-5 lg:space-y-0">
-          <div className="space-y-3 lg:col-span-7">
+          {/*
+            THE ACTS DO NOT GROW WITH THE SCREEN.
+
+            At lg they had seven columns — about 880px — which turned two
+            buttons into two banners, with their contents adrift in the middle of
+            all that width. A till is worked with one hand and its controls want
+            a hand's width wherever they are shown, so they keep 520px and sit in
+            the middle of the space instead of filling it. The day beside them is
+            the thing that actually wanted the room.
+          */}
+          <div className="mx-auto w-full max-w-[520px] space-y-3 lg:col-span-7">
             {/*
               TWO ACTS, AT THE SIZE OF THE HAND THAT PRESSES THEM.
 
@@ -613,6 +635,12 @@ export function CaisseDesk({
               and the second is plainly second. Each says what it opens, because
               a cashier who has to guess which button hides the QR reader will
               type six characters by hand instead.
+
+              CENTRED, ICON AND WORDS TOGETHER. They were left-aligned rows, and
+              a left-aligned row is the shape of a LIST — something you read down
+              before choosing. These are the two things this screen does; centring
+              the pair puts them on the same vertical line as everything they lead
+              to, so pressing one does not move the eye sideways.
             */}
             <button
               type="button"
@@ -621,12 +649,12 @@ export function CaisseDesk({
                 setAmount("");
                 go("give");
               }}
-              className="a-btn flex w-full items-center gap-3 !min-h-[92px] !justify-start px-5 text-left"
+              className="a-btn flex w-full flex-col items-center justify-center gap-2 !min-h-[132px] px-5 text-center"
             >
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/20">
-                <StampIcon className="h-6 w-6" />
+              <span className="grid h-14 w-14 place-items-center rounded-2xl bg-white/20">
+                <StampIcon className="h-7 w-7" />
               </span>
-              <span className="min-w-0">
+              <span>
                 <span className="block text-[19px] font-extrabold leading-tight">Donner des points</span>
                 <span className="block text-[12px] font-semibold opacity-80">
                   {stampsEnabled ? "un achat, ou un tampon" : "un achat"}
@@ -640,12 +668,12 @@ export function CaisseDesk({
                 setVoucher(null);
                 go("reward");
               }}
-              className="a-btn a-btn--dark flex w-full items-center gap-3 !min-h-[72px] !justify-start px-5 text-left"
+              className="a-btn a-btn--dark flex w-full flex-col items-center justify-center gap-1.5 !min-h-[112px] px-5 text-center"
             >
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[var(--o-panel)]">
-                <span className="text-[20px] leading-none">🎁</span>
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[var(--o-panel)]">
+                <span className="text-[22px] leading-none">🎁</span>
               </span>
-              <span className="min-w-0">
+              <span>
                 <span className="block text-[17px] font-extrabold leading-tight">Valider une récompense</span>
                 <span className="block text-[12px] font-semibold text-slate">un code ou un QR</span>
               </span>
@@ -859,7 +887,7 @@ export function CaisseDesk({
                     placeholder="Code client ou numéro"
                     inputMode="text"
                     autoCapitalize="characters"
-                    className="min-w-0 flex-1 rounded-2xl bg-[var(--o-inset)] px-4 py-3.5 text-[18px] font-extrabold tracking-[0.05em] text-charcoal outline-none placeholder:text-[14px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-slate"
+                    className="min-w-0 flex-1 rounded-2xl bg-[var(--o-inset)] px-4 py-3.5 text-center text-[18px] font-extrabold tracking-[0.05em] text-charcoal outline-none placeholder:text-[14px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-slate"
                   />
                   <button
                     type="button"
@@ -870,7 +898,7 @@ export function CaisseDesk({
                     {busy ? "· · ·" : "Confirmer"}
                   </button>
                 </div>
-                <p className="mt-2 text-[12px] leading-snug text-slate">
+                <p className="mt-2 text-center text-[12px] leading-snug text-slate">
                   Le code à 4 caractères de sa carte, ou son numéro de téléphone —
                   même s&apos;il n&apos;a pas encore de compte.
                 </p>
@@ -938,7 +966,7 @@ export function CaisseDesk({
                 placeholder="Code client ou numéro"
                 inputMode="text"
                 autoCapitalize="characters"
-                className="min-w-0 flex-1 rounded-2xl bg-[var(--o-inset)] px-4 py-3.5 text-[18px] font-extrabold tracking-[0.05em] text-charcoal outline-none placeholder:text-[14px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-slate"
+                className="min-w-0 flex-1 rounded-2xl bg-[var(--o-inset)] px-4 py-3.5 text-center text-[18px] font-extrabold tracking-[0.05em] text-charcoal outline-none placeholder:text-[14px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-slate"
               />
               <button
                 type="button"
@@ -995,7 +1023,7 @@ function LeaveButton({ name, role }: { name: string; role: string }) {
           router.refresh();
         })
       }
-      className="flex w-full items-center justify-between gap-3 rounded-2xl border border-[#e5484d]/35 bg-[#e5484d]/[0.07] px-4 py-3 text-left active:scale-[0.99] disabled:opacity-60"
+      className="flex w-full items-center justify-center gap-3 rounded-2xl border border-[#e5484d]/35 bg-[#e5484d]/[0.07] px-4 py-3 text-center active:scale-[0.99] disabled:opacity-60"
     >
       <span className="min-w-0">
         <span className="block truncate text-[13px] font-extrabold text-[#e5484d]">
@@ -1063,41 +1091,61 @@ function CustomerSheet({
   }, [customer.ref]);
 
   return (
-    <section
-      role="dialog"
-      aria-modal="true"
-      aria-label="Fiche client"
-      className="sheet-in fixed inset-0 z-50 flex flex-col bg-[#ffffff]/97 backdrop-blur-sm"
+    /*
+      A WASH ON A PHONE, A CARD IN THE MIDDLE OF ANYTHING BIGGER.
+
+      It was a full-bleed white panel at every width, which is right on the
+      device it was designed for and wrong on the one an owner reads it on: a
+      1900px screen going entirely white to show four short rows about one
+      customer, with the app it came from gone. A dialog should look like
+      something laid ON the screen, and the screen should still be there.
+
+      m-auto rather than items-center, for the reason the receipt gives in its
+      own file: a centred flex child that outgrows its parent crops at BOTH ends
+      and no scroll can reach the cropped part. Auto margins centre it while it
+      is short and collapse the moment it is not.
+    */
+    <div
+      className="sheet-in fixed inset-0 z-50 flex overflow-y-auto bg-[#ffffff]/97 backdrop-blur-sm md:bg-[#14101f]/45 md:p-6"
+      onClick={(e) => {
+        /* The veil dismisses — but only the veil. Without the target test, a tap
+           anywhere inside the card closes the fiche mid-correction. */
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      <header className="mx-auto flex w-full max-w-[520px] items-start justify-between gap-3 px-5 pb-3 pt-5">
-        <div className="min-w-0">
-          <p className="truncate text-[24px] font-extrabold leading-tight text-charcoal">
-            {customer.name ?? "Client"}
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="Fiche client"
+        className="m-auto flex min-h-dvh w-full max-w-[520px] flex-col bg-[var(--o-panel)] md:min-h-0 md:max-h-[86vh] md:rounded-[28px] md:border md:border-[var(--o-edge)] md:shadow-[0_30px_80px_-30px_rgba(23,18,31,.5)]"
+      >
+      <header className="relative flex w-full flex-col items-center gap-1 px-5 pb-3 pt-5 text-center">
+        <p className="max-w-full truncate text-[24px] font-extrabold leading-tight text-charcoal">
+          {customer.name ?? "Client"}
+        </p>
+        {customer.enrolled ? (
+          <p className="font-mono text-[13px] font-bold tracking-[0.14em] text-slate">
+            {customer.code}
           </p>
-          {customer.enrolled ? (
-            <p className="mt-0.5 font-mono text-[13px] font-bold tracking-[0.14em] text-slate">
-              {customer.code}
-            </p>
-          ) : (
-            <p className="mt-0.5 text-[12px] font-semibold text-[#a06e00]">
-              {/* "enrolled" means "has a card HERE" — they may well be a
-                  Pointili member already, just not yours yet. */}
-              Première visite ici — ses points l&apos;attendent
-            </p>
-          )}
-        </div>
+        ) : (
+          <p className="text-[12px] font-semibold text-[#a06e00]">
+            {/* "enrolled" means "has a card HERE" — they may well be a
+                Pointili member already, just not yours yet. */}
+            Première visite ici — ses points l&apos;attendent
+          </p>
+        )}
         <button
           type="button"
           onClick={onClose}
           aria-label="Fermer"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--o-inset)] text-[20px] leading-none text-charcoal active:scale-95"
+          className="absolute end-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-[var(--o-inset)] text-[20px] leading-none text-charcoal active:scale-95"
         >
           ×
         </button>
       </header>
 
-      <div className="mx-auto min-h-0 w-full max-w-[520px] flex-1 overflow-y-auto px-5 pb-6">
-        <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[13px] font-semibold text-slate">
+      <div className="min-h-0 w-full flex-1 overflow-y-auto px-5 pb-6">
+        <p className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0.5 text-[13px] font-semibold text-slate">
           <span>
             Solde{" "}
             <b className="text-[15px] font-extrabold tabular-nums text-[#5b3fd1]">{fmtPoints(balance)}</b> points
@@ -1121,7 +1169,7 @@ function CustomerSheet({
           </p>
         )}
 
-        <p className="mt-4 text-[12px] font-bold uppercase tracking-[0.06em] text-slate">
+        <p className="mt-4 text-center text-[12px] font-bold uppercase tracking-[0.06em] text-slate">
           Corriger les points
         </p>
         <div className="mt-2 flex gap-2">
@@ -1161,7 +1209,7 @@ function CustomerSheet({
 
         {stampsEnabled && (
           <>
-            <p className="mt-3 text-[12px] font-bold uppercase tracking-[0.06em] text-slate">
+            <p className="mt-3 text-center text-[12px] font-bold uppercase tracking-[0.06em] text-slate">
               Tampons (0 à {Math.max(0, stampsRequired - 1)})
             </p>
             <div className="mt-2 flex gap-2">
@@ -1205,10 +1253,10 @@ function CustomerSheet({
         */}
         {customer.enrolled && (
           <>
-            <p className="mt-4 text-[12px] font-bold uppercase tracking-[0.06em] text-slate">
+            <p className="mt-4 text-center text-[12px] font-bold uppercase tracking-[0.06em] text-slate">
               Code secret oublié
             </p>
-            <p className="mt-1 text-[12px] leading-snug text-slate">
+            <p className="mt-1 text-center text-[12px] leading-snug text-slate">
               Le client choisit un nouveau code à 4 chiffres et vous le tapez ici.
             </p>
             <div className="mt-2 flex items-center gap-2">
@@ -1248,7 +1296,7 @@ function CustomerSheet({
           </>
         )}
 
-        <p className="mt-4 text-[12px] font-bold uppercase tracking-[0.06em] text-slate">Activité</p>
+        <p className="mt-4 text-center text-[12px] font-bold uppercase tracking-[0.06em] text-slate">Activité</p>
         {history === null ? (
           <p className="mt-1 text-[12px] text-slate">Chargement…</p>
         ) : history.length === 0 ? (
@@ -1276,7 +1324,8 @@ function CustomerSheet({
           </ul>
         )}
       </div>
-    </section>
+      </section>
+    </div>
   );
 }
 
@@ -1409,13 +1458,13 @@ function ValidateInner({ scanned, onReset }: { scanned?: Scanned | null; onReset
               maxLength={8}
               autoCapitalize="characters"
               placeholder="A1B2C3"
-              className="min-w-0 flex-1 rounded-2xl bg-[var(--o-inset)] px-4 py-3.5 text-[18px] font-extrabold uppercase tracking-[0.16em] text-charcoal outline-none placeholder:text-slate"
+              className="min-w-0 flex-1 rounded-2xl bg-[var(--o-inset)] px-4 py-3.5 text-center text-[18px] font-extrabold uppercase tracking-[0.16em] text-charcoal outline-none placeholder:text-slate"
             />
             <button type="button" onClick={check} disabled={busy} className="a-btn !w-auto shrink-0 px-5">
               {busy ? "· · ·" : "Vérifier"}
             </button>
           </div>
-          <p className="mt-2 text-[12px] text-slate">
+          <p className="mt-2 text-center text-[12px] text-slate">
             Les 6 caractères imprimés sur le code du client.
           </p>
         </>

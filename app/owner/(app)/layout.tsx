@@ -223,8 +223,25 @@ export default async function OwnerLayout({
         inherit DOWNWARD, and this cap is on the page's own parent, so the
         variable would never have reached it.
       */}
-      <main className="owner-main safe-t flex-1 px-5 pb-5 md:px-8 md:py-8 md:[--safe-pt:2rem] [--safe-pt:1.25rem]">
-        <div className="mx-auto w-full max-w-[680px]">{children}</div>
+      {/*
+        ── AND IT SITS IN THE MIDDLE OF THE SCREEN ───────────────────────
+
+        Every screen in this app used to start at the top edge and stop wherever
+        it ran out. The till is two buttons: on a 900px phone that put them under
+        the notch with six hundred pixels of nothing beneath — the two controls
+        pressed hundreds of times a shift, as far from the thumb as the screen
+        allows, in a corner that reads like the page failed to finish loading.
+
+        `m-auto` ON THE CHILD, not `items-center` on the parent. A centred flex
+        child that outgrows its container crops at BOTH ends and the cropped part
+        is unreachable — no scroll can get to it. Auto margins do the same
+        centring while the content is short and COLLAPSE TO ZERO the moment it is
+        not, so Réglages and the client list flow from the top and scroll exactly
+        as before. The receipt sheet makes the same argument in its own file; it
+        is the same trick and the same reason.
+      */}
+      <main className="owner-main safe-t flex flex-1 flex-col px-5 pb-5 md:px-8 md:py-8 md:[--safe-pt:2rem] [--safe-pt:1.25rem]">
+        <div className="m-auto w-full max-w-[680px]">{children}</div>
       </main>
 
       <OwnerTabs areas={areas} />

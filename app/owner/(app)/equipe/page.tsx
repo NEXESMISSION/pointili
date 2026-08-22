@@ -32,9 +32,18 @@ export default async function EquipePage() {
     <div data-owner-wide className="space-y-4">
       <BackLink fallback="/owner/reglages" label="Réglages" />
 
-      <header>
+      {/*
+        The HEAD of a screen is centred; the ROWS below it are not.
+
+        A title and its one-line explanation are read once, as an object — they
+        belong on the same centre line as the rest of the app. The people and the
+        journal underneath are scanned down a column, and centring a list is how
+        you make somebody read every line to find one: the eye loses the edge it
+        was following. Centred composition, left-aligned rows.
+      */}
+      <header className="text-center">
         <h1 className="text-[24px] font-extrabold leading-tight text-charcoal">L&apos;équipe</h1>
-        <p className="mt-1 text-[13px] leading-snug text-slate">
+        <p className="mx-auto mt-1 max-w-[42ch] text-[13px] leading-snug text-slate">
           Un code à 4 chiffres par personne. Chaque opération à la caisse est
           enregistrée à son nom.
         </p>
@@ -44,11 +53,11 @@ export default async function EquipePage() {
 
       {/* ── what was done, and by whom ─────────────────────────────────── */}
       <section className="a-card p-4">
-        <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
+        <h2 className="text-center text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
           Journal
         </h2>
         {journal.length === 0 ? (
-          <p className="mt-3 text-[13px] leading-snug text-slate">
+          <p className="mt-3 text-center text-[13px] leading-snug text-slate">
             Rien pour l&apos;instant. Dès qu&apos;une opération est faite à la caisse,
             elle apparaît ici avec le nom de la personne.
           </p>

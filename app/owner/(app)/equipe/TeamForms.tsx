@@ -95,19 +95,19 @@ export function Team({
       </section>
 
       {error && (
-        <p role="alert" className="rounded-2xl bg-[#e5484d]/12 px-4 py-3 text-[13px] font-semibold leading-snug text-[#e5484d]">
+        <p role="alert" className="rounded-2xl bg-[#e5484d]/12 px-4 py-3 text-center text-[13px] font-semibold leading-snug text-[#e5484d]">
           {error}
         </p>
       )}
 
       {/* ── the people ─────────────────────────────────────────────────── */}
       <section className="a-card p-4">
-        <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
+        <h2 className="text-center text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
           Les personnes
         </h2>
 
         {team.length === 0 ? (
-          <p className="mt-3 text-[13px] leading-snug text-slate">
+          <p className="mt-3 text-center text-[13px] leading-snug text-slate">
             Personne pour l&apos;instant. Ajoutez-vous en premier, avec le rôle
             « Propriétaire » — c&apos;est le seul qui peut ouvrir les réglages et
             cette page.

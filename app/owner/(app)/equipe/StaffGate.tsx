@@ -96,7 +96,7 @@ export function StaffGate({
                   setPin("");
                   setWho(p);
                 }}
-                className="flex w-full items-center gap-3 rounded-3xl border border-[var(--o-edge)] bg-[var(--o-panel)] px-4 py-4 text-left transition active:scale-[0.99]"
+                className="flex w-full items-center justify-center gap-3 rounded-3xl border border-[var(--o-edge)] bg-[var(--o-panel)] px-4 py-4 text-center transition active:scale-[0.99]"
               >
                 <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#5b3fd1]/12 text-[18px] font-extrabold text-[#5b3fd1]">
                   {p.name.charAt(0).toUpperCase()}
@@ -194,7 +194,7 @@ export function StaffGate({
           {who.role === "owner" &&
             (lost ? (
               <div className="mt-2 rounded-2xl border border-[var(--o-edge)] p-3">
-                <p className="text-[12px] leading-snug text-slate">
+                <p className="text-center text-[12px] leading-snug text-slate">
                   Entrez le mot de passe du compte {shop} pour reprendre la main
                   et changer votre code.
                 </p>
@@ -209,7 +209,7 @@ export function StaffGate({
                     }}
                     placeholder="Mot de passe"
                     aria-label="Mot de passe du compte"
-                    className="a-field"
+                    className="a-field text-center"
                   />
                   <button
                     type="button"

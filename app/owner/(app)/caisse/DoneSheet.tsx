@@ -263,7 +263,7 @@ export function DoneSheet({
             </div>
 
             {done.unlocked.length > 0 ? (
-              <p className="mt-3 flex items-center gap-3 rounded-2xl border border-[#a06e00]/25 bg-[#a06e00]/[0.08] px-4 py-3 text-left text-[13px] leading-snug text-slate">
+              <p className="mt-3 flex items-center justify-center gap-3 rounded-2xl border border-[#a06e00]/25 bg-[#a06e00]/[0.08] px-4 py-3 text-center text-[13px] leading-snug text-slate">
                 <span className="shrink-0 text-[20px]">🎁</span>
                 <span>
                   Peut prendre maintenant :{" "}
@@ -383,8 +383,14 @@ function Who({ who }: { who: Whom }) {
       ? { text: "Première visite ici", tone: "#a06e00" }
       : { text: "Pas encore inscrit — ses points l'attendent", tone: "#a06e00" };
   return (
-    <div className="mt-3 rounded-2xl bg-[var(--o-inset)] px-4 py-3 text-left">
-      <p className="flex items-baseline justify-between gap-2">
+    /*
+      Name, code, standing — stacked on the centre line, not spread across a row.
+      Everything else on this sheet is centred (the tick, the figure, the new
+      balance), and a left-and-right row inside it read as a table cell that had
+      wandered in from the fiche.
+    */
+    <div className="mt-3 rounded-2xl bg-[var(--o-inset)] px-4 py-3 text-center">
+      <p className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0.5">
         <b className="min-w-0 truncate text-[16px] font-extrabold text-charcoal">{who.label}</b>
         {who.account && (
           <span className="shrink-0 font-mono text-[13px] font-bold tracking-[0.14em] text-slate">
