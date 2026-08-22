@@ -106,6 +106,44 @@ function customerLabel(r: Resolved): string {
   return r.name ?? maskPhone(r.phone);
 }
 
+/**
+ * WHO WAS JUST SERVED — the facts a cashier cannot read off a card.
+ *
+ * The till identifies people by a scan now: it hands the code to the server and
+ * the points land. That is fast, and it means the person at the counter never
+ * appears on screen until it is over — so the confirmation has to carry enough
+ * to tell a right customer from a wrong one, and enough to answer the question
+ * every cashier asks out loud ("t'as combien de points ?").
+ *
+ * `known` and `account` are NOT the same question, and the difference is the
+ * whole walk-in feature:
+ *   · `known`   — holds a card at THIS shop.
+ *   · `account` — has a Pointili identity at all (the 4-char code). Somebody
+ *                  can be a member of ten other shops and a stranger here, and
+ *                  somebody credited by phone number may be neither yet — the
+ *                  points wait for them either way.
+ *
+ * The phone never travels: a name, or "••• 123".
+ */
+export type Whom = {
+  label: string;
+  /** Their 4-character account code, when they have an account at all. */
+  account: string | null;
+  /** Holds a card at THIS shop — not the same as "has an account". */
+  known: boolean;
+  /** Their points at this shop, AFTER whatever just happened. */
+  balance: number;
+};
+
+async function whomIs(businessId: string, r: Resolved, balance: number): Promise<Whom> {
+  return {
+    label: customerLabel(r),
+    account: r.code,
+    known: await isCardholder(businessId, r.phone),
+    balance,
+  };
+}
+
 /* ── Managing one card, addressed by its CODE ───────────────────────────
    The till never holds a phone number: every correction and the history are
    looked up from the short per-shop code, resolved server-side. This is what
@@ -177,7 +215,10 @@ export async function historyByCodeAction(code: string): Promise<Activity[]> {
 export type CreditState = {
   error?: string;
   ok?: {
-    label: string;
+    /** Who it landed on, and what they hold — see Whom. */
+    who: Whom;
+    /** Their balance BEFORE this sale, so the receipt can show the movement. */
+    before: number;
     earned: number;
     welcome: number;
     balance: number;
@@ -199,7 +240,15 @@ export type CreditState = {
 
 export type StampState = {
   error?: string;
-  ok?: { who: string; count: number; required: number; completed: boolean; code: string | null; label: string };
+  ok?: {
+    who: Whom;
+    count: number;
+    required: number;
+    completed: boolean;
+    /** The VOUCHER code, minted when this stamp filled the card — not theirs. */
+    code: string | null;
+    label: string;
+  };
 };
 
 export type ResolveState = {
@@ -326,7 +375,10 @@ export async function creditAction(
     cashier never mentions it and the customer finds out days later.
   */
   const { getRewards, nextRewardNudge } = await import("@/lib/data");
-  const rewards = await getRewards(cafe.id);
+  const [rewards, who2] = await Promise.all([
+    getRewards(cafe.id),
+    whomIs(cafe.id, who, res.balance),
+  ]);
   const before = res.balance - res.earned - res.welcome;
   const unlocked = rewards
     .filter((r) => r.pointsCost <= res.balance && r.pointsCost > before)
@@ -336,7 +388,8 @@ export async function creditAction(
 
   return {
     ok: {
-      label: customerLabel(who),
+      who: who2,
+      before,
       earned: res.earned,
       welcome: res.welcome,
       balance: res.balance,
@@ -370,9 +423,19 @@ export async function addStampAction(
 
   revalidatePath("/owner");
   revalidatePath(`/${cafe.slug}`);
+
+  /*
+    The POINTS balance on a STAMP receipt is not a mistake.
+
+    A stamp answers "how far along the card am I", and the customer standing
+    there asks the other question in the same breath. The till used to make the
+    cashier close the receipt, search the person again and open their fiche to
+    answer it. One read costs less than that.
+  */
+  const who2 = await whomIs(cafe.id, who, await getBalance(cafe.id, who.phone));
   return {
     ok: {
-      who: customerLabel(who),
+      who: who2,
       count: res.count,
       required: res.required,
       completed: res.completed,

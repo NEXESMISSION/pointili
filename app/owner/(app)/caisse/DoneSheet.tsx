@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { CardIcon, CheckIcon, Sparkle } from "@/components/icons";
 import { fmtDinars, fmtPoints } from "@/lib/points";
+import type { Whom } from "./actions";
 
 /**
  * The receipt, for the one action a shop performs hundreds of times a week.
@@ -32,7 +33,10 @@ import { fmtDinars, fmtPoints } from "@/lib/points";
 export type Done =
   | {
       kind: "credit";
-      who: string;
+      /** Name, code, whether they hold a card here, and what they hold. */
+      who: Whom;
+      /** Their balance before this sale — the receipt shows the movement. */
+      before: number;
       earned: number;
       welcome: number;
       balance: number;
@@ -43,7 +47,7 @@ export type Done =
     }
   | {
       kind: "stamp";
-      who: string;
+      who: Whom;
       count: number;
       required: number;
       completed: boolean;
@@ -220,9 +224,7 @@ export function DoneSheet({
         {done.kind === "credit" ? (
           <>
             <h2 className="text-[30px] font-extrabold leading-none">Bravo !</h2>
-            <p className="mt-2 text-[13px] text-slate">
-              Des points ont été ajoutés à <b className="font-bold text-slate">{done.who}</b>.
-            </p>
+            <Who who={done.who} />
 
             {/*
               The hero. One framed block holding the only two numbers a cashier
@@ -243,9 +245,21 @@ export function DoneSheet({
               )}
             </div>
 
+            {/*
+              THE MOVEMENT, NOT THE NEW TOTAL TWICE.
+
+              The hero above already says the new balance, in the largest type on
+              the screen. Repeating it here left the receipt unable to answer the
+              question the customer actually asks — "j'avais combien ?" — which
+              used to mean closing this and searching the same person again.
+            */}
             <div className="mt-3 grid grid-cols-2 gap-2.5">
               <Fact icon={<CardIcon className="h-[18px] w-[18px]" />} label="Montant" value={`${fmtDinars(done.amount)} TND`} />
-              <Fact icon={<Sparkle className="h-[18px] w-[18px]" />} label="Nouveau solde" value={`${fmtPoints(done.balance)} pts`} />
+              <Fact
+                icon={<Sparkle className="h-[18px] w-[18px]" />}
+                label="Solde"
+                value={`${fmtPoints(done.before)} → ${fmtPoints(done.balance)}`}
+              />
             </div>
 
             {done.unlocked.length > 0 ? (
@@ -271,10 +285,9 @@ export function DoneSheet({
               {filled ? "Carte pleine !" : "Bravo !"}
             </h2>
             <p className="mt-2 text-[13px] text-slate">
-              {filled ? "La carte de " : "Un tampon de plus pour "}
-              <b className="font-bold text-slate">{done.who}</b>
-              {filled ? " est complète." : "."}
+              {filled ? "La carte est complète." : "Un tampon de plus."}
             </p>
+            <Who who={done.who} />
 
             <div className="mt-4 rounded-3xl border border-[#5b3fd1]/25 bg-[var(--o-inset)] px-5 py-6">
               <p className="text-[44px] font-extrabold leading-none tabular-nums text-charcoal">
@@ -311,6 +324,12 @@ export function DoneSheet({
                 {done.required - done.count === 1 ? "visite" : "visites"}
               </p>
             )}
+
+            {/* A stamp receipt answers the points question too — it is the same
+                customer and the same breath. */}
+            <p className="mt-3 text-[12px] text-slate">
+              Solde <b className="font-extrabold tabular-nums text-charcoal">{fmtPoints(done.who.balance)}</b> points
+            </p>
           </>
         )}
 
@@ -339,6 +358,43 @@ export function DoneSheet({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * WHO THIS WAS, on the one screen where the cashier can still act on it.
+ *
+ * The till identifies people by a scan: nobody's name is on screen until the
+ * act is over. So the confirmation carries the four facts that let a cashier
+ * catch a wrong card in the second they have — the name, the code printed on
+ * that card, whether this shop knows them at all, and what they hold.
+ *
+ * "Client de la maison" and "Première visite ici" are NOT the same question as
+ * having an account, and conflating them is how a walk-in gets turned away:
+ * somebody can be a Pointili member at ten other shops and a stranger at this
+ * counter, and somebody credited by phone number may have no account at all —
+ * their points wait for them either way.
+ */
+function Who({ who }: { who: Whom }) {
+  const status = who.known
+    ? { text: "Client de la maison", tone: "#2f9e6e" }
+    : who.account
+      ? { text: "Première visite ici", tone: "#a06e00" }
+      : { text: "Pas encore inscrit — ses points l'attendent", tone: "#a06e00" };
+  return (
+    <div className="mt-3 rounded-2xl bg-[var(--o-inset)] px-4 py-3 text-left">
+      <p className="flex items-baseline justify-between gap-2">
+        <b className="min-w-0 truncate text-[16px] font-extrabold text-charcoal">{who.label}</b>
+        {who.account && (
+          <span className="shrink-0 font-mono text-[13px] font-bold tracking-[0.14em] text-slate">
+            {who.account}
+          </span>
+        )}
+      </p>
+      <p className="mt-0.5 text-[12px] font-bold" style={{ color: status.tone }}>
+        {status.text}
+      </p>
     </div>
   );
 }

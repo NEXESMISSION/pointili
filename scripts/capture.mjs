@@ -266,11 +266,41 @@ async function tap(page, locator, ms = 850) {
   await locator.click();
 }
 
-/** Open the till and find our customer BY PHONE — the walk-in path. */
+/**
+ * Walk the till's own flow: pick the act, key it, then say who it is for.
+ *
+ * `amount === null` is the stamp door. The clip runs to the receipt, which is
+ * the point of the shot — it is what a cashier actually sees.
+ */
+async function serve(page, amount) {
+  await ready(page, `${BASE}/owner`);
+  await page.locator('button:has-text("Donner des points")').waitFor({ timeout: 20000 });
+  await beat(page, 600);
+  await tap(page, page.locator('button:has-text("Donner des points")'));
+  await beat(page, 500);
+  if (amount === null) {
+    await tap(page, page.locator('button:has-text("+1 tampon")'));
+  } else {
+    await page.locator('input[name="amount"]').waitFor({ timeout: 20000 });
+    await human(page, 'input[name="amount"]', String(amount), 190);
+    await beat(page, 450);
+    await tap(page, page.locator('button:has-text("Créditer")'));
+  }
+  await page.locator('input[name="customer"]').waitFor({ timeout: 20000 });
+  await beat(page, 500);
+  await human(page, 'input[name="customer"]', NUM, 130);
+  await beat(page, 400);
+  await tap(page, page.locator('button:has-text("Confirmer")'));
+  await page.locator("[data-receipt]").waitFor({ timeout: 20000 }).catch(() => {});
+}
+
+/** The fiche — reading and correcting. It sells nothing any more. */
 async function findByPhone(page) {
   await ready(page, `${BASE}/owner`);
+  await page.locator('button:has-text("Chercher un client")').waitFor({ timeout: 20000 });
+  await beat(page, 500);
+  await tap(page, page.locator('button:has-text("Chercher un client")'));
   await page.locator('input[name="customer"]').waitFor({ timeout: 20000 });
-  await beat(page, 600);
   await human(page, 'input[name="customer"]', NUM, 130);
   await beat(page, 400);
   await tap(page, page.locator('button:has-text("Chercher")'));
@@ -408,25 +438,19 @@ const owner = await context();
     So: load the till, wait for it to settle, and only then let the clips run.
   */
   await settle(page, `${BASE}/owner`);
-  await page.locator('input[name="customer"]').waitFor({ timeout: 20000 });
+  await page.locator('button:has-text("Donner des points")').waitFor({ timeout: 20000 });
   await page.waitForTimeout(1800);
   console.log("signed in — every owner clip shares this session\n");
   await page.close();
 }
 
 await clip(owner, "credit", async (page) => {
-  await findByPhone(page);
-  await human(page, 'input[name="amount"]', "12", 190);
-  await beat(page, 450);
-  await tap(page, page.locator('button:has-text("Créditer")'));
+  await serve(page, 12);
   await beat(page, 3400);
 });
 
 await clip(owner, "stamp", async (page) => {
-  await findByPhone(page);
-  const stamp = page.locator('button:has-text("tampon")').first();
-  if (!(await stamp.count())) throw new Error("stamps are off for this café");
-  await tap(page, stamp);
+  await serve(page, null);
   await beat(page, 3200);
 });
 
@@ -453,9 +477,9 @@ await clip(owner, "qr", async (page) => {
 
 await clip(owner, "correction", async (page) => {
   await findByPhone(page);
-  const more = page.locator('button:has-text("Corriger")').first();
-  if (!(await more.count())) throw new Error("no correction control on the sheet");
-  await tap(page, more);
+  /* The corrections ARE the fiche now — no toggle to open first. */
+  const more = page.locator('input[name="adjust"]').first();
+  if (!(await more.count())) throw new Error("no correction control on the fiche");
   await beat(page, 1900);
   await glide(page, 240, 1100);
   await beat(page, 1600);
@@ -487,10 +511,12 @@ await clip(owner, "correction", async (page) => {
   const page = await owner.newPage();
   const unknown = `2${String(Date.now()).slice(-7)}`;
   await settle(page, `${BASE}/owner`);
+  await page.locator('button:has-text("Chercher un client")').waitFor({ timeout: 20000 });
+  await page.locator('button:has-text("Chercher un client")').click();
   await page.locator('input[name="customer"]').waitFor({ timeout: 20000 });
   await page.fill('input[name="customer"]', unknown);
   await page.locator('button:has-text("Chercher")').click();
-  await page.locator('[role="dialog"]').waitFor({ timeout: 20000 }).catch(() => {});
+  await page.locator('[role="dialog"]').first().waitFor({ timeout: 20000 }).catch(() => {});
   await page.waitForTimeout(1100);
 
   /* Remove the dev overlay rather than style it away: the round "N" button
@@ -504,7 +530,7 @@ await clip(owner, "correction", async (page) => {
       .forEach((el) => el.remove());
   });
 
-  const txt = await page.locator('[role="dialog"]').innerText().catch(() => "");
+  const txt = await page.locator('[role="dialog"]').first().innerText().catch(() => "");
   if (/première visite/i.test(txt)) {
     await page.screenshot({ path: `${OUT}/walkin.png` });
     console.log(`  ✓ ${OUT}/walkin.png`);

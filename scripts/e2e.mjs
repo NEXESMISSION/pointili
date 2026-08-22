@@ -100,14 +100,27 @@ check("owner signs in with Supabase Auth", !staff.url().includes("/login"), staf
  */
 
 /*
- * The caisse is a terminal: the keypad is the resting state (the camera only
- * opens when asked), and the identified customer takes over the whole screen as
- * a dialog.
+ * THE CAISSE IS A MENU OF TWO ACTS, and each one is a little wizard:
+ *
+ *    Donner des points  →  what (an amount, or a stamp)  →  who  →  receipt
+ *    Valider une récompense  →  a code or a QR  →  collect
+ *
+ * Nothing is typed on the home screen at all, so a helper that begins by
+ * filling a field there is a stale helper. The fiche — corrections, history,
+ * the secret code — is the third, quiet door, and it no longer sells anything.
  */
 const DESK = '[role="dialog"]';
 
-async function openCustomer(page, who) {
+/** Home: the two buttons. */
+async function till(page) {
   await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await page.locator('button:has-text("Donner des points")').waitFor({ timeout: 20000 });
+}
+
+/** Open somebody's FICHE. Reading and correcting only — no sale lives here. */
+async function openCustomer(page, who) {
+  await till(page);
+  await page.locator('button:has-text("Chercher un client")').click();
   await page.locator('input[name="customer"]').waitFor({ timeout: 15000 });
   await page.fill('input[name="customer"]', who);
   await page.locator('button:has-text("Chercher")').click();
@@ -115,17 +128,43 @@ async function openCustomer(page, who) {
 }
 
 /**
- * Bring up the voucher field.
+ * The whole sale, in the order a counter works: what, then who.
  *
- * There is nothing to switch any more: the till stopped being tabbed ("the till
- * fits one screen"), so both jobs are on the page at once and this only has to
- * wait for the field. It still clicked the old "Valider une récompense" TAB —
- * a control that no longer exists — and timed out 30s later on a till that
- * works perfectly, which is the stale-selector failure this file warns about
- * twice elsewhere.
+ * `amount === null` means a stamp — the other way out of the first screen.
+ * Returns the receipt locator, already waited for; read its attributes BEFORE
+ * doing anything else with the page, because it takes itself off the screen
+ * four seconds after it appears.
+ */
+async function serve(page, who, amount) {
+  await till(page);
+  await page.locator('button:has-text("Donner des points")').click();
+  if (amount === null) {
+    await page.locator('button:has-text("+1 tampon")').click();
+  } else {
+    await page.locator('input[name="amount"]').waitFor({ timeout: 15000 });
+    await page.fill('input[name="amount"]', String(amount));
+    await page.locator('button:has-text("Créditer")').click();
+  }
+  await page.locator('input[name="customer"]').waitFor({ timeout: 15000 });
+  await page.fill('input[name="customer"]', who);
+  await page.locator('button:has-text("Confirmer")').click();
+  const receipt = page.locator("[data-receipt]");
+  await receipt.waitFor({ timeout: 20000 }).catch(() => {});
+  return receipt;
+}
+
+/**
+ * Bring up the voucher screen — the till's second act, behind its own button.
+ *
+ * It has been a tab, then a card sitting on a crowded home screen, and it is
+ * now a screen of its own reached from a named button. Each of those moves
+ * broke this helper and each time the failure looked like a broken till rather
+ * than a stale selector, which is why the name of the button is the thing to
+ * change here and nothing else.
  */
 async function openCodeMode(page) {
-  await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await till(page);
+  await page.locator('button:has-text("Valider une récompense")').click();
   await page.locator('input[name="code"]').waitFor({ timeout: 15000 });
 }
 
@@ -149,26 +188,22 @@ async function openPointsEditor(page) {
 }
 
 async function credit(amount, expectBalance) {
-  await openCustomer(staff, PHONE);
-  await staff.fill('input[name="amount"]', String(amount));
-  await staff.locator('button:has-text("Créditer")').click();
   /*
     READ THE RECEIPT, WHICH IS WHAT THE CASHIER SEES.
 
-    Not the [role="status"] flash on the customer's desk: the receipt hands the
-    till to the next customer after four seconds and the desk goes with it, so
-    anything waiting longer than that arrives to find the search screen and no
-    confirmation anywhere. The receipt carries the two numbers as attributes so
-    this asserts the arithmetic rather than the wording.
+    Not a [role="status"] line: the receipt is the confirmation, it carries its
+    two numbers as attributes so this asserts the arithmetic rather than the
+    wording, and it takes itself off the screen after four seconds — so
+    everything below reads values already in hand.
   */
-  const receipt = staff.locator("[data-receipt]");
-  await receipt.waitFor({ timeout: 20000 }).catch(() => {});
+  const receipt = await serve(staff, PHONE, amount);
 
   if ((await receipt.count()) === 0) {
     /* Say what was on the screen. A bare `locator timed out` names neither the
        failure nor the till's own [role="alert"], which is usually sitting there
-       explaining itself. */
-    const alert = await staff.locator('[role="alert"]').first().textContent().catch(() => null);
+       explaining itself. `main [role=...]`, because the Next dev overlay owns a
+       role="alert" of its own and an unscoped one matches it first. */
+    const alert = await staff.locator('main [role="alert"]').first().textContent().catch(() => null);
     const seen = (await staff.locator("main").innerText().catch(() => ""))
       .split("\n").filter(Boolean).slice(0, 6).join(" · ");
     throw new Error(
@@ -303,7 +338,9 @@ if (redeemCode) {
     "Collecter" only if the operator confirms. A peek must NOT serve the code, so
     the loop clicks Collecter explicitly; a second visit finds it already claimed.
   */
-  const SEC = 'section:has(h2:has-text("Valider une récompense"))';
+  /* No scoping any more: the voucher panel IS the screen, so `main` is it.
+     It used to be one card among four on a crowded home screen. */
+  const SEC = "main";
   const claim = async () => {
     await openCodeMode(staff);
     await staff.fill(`${SEC} input[name="code"]`, redeemCode);
@@ -388,11 +425,8 @@ if (redeemCode) {
   // (falling back to the column DEFAULT) cannot do.
   await admin.rpc("create_account", { p_phone: newNorm, p_pin_hash: "x", p_name: "Rate" });
   await admin.rpc("enroll_diner", { p_business_id: biz.id, p_phone: newNorm });
-  await openCustomer(staff, newPhone);
-  await staff.fill('input[name="amount"]', "10");
-  await staff.locator('button:has-text("Créditer")').click();
-  await staff.waitForSelector('[role="status"]', { timeout: 20000 }).catch(() => {});
-  const rateTxt = await staff.locator('[role="status"]').innerText();
+  const rateReceipt = await serve(staff, newPhone, 10);
+  const rateTxt = (await rateReceipt.count()) ? await rateReceipt.innerText() : "";
   check(
     "caisse obeys the saved settings (10 TND x 1 = 10, +25 welcome)",
     /\+10/.test(rateTxt) && /25 de bienvenue/i.test(rateTxt),
@@ -510,26 +544,27 @@ if (redeemCode) {
     .update({ stamps_enabled: true, stamps_required: 2, stamp_reward: "Café offert (tampons)" })
     .eq("business_id", biz.id);
 
+  /*
+    A stamp is the OTHER WAY OUT of the first screen, and it no longer asks
+    "êtes-vous sûr ?" — the identification step that follows it is the pause.
+    That confirmation existed because a stamp used to be one tap on an already
+    open fiche, and at 9/10 that tap hands out the free coffee.
+  */
   const stamp = async () => {
-    await openCustomer(staff, PHONE);
-    await staff.locator('button:has-text("+1 tampon")').click();
-    /* A STAMP ASKS FIRST. The button opens a confirmation now — one tap used to
-       write straight to the card, and at 9/10 that hands out the free coffee.
-       Without this second click the suite stamped nothing and then reported the
-       card had failed to fill. */
-    await staff.locator('button:has-text("Oui, ajouter")').click();
-    await staff.locator('[role="status"]').waitFor({ timeout: 20000 }).catch(() => {});
-    return staff.locator(DESK).innerText().catch(() => "");
+    const receipt = await serve(staff, PHONE, null);
+    return (await receipt.count()) ? receipt.innerText() : "";
   };
 
   await stamp(); // 1/2
   const full = await stamp(); // 2/2 → completes, issues a code
-  const stampCode = full.match(/code\s+([A-Z2-9]{6,8})/)?.[1] ?? "";
-  check("a full stamp card completes and issues a code", /Carte pleine/i.test(full) && !!stampCode, stampCode || full.replace(/\n/g, " · ").slice(0, 60));
+  /* The receipt prints the voucher on its own line, under the reward's name —
+     it is no longer inside a "… — code XXXXXX" sentence. */
+  const stampCode = full.match(/\b([A-Z2-9]{6,8})\b/)?.[1] ?? "";
+  check("a full stamp card completes and issues a code", /Carte pleine/i.test(full) && !!stampCode, stampCode || full.replace(/\n/g, " · ").slice(0, 80));
 
   // the diner can collect that code at the counter, exactly like any reward
   if (stampCode) {
-    const SEC = 'section:has(h2:has-text("Valider une récompense"))';
+    const SEC = "main";
     await openCodeMode(staff);
     await staff.fill(`${SEC} input[name="code"]`, stampCode);
     await staff.locator(`${SEC} button:has-text("Vérifier")`).click();
@@ -551,11 +586,11 @@ if (redeemCode) {
   // clients" list was removed from the caisse; this is the surface that stayed.)
   await openCustomer(staff, PHONE);
   const found = await staff
-    .waitForFunction(() => /E2E/.test(document.querySelector("main")?.innerText ?? ""), undefined, { timeout: 10000 })
+    .waitForFunction(() => /E2E/.test(document.querySelector('[role="dialog"]')?.innerText ?? ""), undefined, { timeout: 10000 })
     .then(() => true)
     .catch(() => false);
   check("the till finds a cardholder by number", found);
-  const clientsTxt = await staff.locator("main").innerText();
+  const clientsTxt = await staff.locator(DESK).innerText();
   check("the till never exposes the raw phone number", !clientsTxt.includes(`+216${PHONE}`), "phone hidden");
 
   // ── 11e. Privacy: credit by the 4-char account code, no phone typed ──
@@ -565,13 +600,19 @@ if (redeemCode) {
     .eq("phone", `+216${PHONE}`)
     .single();
   check("customer has a 4-char account code", typeof card?.code === "string" && card.code.length === 4, card?.code ?? "none");
-  await openCustomer(staff, card.code);
-  await staff.fill('input[name="amount"]', "5");
-  await staff.locator('button:has-text("Créditer")').click();
-  await staff.locator('[role="status"]').waitFor({ timeout: 20000 }).catch(() => {});
-  const credTxt = await staff.locator(DESK).innerText();
+  const codeReceipt = await serve(staff, card.code, 5);
+  const credTxt = (await codeReceipt.count()) ? await codeReceipt.innerText() : "";
   check("crediting by the short code works", /\+5/.test(credTxt), credTxt.split("\n").find((l) => /\+5/.test(l)) ?? "");
   check("credit result shows a name, not the phone", !credTxt.includes(`+216${PHONE}`));
+  /*
+    The receipt answers the two questions a cashier is asked out loud. Both used
+    to require closing the confirmation and searching the same person again,
+    which is why nobody ever answered them.
+  */
+  check("the receipt says whether this shop knows them", /Client de la maison/i.test(credTxt),
+    credTxt.replace(/\n+/g, " · ").slice(0, 90));
+  check("the receipt prints their card code", credTxt.includes(card.code));
+  check("the receipt shows the balance MOVING, not just the new total", credTxt.includes("→"));
 
   await admin.from("loyalty_programs").update({ stamps_enabled: false }).eq("business_id", biz.id);
 }

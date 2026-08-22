@@ -43,27 +43,52 @@ await s.fill('input[name="password"]', OWNER_PASSWORD);
 await s.click('button[type="submit"]');
 await s.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 20000 }).catch(() => {});
 
-/* 1 · credit a phone that has NEVER signed up */
-// The terminal rests on the keypad, which is where a phone number gets typed.
+/*
+  1 · credit a phone that has NEVER signed up
+
+  THE TILL IS A MENU OF TWO ACTS: pick the money, then say who it is for. The
+  walk-in path is the second step accepting a phone number instead of a card
+  code — a person with no account at all, whose points wait for them.
+*/
 const DESK = '[role="dialog"]';
-await s.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-await s.locator('input[name="customer"]').waitFor({ timeout: 15000 });
-await s.fill('input[name="customer"]', LOCAL);
-await s.locator('button:has-text("Chercher")').click();
-const panel = await s.locator(DESK).waitFor({ timeout: 20000 }).then(() => true).catch(() => false);
-t("the till opens a customer with no account", panel);
+const till = async () => {
+  await s.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+  await s.locator('button:has-text("Donner des points")').waitFor({ timeout: 20000 });
+};
+const serve = async (who, amount) => {
+  await till();
+  await s.locator('button:has-text("Donner des points")').click();
+  await s.locator('input[name="amount"]').waitFor({ timeout: 15000 });
+  await s.fill('input[name="amount"]', String(amount));
+  await s.locator('button:has-text("Créditer")').click();
+  await s.locator('input[name="customer"]').waitFor({ timeout: 15000 });
+  await s.fill('input[name="customer"]', who);
+  await s.locator('button:has-text("Confirmer")').click();
+  const receipt = s.locator("[data-receipt]");
+  await receipt.waitFor({ timeout: 20000 }).catch(() => {});
+  return receipt;
+};
+const openFiche = async (who) => {
+  await till();
+  await s.locator('button:has-text("Chercher un client")').click();
+  await s.locator('input[name="customer"]').waitFor({ timeout: 15000 });
+  await s.fill('input[name="customer"]', who);
+  await s.locator('button:has-text("Chercher")').click();
+  return s.locator(DESK).waitFor({ timeout: 20000 }).then(() => true).catch(() => false);
+};
 
-const deskTxt = await s.locator(DESK).innerText();
-// "enrolled" now means "holds a card HERE", so the wording is about this shop,
-// not about the platform — they may already be a Pointili member elsewhere.
-t("it says this is their first visit here", /première visite ici/i.test(deskTxt),
-  deskTxt.split("\n").find((l) => /visite/i.test(l)) ?? "");
-
-await s.fill('input[name="amount"]', "30");
-await s.locator('button:has-text("Créditer")').click();
-await s.locator('[role="status"]').waitFor({ timeout: 20000 }).catch(() => {});
-const credTxt = await s.locator(DESK).innerText();
+const walkIn = await serve(LOCAL, 30);
+const credTxt = (await walkIn.count()) ? await walkIn.innerText() : "";
+t("the till serves somebody with no account at all", (await walkIn.count()) === 1);
 t("credit works before signup", /\+30/.test(credTxt), credTxt.split("\n").find((l) => /\+30/.test(l)) ?? "");
+/*
+  THE RECEIPT SAYS WHICH KIND OF STRANGER THIS IS, and the distinction is the
+  whole feature: "no card here" and "no Pointili account" are different facts,
+  and a cashier who reads the first as the second turns a paying customer away.
+*/
+t("the receipt says they are not signed up yet", /pas encore inscrit/i.test(credTxt),
+  credTxt.split("\n").find((l) => /inscrit|visite/i.test(l)) ?? credTxt.replace(/\n+/g, " · ").slice(0, 80));
+t("the receipt never prints the phone", !credTxt.includes(LOCAL) && !credTxt.includes(NORM));
 
 const { data: acc } = await admin.from("accounts").select("phone, code").eq("phone", NORM).maybeSingle();
 t("no ghost account was invented", !acc);
@@ -76,11 +101,7 @@ t("a walk-in is reachable by no code at all", !acc?.code);
    two questions to the surface that survived it: type the phone, and the
    terminal opens them holding their points — with a masked number, never the
    digits. */
-await s.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-await s.locator('input[name="customer"]').waitFor({ timeout: 15000 });
-await s.fill('input[name="customer"]', LOCAL);
-await s.locator('button:has-text("Chercher")').click();
-await s.locator(DESK).waitFor({ timeout: 20000 }).catch(() => {});
+await openFiche(LOCAL);
 let listed = false;
 for (let i = 0; i < 20 && !listed; i++) {
   listed = /\b40\b/.test(await s.locator(DESK).innerText().catch(() => ""));
