@@ -312,6 +312,14 @@ const TN: Record<string, string> = {
   "Récompense": "هديّة",
   "Ou dicte le code — les deux marchent.": "ولا اقرا الكود بصوتك — الزوز يمشيو.",
 
+  /* ── the points landing, live, while the cashier scans (components/LivePoints)
+     Four words on a phone held at arm's length across a counter. ── */
+  "points": "نقاط",
+  "tampons": "طوابع",
+  "Nouveau solde": "الرصيد الجديد",
+  "Carte pleine !": "كارت كامل!",
+  "Encore": "مازال",
+
   /* ── coming back ── */
   "Bon retour": "مرحبا بيك من جديد",
   "Ton code secret": "الكود السرّي متاعك",

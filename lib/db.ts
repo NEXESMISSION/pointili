@@ -969,3 +969,42 @@ export async function staffJournal(businessId: string, limit = 60): Promise<Staf
     at: String(r.at),
   }));
 }
+
+/* -------------------------------------------------------------------------- */
+/* The pulse — what a customer's open card asks for, over and over             */
+/* -------------------------------------------------------------------------- */
+
+export type DinerPulse = {
+  balance: number;
+  stamps: number;
+  /** How many rewards are waiting to be collected. */
+  codes: number;
+  /** The newest one's name, so a card that just filled can say what it won. */
+  latest: string | null;
+};
+
+/**
+ * The three numbers on a customer's card, and nothing else.
+ *
+ * This is polled by a phone sitting on a counter while the cashier credits it,
+ * so it is deliberately the SMALLEST honest answer: no account row, no
+ * membership check, no reward ladder. Three reads in ONE round trip's worth of
+ * waiting, keyed on (café, phone) — the same pair every other read here uses.
+ *
+ * It cannot leak: the phone comes from the caller's own signed cookie, so the
+ * only numbers anybody can ask for are the ones already printed on the screen
+ * they are holding. The phone itself never appears in the answer.
+ */
+export async function dinerPulse(businessId: string, phone: string): Promise<DinerPulse> {
+  const [balance, stamps, codes] = await Promise.all([
+    getBalance(businessId, phone),
+    getStamps(businessId, phone),
+    getCodes(businessId, phone),
+  ]);
+  return {
+    balance,
+    stamps: stamps.count,
+    codes: codes.length,
+    latest: codes[0]?.label ?? null,
+  };
+}

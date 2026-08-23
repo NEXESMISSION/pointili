@@ -8,7 +8,8 @@ import { SideRail } from "@/components/SideRail";
 import { ScrollTop } from "@/components/ScrollTop";
 import { businessType } from "@/lib/businessTypes";
 import { themeVars } from "@/lib/theme";
-import { getCafe, getMember } from "@/lib/data";
+import { LivePoints } from "@/components/LivePoints";
+import { getCafe, getLoyaltyProgram, getMember } from "@/lib/data";
 import { currentLang, dir } from "@/lib/i18n";
 import { dinerWallet } from "@/lib/db";
 
@@ -42,6 +43,10 @@ export default async function CafeLayout({
   /* Only for the rail's wallet row. Skipped entirely for somebody who has not
      joined yet — they have no wallet and the rail is not rendered for them. */
   const cards = diner ? (await dinerWallet(diner.phone)).length : 0;
+
+  /* Only for the live celebration's stamp counter. cache()d, and every screen
+     under here already reads it, so within one request this is free. */
+  const program = diner ? await getLoyaltyProgram(cafe.id) : null;
 
   /* French or Tunisian — a preference of the person, in a cookie. `dir` flips
      the whole subtree, so every flex row, every margin and every chevron in
@@ -109,6 +114,30 @@ export default async function CafeLayout({
       {/* Every screen under here opens at its own top — except when the person
           pressed back, which is meant to return them where they were. */}
       <ScrollTop />
+
+      {/*
+        THE POINTS LANDING, ON THE SCREEN THAT IS WATCHING.
+
+        Mounted on the LAYOUT, not on the card: a customer being served is as
+        likely to be on /scanner with their QR held out as on the card itself,
+        and the whole value is that it does not matter which one they picked.
+        Only for somebody who actually holds a card here — there is nothing to
+        watch before that.
+      */}
+      {diner && program && (
+        <LivePoints
+          slug={cafe.slug}
+          lang={lang}
+          initial={{
+            balance: diner.balance,
+            stamps: diner.stamps,
+            codes: diner.codes.length,
+            latest: diner.codes[0]?.label ?? null,
+          }}
+          stampsRequired={program.stampsRequired}
+          colour={cafe.primaryColor}
+        />
+      )}
 
       {/* the customer's card is the thing worth keeping one tap away */}
       <InstallPrompt audience="client" lang={lang} />
