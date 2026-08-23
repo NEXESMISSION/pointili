@@ -35,6 +35,12 @@ export async function createCafeAction(
 
     v1 is one café per owner. That rule now lives where the write happens.
   */
+  /*
+    ALREADY HAS ONE → NOTHING TO DO HERE. This is also what keeps the endpoint
+    harmless once the staff gate exists: it sits outside the layout that renders
+    that gate, so anybody holding the counter phone can POST to it — and this
+    line is why the worst they achieve is a redirect.
+  */
   const { ownerCafe } = await import("@/lib/auth/owner");
   if (await ownerCafe()) redirect("/owner");
 

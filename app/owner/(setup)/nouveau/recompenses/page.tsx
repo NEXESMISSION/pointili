@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { ownerCafe } from "@/lib/auth/owner";
+import { guardArea } from "@/lib/auth/staff";
 import { getRewards } from "@/lib/data";
 import { cafeAvgTicket } from "@/lib/db";
 import { RewardsSetup } from "./RewardsSetup";
@@ -14,6 +15,13 @@ export default async function Recompenses() {
   */
   const cafe = await ownerCafe();
   if (!cafe) redirect("/owner/nouveau");
+  /*
+    AND THE SAME ROLE AS RéGLAGES. This screen prices every reward in the shop,
+    and it lives OUTSIDE the layout that renders the staff gate — so without
+    this line a cashier could reach the reward editor by typing the address,
+    long after the signup it was built for.
+  */
+  await guardArea(cafe.id, "reglages");
 
   // Rewards are priced in visits now; a brand-new café has no sales, so this
   // returns the platform yardstick and the screen says so.

@@ -178,6 +178,28 @@ const posted = await staff.evaluate(async () => {
 });
 check("a raw POST at Réglages is not a way in", posted !== 200, `status ${posted}`);
 
+/*
+  THE SIGNUP SCREENS ARE OUTSIDE THE GATE, AND ONE OF THEM PRICES REWARDS.
+
+  /owner/nouveau/recompenses lives in the (setup) group — a different layout,
+  with no staff gate above it — and it never stops working: it redirects an owner
+  who has NO café, which is the opposite guard. So it was a live reward editor,
+  reachable by anybody holding the counter phone months after signup, able to
+  rename every reward and set its cost to nothing.
+*/
+await staff.goto(`${BASE}/owner/nouveau/recompenses`, { waitUntil: "networkidle" });
+check("a cashier cannot reach the signup reward editor", staff.url().endsWith("/owner"),
+  staff.url().replace(BASE, ""));
+
+const { data: pricesBefore } = await admin
+  .from("loyalty_rewards").select("id, points_cost").eq("business_id", cafeId).order("position");
+await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+const { data: pricesAfter } = await admin
+  .from("loyalty_rewards").select("id, points_cost").eq("business_id", cafeId).order("position");
+check("...and the ladder is untouched",
+  JSON.stringify(pricesBefore) === JSON.stringify(pricesAfter),
+  `${(pricesBefore ?? []).length} rewards`);
+
 /* ── 6. Everything done is attributed ──────────────────────────────── */
 await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
 await staff.locator('button:has-text("Donner des points")').click();

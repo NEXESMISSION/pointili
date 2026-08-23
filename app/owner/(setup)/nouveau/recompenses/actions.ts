@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { ownerCafe } from "@/lib/auth/owner";
+import { requireArea } from "@/lib/auth/staff";
 import { rewardArtFor } from "@/lib/rewardArt";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,6 +25,19 @@ export type StarterState = { error?: string };
  *
  * All of it through the OWNER's session and RLS. Signup is not a special case
  * that gets to bypass the rule that a café's rows belong to its owner.
+ *
+ * ── NOR IS IT A SPECIAL CASE FOR ROLES (0048) ────────────────────────
+ *
+ * This lives in the SETUP group, outside the layout that renders the staff gate,
+ * and it never stops working: the screen redirects an owner who already has a
+ * café, but the action behind it does not care what step anybody is on. So it
+ * was a live endpoint that rewrites a shop's whole reward ladder — the labels
+ * and the point cost of every one — reachable by anybody holding the counter
+ * phone, months after signup.
+ *
+ * That is the same power Réglages has, which is why it now asks the same
+ * question. Enforced here rather than on the page, because the page is not what
+ * a POST talks to.
  */
 export async function saveStarterRewardsAction(
   _prev: StarterState,
@@ -31,6 +45,7 @@ export async function saveStarterRewardsAction(
 ): Promise<StarterState> {
   const cafe = await ownerCafe();
   if (!cafe) redirect("/owner/login");
+  await requireArea(cafe.id, "reglages");
 
   const db = await createClient();
 
