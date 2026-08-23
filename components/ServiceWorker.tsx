@@ -22,6 +22,12 @@ import { useEffect } from "react";
  * that instruction is useless to a shop owner mid-service, and because a
  * standalone window is often never closed at all.
  *
+ * ALL THREE ARE ABOUT THE WORKER, AND ONLY THE WORKER. Point 3 reloads when a
+ * NEW WORKER takes over, and sw.js is a static file that does not change
+ * between deploys — so on an ordinary release that event never fires and this
+ * component does nothing at all. The tab still running last week's JavaScript
+ * is components/StayFresh's problem, and it is a different mechanism.
+ *
  * Renders nothing. Failure is silent by design: an unregistrable worker costs
  * the install offer and nothing else, and the app must not care.
  */
