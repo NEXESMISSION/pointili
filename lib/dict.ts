@@ -306,6 +306,9 @@ const TN: Record<string, string> = {
   "Échange tes points dans les Récompenses — le code apparaîtra ici.":
     "بدّل النقاط متاعك في الهدايا — الكود باش يبان هوني.",
   "À scanner au comptoir": "باش يتسكانى في الكونتوار",
+  /* One QR at a time — the list opens a sheet now (codes/CodeTickets). */
+  "Ouvre une récompense, puis fais scanner son QR au comptoir.":
+    "حلّ هديّة، ومن بعد خلّيهم يسكانيو الكود متاعها في الكونتوار.",
   /* what a pending code IS — the header on each ticket */
   "Gain": "ربحة",
   "Carte pleine": "كارت كامل",
@@ -416,6 +419,11 @@ const TN: Record<string, string> = {
   "Aucune boutique ne correspond.": "ما فمّاش فرع يجي مع هذا.",
   "Rien à récupérer pour le moment.": "ما فمّا حتّى حاجة تستنّاك توّا.",
   "Aucune carte proche de sa récompense.": "ما فمّاش كارت قريبة من الهديّة متاعها.",
+  /* ── the wallet can finally scan, instead of only telling you to (AddCard) ── */
+  "Ajouter une carte": "زيد كارط",
+  "Pointe le QR posé au comptoir.": "وجّه الكاميرا للكود اللي في الكونتوار.",
+  "Ce QR n'est pas une carte Pointili.": "هذا الكود موش كارط Pointili.",
+  "Caméra indisponible.": "الكاميرا موش خدّامة.",
   "Scanne le QR d'un commerce pour ajouter ta première carte.":
     "اسكاني الكود متاع محلّ باش تزيد أوّل كارت متاعك.",
   "Espace boutique": "فضاء المحلّ",

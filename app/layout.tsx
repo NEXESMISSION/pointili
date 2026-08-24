@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DESCRIPTION, KEYWORDS, SITE_NAME, SITE_URL, TAGLINE } from "@/lib/seo";
 import { Fraunces, Space_Mono, Inter, Poppins } from "next/font/google";
 import { ServiceWorker } from "@/components/ServiceWorker";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { StayFresh } from "@/components/StayFresh";
 import { RouteProgress } from "@/components/RouteProgress";
 import { Track } from "@/components/Track";
@@ -170,6 +171,8 @@ export default function RootLayout({
         <ServiceWorker />
         {/* Repairs a tab that is still running a previous deploy — see the file. */}
         <StayFresh />
+        {/* The gesture an installed app has nowhere else — see the file. */}
+        <PullToRefresh />
         {/* One anonymous beacon per visit, so the console can tell whether an
             ad brought anybody. No id, no account, no page trail — see
             components/Track.tsx. Renders nothing. */}

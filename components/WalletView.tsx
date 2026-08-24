@@ -1,5 +1,7 @@
 "use client";
 
+import { AddCard } from "./AddCard";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signalNavigation } from "@/components/RouteProgress";
@@ -227,6 +229,17 @@ export function WalletView({
           </span>
         </div>
       )}
+
+      {/*
+        THE SENTENCE UNDER THIS LIST HAS ALWAYS SAID "scanne le QR d'un
+        commerce" — and nothing on the screen could scan anything. A customer
+        standing in front of the sticker had to leave the app for the phone's own
+        camera. It sits ABOVE the cards rather than at the foot of them, because
+        the wallet a shop is trying to be added to is usually a short one.
+      */}
+      <div className="mb-3">
+        <AddCard lang={lang} />
+      </div>
 
       {shown.length === 0 ? (
         <p className="d-card mt-4 px-6 py-12 text-center text-[13.5px] leading-relaxed text-slate">

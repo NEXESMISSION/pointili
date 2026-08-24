@@ -1895,3 +1895,75 @@ body:has(.landing-light) {
     display: none;
   }
 }
+
+/*
+  ══ ONE REWARD, HELD UP ═══════════════════════════════════════════════════
+
+  The sheet a customer opens from their list of codes (codes/CodeTickets). The
+  page behind it is a list of things they own; this is the one they chose,
+  alone, because two QRs within a few centimetres of each other is a camera
+  deciding for them.
+
+  Light rather than dark: the thing inside is a QR on white, and a black veil
+  around a white plate is a lantern — it makes a phone screen at counter
+  brightness harder to read, not easier.
+*/
+.ticket-veil {
+  background: color-mix(in oklab, #ffffff 90%, transparent);
+  backdrop-filter: blur(4px);
+  animation: live-in 160ms ease-out both;
+}
+.ticket-sheet {
+  animation: live-pop 380ms cubic-bezier(0.16, 1.2, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticket-sheet {
+    animation: live-in 160ms ease-out both;
+  }
+}
+
+/*
+  ══ PULL TO REFRESH, IN THE INSTALLED APP ═════════════════════════════════
+
+  A browser has this gesture; an installed PWA has no address bar, no reload
+  button and no gesture of its own — see components/PullToRefresh, which is why
+  this only ever renders there.
+*/
+.ptr {
+  pointer-events: none;
+  padding-top: max(env(safe-area-inset-top), 10px);
+}
+.ptr-dial {
+  display: grid;
+  place-items: center;
+  height: 38px;
+  width: 38px;
+  border-radius: 999px;
+  background: var(--color-white, #fff);
+  color: var(--cafe, #5b3fd1);
+  box-shadow: 0 10px 26px -10px rgba(23, 18, 31, 0.45);
+  transition: transform 120ms ease-out, opacity 120ms ease-out;
+}
+.ptr-dial--busy {
+  animation: ptr-spin 700ms linear infinite;
+}
+
+@keyframes ptr-spin {
+  to { transform: rotate(360deg); }
+}
+
+/*
+  AND THE RUBBER BAND GOES WITH IT.
+
+  Only inside the installed app: overscroll-behavior stops the whole document
+  bouncing past its own top, which is what makes a pull feel like it belongs to
+  the page rather than to the operating system. In a browser this is left alone
+  so the platform's own gesture keeps working.
+*/
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  html,
+  body {
+    overscroll-behavior-y: contain;
+  }
+}
