@@ -12,9 +12,10 @@
  * through the RPC the till calls, which is the same write and a great deal
  * faster to arrange.
  *
- * Five things: it fires, it says the right number, the page underneath ends up
- * true, it stays quiet when a balance goes DOWN, and the endpoint feeding it
- * hands nothing to somebody with no card.
+ * Six things: it fires, it says the right number, it announces the reward the
+ * cashier COLLECTS by name — the end of the whole loop — the page underneath
+ * ends up true, it stays quiet when a balance goes down, and the endpoint
+ * feeding it hands nothing to somebody with no card.
  *
  * Exits non-zero on any failure.
  */
@@ -115,6 +116,32 @@ const full = await celebration("full");
 check("a completed card is celebrated, not read as a loss", Boolean(full), full ?? "nothing appeared");
 check("...and it names what was won", /Caf.\s*offert/i.test(full ?? ""), full ?? "");
 
+/* ── 3b. THE END OF THE LOOP: the cashier hands the reward over ────────
+   The full card above minted a voucher. Collecting it is the moment the free
+   coffee actually crosses the counter, and it is the one DECREASE worth
+   celebrating — so the customer's screen has to name what just went. */
+await diner.waitForTimeout(3000); // let the "carte pleine" overlay retire
+/*
+  Asked of the PULSE, not of a table.
+
+  A stamp card's voucher and a bought reward's voucher do not live in the same
+  place, and this test should not have to know which — diner_codes already
+  unions them, and the pulse is what the screen under test is reading. Taking
+  the code from the same answer the UI sees is both simpler and a stronger
+  check: if it is not there, the animation could not have fired either.
+*/
+const waiting = await diner.evaluate(async (slug) => {
+  const r = await fetch(`/api/pulse?s=${slug}`, { cache: "no-store" });
+  return (await r.json()).codes;
+}, TEST_SLUG);
+const voucher = (waiting ?? [])[0]?.code;
+check("a voucher is waiting to be collected", Boolean(voucher), JSON.stringify(waiting ?? []));
+
+await admin.rpc("claim_code", { p_business_id: cafeId, p_code: voucher });
+const took = await celebration("collected");
+check("the customer sees their reward being handed over", Boolean(took), took ?? "nothing appeared");
+check("...and it names WHICH one", /Caf.\s*offert/i.test(took ?? ""), took ?? "");
+
 /* ── 4. Spending points is NOT a celebration ──────────────────────────── */
 await diner.waitForTimeout(3000); // let the last overlay retire
 const before = await diner.locator("[data-live-celebration]").count();
@@ -152,7 +179,9 @@ const stranger = await browser.newContext();
 const anon = await stranger.newPage();
 const res = await anon.request.get(`${BASE}/api/pulse?s=${TEST_SLUG}`);
 const body = await res.json().catch(() => ({}));
-check("no card, no figures", body.balance === 0 && body.stamps === 0 && body.codes === 0, JSON.stringify(body));
+check("no card, no figures",
+  body.balance === 0 && body.stamps === 0 && (body.codes ?? []).length === 0,
+  JSON.stringify(body));
 check("...and never a phone number in the answer", !JSON.stringify(body).includes(LOCAL), JSON.stringify(body));
 check("nothing about it is cacheable", /no-store/i.test(res.headers()["cache-control"] ?? ""),
   res.headers()["cache-control"] ?? "none");

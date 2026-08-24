@@ -42,11 +42,21 @@ import type { DinerPulse } from "@/lib/db";
  * already the new one by the time the animation fades. Without that the card
  * would celebrate +12 and then sit there showing the old total.
  *
+ * ── THE FOUR MOMENTS ──────────────────────────────────────────────────────
+ *
+ *   points     the cashier credited a sale
+ *   stamp      the cashier stamped the card
+ *   full       that stamp completed it, and a reward was minted
+ *   collected  the cashier just TOOK a reward — the end of the whole loop, and
+ *              the only one where something the customer owns leaves them. It
+ *              is a decrease, and it is the one decrease worth celebrating: it
+ *              is the free coffee actually being handed over.
+ *
  * ── AND WHAT IT REFUSES TO DO ─────────────────────────────────────────────
  *
- * It never celebrates a number going DOWN. Spending points on a reward is a
- * decrease, and confetti over "you have less than you did" is the kind of
- * cheerfulness that reads as a bug. It updates silently and says nothing.
+ * It never celebrates a BALANCE going down. Buying a reward spends points and
+ * the customer did that themselves, on a screen that already answered them;
+ * confetti over "you have less than you did" reads as a bug.
  */
 
 /** Poll cadences, in ms. See the note above for why there are three. */
@@ -60,7 +70,8 @@ const COLD_AFTER = 600_000;
 type Celebration =
   | { kind: "points"; amount: number; balance: number }
   | { kind: "stamp"; count: number; required: number }
-  | { kind: "full"; label: string | null };
+  | { kind: "full"; label: string | null }
+  | { kind: "collected"; label: string };
 
 export function LivePoints({
   slug,
@@ -145,15 +156,28 @@ export function LivePoints({
         const was = seen.current;
 
         /*
-          A CARD THAT FILLED LOOKS LIKE STAMPS GOING BACKWARDS.
+          A REWARD LEFT THE LIST — the cashier just handed it over.
 
-          add_stamp resets the counter to 0 the moment it completes and issues a
-          voucher instead, so the honest signal is "stamps dropped AND a new code
-          appeared". Checked before the plain stamp case, or a full card would
-          celebrate nothing at all.
+          Diffed by CODE rather than by counting, because the count alone cannot
+          name what went, and the name is the whole message: "Espresso offert,
+          récupéré" is the end of the loop this product exists for. Checked
+          first, because it is the most consequential thing that can happen
+          while somebody is standing at a counter.
         */
-        if (now.codes > was.codes && now.stamps < was.stamps) {
-          celebrate({ kind: "full", label: now.latest });
+        const gone = was.codes.find((c) => !now.codes.some((n) => n.code === c.code));
+
+        if (gone) {
+          celebrate({ kind: "collected", label: gone.label });
+        } else if (now.codes.length > was.codes.length && now.stamps < was.stamps) {
+          /*
+            A CARD THAT FILLED LOOKS LIKE STAMPS GOING BACKWARDS.
+
+            add_stamp resets the counter to 0 the moment it completes and issues
+            a voucher instead, so the honest signal is "stamps dropped AND a new
+            code appeared". Checked before the plain stamp case, or a full card
+            would celebrate nothing at all.
+          */
+          celebrate({ kind: "full", label: now.codes[0]?.label ?? null });
         } else if (now.stamps > was.stamps) {
           celebrate({ kind: "stamp", count: now.stamps, required: stampsRequired });
         } else if (now.balance > was.balance) {
@@ -165,7 +189,9 @@ export function LivePoints({
         }
 
         const changed =
-          now.balance !== was.balance || now.stamps !== was.stamps || now.codes !== was.codes;
+          now.balance !== was.balance ||
+          now.stamps !== was.stamps ||
+          now.codes.length !== was.codes.length;
         seen.current = now;
         /* The overlay is the flourish; this is what makes the page itself true. */
         if (changed) router.refresh();
@@ -250,6 +276,26 @@ export function LivePoints({
                 ? t("Carte pleine !")
                 : `${t("Encore")} ${show.required - show.count}`}
             </p>
+          </>
+        )}
+
+        {show.kind === "collected" && (
+          <>
+            {/*
+              A TICK, NOT A NUMBER. Every other moment here is arithmetic — how
+              many points, how many stamps — and this one is not: nothing was
+              counted, something was handed over. The reward's own name is the
+              figure.
+            */}
+            <span className="live-tick" style={{ background: colour }} aria-hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m5 13 4 4L19 7" />
+              </svg>
+            </span>
+            <p className="live-full" style={{ color: colour }}>
+              {show.label}
+            </p>
+            <p className="live-chip">{t("Récupéré")}</p>
           </>
         )}
 

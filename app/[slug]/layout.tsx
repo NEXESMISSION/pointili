@@ -131,8 +131,7 @@ export default async function CafeLayout({
           initial={{
             balance: diner.balance,
             stamps: diner.stamps,
-            codes: diner.codes.length,
-            latest: diner.codes[0]?.label ?? null,
+            codes: diner.codes.map((c) => ({ code: c.code, label: c.label, kind: c.kind })),
           }}
           stampsRequired={program.stampsRequired}
           colour={cafe.primaryColor}

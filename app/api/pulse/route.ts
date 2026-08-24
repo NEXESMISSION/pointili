@@ -42,7 +42,7 @@ export const dynamic = "force-dynamic";
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
 
-const NOTHING = { balance: 0, stamps: 0, codes: 0, latest: null };
+const NOTHING = { balance: 0, stamps: 0, codes: [] };
 
 function answer(body: unknown) {
   return new Response(JSON.stringify(body), {

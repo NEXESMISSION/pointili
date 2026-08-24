@@ -20,14 +20,16 @@ import { translator, type Lang } from "@/lib/dict";
  * exists once somebody has chosen a reward and opened it. Nothing scannable is
  * ever beside anything else scannable.
  *
- * ── AND IT WATCHES ITSELF BE COLLECTED ────────────────────────────────────
+ * ── AND IT GETS OUT OF THE WAY WHEN THE CODE IS TAKEN ─────────────────────
  *
  * The card polls while it is open (components/LivePoints), so the moment the
  * cashier claims the code the server list loses it and this component is handed
- * new props. Rather than the open sheet blinking out from under the customer's
- * thumb, it says "Récupéré" with a tick and then closes. Both people watching
- * the phone see the same thing happen at the same time, which is the whole
- * point of holding it up.
+ * new props. The sheet closes.
+ *
+ * It does NOT announce that itself. LivePoints is mounted over every screen in
+ * this shop and celebrates the collection full-screen, by name — one event
+ * deserves one animation, and two confirmations of the same handover, on top of
+ * each other, is the kind of enthusiasm that reads as a glitch.
  */
 
 /* The French here is also the dictionary key — see lib/dict. */
@@ -65,11 +67,12 @@ export function CodeTickets({ codes, lang }: { codes: Ticket[]; lang: Lang }) {
   */
   const collected = open !== null && !codes.some((c) => c.code === open.code);
 
-  /* The only thing that needs an effect: letting the tick be read before the
-     sheet goes. */
+  /* A beat, not a slam: the celebration is already rising over the top of this,
+     and a sheet that vanishes in the same frame reads as a glitch rather than
+     as the code being taken. */
   useEffect(() => {
     if (!collected) return;
-    const id = setTimeout(() => setOpen(null), 1800);
+    const id = setTimeout(() => setOpen(null), 700);
     return () => clearTimeout(id);
   }, [collected]);
 
@@ -180,40 +183,28 @@ export function CodeTickets({ codes, lang }: { codes: Ticket[]; lang: Lang }) {
 
             <div aria-hidden className="border-t-2 border-dashed" style={{ borderColor: "var(--cafe-line)" }} />
 
-            {collected ? (
-              /* The counter took it while this was open — see the note above. */
-              <div className="px-5 py-10 text-center">
-                <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#2f9e6e] text-white">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8">
-                    <path d="m5 13 4 4L19 7" />
-                  </svg>
-                </span>
-                <p className="mt-3 text-[17px] font-extrabold text-[#2f9e6e]">{t("Récupéré")}</p>
-              </div>
-            ) : (
-              <div className="px-5 py-5 text-center">
-                {/* The one scannable thing on the screen. */}
-                <div
-                  className="mx-auto w-[212px] max-w-full [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
-                  dangerouslySetInnerHTML={{ __html: open.qr }}
-                />
-                <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.12em] text-slate">
-                  {t("À scanner au comptoir")}
-                </p>
-                {/* kept, and kept BIG: a scratched lens, a dead battery, a shop
-                    whose only phone is in someone's pocket */}
-                <p
-                  dir="ltr"
-                  className="mt-1 font-mono text-[30px] font-extrabold leading-none tracking-[0.16em]"
-                  style={{ color: "var(--cafe-text)" }}
-                >
-                  {open.code}
-                </p>
-                <p className="mt-2 text-[11.5px] leading-snug text-slate">
-                  {t("Ou dicte le code — les deux marchent.")}
-                </p>
-              </div>
-            )}
+            <div className="px-5 py-5 text-center">
+              {/* The one scannable thing on the screen. */}
+              <div
+                className="mx-auto w-[212px] max-w-full [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+                dangerouslySetInnerHTML={{ __html: open.qr }}
+              />
+              <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.12em] text-slate">
+                {t("À scanner au comptoir")}
+              </p>
+              {/* kept, and kept BIG: a scratched lens, a dead battery, a shop
+                  whose only phone is in someone's pocket */}
+              <p
+                dir="ltr"
+                className="mt-1 font-mono text-[30px] font-extrabold leading-none tracking-[0.16em]"
+                style={{ color: "var(--cafe-text)" }}
+              >
+                {open.code}
+              </p>
+              <p className="mt-2 text-[11.5px] leading-snug text-slate">
+                {t("Ou dicte le code — les deux marchent.")}
+              </p>
+            </div>
           </div>
         </div>
       )}

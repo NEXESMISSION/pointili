@@ -977,10 +977,15 @@ export async function staffJournal(businessId: string, limit = 60): Promise<Staf
 export type DinerPulse = {
   balance: number;
   stamps: number;
-  /** How many rewards are waiting to be collected. */
-  codes: number;
-  /** The newest one's name, so a card that just filled can say what it won. */
-  latest: string | null;
+  /**
+   * The rewards still waiting at the counter — the LIST, not a tally.
+   *
+   * A count answers "did something change"; only the list answers "WHICH one
+   * went", and that is the question the moment a reward is collected. The
+   * client diffs the two and names what the cashier just took. It is a handful
+   * of short strings that already belong to the person asking.
+   */
+  codes: { code: string; label: string; kind: string }[];
 };
 
 /**
@@ -1004,7 +1009,6 @@ export async function dinerPulse(businessId: string, phone: string): Promise<Din
   return {
     balance,
     stamps: stamps.count,
-    codes: codes.length,
-    latest: codes[0]?.label ?? null,
+    codes: codes.map((c) => ({ code: c.code, label: c.label, kind: c.kind })),
   };
 }
