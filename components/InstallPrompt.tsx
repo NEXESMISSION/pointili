@@ -30,7 +30,46 @@ import { BrandMark } from "@/components/BrandMark";
  *   - block anything: it is a bar at the bottom, above the tab bar, dismissible
  */
 
-const DISMISS_KEY = "pointili_install_dismissed";
+/*
+  ONE KEY PER SURFACE, because the till and the customer's card are two
+  different apps to install. The note above has always CLAIMED "per surface";
+  the key was a single shared string, so dismissing the bar on a customer's card
+  also silenced the one that offers a cashier their own till — an offer they
+  would then never see again on the device it matters most on.
+*/
+const DISMISS_KEY = (audience: "client" | "owner") => `pointili_install_dismissed_${audience}`;
+
+/*
+  STORAGE THAT CANNOT THROW.
+
+  localStorage is not always there: Safari in private browsing, a browser with
+  site data switched off, a quota that is full. Every one of those makes a bare
+  `localStorage.setItem` raise — and this one sat on the FIRST line of dismiss(),
+  in front of the setState that closes the bar. So on exactly those devices the
+  close button did nothing at all: the bar stayed, and because nothing was
+  written it came back on the next navigation too. A prompt you cannot get rid
+  of is worse than no prompt.
+
+  Remembering is a nicety; closing is not. These two make the nicety optional.
+*/
+function remembered(key: string): boolean {
+  try {
+    return Boolean(localStorage.getItem(key));
+  } catch {
+    return false;
+  }
+}
+
+function remember(key: string) {
+  try {
+    localStorage.setItem(key, "1");
+  } catch {
+    /* Nothing to do and nothing to report: the bar still closes, because
+       closing is state, not storage. It may reappear on the next visit — which
+       is the correct failure for a device that has told us it will not
+       remember anything. */
+  }
+}
 
 /** Standalone means it is already installed — iOS uses a non-standard flag. */
 function isInstalled(): boolean {
@@ -71,7 +110,7 @@ export function InstallPrompt({
   useEffect(() => {
     const eligible = () =>
       !isInstalled() &&
-      !localStorage.getItem(DISMISS_KEY) &&
+      !remembered(DISMISS_KEY(audience)) &&
       // Phones only. matchMedia rather than a width check: a narrow desktop
       // window is still a desktop, and nobody docks a till on a laptop.
       window.matchMedia("(max-width: 900px)").matches;
@@ -116,11 +155,16 @@ export function InstallPrompt({
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("appinstalled", onInstalled);
     };
-  }, []);
+  }, [audience]);
 
   function dismiss() {
-    localStorage.setItem(DISMISS_KEY, "1");
+    /*
+      CLOSE FIRST. The write is best-effort and cannot be allowed to stand
+      between a person pressing × and the thing going away — which is exactly
+      what it did when storage was unavailable.
+    */
     setGone(true);
+    remember(DISMISS_KEY(audience));
   }
 
   // Nothing to offer: not a phone, already installed, dismissed, or an Android

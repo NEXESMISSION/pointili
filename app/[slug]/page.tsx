@@ -495,9 +495,18 @@ export default async function Carte({
           saying "you have 0 rewards" is furniture; this is either an errand or
           it is not on the screen. */}
       {pending > 0 ? (
+        /*
+          THE NAME OF THE THING, when there is only one of them.
+
+          "1 récompense à récupérer" is a category and a number; "Espresso
+          offert" is the actual object the person is owed, and it is already in
+          hand — diner.codes carries the label. A customer glancing at this
+          screen in a queue should not have to open anything to remember what
+          they are about to be handed.
+        */
         <Waiting
           href={`/${slug}/codes`}
-          title={t("{n} à récupérer", { n: t.n(pending, "récompense") })}
+          title={pending === 1 ? t(diner.codes[0].label) : t("{n} à récupérer", { n: t.n(pending, "récompense") })}
           hint={t("Montre le QR au comptoir — c'est déjà payé.")}
         />
       ) : readyCount > 0 ? (
@@ -510,34 +519,37 @@ export default async function Carte({
 
       {/* ══ THE REST ════════════════════════════════════════════════════ */}
       {/*
-        ONE ROW, NOT TWO TILES.
+        A LINK, NOT A SECOND CARD.
 
-        It was "Mes codes · aucun" beside "Historique · mes points" — a tile
-        whose value was the word for nothing, and a tile whose value was filler.
-        Two thirds of that row said nothing on the most-opened screen in the
-        product, directly under an errand card that already covers the codes
-        when there are any.
+        This was a full-width tile directly under the errand card above it, and
+        the two were the same shape: icon in a circle, bold line, grey line,
+        chevron. Two rows of identical weight, one of which is "something is
+        waiting for you RIGHT NOW" and one of which is "read your past" — the
+        screen gave them equal say, so neither carried any urgency.
 
-        So: one row, to the one screen behind it, carrying a number that is
-        true — how many movements are on this card.
+        Worse, it repeated the errand. Its value line read "1 code · mes
+        points": the same waiting reward, counted a second time, three
+        centimetres under the card that already named it, joined to a fragment
+        that is not a sentence. In Tunisian that came out "1 كود · النقاط
+        متاعي", which is the version that finally made somebody say it out loud.
+
+        So the errand keeps the card, and history becomes what it actually is —
+        one quiet line you tap when a balance surprises you. Its label says what
+        is behind it and never counts anything the screen has already counted.
       */}
-      <section className="mt-3 px-4">
-        <Tile
+      <div className="mt-3 px-4">
+        <Link
           href={`/${slug}/historique`}
-          label={t("Mon activité")}
-          value={
-            pending > 0
-              ? t("{n} · mes points", { n: t.n(pending, "code") })
-              : t("points, visites, récompenses")
-          }
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7v5l3 2" />
-            </svg>
-          }
-        />
-      </section>
+          className="flex items-center justify-center gap-1.5 py-2.5 text-[13px] font-bold text-slate transition active:scale-[0.99]"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-[15px] w-[15px]">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 2" />
+          </svg>
+          {t("Mon activité")}
+          <span className="text-[15px] leading-none opacity-50 rtl:rotate-180">›</span>
+        </Link>
+      </div>
 
       {/*
         ══ WHAT THIS SHOP GIVES ═══════════════════════════════════════════
@@ -684,36 +696,6 @@ function Waiting({ href, title, hint }: { href: string; title: string; hint: str
   );
 }
 
-/** One shortcut, white and quiet — the colour on this screen belongs upstairs. */
-function Tile({
-  href,
-  label,
-  value,
-  icon,
-}: {
-  href: string;
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className="d-card flex items-center gap-3 px-3.5 py-3 transition active:scale-[0.98]"
-    >
-      <span
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-full"
-        style={{ background: "var(--cafe-soft)", color: "var(--cafe-text)" }}
-      >
-        {icon}
-      </span>
-      <span className="min-w-0">
-        <span className="block truncate text-[12.5px] font-extrabold text-charcoal">{label}</span>
-        <span className="block truncate text-[11px] font-medium text-slate">{value}</span>
-      </span>
-    </Link>
-  );
-}
 
 /**
  * "1 dinar = 1 point", or "1 dinar = 2 points", or "2 dinars = 1 point".
