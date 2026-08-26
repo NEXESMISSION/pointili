@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { QrScanner } from "@/components/QrScanner";
-import { CheckIcon, QrIcon, StampIcon } from "@/components/icons";
+import { CheckIcon, StampIcon } from "@/components/icons";
 import { DoneSheet, type Done } from "./DoneSheet";
 import type { Activity } from "@/lib/db";
 import { fmtDinars, fmtPoints } from "@/lib/points";
@@ -205,7 +205,6 @@ function Lens({
   label,
   busy,
   onRead,
-  onStop,
   onUnavailable,
 }: {
   /** Bumped by the caller after every read — see the note where it lives. */
@@ -213,7 +212,6 @@ function Lens({
   label: string;
   busy: boolean;
   onRead: (text: string) => void;
-  onStop: () => void;
   onUnavailable: () => void;
 }) {
   return (
@@ -225,9 +223,6 @@ function Lens({
       <p className="mt-3 text-center text-[13px] font-semibold text-slate">
         {busy ? "Un instant…" : label}
       </p>
-      <button type="button" onClick={onStop} className="a-btn a-btn--ghost mt-3">
-        Fermer la caméra
-      </button>
     </div>
   );
 }
@@ -330,7 +325,22 @@ export function CaisseDesk({
   const [intent, setIntent] = useState<Intent | null>(null);
   const [amount, setAmount] = useState("");
   const [typed, setTyped] = useState("");
-  const [scanning, setScanning] = useState(false);
+  /*
+    THE LENS IS ON UNLESS IT CANNOT BE.
+
+    It used to be behind a "Scanner le QR" button, which cost a tap on the most
+    repeated action in the product — and the tap bought nothing: by the time
+    this screen is up the cashier has already chosen the act, keyed the amount
+    and pressed Créditer. They are holding the phone at a customer's card. There
+    is no version of "yes, really open the camera" worth asking for.
+
+    So this flag is only ever set by the two things that make a live lens wrong:
+    a device with no camera (the back-office laptop), and a read that failed —
+    because the scanner remounts after every decode, and a card the shop cannot
+    resolve sitting in the frame would otherwise refuse itself once a second,
+    forever. Both land the cashier on the field, which is the way out of both.
+  */
+  const [lensDown, setLensDown] = useState(false);
   /*
     Bumped after every successful read, to REMOUNT the scanner.
 
@@ -381,7 +391,9 @@ export function CaisseDesk({
   function go(next: View) {
     setError("");
     setTyped("");
-    setScanning(false);
+    /* Every screen re-tries the camera: a permission granted since the last
+       failure should not need the app restarting to take effect. */
+    setLensDown(false);
     setView(next);
   }
 
@@ -450,11 +462,9 @@ export function CaisseDesk({
       SHUT THE LENS BEFORE THE ROUND TRIP, not after it. The scanner is
       remounted on every read, and a card still sitting in the frame decodes
       again on its first frame — which, now that a read spends money, is a
-      second sale nobody keyed. It also puts every possible ANSWER on a screen
-      that is being rendered: a refusal set behind a viewfinder is a cashier
-      rescanning a card that will never work, with no message anywhere.
+      second sale nobody keyed.
     */
-    setScanning(false);
+    setLensDown(true);
     setError("");
     setDone(null);
 
@@ -556,7 +566,7 @@ export function CaisseDesk({
   function peek(raw: string) {
     const code = extractCode(raw).toUpperCase();
     if (!code) return;
-    setScanning(false);
+    setLensDown(true);
     setDone(null);
     if (!isVoucher(code)) {
       setError("Ce QR est une carte client — passez par « Donner des points ».");
@@ -692,7 +702,7 @@ export function CaisseDesk({
               onClick={() => go("lookup")}
               className="w-full py-2 text-center text-[13px] font-bold text-slate underline decoration-[var(--o-edge)] underline-offset-4"
             >
-              Chercher un client — corriger, historique, code secret
+              Chercher un client
             </button>
 
             {/*
@@ -759,7 +769,17 @@ export function CaisseDesk({
               }}
               onKeyDown={(e) => e.key === "Enter" && toWho()}
               placeholder="0"
-              inputMode="decimal"
+              /*
+                inputMode="none": the KEYPAD below is the only way in.
+
+                As a decimal input this raised the phone's own keyboard on focus
+                — over the top of the keypad drawn for it — so the screen offered
+                two number pads, and the one the OS supplied pushed Créditer off
+                the bottom. It is still a real input (a caret, a value, something
+                a test can fill); it simply stops asking the OS for help it
+                already has on screen.
+              */
+              inputMode="none"
               aria-label="Montant en dinars"
               className="w-full rounded-2xl bg-[var(--o-inset)] px-4 py-4 text-center text-[34px] font-extrabold tabular-nums text-charcoal outline-none placeholder:text-slate"
             />
@@ -845,39 +865,29 @@ export function CaisseDesk({
             go("give");
           }}
         >
-          {scanning ? (
+          {!lensDown && (
             <Lens
               nonce={scanNonce}
               busy={busy}
-              label={`Pointez la carte du client — ${intentLine}`}
+              label={`Pointez la carte — ${intentLine}`}
               onRead={(text) => {
                 setScanNonce((k) => k + 1);
                 apply(text);
               }}
-              onStop={() => setScanning(false)}
-              onUnavailable={() => {
-                setScanning(false);
-                setError("Caméra indisponible — tapez le code à la place.");
-              }}
+              onUnavailable={() => setLensDown(true)}
             />
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setError("");
-                  setScanning(true);
-                }}
-                className="a-btn flex !min-h-[64px] items-center justify-center gap-2 !text-[17px]"
-              >
-                <QrIcon className="h-6 w-6" /> Scanner le QR
-              </button>
+          )}
 
-              <p className="my-3 text-center text-[12px] font-bold uppercase tracking-[0.08em] text-slate">
-                ou
-              </p>
+          {/*
+            AND THE FIELD IS ALREADY THERE, under the lens.
 
-              <div className="a-card p-4">
+            Not behind an "ou", not behind a second button. Both doors on one
+            screen means the cashier never chooses a mode — they point the phone,
+            or they type, and whichever happens first is the answer. It is also
+            what a laptop with no camera gets, without anything having to fail
+            first.
+          */}
+          <div className="a-card mt-3 p-4">
                 <div className="flex gap-2">
                   <input
                     name="customer"
@@ -899,12 +909,9 @@ export function CaisseDesk({
                   </button>
                 </div>
                 <p className="mt-2 text-center text-[12px] leading-snug text-slate">
-                  Le code à 4 caractères de sa carte, ou son numéro de téléphone —
-                  même s&apos;il n&apos;a pas encore de compte.
+                  Ou tapez son code à 4 caractères, ou son numéro.
                 </p>
-              </div>
-            </>
-          )}
+          </div>
           {errorLine}
         </Step>
       )}
@@ -912,7 +919,13 @@ export function CaisseDesk({
       {/* ── the other act ─────────────────────────────────────────────── */}
       {view === "reward" && (
         <Step title="Valider une récompense" onBack={home}>
-          {scanning ? (
+          {/*
+            The lens goes the moment there is something to ACT on. Once a
+            voucher has been read the screen is about one decision — collect it
+            or not — and a live camera above that decision is only a way to
+            replace the thing being decided.
+          */}
+          {!lensDown && !voucher && (
             <Lens
               nonce={scanNonce}
               busy={busy}
@@ -921,30 +934,12 @@ export function CaisseDesk({
                 setScanNonce((k) => k + 1);
                 peek(text);
               }}
-              onStop={() => setScanning(false)}
-              onUnavailable={() => {
-                setScanning(false);
-                setError("Caméra indisponible — tapez le code à la place.");
-              }}
+              onUnavailable={() => setLensDown(true)}
             />
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setError("");
-                  setScanning(true);
-                }}
-                className="a-btn flex !min-h-[64px] items-center justify-center gap-2 !text-[17px]"
-              >
-                <QrIcon className="h-6 w-6" /> Scanner le QR
-              </button>
-              <p className="my-3 text-center text-[12px] font-bold uppercase tracking-[0.08em] text-slate">
-                ou
-              </p>
-              <ValidateForm scanned={voucher} />
-            </>
           )}
+          <div className={!lensDown && !voucher ? "mt-3" : ""}>
+            <ValidateForm scanned={voucher} />
+          </div>
           {errorLine}
         </Step>
       )}

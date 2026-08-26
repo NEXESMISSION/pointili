@@ -48,14 +48,38 @@ export function QrScanner({
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
+    /*
+      ONE RETRY, BECAUSE THE LAST LENS MAY NOT HAVE LET GO YET.
+
+      The till now keeps a viewfinder live on the screens that need one, so two
+      of them can exist within a second of each other — finish a sale, go
+      straight to validating a reward. The first scanner stops its tracks on
+      unmount, but the release is not instantaneous, and a getUserMedia landing
+      inside that window fails with the same error as "this device has no
+      camera". Treating those two as the same thing is what put a cashier on the
+      typed field for the rest of the visit, on a phone whose camera was
+      perfectly fine.
+
+      So the first failure is not an answer. A short wait, one more attempt, and
+      only then is the camera genuinely unavailable.
+    */
+    async function open(): Promise<MediaStream> {
+      const ask = () =>
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing } }, audio: false });
+      try {
+        return await ask();
+      } catch (first) {
+        await new Promise((r) => setTimeout(r, 400));
+        if (cancelled) throw first;
+        return ask();
+      }
+    }
+
     async function start() {
       let jsQR: typeof import("jsqr").default;
       try {
         jsQR = (await import("jsqr")).default;
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: facing } },
-          audio: false,
-        });
+        stream = await open();
       } catch {
         if (!cancelled) {
           setError("Caméra indisponible");
