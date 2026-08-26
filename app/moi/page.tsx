@@ -5,6 +5,7 @@ import { hasOwnerCookie } from "@/lib/auth/owner";
 import { OwnerReturn } from "@/components/OwnerReturn";
 import { cafeVars } from "@/lib/theme";
 import { SignInForm } from "./SignInForm";
+import { SignUpForm } from "./SignUpForm";
 import { currentLang, dir, t as translation } from "@/lib/i18n";
 
 export const metadata = { title: "Mes cartes" };
@@ -60,15 +61,37 @@ export default async function Moi() {
         <SignInForm lang={lang} />
 
         {/*
-          No signup here, deliberately: a card belongs to a shop. Creating an
-          account from this page would land someone in an empty wallet with
-          nothing in it and no idea why.
+          ── AND A WAY IN WITHOUT A SHOP ────────────────────────────────────
+
+          This card used to say "scan the QR at your café" and stop there,
+          because signing up needed a shop: the welcome bonus and the card are
+          per-café, so an account made here would land in an empty wallet.
+
+          That was true of the WALLET and not of the ACCOUNT. The 4-character
+          code is platform-wide, and the till resolves it at any shop including
+          one this person has never visited — the walk-in path. So somebody who
+          heard about Pointili on the bus can have a code before they are
+          anywhere near a counter, and the empty wallet tells them exactly what
+          to do with it.
+
+          Scanning stays FIRST, because it is still the better start: it hands
+          them a shop, a welcome bonus and a reason, all in one tap.
         */}
         <div className="d-card mt-7 px-4 py-4">
           <p className="text-[13.5px] font-bold text-charcoal">{t("Pas encore de carte ?")}</p>
           <p className="mt-1 text-[12.5px] leading-relaxed text-slate">
             {t("Scanne le QR posé au comptoir de ton commerce. C'est gratuit, sans application, et tes points démarrent tout de suite.")}
           </p>
+          <details className="group mt-3">
+            <summary className="cursor-pointer list-none text-[12.5px] font-bold underline underline-offset-2 [&::-webkit-details-marker]:hidden"
+              style={{ color: "var(--cafe-text)" }}>
+              {t("Ou crée ton compte maintenant")}
+            </summary>
+            <p className="mb-3 mt-2 text-[12px] leading-relaxed text-slate">
+              {t("Tu auras un code à montrer dans n'importe quel commerce Pointili — tes points démarrent à ton premier achat.")}
+            </p>
+            <SignUpForm lang={lang} />
+          </details>
         </div>
 
         {!isOwner && (

@@ -221,6 +221,35 @@ export default async function Reglages({
         It sits under "Votre compte" rather than "Votre programme" because it is
         about who may use this app, not about what a point is worth.
       */}
+      {/*
+        THE DOOR TO THE CUSTOMER SIDE, ON THE DEVICE THAT HAD NONE.
+
+        An owner is a customer too — they hold cards at other shops, and they
+        open their own to check it still looks right. The way BACK has existed
+        for a while (components/OwnerReturn, a pill on every customer screen,
+        shown to owners and nobody else). The way OUT existed only on a laptop:
+        the sidebar's "Ma carte client", which is `md:` and up.
+
+        So on the phone — the device the till actually runs on, and the one that
+        gets installed — there was no route into the customer app except typing
+        a URL. Here it is, one tap, in the same window: a standalone PWA that
+        opens a browser tab to show somebody their own card has stopped being an
+        app.
+
+        /cartes rather than this shop's own card, because the wallet is the
+        honest destination: it holds every shop they are a customer of, theirs
+        included.
+      */}
+      <Link href="/cartes" className="a-card mb-2 flex items-center gap-3 px-4 py-3.5 md:hidden">
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-semibold text-charcoal">Mon espace client</span>
+          <span className="mt-0.5 block text-[12px] leading-snug text-slate">
+            Mes cartes chez les autres commerces — et la mienne
+          </span>
+        </span>
+        <span className="shrink-0 text-[17px] leading-none text-slate/50">›</span>
+      </Link>
+
       <Link href="/owner/equipe" className="a-card flex items-center gap-3 px-4 py-3.5">
         <span className="min-w-0 flex-1">
           <span className="block text-[15px] font-semibold text-charcoal">L&apos;équipe</span>

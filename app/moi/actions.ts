@@ -3,13 +3,14 @@
 import { redirect } from "next/navigation";
 import { currentDiner, startDinerSession } from "@/lib/auth/diner";
 import {
+  hashPin,
   isValidPhone,
   isValidPin,
   normalisePhone,
   NO_SUCH_ACCOUNT_HASH,
   verifyPin,
 } from "@/lib/auth/crypto";
-import { getAccount, pinClear, pinGate } from "@/lib/db";
+import { createAccount, getAccount, pinClear, pinGate } from "@/lib/db";
 
 export type SignInState = { error?: string; phone?: string };
 
@@ -69,6 +70,89 @@ export async function signInAction(_prev: SignInState, formData: FormData): Prom
     // Already counted by pinGate above — nothing to record here.
     return { ...keep, error: "Numéro ou code secret incorrect." };
   }
+
+  await pinClear(phone);
+  await startDinerSession(phone);
+  redirect("/cartes");
+}
+
+export type SignUpState = { error?: string; phone?: string; name?: string };
+
+/**
+ * AN ACCOUNT WITHOUT A SHOP IN HAND.
+ *
+ * Signing up used to require standing in a café: the only form was at
+ * /[slug]/rejoindre, which you cannot reach without a shop's slug, which you
+ * get by scanning a QR taped to its counter. Somebody who hears about Pointili
+ * anywhere else had no way in at all.
+ *
+ * ── THE OBJECTION THIS ANSWERS ────────────────────────────────────────────
+ *
+ * The reason it was refused is written next to signInAction and it was a real
+ * one: "the welcome bonus and the card itself are per-café, so an account
+ * created here would land in an empty wallet with nothing to show".
+ *
+ * That was true of the WALLET, not of the account. The 4-character code is
+ * platform-wide (0019) and the till resolves it at any shop on the platform —
+ * including one this person has never visited, which is the whole walk-in path.
+ * So an account with no cards is not a dead end; it is somebody who can walk
+ * into any Pointili counter tomorrow, show four characters, and have points
+ * from their first purchase. The empty wallet says exactly that now.
+ *
+ * What does NOT happen here is a welcome bonus or an enrolment. Those belong to
+ * a shop, and no shop is involved yet.
+ *
+ * ── A NUMBER THAT IS ALREADY TAKEN ────────────────────────────────────────
+ *
+ * It is not announced. Somebody signing up on a number that already has an
+ * account is overwhelmingly the owner of that number, returning — so the PIN
+ * they typed is checked against it, and a correct one simply signs them in.
+ * A wrong one gets the same vague sentence as everywhere else in this product,
+ * because "that number is registered" is an oracle for whether a given Tunisian
+ * mobile belongs to a Pointili customer, and eight digits is not a search space.
+ */
+export async function signUpAction(_prev: SignUpState, formData: FormData): Promise<SignUpState> {
+  const rawPhone = String(formData.get("phone") ?? "");
+  const pin = String(formData.get("pin") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim().slice(0, 40) || null;
+  const phone = normalisePhone(rawPhone);
+  const keep = { phone: rawPhone, name: name ?? undefined };
+
+  if (!isValidPhone(phone)) return { ...keep, error: "Numéro de téléphone invalide." };
+  if (!isValidPin(pin)) return { ...keep, error: "Le code secret doit contenir 4 chiffres." };
+
+  /*
+    The same gate as every other PIN path, and BEFORE anything is created:
+    without it this form is an unthrottled way to mint rows, and a throttle that
+    ran after the write would not be one. pin_gate counts as it checks (0038).
+  */
+  const lockedFor = await pinGate(phone);
+  if (lockedFor > 0) return { ...keep, error: `Trop d'essais. Réessaie dans ${lockedFor} min.` };
+
+  let account = await getAccount(phone);
+  /* Burn the scrypt on both branches — see signInAction for why the timing of
+     "no such number" matters as much as its wording. */
+  const pinOk = await verifyPin(pin, account?.pin_hash ?? NO_SUCH_ACCOUNT_HASH);
+
+  if (!account) {
+    /*
+      Check-then-act race: two submits of the same new number both see "no
+      account". The primary key makes the loser fail, and they ARE this person —
+      so re-read and fall through to the ordinary PIN check.
+    */
+    const created = await createAccount(phone, await hashPin(pin), name);
+    if (!created.ok) {
+      account = await getAccount(phone);
+      if (!account) return { ...keep, error: "Réessaie dans un instant." };
+    } else {
+      await pinClear(phone);
+      await startDinerSession(phone);
+      redirect("/cartes");
+    }
+  }
+
+  const good = pinOk || (await verifyPin(pin, account!.pin_hash));
+  if (!good) return { ...keep, error: "Numéro ou code secret incorrect." };
 
   await pinClear(phone);
   await startDinerSession(phone);

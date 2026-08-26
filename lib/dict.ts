@@ -430,6 +430,14 @@ const TN: Record<string, string> = {
   "{n} tampons": "{n} طوابع",
   "Tes points te suivent partout. Entre ton numéro et ton code secret pour les retrouver.":
     "النقاط متاعك تمشي معاك في كلّ بلاصة. حطّ نمرتك والكود السرّي متاعك باش تلقاهم.",
+  /* ── signing up with no shop in hand (app/moi) ── */
+  "Ou crée ton compte maintenant": "ولّا اعمل الكونت متاعك توّا",
+  "Tu auras un code à montrer dans n'importe quel commerce Pointili — tes points démarrent à ton premier achat.":
+    "باش يولّي عندك كود تورّيه في أيّ محلّ Pointili — والنقاط تبدا من أوّل شرية.",
+  "Comme au comptoir": "كيف ما يناديولك في الكونتوار",
+  "4 chiffres. C'est lui qui te rend tes points sur un autre téléphone.":
+    "4 أرقام. هو اللي يرجّعلك نقاطك من تليفون آخر.",
+  "Créer mon compte ✦": "اعمل الكونت ✦",
   "Pas encore de carte ?": "ما عندكش كارت توّا؟",
   "Scanne le QR posé au comptoir de ton commerce. C'est gratuit, sans application, et tes points démarrent tout de suite.":
     "اسكاني الكود اللي في الكونتوار متاع المحلّ. بلاش، من غير أبليكاسيون، والنقاط متاعك تبدا توّا.",
