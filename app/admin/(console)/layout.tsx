@@ -82,7 +82,16 @@ export default async function ConsoleLayout({
         {/* The brand line lives in the rail on desktop; on a phone the rail is
             a bottom bar with no room for it, so it gets a slim top bar that
             also carries the way out. */}
-        <header className="flex items-center justify-between gap-3 border-b border-[var(--o-edge)] bg-[var(--o-panel)] px-4 py-2.5 md:hidden">
+        {/*
+          safe-t: installed, the status bar sits on top of this row.
+
+          --safe-pt restates the 2.5 that py-2.5 was giving the top, because
+          .safe-t is unlayered and REPLACES padding-top rather than adding to it
+          — write pt-2.5 here instead and the row goes flush on every device
+          where the inset is 0, which is every desktop. That exact mistake is
+          written up over the class in globals.css. py-2.5 stays for the bottom.
+        */}
+        <header className="safe-t flex items-center justify-between gap-3 border-b border-[var(--o-edge)] bg-[var(--o-panel)] px-4 py-2.5 [--safe-pt:0.625rem] md:hidden">
           <span className="k-num text-[12.5px] font-bold text-charcoal">
             pointili<span className="text-slate/50">/</span>console
           </span>

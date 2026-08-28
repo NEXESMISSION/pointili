@@ -256,7 +256,22 @@ export default async function Landing({
       />
 
       {/* ── masthead ───────────────────────────────────────────────── */}
-      <header className="border-b border-hair">
+      {/*
+        safe-t, because THIS is the screen the installed app opens on.
+
+        manifest start_url is "/", and installed there is no browser chrome to
+        keep this row clear of the status bar — app/layout.tsx sets
+        viewport-fit=cover, so the page owns the notch too. The masthead (mark,
+        language, sign-in) sat underneath it: the reported "landing is cropped
+        in the PWA". TopBar and BottomNav have always spent these insets; the
+        landing never did, because in a browser tab it looks perfect.
+
+        --safe-pt:0px, not a pt-* utility, and on the HEADER rather than the row
+        below it: .safe-t is unlayered and REPLACES padding-top (the trap
+        written up over the class itself), so the inner row keeps its own py-4
+        and this element contributes exactly the inset.
+      */}
+      <header className="safe-t border-b border-hair [--safe-pt:0px]">
         {/*
           ONE GAP, NOT TWO.
 
@@ -624,7 +639,9 @@ export default async function Landing({
       </section>
 
       {/* ── footer ─────────────────────────────────────────────────── */}
-      <footer className="border-t border-hair">
+      {/* and the home indicator at the other end — same reason, same shape:
+          the inner row keeps its py-8, this adds only the inset. */}
+      <footer className="safe-b border-t border-hair [--safe-pb:0px]">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-8 md:flex-row md:items-center md:justify-between md:px-8">
           <div>
             <Brand />

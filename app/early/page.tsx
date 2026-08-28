@@ -124,7 +124,10 @@ export default async function EarlyAccess({
           The brand, the language, and nothing else. No sign-in, no menu, no
           second call to action: this page has exactly one thing to do and every
           other pressable object on it is a way to leave without doing it. */}
-      <header className="border-b border-hair">
+      {/* safe-t: scope is "/", so this is reachable inside the installed app,
+          where nothing keeps this row clear of the status bar. Inner row keeps
+          its py-4; this contributes the inset alone (see globals.css). */}
+      <header className="safe-t border-b border-hair [--safe-pt:0px]">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-4 md:px-8">
           <Link href="/" aria-label="Pointili">
             <BrandLockup size={32} accent="#5b3fd1" />
@@ -236,7 +239,8 @@ export default async function EarlyAccess({
         </section>
       </main>
 
-      <footer className="border-t border-hair">
+      {/* and the home indicator — same reason as the header above. */}
+      <footer className="safe-b border-t border-hair [--safe-pb:0px]">
         <div className="mx-auto flex max-w-5xl flex-col gap-4 px-5 py-7 md:flex-row md:items-center md:justify-between md:px-8">
           <p className="text-[13px] text-slate">{t("Conçu et hébergé pour la Tunisie")}</p>
           <nav className="flex flex-wrap items-center gap-x-7 text-[13.5px] text-slate">

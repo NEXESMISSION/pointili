@@ -32,6 +32,29 @@ const BUILD_ID =
   process.env.GITHUB_SHA ??
   String(Date.now());
 
+/*
+  WHERE THIS RUNS IS NOT IN THIS FILE — see vercel.json.
+
+  It was in iad1 (Washington), and the database is in eu-central-2 (Zurich).
+  Every query a page made therefore crossed the Atlantic and came back:
+  `X-Vercel-Id: cdg1::iad1::…` — a customer in Tunis reached the Paris edge,
+  which forwarded to Virginia, which talked to Switzerland. The measured cost of
+  one such round trip is written down in proxy.ts, which calls the auth check
+  "90–230ms"; a page makes several, in waves, and they add up in front of the
+  first byte.
+
+  vercel.json pins the functions to fra1 (Frankfurt), ~300km from the database
+  and much nearer the people using this. Nothing in the code changes; the same
+  queries simply stop crossing an ocean twice.
+
+  It is NOT `export const preferredRegion`. On Vercel that option only applies
+  to routes running on the edge runtime, and this app cannot: proxy.ts is
+  explicitly Node ("edge is not supported here"), and the data layer uses the
+  Supabase and pg clients. Setting it on a Node route is ignored at best.
+
+  The dashboard has the same setting (Project → Functions → Function Region).
+  If the two ever disagree, believe the deployment, not this comment.
+*/
 const nextConfig: NextConfig = {
   env: { NEXT_PUBLIC_BUILD_ID: BUILD_ID },
   /*
