@@ -78,7 +78,34 @@ type View = "home" | "give" | "who" | "reward" | "lookup";
  * stamp has no amount, and a screen that infers the act from an empty field is
  * the ambiguity this flow exists to remove.
  */
-type Intent = { kind: "credit"; amount: number } | { kind: "stamp" };
+/*
+  `key` is the ACT's identity, and it is minted here rather than at submit time
+  on purpose. A credit whose answer is lost leaves the cashier on the same
+  screen with the sale intact, and the only sane thing to do in front of a
+  waiting customer is tap again — so the retry has to carry the key the first
+  attempt used, or the customer is credited twice (0049).
+
+  Composing a NEW sale mints a NEW key, which is what keeps two identical
+  coffees a minute apart from being mistaken for one. That distinction is the
+  whole reason this is a key and not a "same amount, same customer" rule.
+*/
+type Intent =
+  | { kind: "credit"; amount: number; key: string }
+  | { kind: "stamp"; key: string };
+
+/** A key per composed act. randomUUID needs a secure context; the till is
+    HTTPS in production and localhost in development, both of which qualify —
+    but a stray http:// origin would throw mid-sale, so it falls back. */
+function newOpKey(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+    });
+  }
+}
 
 /**
  * A voucher that arrived already read — from the camera, or from a field
@@ -418,7 +445,7 @@ export function CaisseDesk({
   /** Hand the keyed amount to the second step. */
   function toWho() {
     if (!valid) return setError("Montant invalide — de 0,01 à 10 000 DT.");
-    setIntent({ kind: "credit", amount: n });
+    setIntent({ kind: "credit", amount: n, key: newOpKey() });
     go("who");
   }
 
@@ -488,7 +515,11 @@ export function CaisseDesk({
       try {
         const fd = new FormData();
         fd.set("customer", code);
-        if (intent.kind === "credit") fd.set("amount", String(intent.amount));
+        if (intent.kind === "credit") {
+          fd.set("amount", String(intent.amount));
+          /* The same key for every attempt at THIS sale — see Intent. */
+          fd.set("opKey", intent.key);
+        }
 
         const res =
           intent.kind === "credit"
@@ -842,7 +873,7 @@ export function CaisseDesk({
               <button
                 type="button"
                 onClick={() => {
-                  setIntent({ kind: "stamp" });
+                  setIntent({ kind: "stamp", key: newOpKey() });
                   go("who");
                 }}
                 className="a-btn a-btn--dark flex !min-h-[56px] items-center justify-center gap-2"

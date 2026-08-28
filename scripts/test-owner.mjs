@@ -135,6 +135,57 @@ check("credit by code works", /\+10/.test(credTxt), credTxt.split("\n").find((l)
 check("credit result hides the phone", !credTxt.includes(LOCAL) && !credTxt.includes(NORM));
 
 /*
+  ── THE SALE CARRIES ITS OWN IDENTITY ───────────────────────────────────────
+
+  0049. credit_points is atomic, so the ledger is never half-written — but when
+  the ANSWER is lost (the app is in Francfort, the database in Zurich) the till
+  shows an error for a credit that actually landed, and the cashier, standing in
+  front of a customer, taps again. Without a key that is a second real credit
+  and the shop quietly pays for it.
+
+  The database side is proved below. What is proved HERE is the wiring, which is
+  the half that fails silently: a key minted in the browser, put on the form,
+  validated in the action and written to the row. If any link in that chain
+  breaks, op_key is null, the RPC has nothing to match on, and every guarantee
+  underneath is decoration. So this asserts on the row the REAL till just wrote.
+*/
+{
+  const { data: rows } = await admin
+    .from("points_ledger").select("op_key,delta,reason")
+    .eq("business_id", cafeId).eq("customer_phone", NORM).eq("reason", "earn");
+  const keyed = (rows ?? []).filter((r) => r.op_key);
+  check("a credit from the real till carries an idempotency key",
+    keyed.length >= 1, `${keyed.length}/${rows?.length ?? 0} earn rows keyed`);
+
+  /* And the key has to be the ACT's, not the request's: replaying it must move
+     nothing. This is the retry the cashier makes, sent exactly as the till
+     would send it. */
+  const key = keyed[0]?.op_key;
+  if (key) {
+    const bal = async () =>
+      (await admin.rpc("pointili_balance", { p_business_id: cafeId, p_phone: NORM })).data;
+    const before = await bal();
+    const { data: replay } = await admin.rpc("credit_points", {
+      p_business_id: cafeId, p_phone: NORM, p_amount_tnd: 10, p_op_key: key,
+    });
+    check("the same sale sent twice is counted once",
+      replay?.replayed === true && (await bal()) === before,
+      `replayed=${replay?.replayed} balance ${before} → ${await bal()}`);
+
+    /* The other half, and the one a lazy de-duplicator would fail: a genuinely
+       separate sale — two customers, same coffee, same price — must still go
+       through. A guard that swallows everything is worse than the bug. */
+    const { data: fresh } = await admin.rpc("credit_points", {
+      p_business_id: cafeId, p_phone: NORM, p_amount_tnd: 10,
+      p_op_key: crypto.randomUUID(),
+    });
+    check("a second identical sale is still a sale",
+      fresh?.replayed === false && (await bal()) > before,
+      `balance ${before} → ${await bal()}`);
+  }
+}
+
+/*
   THE RECEIPT IS THE ONLY PLACE THE CUSTOMER APPEARS.
 
   A scan spends money before anybody's name is on screen, so the confirmation

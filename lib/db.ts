@@ -252,20 +252,41 @@ export async function activePointsMultiplier(businessId: string): Promise<number
 }
 
 export type CreditResult =
-  | { ok: true; earned: number; welcome: number; balance: number; multiplier: number }
+  | {
+      ok: true;
+      earned: number;
+      welcome: number;
+      balance: number;
+      multiplier: number;
+      /** True when this key had already been credited — see `opKey`. */
+      replayed?: boolean;
+    }
   | { ok: false; reason: string };
 
-/** Consume → Earn. The RPC computes the points from the owner's rate. */
+/**
+ * Consume → Earn. The RPC computes the points from the owner's rate.
+ *
+ * `opKey` identifies the ACT, not the call. The till mints one when the cashier
+ * keys the amount and sends the same one for every attempt at that sale, so a
+ * credit that committed but whose answer was lost — the app is in Francfort,
+ * this database is in Zurich — is recognised on the retry instead of being
+ * charged to the shop a second time (0049).
+ *
+ * Optional, and null opts out: the welcome-bonus credit in /[slug]/rejoindre
+ * has no act behind it and passes nothing.
+ */
 export async function creditPoints(
   businessId: string,
   phone: string,
   amountTnd: number,
+  opKey?: string | null,
 ): Promise<CreditResult> {
   const db = createAdminClient();
   const { data, error } = await db.rpc("credit_points", {
     p_business_id: businessId,
     p_phone: phone,
     p_amount_tnd: amountTnd,
+    p_op_key: opKey ?? null,
   });
   if (error) return { ok: false, reason: error.message };
   return data as CreditResult;

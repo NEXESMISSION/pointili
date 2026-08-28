@@ -377,7 +377,20 @@ export async function creditAction(
   const program = await getLoyaltyProgram(cafe.id);
   if (!program.active) return { error: "Programme de fidélité désactivé." };
 
-  const res = await creditPoints(cafe.id, who.phone, amount);
+  /*
+    The act's own identity, minted by the till when the cashier keyed the
+    amount and resent unchanged on every retry of that same sale (0049). Absent
+    or malformed, this is exactly as it was before: unkeyed, and a retry after a
+    lost answer credits twice. So it is validated rather than trusted — a
+    client-supplied string reaching a uuid column would otherwise turn a
+    fat-fingered value into a 500 mid-service.
+  */
+  const rawKey = String(formData.get("opKey") ?? "");
+  const opKey = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawKey)
+    ? rawKey
+    : null;
+
+  const res = await creditPoints(cafe.id, who.phone, amount, opKey);
   /*
     NEVER THE DATABASE'S OWN WORDS. lib/db returns `reason: error.message` when
     the call itself fails, so a pooler timeout used to print PostgREST's error
