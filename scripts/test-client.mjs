@@ -254,6 +254,53 @@ const { count: redemptions } = await admin
   .eq("business_id", cafeA).eq("phone", NORM);
 check("a second purchase is possible (codes stack)", (redemptions ?? 0) >= 2, `redemptions=${redemptions}`);
 
+/*
+  ── THE ANSWER GOES MISSING AFTER THE POINTS ARE SPENT ─────────────────────
+
+  The reported bug, and the worst shape a bug in this product can take: a
+  customer redeemed, the points came off, and no code ever appeared.
+
+  redeem_at_counter is one transaction, so the database cannot owe anybody a
+  code — the debit and the code are written together. What can happen is that
+  it COMMITS and the answer never gets back to the app: a dropped connection, a
+  timeout, a 5xx after the commit. The client throws identically whether or not
+  the work landed, and redeemAction used to answer all of them with "Échange
+  impossible pour le moment" while the points were gone and the code existed.
+
+  It now reconciles instead — it re-reads the codes and looks for one the diner
+  was not holding before. THAT is what this checks: calling the RPC directly is
+  exactly the case where the app never sees the answer, and the code has to be
+  discoverable afterwards from the diner's own list, by nothing but a diff.
+
+  Codes stack, so this compares code STRINGS, never a count.
+*/
+{
+  const held = new Set(
+    ((await admin.rpc("diner_codes", { p_business_id: cafeA, p_phone: NORM })).data ?? [])
+      .map((c) => c.code),
+  );
+
+  const { data: reward } = await admin
+    .from("loyalty_rewards").select("id,label").eq("business_id", cafeA)
+    .eq("active", true).order("points_cost").limit(1).single();
+
+  /* Commit a redeem the app will never receive the answer to. */
+  const { data: lost } = await admin.rpc("redeem_at_counter", {
+    p_business_id: cafeA, p_phone: NORM, p_reward_id: reward.id,
+  });
+  check("a redeem the app never hears back from still commits", lost?.ok === true, lost?.reason ?? "ok");
+
+  const after = ((await admin.rpc("diner_codes", { p_business_id: cafeA, p_phone: NORM })).data ?? []);
+  const fresh = after.filter((c) => !held.has(c.code));
+  /* Exactly one: more than one would mean the diff cannot say which code was
+     bought, and the customer would be shown somebody else's — or their own
+     older — code as though it were the new one. */
+  check("the lost code is recoverable from the diner's own list", fresh.length === 1,
+    fresh.map((c) => c.code).join(",") || "none appeared");
+  check("and it is the code that was actually minted",
+    fresh[0]?.code === lost?.code, `${fresh[0]?.code} vs ${lost?.code}`);
+}
+
 /* ── 6. The codes hub lists what's waiting ─────────────────────────── */
 await d.goto(`${BASE}/${TEST_SLUG}/codes`, { waitUntil: "networkidle" });
 const codesTxt = await d.locator("main").innerText();
