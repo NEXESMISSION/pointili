@@ -230,11 +230,14 @@ export function RewardPicker({
           role="dialog"
           aria-modal="true"
           aria-label={t("Confirmer l'échange")}
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 px-3 pb-3 backdrop-blur-sm lg:items-center lg:pb-3"
+          className="d-veil fixed inset-0 z-50 flex items-end justify-center bg-black/45 px-3 pb-3 backdrop-blur-sm lg:items-center lg:pb-3"
           onClick={() => !busy && setConfirming(false)}
         >
+          {/* Rises on a phone, appears on a laptop — see .d-sheet. This is the
+              screen where weeks of points get spent; it should not arrive
+              between two frames like an error. */}
           <div
-            className="d-card w-full max-w-[420px] px-5 py-6 text-center"
+            className="d-sheet d-card w-full max-w-[420px] px-5 py-6 text-center"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-[12.5px] font-bold uppercase tracking-[0.08em] text-slate">

@@ -352,6 +352,21 @@ await d.fill('input[name="pin"]', PIN);
 await d.click('button[type="submit"]');
 await d.waitForURL((u) => u.pathname === "/cartes", { timeout: 20000 }).catch(() => {});
 check("signing in at /moi lands in the wallet", d.url().endsWith("/cartes"), d.url().replace(BASE, ""));
+/*
+  THE ADDRESS ARRIVES BEFORE THE ANSWER DOES.
+
+  /cartes has a loading.tsx now, so the URL changes the moment the transition
+  starts and the column paints a skeleton while the server works. Reading the
+  body on the next line used to be safe only because navigation BLOCKED — the
+  address and the content landed together. It caught the skeleton, which has no
+  text in it, and reported that a wallet with two shops in it had none.
+
+  So wait for the thing being asserted rather than for the address. This is the
+  wait that was always meant; it simply could not be told apart from the URL
+  before there was anything between them.
+*/
+await d.locator("body").getByText(/Deuxième Boutique/).first()
+  .waitFor({ timeout: 20000 }).catch(() => {});
 const backTxt = await d.locator("body").innerText();
 check("the wallet still holds both shops", /Deuxième Boutique/.test(backTxt) && /Café/.test(backTxt));
 check("/moi never signs up — no account was invented for the unknown number",

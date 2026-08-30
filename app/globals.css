@@ -1996,3 +1996,103 @@ body:has(.landing-light) {
     animation: live-in 160ms ease-out both;
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   THE GAP BETWEEN TWO PAGES
+
+   Every diner route is server-rendered per request, and until now none of them
+   had a Suspense boundary. So a tab tap did this: the tab lit up (BottomNav
+   already handles that with useLinkStatus), and then the OLD PAGE sat there,
+   whole and interactive-looking, until the server answered. On a phone on a
+   Tunisian mobile connection that is long enough to tap twice, and the second
+   tap lands on the page you are leaving.
+
+   The fix is a loading.tsx per section, and these are the pieces it is built
+   from. They are deliberately not spinners: a spinner says "wait", a skeleton
+   in the shape of the answer says "it is coming, and here is where it lands",
+   and it makes the arrival a fill rather than a flash.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.sk {
+  background: var(--o-inset);
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+/*
+  The sheen is the only moving part, and it moves ACROSS rather than pulsing.
+  A pulsing block reads as a broken element; a sweep reads as loading. It is
+  also cheap — one transform on a pseudo-element, no layout, no repaint of the
+  block itself.
+*/
+.sk::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, #ffffff 65%, transparent),
+    transparent
+  );
+  /* --sk-delay lets a caller offset each row's sheen, so a list reads as one
+     wave rather than every block flashing in lockstep. It has to live here
+     because an inline style cannot address a pseudo-element. */
+  animation: sk-sweep 1.25s ease-in-out var(--sk-delay, 0ms) infinite;
+}
+@keyframes sk-sweep {
+  to { transform: translateX(100%); }
+}
+
+/*
+  A held breath before anything is drawn.
+
+  Most navigations here are fast, and a skeleton that appears for 90ms is a
+  flash of grey that feels WORSE than the short wait it covers. So the whole
+  block fades in after a beat: quick answers never show it at all, slow ones
+  get the explanation. `both` keeps it invisible during the delay.
+*/
+.sk-page {
+  animation: sk-appear 180ms ease-out 140ms both;
+}
+@keyframes sk-appear {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk::after { animation: none; }
+  .sk-page { animation: sk-appear 1ms linear 140ms both; }
+}
+
+/*
+  ── THE ONE DIALOG THAT SNAPPED ───────────────────────────────────────────
+
+  Every other overlay in this product is composed: .ticket-sheet is dealt in,
+  .unlock-veil fades, the owner's sheets use .sheet-in. The redeem confirmation
+  had nothing — it appeared between two frames, on the one screen where the
+  customer is about to spend points they have been collecting for weeks. A
+  question that arrives with no motion at all reads as an error dialog.
+
+  It is a bottom sheet on a phone and a centred card on a laptop, so it rises
+  on the one and simply appears on the other; sliding a centred card upward
+  looks like it fell out of the toolbar.
+*/
+.d-veil {
+  animation: sk-appear 140ms ease-out both;
+}
+.d-sheet {
+  animation: d-rise 260ms cubic-bezier(0.16, 0.9, 0.3, 1) both;
+}
+@keyframes d-rise {
+  from { transform: translateY(14px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@media (min-width: 1024px) {
+  .d-sheet { animation: sk-appear 160ms ease-out both; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .d-sheet { animation: sk-appear 120ms ease-out both; }
+}
