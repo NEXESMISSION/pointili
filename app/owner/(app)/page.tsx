@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
 import { ownerCafe, ownerHome } from "@/lib/auth/owner";
 import { getLoyaltyProgram } from "@/lib/data";
-import { activePointsMultiplier, ownerToday } from "@/lib/db";
+import { activePointsMultiplier } from "@/lib/db";
 import { CaisseDesk } from "./caisse/CaisseForms";
-import { Today } from "./caisse/Today";
 
 export const metadata = { title: "Caisse" };
 
@@ -36,9 +35,8 @@ export default async function OwnerHome() {
   // and bounce straight back here, forever.
   if (!cafe) redirect(await ownerHome());
 
-  const [program, day, multiplier] = await Promise.all([
+  const [program, multiplier] = await Promise.all([
     getLoyaltyProgram(cafe.id),
-    ownerToday(cafe.id),
     /* The till previews the points BEFORE it knows the customer now, and an
        active "points doublés" event is the one thing that would make that
        preview a lie. It is shop-wide, so it is knowable here. */
@@ -54,9 +52,6 @@ export default async function OwnerHome() {
       multiplier={multiplier}
       stampsEnabled={program.stampsEnabled}
       stampsRequired={program.stampsRequired}
-      /* Rendered here and handed down: CaisseDesk is a Client Component and
-         these figures are a server read. */
-      today={<Today day={day} pointsPerTnd={program.pointsPerTnd} />}
     />
   );
 }

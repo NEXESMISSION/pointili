@@ -278,9 +278,30 @@ t("café B survived intact", after?.name === victim.name, after?.name ?? "GONE")
   const bid = any?.[0]?.id ?? "00000000-0000-0000-0000-000000000000";
   const PROOF = `data:image/png;base64,${"A".repeat(200)}`;
 
+  /*
+    A REFUSAL, NOT A FAILURE TO ASK.
+
+    This returned "open" for any error whose text did not read like a refusal —
+    and a dropped connection produces exactly such an error. On a bad line this
+    suite therefore reported an EXPLOIT against a function whose grants are
+    correct, which is the worst thing a security check can do: cry wolf until
+    nobody reads it.
+
+    A transport error means the question was never put. It retries, and if it
+    still cannot ask it says so loudly rather than guessing in either
+    direction — guessing "open" is a false alarm, guessing "shut" is worse.
+  */
   const shut = async (fn, args) => {
-    const { error } = await anon.rpc(fn, args);
-    return /permission denied|does not exist|Could not find/i.test(error?.message ?? "");
+    for (let i = 0; i < 3; i++) {
+      const { error } = await anon.rpc(fn, args);
+      if (/permission denied|does not exist|Could not find/i.test(error?.message ?? "")) return true;
+      /* No error at all means it really answered an anonymous caller. */
+      if (!error) return false;
+      /* Anything else — fetch failed, timeout, 5xx — is not an answer. */
+      if (!/fetch failed|network|timeout|ETIMEDOUT|socket/i.test(error.message ?? "")) return false;
+      await new Promise((r) => setTimeout(r, 600 * (i + 1)));
+    }
+    throw new Error(`could not reach ${fn} to test it — refusing to report either way`);
   };
 
   t("anon cannot read a shop's payment receipt",

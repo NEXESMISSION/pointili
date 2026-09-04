@@ -78,13 +78,12 @@ await staff.click('button[type="submit"]');
 await staff.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 20000 }).catch(() => {});
 
 await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-await staff.locator('button:has-text("Donner des points")').click();
 await staff.locator('input[name="amount"]').waitFor({ timeout: 15000 });
 await staff.fill('input[name="amount"]', "12");
 /* One screen: amount and customer together, then the confirmation. */
 await staff.fill('input[name="customer"]', card.code);
-await staff.locator('button:has-text("Créditer")').click();
-await staff.locator('button:has-text("Oui, créditer")').click({ timeout: 20000 });
+await staff.locator('.a-card:has(input[name="customer"]) button').click();
+await staff.locator('button:has-text("Oui")').first().click({ timeout: 20000 });
 await staff.locator("[data-receipt]").waitFor({ timeout: 20000 }).catch(() => {});
 
 const points = await celebration("points");

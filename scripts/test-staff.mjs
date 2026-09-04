@@ -64,14 +64,14 @@ check("owner signs in", !staff.url().includes("/login"), staff.url().replace(BAS
 
 const till = async () => {
   await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await staff.locator('button:has-text("Donner des points"), button:has-text("Qui est à la caisse")').first()
+  await staff.locator('button:has-text("Donner"), button:has-text("Qui est à la caisse")').first()
     .waitFor({ timeout: 20000 }).catch(() => {});
 };
 
 /* ── 1. OFF BY DEFAULT ─────────────────────────────────────────────── */
 await till();
 check("a shop that never asked for this sees no gate",
-  (await staff.locator('button:has-text("Donner des points")').count()) === 1 &&
+  (await staff.locator('button:has-text("Donner")').count()) === 1 &&
   !/Qui est à la caisse/i.test(await staff.locator("main").innerText()));
 check("...and nobody's name is on the till",
   (await staff.locator('button[aria-haspopup="dialog"]:has-text("Menu")').count()) === 1 &&
@@ -131,7 +131,18 @@ check("...and it really did not switch on", still.staff_pins_enabled === false);
 
 await add("Patron", "1111", "owner");
 await add("Sami", "2222", "cashier");
-const { data: people } = await admin.from("staff").select("id, name, role, pin_hash").eq("business_id", cafeId).order("created_at");
+/*
+  A FAILED READ IS NOT AN EMPTY TEAM.
+
+  `const { data } = …` drops the error, and the next line does data.length —
+  so a dropped connection crashed the suite with "cannot read properties of
+  null" pointing at this line rather than at the network. Same shape as the
+  balance read in test-owner: the harness could not tell "I do not know" from
+  "there is nothing", and reported the wrong one.
+*/
+const { data: people, error: peopleErr } = await admin
+  .from("staff").select("id, name, role, pin_hash").eq("business_id", cafeId).order("created_at");
+if (peopleErr || !people) throw new Error(`team unreadable: ${peopleErr?.message ?? "no data"}`);
 check("two people exist, with hashed codes", people.length === 2 && people.every((p) => p.pin_hash.startsWith("scrypt$")),
   people.map((p) => `${p.name}:${p.role}`).join(", "));
 check("a PIN is never stored in the clear", people.every((p) => !p.pin_hash.includes("1111") && !p.pin_hash.includes("2222")));
@@ -163,7 +174,7 @@ check("...and it is counted, so four digits are worth having", (tries ?? 0) >= 1
 await staff.fill('input[name="pin"]', "2222");
 await staff.waitForTimeout(4000);
 const tillTxt = await staff.locator("main").innerText();
-check("the right code opens the till", /Donner des points/i.test(tillTxt), tillTxt.split("\n").slice(0, 2).join(" · "));
+check("the right code opens the till", /Donner/i.test(tillTxt), tillTxt.split("\n").slice(0, 2).join(" · "));
 /*
   WHOSE NAME IS ON THE TILL — now carried by the floating button rather than a
   red panel on the till itself (components/OwnerMenu). The panel scrolled away
@@ -240,13 +251,12 @@ check("...and the ladder is untouched",
 
 /* ── 6. Everything done is attributed ──────────────────────────────── */
 await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-await staff.locator('button:has-text("Donner des points")').click();
 await staff.locator('input[name="amount"]').waitFor({ timeout: 15000 });
 await staff.fill('input[name="amount"]', "8");
 /* One screen: amount and customer together, then the confirmation. */
 await staff.fill('input[name="customer"]', card.code);
-await staff.locator('button:has-text("Créditer")').click();
-await staff.locator('button:has-text("Oui, créditer")').click({ timeout: 20000 });
+await staff.locator('.a-card:has(input[name="customer"]) button').click();
+await staff.locator('button:has-text("Oui")').first().click({ timeout: 20000 });
 await staff.locator("[data-receipt]").waitFor({ timeout: 20000 }).catch(() => {});
 await staff.waitForTimeout(2500);
 
@@ -304,7 +314,7 @@ await staff.fill('input[name="ownerPassword"]', OWNER_PASSWORD);
 await staff.locator('button:has-text("Entrer")').click();
 await staff.waitForTimeout(4500);
 check("the account password reopens the owner's own tile",
-  /Donner des points/i.test(await staff.locator("main").innerText().catch(() => "")),
+  /Donner/i.test(await staff.locator("main").innerText().catch(() => "")),
   staff.url().replace(BASE, ""));
 
 /* ── 9. Switching it back off restores the plain app ───────────────── */
@@ -314,7 +324,7 @@ await toggle();
 await staff.waitForTimeout(2500);
 await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
 check("switching it off puts the app back as it was",
-  (await staff.locator('button:has-text("Donner des points")').count()) === 1 &&
+  (await staff.locator('button:has-text("Donner")').count()) === 1 &&
   (await staff.locator('button[aria-haspopup="dialog"]:has-text("Menu")').count()) === 1 &&
   (await (await openMenu()).locator('button:has-text("Quitter —")').count()) === 0);
 

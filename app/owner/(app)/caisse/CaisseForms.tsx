@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { QrScanner } from "@/components/QrScanner";
-import { CheckIcon, StampIcon } from "@/components/icons";
+import { CheckIcon } from "@/components/icons";
 import { DoneSheet, type Done } from "./DoneSheet";
 import type { Activity } from "@/lib/db";
 import { fmtDinars, fmtPoints } from "@/lib/points";
 import {
-  addStampAction,
   adjustByCodeAction,
   resetPinAction,
   collectAction,
-  creditAction,
+  giveAction,
   historyByCodeAction,
   peekAction,
   resolveCustomerAction,
@@ -68,7 +67,15 @@ import {
 type Customer = NonNullable<ResolveState["customer"]>;
 
 /** Which of the till's screens is up. Exactly one at a time — it is a terminal. */
-type View = "home" | "give" | "who" | "reward" | "lookup";
+/*
+  TWO VIEWS, AND ONE OF THEM IS THE WHOLE TILL.
+
+  There were five: a home of two buttons, an amount screen, an identify screen,
+  a voucher screen, and the customer lookup. Four of them were one act split up.
+  A counter has one question — who is in front of me and what are they owed —
+  and it is answered by pointing the camera at whatever they are holding.
+*/
+type View = "till" | "lookup";
 
 /**
  * What is about to be given, decided BEFORE anyone is identified.
@@ -115,22 +122,6 @@ function newOpKey(): string {
  * same request one render later and puts a setState in an effect for no gain.
  */
 type Scanned = { code: string; n: number; peek: PeekState["peek"] | null; error: string };
-
-/**
- * A finished action, still reversible, on the till's own status line.
- *
- * THE UNDO BELONGS TO THE MESSAGE, never to the screen. An undo held in its own
- * state outlives the line that earned it, and the next tap reverses something
- * the cashier is no longer looking at: stamp the wrong card, read "carte pleine
- * 🎉", press the only button under it and silently reverse the PREVIOUS
- * customer's points, reported as "Annulé" — which reads as success. One object,
- * so a message that did not earn an undo is structurally incapable of showing
- * one.
- */
-type Flash = {
-  text: string;
-  undo?: { ref: string; points: number; amount: number };
-};
 
 /** Accept a raw code or a URL that carries it (?c= or last path segment). */
 function extractCode(text: string): string {
@@ -200,16 +191,17 @@ const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "⌫"];
 
 function Keypad({ onKey }: { onKey: (k: string) => void }) {
   return (
-    /* 46px keys, not 58, and a tighter gutter. The pad gave up ~50px of
-       height so the viewfinder underneath could exist without pushing the code
-       field off the bottom — and 46px is still above the 44px a thumb needs. */
+    /* 44px keys, not 58, and a tighter gutter — the minimum a thumb wants,
+       and not a pixel more. The pad gave up 56px of height so that the amount,
+       the stamps, the viewfinder and the code field all fit one screen with
+       nothing to scroll, which is the whole point of this layout. */
     <div className="grid grid-cols-3 gap-1.5">
       {KEYS.map((k) => (
         <button
           key={k}
           type="button"
           onClick={() => onKey(k)}
-          className={`h-[46px] rounded-xl text-[21px] font-bold tabular-nums transition active:scale-95 ${
+          className={`h-[44px] rounded-xl text-[20px] font-bold tabular-nums transition active:scale-95 ${
             k === "⌫" ? "bg-[var(--o-inset)] text-slate" : "bg-[var(--o-inset)] text-charcoal"
           }`}
         >
@@ -254,7 +246,7 @@ function Lens({
           key={nonce}
           onScan={onRead}
           onUnavailable={onUnavailable}
-          aspect={compact ? "aspect-[2/1]" : "aspect-[4/5]"}
+          aspect={compact ? "aspect-[21/9]" : "aspect-[4/5]"}
         />
       </div>
       <p className={`text-center text-[12.5px] font-semibold text-slate ${compact ? "mt-1.5" : "mt-3"}`}>
@@ -273,7 +265,8 @@ function Step({
 }: {
   title: string;
   hint?: string;
-  onBack: () => void;
+  /** Omitted on the counter itself — there is nothing above it to go back to. */
+  onBack?: () => void;
   children: React.ReactNode;
 }) {
   return (
@@ -297,6 +290,7 @@ function Step({
         rather than under it. `start-0`, not `left-0`, because the shell flips.
       */}
       <div className="relative mb-4 flex min-h-[44px] items-center justify-center">
+        {onBack && (
         <button
           type="button"
           onClick={onBack}
@@ -307,6 +301,7 @@ function Step({
             <path d="M19 12H5m6-6-6 6 6 6" />
           </svg>
         </button>
+        )}
         <div className="min-w-0 px-12 text-center">
           <h2 className="text-[19px] font-extrabold leading-tight text-charcoal">{title}</h2>
           {hint && <p className="mt-0.5 text-[12px] font-semibold text-slate">{hint}</p>}
@@ -324,7 +319,6 @@ export function CaisseDesk({
   multiplier,
   stampsEnabled,
   stampsRequired,
-  today,
 }: {
   pointsPerTnd: number;
   /**
@@ -339,15 +333,6 @@ export function CaisseDesk({
   multiplier: number;
   stampsEnabled: boolean;
   stampsRequired: number;
-  /*
-    THE SHIFT, RENDERED BY THE PAGE AND HANDED IN.
-
-    This is a Client Component and the day's figures come from a server read
-    (lib/db ownerToday), so the page renders <Today> and passes the finished
-    element down. Fetching it from here would put a loading state and an effect
-    on the one screen that must be instant.
-  */
-  today: React.ReactNode;
 }) {
   /*
     ?client=1 OPENS THE CUSTOMER LOOKUP.
@@ -362,8 +347,9 @@ export function CaisseDesk({
     screen is the cashier's. Treating it as live state would drag them back here
     every time they pressed the back arrow.
   */
+  const router = useRouter();
   const openLookup = useSearchParams().get("client") === "1";
-  const [view, setView] = useState<View>(openLookup ? "lookup" : "home");
+  const [view, setView] = useState<View>(openLookup ? "lookup" : "till");
 
   /*
     AND IT HAS TO REACT, not just start.
@@ -410,6 +396,19 @@ export function CaisseDesk({
   const [pending, setPending] = useState<
     NonNullable<ResolveState["customer"]> | null
   >(null);
+
+  /** How many stamps ride along with this act. 0 = a plain sale. */
+  const [stamps, setStamps] = useState(0);
+
+  /*
+    What happened, held until somebody says OK.
+
+    Deliberately not a timed flash: a confirmation that removes itself while the
+    cashier is counting out change is a confirmation they never received.
+  */
+  const [result, setResult] = useState<
+    { ok: boolean; title: string; detail?: string; earned?: number; stampsAdded?: number; balance?: number } | null
+  >(null);
   const [amount, setAmount] = useState("");
   const [typed, setTyped] = useState("");
   /*
@@ -440,7 +439,6 @@ export function CaisseDesk({
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [voucher, setVoucher] = useState<Scanned | null>(null);
   const [done, setDone] = useState<Done | null>(null);
-  const [flash, setFlash] = useState<Flash | null>(null);
   const [error, setError] = useState("");
   const [busy, start] = useTransition();
 
@@ -485,23 +483,29 @@ export function CaisseDesk({
   }
 
   /** Back to the two buttons, with nothing half-typed left behind. */
+  /** Back to the counter with nothing half-typed left behind. */
   function home() {
     setIntent(null);
     setAmount("");
+    setStamps(0);
     setCustomer(null);
     setPending(null);
-    go("home");
+    setVoucher(null);
+    go("till");
   }
 
+  /**
+   * The act, said once, and used everywhere it has to be said: under the lens,
+   * on the confirmation, and in the refusal when there is nothing to give.
+   */
+  const givingLine = [
+    valid ? `${fmtDinars(n)} DT · +${fmtPoints(earned)} points` : null,
+    stamps > 0 ? `${stamps} tampon${stamps > 1 ? "s" : ""}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   /** What the pending act is, in the words the cashier used to choose it. */
-  const intentLine =
-    intent?.kind === "credit"
-      ? `${fmtDinars(intent.amount)} DT · +${fmtPoints(
-          Math.round(intent.amount * pointsPerTnd * multiplier * 100) / 100,
-        )} points`
-      : intent?.kind === "stamp"
-        ? "+1 tampon"
-        : "";
 
   /** Hand the keyed amount to the second step. */
   /**
@@ -520,30 +524,51 @@ export function CaisseDesk({
       that drifts into frame before anything is keyed has to be refused, and
       refused in words, or it reads as a camera that does not work.
     */
-    if (!valid) {
+    /*
+      ── ONE CAMERA, BOTH KINDS OF CODE ────────────────────────────────────
+
+      A voucher used to be refused here and the cashier sent to a second screen
+      with a second camera — for a code the first camera had just read
+      perfectly well. The two are already told apart by their shape (isVoucher,
+      which is careful never to claim an 8-digit phone), so the machine can do
+      the routing the human was being asked to do.
+
+      A reward needs no amount, which is why this test comes before the amount
+      gate: somebody holding up a free coffee is not a sale in progress.
+    */
+    if (isVoucher(code)) {
+      setError("");
+      start(async () => {
+        const fd = new FormData();
+        fd.set("code", code.toUpperCase());
+        const res = await peekAction({}, fd);
+        if (res.error || !res.peek) {
+          setError(res.error ?? "Code introuvable.");
+          setScanNonce((k) => k + 1);
+          return;
+        }
+        setVoucher({ code: code.toUpperCase(), n: 0, peek: res.peek, error: "" });
+      });
+      return;
+    }
+
+    /* From here it is a customer, so there has to be something to give them. */
+    if (!valid && stamps === 0) {
       setError(
         amount.trim() === ""
-          ? "Entrez d'abord le montant, puis pointez la carte."
+          ? "Entrez un montant ou un tampon, puis pointez la carte."
           : "Montant invalide — de 0,01 à 10 000 DT.",
       );
       return;
     }
-
-    /* A voucher is not a customer — same refusal as the receipt path, because
-       this is the screen where somebody holds up the wrong code. */
-    if (isVoucher(code)) {
-      setError(
-        `${code.toUpperCase()} est un code de récompense, pas une carte client. ` +
-          `Terminez la vente, puis passez par « Valider une récompense ».`,
-      );
+    if (amount.trim() !== "" && !valid) {
+      setError("Montant invalide — de 0,01 à 10 000 DT.");
       return;
     }
 
     setError("");
-    setFlash({ text: "Lecture…" });
     start(async () => {
       const res = await resolveCustomerAction(code);
-      setFlash(null);
       if (res.error || !res.customer) {
         setError(res.error ?? "Client introuvable — vérifiez le code.");
         return;
@@ -554,6 +579,116 @@ export function CaisseDesk({
       setIntent({ kind: "credit", amount: n, key: newOpKey() });
       setPending(res.customer);
       setTyped("");
+    });
+  }
+
+  /**
+   * The yes. One act, points and stamps together (giveAction).
+   *
+   * Everything it can say is said in two lines, because a counter has a queue.
+   * The one thing it says at length is a FAILURE: "impossible" tells a cashier
+   * nothing about whether to try again, and the two reasons behave completely
+   * differently — a phone that has lost its signal wants the same tap in a
+   * moment, a refusal from the shop's own settings never will.
+   */
+  function commit(ref: string) {
+    if (sending.current) return;
+    sending.current = true;
+    setError("");
+    start(async () => {
+      try {
+        const fd = new FormData();
+        fd.set("customer", ref);
+        if (valid) fd.set("amount", String(n));
+        if (stamps > 0) fd.set("stamps", String(stamps));
+        if (intent) fd.set("opKey", intent.key);
+
+        const res = await giveAction({}, fd);
+
+        if (res.error || !res.ok) {
+          setResult({
+            ok: false,
+            title: "Rien n'a été donné",
+            detail:
+              res.error ??
+              "Le serveur n'a pas répondu. Rien n'a été enregistré — réessayez.",
+          });
+          return;
+        }
+
+        const g = res.ok;
+        const bits = [
+          g.points ? `+${fmtPoints(g.points.earned)} points` : null,
+          g.points && g.points.welcome > 0
+            ? `+${fmtPoints(g.points.welcome)} de bienvenue`
+            : null,
+          g.stamps ? `${g.stamps.added} tampon${g.stamps.added > 1 ? "s" : ""}` : null,
+        ].filter(Boolean);
+
+        setResult({
+          ok: true,
+          earned: g.points?.earned ?? 0,
+          stampsAdded: g.stamps?.added ?? 0,
+          balance: g.points?.balance ?? g.who.balance,
+          title: `${g.who.label} · ${bits.join(" · ")}`,
+          detail:
+            g.partial ??
+            [
+              /* On EVERY receipt, including a stamp-only one. "Et mes points ?"
+                 is asked at the counter whatever was just given, and making the
+                 cashier open a fiche to answer it is the slow way. */
+              `Solde ${fmtPoints(g.points?.balance ?? g.who.balance)}`,
+              /*
+                THE ONE LINE WORTH THE SPACE ON A WALK-IN.
+
+                Everything else here was cut for being noise at a counter, and
+                this survived the cut because it is the only thing on the screen
+                a cashier can ACT on: the customer is still standing there, and
+                "pas encore inscrit" is the moment their card gets created. The
+                receipt that said it before also said the balance before, the
+                balance after, what was unlocked and how far the next reward
+                was — which is why nobody read the one line that mattered.
+              */
+              g.who.known ? null : "Pas encore inscrit — proposez-lui sa carte",
+              /* A FILLED CARD IS SERVED NOW, so the code goes on the screen.
+                 The customer's own phone shows it too, but the cashier is
+                 holding the reward — making them wait for somebody to unlock a
+                 phone is the slowest possible way to hand over a free coffee. */
+              g.stamps
+                ? g.stamps.completed
+                  ? `Carte pleine${g.stamps.code ? ` — code ${g.stamps.code}` : ""}`
+                  : `${g.stamps.count} / ${g.stamps.required} tampons`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · "),
+        });
+
+        /* The act is spent. Clear it so the next customer starts from zero
+           rather than inheriting the last one's amount. */
+        setPending(null);
+        setIntent(null);
+        setAmount("");
+        setStamps(0);
+        setTyped("");
+        setScanNonce((k) => k + 1);
+        router.refresh();
+      } catch {
+        /*
+          The app never heard back. This is the shape a lost connection takes,
+          and it is NOT the same as a refusal — the write may well have landed,
+          so the honest thing is to say both halves of that rather than invite a
+          retry that could double it.
+        */
+        setResult({
+          ok: false,
+          title: "Pas de réponse",
+          detail:
+            "Vérifiez la connexion, puis regardez la fiche du client avant de refaire — l'opération est peut-être passée.",
+        });
+      } finally {
+        sending.current = false;
+      }
     });
   }
 
@@ -568,175 +703,27 @@ export function CaisseDesk({
 
   /* ── undo ─────────────────────────────────────────────────────────── */
 
-  function undo(u: NonNullable<Flash["undo"]>) {
-    // drop the offer immediately — a double tap must not reverse twice
-    setFlash({ text: `Annulation de ${fmtPoints(u.points)} points…` });
-    start(async () => {
-      // negative dinars too, so Analyses subtracts the sale and not only the
-      // points it derived from it (0025)
-      const r = await adjustByCodeAction(u.ref, -u.points, -u.amount);
-      if (r.ok && typeof r.balance === "number") {
-        setFlash({ text: `Annulé : −${fmtPoints(u.points)} points · solde ${fmtPoints(r.balance)}` });
-      } else {
-        // put the offer back: the reversal did not happen
-        setFlash({ text: `+${fmtPoints(u.points)} points`, undo: u });
-        setError(r.error ?? "Échec.");
-      }
-    });
-  }
 
   /* ── the act, applied to whoever this code turns out to be ────────── */
 
-  /**
-   * No confirmation step, on purpose.
-   *
-   * A step here could only ask "is this the right person?", which is a question
-   * the cashier cannot answer: a scanned card shows a name they have never
-   * seen. A prompt nobody can evaluate is a prompt that gets tapped through,
-   * and it costs a second on every sale of the day. The receipt confirms
-   * afterwards — where it can name them AND carry an undo.
-   */
-  function apply(raw: string) {
-    const code = extractCode(raw);
-    if (!code || !intent) return;
-    /* One act per read — see `sending`. */
-    if (sending.current) return;
+  
 
-    /*
-      SHUT THE LENS BEFORE THE ROUND TRIP, not after it. The scanner is
-      remounted on every read, and a card still sitting in the frame decodes
-      again on its first frame — which, now that a read spends money, is a
-      second sale nobody keyed.
-    */
-    setLensDown(true);
-    setError("");
-    setDone(null);
-
-    /*
-      A VOUCHER IS NOT A CUSTOMER, and here it cannot be quietly re-routed: a
-      sale is half done. Name it, and name the button that collects it.
-    */
-    if (isVoucher(code)) {
-      setError(
-        `${code.toUpperCase()} est un code de récompense, pas une carte client. ` +
-          `Terminez la vente, puis passez par « Valider une récompense ».`,
-      );
-      return;
-    }
-
-    sending.current = true;
-    setFlash({ text: intent.kind === "stamp" ? "Tampon en cours…" : "Crédit en cours…" });
-    setTyped("");
-
+  /** Hand the reward over. The only thing that spends a voucher. */
+  function collectVoucher() {
+    if (!voucher?.peek) return;
+    const label = voucher.peek.label;
     start(async () => {
-      try {
-        const fd = new FormData();
-        fd.set("customer", code);
-        if (intent.kind === "credit") {
-          fd.set("amount", String(intent.amount));
-          /* The same key for every attempt at THIS sale — see Intent. */
-          fd.set("opKey", intent.key);
-        }
-
-        const res =
-          intent.kind === "credit"
-            ? await creditAction({}, fd)
-            : await addStampAction({}, fd);
-
-        if (res.error) {
-          /* Stay on the who screen with the act intact: "client introuvable"
-             means the CODE was wrong, not the sale. Making the cashier key the
-             total again punishes them for a smudged screen. */
-          setFlash(null);
-          setError(res.error);
-          return;
-        }
-        if (!res.ok) return;
-
-        /* The sale landed: the confirmation has nothing left to agree to, and
-           the receipt is what the cashier reads next. */
-        setPending(null);
-
-        if ("earned" in res.ok) {
-          const c = res.ok;
-          // only the earned points are reversible — a one-time welcome bonus is
-          // not part of the mistake and taking it back would be a second one
-          const back =
-            c.earned > 0 ? { ref: code, points: c.earned, amount: c.amount } : undefined;
-          setDone({
-            kind: "credit",
-            who: c.who,
-            before: c.before,
-            earned: c.earned,
-            welcome: c.welcome,
-            balance: c.balance,
-            amount: c.amount,
-            unlocked: c.unlocked,
-            next: c.next,
-            onUndo: back ? () => undo(back) : undefined,
-          });
-          setFlash({
-            undo: back,
-            text:
-              `${c.who.label} · +${fmtPoints(c.earned)} points` +
-              (c.welcome > 0 ? ` · +${fmtPoints(c.welcome)} de bienvenue` : "") +
-              ` · solde ${fmtPoints(c.balance)}`,
-          });
-        } else {
-          const st = res.ok;
-          setDone({
-            kind: "stamp",
-            who: st.who,
-            // the RPC resets the card to 0 on completion, so show it FULL here —
-            // "0/10" as the confirmation of filling it reads as a failure
-            count: st.completed ? st.required : st.count,
-            required: st.required,
-            completed: st.completed,
-            code: st.code,
-            label: st.label,
-          });
-          setFlash({
-            text: st.completed
-              ? `${st.who.label} · carte pleine 🎉 ${st.label} — code ${st.code}`
-              : `${st.who.label} · ${st.count} / ${st.required} tampons`,
-          });
-        }
-        home();
-      } catch {
-        /* A dropped connection must not leave the lock on: the till would
-           refuse every later read in silence for the rest of the shift. */
-        setFlash(null);
-        setError("Connexion perdue. Réessayez.");
-      } finally {
-        sending.current = false;
-      }
-    });
-  }
-
-  /* ── the reward door ──────────────────────────────────────────────── */
-
-  function peek(raw: string) {
-    const code = extractCode(raw).toUpperCase();
-    if (!code) return;
-    setLensDown(true);
-    setDone(null);
-    if (!isVoucher(code)) {
-      setError("Ce QR est une carte client — passez par « Donner des points ».");
-      return;
-    }
-    setError("");
-    start(async () => {
-      // Read-only: peek says WHAT the code is. Nothing is claimed until the
-      // cashier presses Collecter, exactly as when they type it by hand.
       const fd = new FormData();
-      fd.set("code", code);
-      const res = await peekAction({}, fd);
-      setVoucher((v) => ({
-        code,
-        n: (v?.n ?? 0) + 1,
-        peek: res.peek ?? null,
-        error: res.error ?? "",
-      }));
+      fd.set("code", voucher.code);
+      const res = await collectAction({}, fd);
+      setVoucher(null);
+      setScanNonce((k) => k + 1);
+      if (res.error) {
+        setResult({ ok: false, title: "Rien n'a été remis", detail: res.error });
+        return;
+      }
+      setResult({ ok: true, title: `${label} — remis`, detail: "Bonne dégustation." });
+      router.refresh();
     });
   }
 
@@ -768,157 +755,33 @@ export function CaisseDesk({
 
   return (
     <div data-owner-wide className="space-y-4">
-      {view === "home" && (
+      {view === "till" && (
         /*
-          SEVEN AND FIVE, NOT SIX AND SIX.
+          ── EVERYTHING ON ONE SCREEN, AND NOTHING TO SCROLL ────────────────
 
-          The two halves are not equals. The left is the till — what a cashier
-          touches — and the right is the day, which is read. Splitting them
-          evenly made the working half narrower than it needed to be while the
-          reading half had more room than it could use.
+          This was two journeys. An amount, a "Créditer" button, a second screen
+          to identify on — and, for a stamp, a THIRD path: its own button, its
+          own identify screen, its own camera. A shop that runs both handed one
+          customer two scans for one purchase and asked the cashier to remember
+          the second.
+
+          One screen now: what is being given at the top, who it is for
+          underneath, and the camera live between them from the moment it opens.
+
+          THE STAMP IS NOT A LESSER THING. It was a line at the bottom under an
+          "ou", which said it was the alternative to a sale. For a shop that
+          runs a stamp card it is the sale — so it sits in the same card as the
+          amount, with a counter of its own, and both can go in one act.
         */
-        <div className="space-y-4 lg:grid lg:grid-cols-12 lg:items-start lg:gap-5 lg:space-y-0">
-          {/*
-            THE ACTS DO NOT GROW WITH THE SCREEN.
-
-            At lg they had seven columns — about 880px — which turned two
-            buttons into two banners, with their contents adrift in the middle of
-            all that width. A till is worked with one hand and its controls want
-            a hand's width wherever they are shown, so they keep 520px and sit in
-            the middle of the space instead of filling it. The day beside them is
-            the thing that actually wanted the room.
-          */}
-          <div className="mx-auto w-full max-w-[520px] space-y-3 lg:col-span-7">
-            {/*
-              TWO ACTS, AT THE SIZE OF THE HAND THAT PRESSES THEM.
-
-              Not a grid of equal tiles: giving points happens on every sale and
-              collecting a reward happens on a few, so the first is the tall one
-              and the second is plainly second. Each says what it opens, because
-              a cashier who has to guess which button hides the QR reader will
-              type six characters by hand instead.
-
-              CENTRED, ICON AND WORDS TOGETHER. They were left-aligned rows, and
-              a left-aligned row is the shape of a LIST — something you read down
-              before choosing. These are the two things this screen does; centring
-              the pair puts them on the same vertical line as everything they lead
-              to, so pressing one does not move the eye sideways.
-            */}
-            <button
-              type="button"
-              onClick={() => {
-                setIntent(null);
-                setAmount("");
-                go("give");
-              }}
-              className="a-btn flex w-full flex-col items-center justify-center gap-2 !min-h-[132px] px-5 text-center"
-            >
-              <span className="grid h-14 w-14 place-items-center rounded-2xl bg-white/20">
-                <StampIcon className="h-7 w-7" />
-              </span>
-              <span>
-                <span className="block text-[19px] font-extrabold leading-tight">Donner des points</span>
-                <span className="block text-[12px] font-semibold opacity-80">
-                  {stampsEnabled ? "un achat, ou un tampon" : "un achat"}
-                </span>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setVoucher(null);
-                go("reward");
-              }}
-              className="a-btn a-btn--dark flex w-full flex-col items-center justify-center gap-1.5 !min-h-[112px] px-5 text-center"
-            >
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[var(--o-panel)]">
-                <span className="text-[22px] leading-none">🎁</span>
-              </span>
-              <span>
-                <span className="block text-[17px] font-extrabold leading-tight">Valider une récompense</span>
-                <span className="block text-[12px] font-semibold text-slate">un code ou un QR</span>
-              </span>
-            </button>
-
-            {/*
-              THE THIRD THING IS NOT A SALE, and it is no longer on this screen.
-
-              Corrections, a customer's history and the secret-code reset are
-              what an owner does a few times a week, standing still. It used to
-              be an underlined line under the two acts, which is still a third
-              control on a screen whose whole argument is that it has two. It
-              lives in the menu now (components/OwnerMenu) and arrives here as
-              ?client=1 — reachable from every screen in the app, instead of
-              only from this one.
-            */}
-
-            {/*
-              THE LINE THAT OUTLIVES THE RECEIPT.
-
-              The receipt takes itself off the screen after four seconds, usually
-              while the cashier is bagging the order. Without this the undo for a
-              mis-scan would go with it.
-            */}
-            {flash && (
-              <div
-                role="status"
-                className="flex items-center justify-between gap-3 rounded-2xl bg-[#2f9e6e]/12 px-4 py-3"
-              >
-                <p className="min-w-0 text-[13px] font-bold leading-snug text-[#2f9e6e]">{flash.text}</p>
-                {flash.undo && (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => undo(flash.undo!)}
-                    className="shrink-0 rounded-full bg-[var(--o-inset)] px-3.5 py-1.5 text-[12px] font-bold text-charcoal active:scale-95"
-                  >
-                    Annuler
-                  </button>
-                )}
-              </div>
-            )}
-            {errorLine}
-
-            {/*
-              THE WAY OUT MOVED, AND THE REASONING CAME WITH IT.
-
-              One phone lives behind a counter and it gets handed over; without
-              a way out, everything the next person does carries the last
-              person's name — a record that reads as true and is not. That was
-              right, and the red panel here was still the wrong shape for it: a
-              panel scrolls away, it only existed on THIS screen, and it was a
-              third block on a till that should hold two acts.
-
-              The floating menu carries the name on every screen and never
-              scrolls, and the red button is the first thing inside it. Same one
-              tap, from anywhere, and now the question "whose name is on this?"
-              is answered without scrolling to find out.
-            */}
-          </div>
-
-          <div className="lg:col-span-5">{today}</div>
-        </div>
-      )}
-
-      {/* ── 1 · what is being given ───────────────────────────────────── */}
-      {view === "give" && (
-        /*
-          ── ONE SCREEN, NOT TWO ────────────────────────────────────────────
-
-          Keying the amount and identifying the customer used to be separate
-          screens with a "Créditer" button between them. That button did no
-          work: it neither took the money nor chose the person, it only carried
-          you to the camera — and it sat between a cashier and the camera on
-          every single sale of the day.
-
-          The camera is here, live, from the moment the screen opens. The amount
-          is the only thing keyed; the card in the customer's hand does the rest.
-          What used to be the button's tap is now the yes on the confirmation,
-          which is a tap that actually decides something.
-        */
-        <Step title="Donner des points" hint={`${pointsPerTnd} point par dinar`} onBack={home}>
-          <div className="a-card p-3.5">
+        <Step
+          title="Caisse"
+          hint={
+            stampsEnabled
+              ? `${pointsPerTnd} point par dinar · tampons · récompenses`
+              : `${pointsPerTnd} point par dinar · récompenses`
+          }
+        >
+          <div className="a-card p-3">
             <input
               name="amount"
               value={amount}
@@ -927,21 +790,15 @@ export function CaisseDesk({
                 setError("");
               }}
               placeholder="0"
-              /*
-                inputMode="none": the KEYPAD below is the only way in. As a
-                decimal input this raised the phone's own keyboard on focus, over
-                the top of the keypad drawn for it. It is still a real input (a
-                caret, a value, something a test can fill); it simply stops
-                asking the OS for help it already has on screen.
-              */
+              /* inputMode="none": the keypad below is the only way in. As a
+                 decimal input this raised the phone's own keyboard over the top
+                 of the pad drawn for it. */
               inputMode="none"
               aria-label="Montant en dinars"
-              className="w-full rounded-xl bg-[var(--o-inset)] px-4 py-2.5 text-center text-[28px] font-extrabold leading-none tabular-nums text-charcoal outline-none placeholder:text-slate"
+              className="w-full rounded-xl bg-[var(--o-inset)] px-4 py-1.5 text-center text-[26px] font-extrabold leading-none tabular-nums text-charcoal outline-none placeholder:text-slate"
             />
-            {/* «12,5 dinars · +12,5 points» — two facts in the order they
-                happen, and the word DINARS never leaves the screen. */}
             <p
-              className={`mt-1.5 text-center text-[12.5px] font-semibold ${
+              className={`mt-1 text-center text-[12px] font-semibold ${
                 amount.trim() !== "" && !valid ? "text-[#e5484d]" : "text-slate"
               }`}
             >
@@ -950,44 +807,71 @@ export function CaisseDesk({
                 : !valid
                   ? "Montant invalide — de 0,01 à 10 000 DT"
                   : `${fmtDinars(n)} dinars · +${fmtPoints(earned)} points` +
-                    (multiplier > 1 ? ` · ×${multiplier} en cours` : "")}
+                    (multiplier > 1 ? ` · ×${multiplier}` : "")}
             </p>
 
-            <div className="mt-2.5">
+            <div className="mt-2">
               <Keypad
                 onKey={(k) => {
                   setError("");
                   if (k === "⌫") return setAmount(amount.slice(0, -1));
-                  /* Either separator, because the field is typeable too — a
-                     phone keyboard offers a full stop and this box accepts it. */
                   if (k === "," && /[.,]/.test(amount)) return;
                   if (amount.replace(/[.,]/, "").length >= 7) return;
                   setAmount(amount + k);
                 }}
               />
             </div>
+
+            {stampsEnabled && (
+              /*
+                MORE THAN ONE, because a customer who buys two coffees has
+                earned two. The old button could only ever add one, so the
+                cashier scanned the same card twice — which is two entries in
+                the journal for one purchase, and two chances to scan the wrong
+                person on the second go.
+              */
+              <div className="mt-2 flex items-center gap-3 rounded-xl bg-[var(--o-inset)] px-3 py-2">
+                <span className="min-w-0 flex-1 text-[13.5px] font-bold text-charcoal">
+                  Tampons
+                </span>
+                <button
+                  type="button"
+                  aria-label="Un tampon de moins"
+                  onClick={() => {
+                    setError("");
+                    setStamps((s) => Math.max(0, s - 1));
+                  }}
+                  disabled={stamps === 0}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--o-panel)] text-[20px] font-bold text-charcoal active:scale-95 disabled:opacity-40"
+                >
+                  −
+                </button>
+                <span className="w-6 shrink-0 text-center text-[17px] font-extrabold tabular-nums text-charcoal">
+                  {stamps}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Un tampon de plus"
+                  onClick={() => {
+                    setError("");
+                    setStamps((s) => Math.min(10, s + 1));
+                  }}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--o-panel)] text-[20px] font-bold text-charcoal active:scale-95"
+                >
+                  +
+                </button>
+              </div>
+            )}
           </div>
 
-          {/*
-            THE CAMERA, ALREADY OPEN.
-
-            Compact on purpose: it shares the screen with a keypad, so it is a
-            band rather than a window. The video is object-cover, so a shorter
-            frame crops the view instead of shrinking it — a card held up to the
-            phone still fills the box.
-
-            It runs whether or not an amount has been keyed. Arming it only on a
-            valid amount would mean a black rectangle for the first taps of every
-            sale, which reads as a broken camera; refusing the read in words
-            (see offer) says the true thing instead.
-          */}
-          {!lensDown && !pending && (
+          {/* the camera, already open — nothing to arm */}
+          {!lensDown && !pending && !result && !voucher && (
             <div className="mt-2.5">
               <Lens
                 compact
                 nonce={scanNonce}
                 busy={busy}
-                label={valid ? `Pointez la carte — ${intentLine}` : "Pointez la carte du client"}
+                label={givingLine ? `Pointez — ${givingLine}` : "Pointez la carte ou le code cadeau"}
                 onRead={(text) => {
                   setScanNonce((k) => k + 1);
                   offer(text);
@@ -997,98 +881,159 @@ export function CaisseDesk({
             </div>
           )}
 
-          {/*
-            And the field is on the same screen, not behind an "ou" — both doors
-            open at once, so the cashier never picks a mode. It is also what a
-            laptop with no camera gets, without anything having to fail first.
-          */}
-          <div className="a-card mt-2.5 p-3">
+          <div className="a-card mt-2.5 p-2.5">
             <div className="flex gap-2">
               <input
                 name="customer"
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && offer(typed)}
-                placeholder="Code client ou numéro"
+                placeholder="Code client, numéro, ou code cadeau"
                 inputMode="text"
                 autoCapitalize="characters"
-                className="min-w-0 flex-1 rounded-xl bg-[var(--o-inset)] px-3 py-3 text-center text-[17px] font-extrabold tracking-[0.05em] text-charcoal outline-none placeholder:text-[13.5px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-slate"
+                className="min-w-0 flex-1 rounded-xl bg-[var(--o-inset)] px-3 py-2.5 text-center text-[16px] font-extrabold tracking-[0.05em] text-charcoal outline-none placeholder:text-[13px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-slate"
               />
+              {/*
+                NOT DISABLED WHEN THE FIELD IS EMPTY.
+
+                It was, and a disabled button here is a button nobody can see:
+                on a white card the faded state reads as decoration, so the one
+                control on this row disappeared exactly when a cashier was
+                looking for it. It is solid at all times and answers in words
+                instead — "entrez d'abord le montant" is information; a greyed
+                rectangle is a puzzle.
+              */}
               <button
                 type="button"
-                onClick={() => offer(typed)}
-                disabled={busy || !typed.trim()}
+                onClick={() => {
+                  if (!typed.trim()) return setError("Scannez la carte, ou tapez le code du client.");
+                  offer(typed);
+                }}
+                disabled={busy}
                 className="a-btn !w-auto shrink-0 px-5"
               >
-                {busy ? "· · ·" : "Créditer"}
+                {busy ? "· · ·" : "Donner"}
               </button>
             </div>
           </div>
-
-          {stampsEnabled && (
-            /*
-              A stamp is the other thing this screen can do, and it needs no
-              amount — so it is a quiet line, not a second big button competing
-              with the sale being composed above it.
-            */
-            <button
-              type="button"
-              onClick={() => {
-                setIntent({ kind: "stamp", key: newOpKey() });
-                go("who");
-              }}
-              className="mt-2.5 flex w-full items-center justify-center gap-2 py-2.5 text-[13.5px] font-bold text-slate"
-            >
-              <StampIcon className="h-[18px] w-[18px]" /> ou donner +1 tampon
-            </button>
-          )}
           {errorLine}
 
-          {/* ── the yes, with what it is agreeing to ─────────────────────── */}
+          {/*
+            ── A REWARD READ BY THE SAME CAMERA ──────────────────────────────
+
+            Same shape as the sale's confirmation, because it is the same
+            moment: something is about to be handed over and somebody has to
+            say yes. What it needs to show is different — a voucher has no
+            amount and no balance, only what it is and whether it can still be
+            served.
+          */}
+          {voucher?.peek && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Récompense"
+              className="d-veil fixed inset-0 z-50 flex items-center justify-center bg-[#14101f]/55 px-4 backdrop-blur-sm"
+              onClick={() => !busy && (setVoucher(null), setScanNonce((k) => k + 1))}
+            >
+              <div
+                className="d-pop a-card w-full max-w-[360px] px-5 py-6 text-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-slate">
+                  {voucher.peek.kind === "stamp" ? "Carte pleine" : "Récompense"}
+                </p>
+                <p className="mt-1.5 text-[20px] font-extrabold leading-tight text-charcoal">
+                  {voucher.peek.label}
+                </p>
+                <p className="k-num mt-0.5 text-[12.5px] text-slate">{voucher.code}</p>
+
+                {voucher.peek.status === "valid" ? (
+                  <div className="mt-4 grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVoucher(null);
+                        setScanNonce((k) => k + 1);
+                      }}
+                      disabled={busy}
+                      className="a-btn a-btn--ghost !min-h-[52px]"
+                    >
+                      Non
+                    </button>
+                    <button
+                      type="button"
+                      onClick={collectVoucher}
+                      disabled={busy}
+                      className="a-btn !min-h-[52px]"
+                    >
+                      {busy ? "· · ·" : "Remettre"}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {/* Already served, or expired. Say which — "invalide" sends
+                        a cashier looking for a fault that is not there. */}
+                    <p className="mt-3 text-[13.5px] font-bold text-[#e5484d]">
+                      {voucher.peek.status === "claimed"
+                        ? "Déjà remise."
+                        : "Ce code n'est plus valable."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVoucher(null);
+                        setScanNonce((k) => k + 1);
+                      }}
+                      className="a-btn mt-4 !min-h-[52px]"
+                    >
+                      OK
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── the yes, and what it is agreeing to ──────────────────────── */}
           {pending && (
             <div
               role="dialog"
               aria-modal="true"
-              aria-label="Confirmer le crédit"
-              className="d-veil fixed inset-0 z-50 flex items-end justify-center bg-[#14101f]/50 px-3 pb-3 backdrop-blur-sm md:items-center md:pb-3"
+              aria-label="Confirmer"
+              /* CENTRED, not a bottom sheet. It is a question, and a question
+                 belongs where the eyes already are — a sheet clinging to the
+                 bottom edge reads as a notification that arrived, rather than
+                 as something waiting for an answer. */
+              className="d-veil fixed inset-0 z-50 flex items-center justify-center bg-[#14101f]/55 px-4 backdrop-blur-sm"
               onClick={() => !busy && cancelOffer()}
             >
               <div
-                className="d-sheet a-card w-full max-w-[420px] p-5 text-center"
+                className="d-pop a-card w-full max-w-[360px] px-5 py-6 text-center"
                 onClick={(e) => e.stopPropagation()}
               >
-                <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-slate">
-                  Confirmer
-                </p>
-                {/* WHO — the reason this dialog exists. A cashier can see the
-                    card in their hand and the name on the screen at once. */}
-                <p className="mt-1.5 text-[20px] font-extrabold leading-tight text-charcoal">
+                <p className="text-[20px] font-extrabold leading-tight text-charcoal">
                   {pending.name ?? pending.code ?? "Client"}
                 </p>
-                {pending.code && pending.name && (
-                  <p className="k-num mt-0.5 text-[12.5px] text-slate">{pending.code}</p>
-                )}
-
-                {/* WHAT — the arithmetic, spelled out, in the units it happens
-                    in. This is the sentence the old flow never showed. */}
-                <div className="mt-3 rounded-2xl bg-[var(--o-inset)] px-4 py-3">
-                  <p className="text-[17px] font-extrabold text-charcoal">
-                    {fmtDinars(n)} dinars → +{fmtPoints(earned)} points
-                    {multiplier > 1 && (
-                      <span className="ms-1 text-[13px] font-bold text-[#2f9e6e]">×{multiplier}</span>
-                    )}
+                {/* THE CODE, because this is the second in which a wrong card is
+                    caught. The receipt used to carry it — but the receipt comes
+                    after the points are gone, and this comes before. */}
+                {pending.code && (
+                  <p className="k-num mt-0.5 text-[12.5px] text-slate">
+                    {pending.code}
+                    {pending.enrolled ? " · Client de la maison" : ""}
                   </p>
-                  <p className="mt-1 text-[12.5px] font-semibold text-slate">
+                )}
+                <p className="mt-2 text-[16px] font-extrabold text-charcoal">{givingLine}</p>
+                {n > 0 && (
+                  <p className="mt-0.5 text-[12.5px] font-semibold text-slate">
                     Solde {fmtPoints(pending.balance)} → {fmtPoints(pending.balance + earned)}
                   </p>
-                </div>
-
+                )}
                 {!pending.enrolled && (
-                  <p className="mt-2 text-[12px] font-semibold text-[#8a5a00]">
-                    Première visite ici — sa carte sera créée.
+                  <p className="mt-1.5 text-[12px] font-semibold text-[#8a5a00]">
+                    Première visite ici.
                   </p>
                 )}
-
                 <div className="mt-4 grid grid-cols-2 gap-2.5">
                   <button
                     type="button"
@@ -1100,115 +1045,85 @@ export function CaisseDesk({
                   </button>
                   <button
                     type="button"
-                    onClick={() => apply(pending.ref)}
+                    onClick={() => commit(pending.ref)}
                     disabled={busy}
                     className="a-btn !min-h-[52px]"
                   >
-                    {busy ? "· · ·" : "Oui, créditer"}
+                    {busy ? "· · ·" : "Oui"}
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/*
+            ── WHAT HAPPENED, IN ONE LINE, AND IT WAITS ────────────────────
+
+            The receipt this replaces was a full sheet — the customer's name, the
+            balance before, the balance after, what they had just unlocked, how
+            far the next reward was, and an undo — and it took itself off the
+            screen after four seconds. A cashier with a queue read none of it.
+
+            There are two things worth knowing at a counter: did it go through,
+            and if not, why. So that is what this says. It does NOT disappear on
+            its own: a confirmation that vanishes while you are handing over
+            change is a confirmation you did not get.
+
+            No undo. That was here because a scan used to credit the instant the
+            lens decoded, with nothing in between — the undo was the only pause
+            in the whole flow. The pause moved to the confirmation above, which
+            carries the customer's name; a second one afterwards is the kind
+            cashiers learn to tap through.
+          */}
+          {result && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={result.ok ? "C'est donné" : "Rien n'a été donné"}
+              className="d-veil fixed inset-0 z-50 flex items-center justify-center bg-[#14101f]/55 px-4 backdrop-blur-sm"
+              onClick={() => setResult(null)}
+            >
+              <div
+                /* Still the receipt, so everything that reads one still can —
+                   it is simply two lines and a button now instead of a sheet. */
+                data-receipt
+                /* What it actually gave, for anything reading the receipt
+                   rather than its prose. */
+                data-earned={result.earned ?? undefined}
+                data-stamps={result.stampsAdded ?? undefined}
+                data-balance={result.balance ?? undefined}
+                className="d-pop a-card w-full max-w-[360px] px-5 py-6 text-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span
+                  aria-hidden
+                  className={`mx-auto grid h-12 w-12 place-items-center rounded-full text-[26px] ${
+                    result.ok ? "bg-[#2f9e6e]/14 text-[#2f9e6e]" : "bg-[#e5484d]/12 text-[#e5484d]"
+                  }`}
+                >
+                  {result.ok ? "✓" : "✕"}
+                </span>
+                <p className="mt-2.5 text-[17px] font-extrabold leading-tight text-charcoal">
+                  {result.title}
+                </p>
+                {result.detail && (
+                  <p className="mt-1.5 text-[13px] font-semibold leading-snug text-slate">
+                    {result.detail}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setResult(null)}
+                  className="a-btn mt-4 !min-h-[52px]"
+                >
+                  OK
+                </button>
               </div>
             </div>
           )}
         </Step>
       )}
 
-      {/* ── 2 · who it is for ─────────────────────────────────────────── */}
-      {view === "who" && intent && (
-        <Step
-          title={intent.kind === "stamp" ? "Pour qui ?" : "Qui paie ?"}
-          hint={intentLine}
-          onBack={() => {
-            setIntent(null);
-            go("give");
-          }}
-        >
-          {!lensDown && (
-            <Lens
-              compact
-              nonce={scanNonce}
-              busy={busy}
-              label={`Pointez la carte — ${intentLine}`}
-              onRead={(text) => {
-                setScanNonce((k) => k + 1);
-                apply(text);
-              }}
-              onUnavailable={() => setLensDown(true)}
-            />
-          )}
-
-          {/*
-            AND THE FIELD IS ALREADY THERE, under the lens.
-
-            Not behind an "ou", not behind a second button. Both doors on one
-            screen means the cashier never chooses a mode — they point the phone,
-            or they type, and whichever happens first is the answer. It is also
-            what a laptop with no camera gets, without anything having to fail
-            first.
-          */}
-          <div className="a-card mt-3 p-4">
-                <div className="flex gap-2">
-                  <input
-                    name="customer"
-                    value={typed}
-                    onChange={(e) => setTyped(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && apply(typed)}
-                    placeholder="Code client ou numéro"
-                    inputMode="text"
-                    autoCapitalize="characters"
-                    className="min-w-0 flex-1 rounded-2xl bg-[var(--o-inset)] px-4 py-3.5 text-center text-[18px] font-extrabold tracking-[0.05em] text-charcoal outline-none placeholder:text-[14px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-slate"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => apply(typed)}
-                    disabled={busy || !typed.trim()}
-                    className="a-btn !w-auto shrink-0 px-5"
-                  >
-                    {busy ? "· · ·" : "Confirmer"}
-                  </button>
-                </div>
-                <p className="mt-2 text-center text-[12px] leading-snug text-slate">
-                  Ou tapez son code à 4 caractères, ou son numéro.
-                </p>
-          </div>
-          {errorLine}
-        </Step>
-      )}
-
-      {/* ── the other act ─────────────────────────────────────────────── */}
-      {view === "reward" && (
-        <Step title="Valider une récompense" onBack={home}>
-          {/*
-            The lens goes the moment there is something to ACT on. Once a
-            voucher has been read the screen is about one decision — collect it
-            or not — and a live camera above that decision is only a way to
-            replace the thing being decided.
-          */}
-          {/* Compact, like the sale screen: a 4/5 window took most of a phone
-              and pushed the code field — the fallback for a smudged screen or a
-              dead lens — off the bottom, so the one thing a cashier needs when
-              scanning fails was the thing scanning hid. */}
-          {!lensDown && !voucher && (
-            <Lens
-              compact
-              nonce={scanNonce}
-              busy={busy}
-              label="Pointez le QR de la récompense"
-              onRead={(text) => {
-                setScanNonce((k) => k + 1);
-                peek(text);
-              }}
-              onUnavailable={() => setLensDown(true)}
-            />
-          )}
-          <div className={!lensDown && !voucher ? "mt-3" : ""}>
-            <ValidateForm scanned={voucher} />
-          </div>
-          {errorLine}
-        </Step>
-      )}
-
-      {/* ── and the thing that is not a sale ──────────────────────────── */}
       {view === "lookup" && (
         <Step
           title="Chercher un client"
@@ -1614,7 +1529,22 @@ function ValidateInner({ scanned, onReset }: { scanned?: Scanned | null; onReset
       fd.set("code", peek.code);
       const res = await collectAction({}, fd);
       if (res.error) return setErr(res.error);
-      if (res.ok) setDone(res.ok);
+      if (res.ok) {
+        setDone(res.ok);
+        /*
+          CLEAR THE VOUCHER THE MOMENT IT IS COLLECTED.
+
+          The code stayed on screen after being served, with its QR and its
+          "Récupérer" button, describing a voucher that no longer exists. The
+          next customer walked up to somebody else's reward still showing — and
+          the button under it now refuses, which reads as a broken till rather
+          than as a code already spent.
+
+          onReset remounts the panel empty, so the screen goes back to asking
+          for a code while the receipt is still being read over the top of it.
+        */
+        onReset();
+      }
     });
   }
 

@@ -87,8 +87,20 @@ check("owner signs in", !staff.url().includes("/login"), staff.url().replace(BAS
 */
 const DESK = '[role="dialog"]';
 const till = async () => {
+  /*
+    Dismiss a receipt still on screen.
+
+    It waits for a tap now instead of removing itself after four seconds — that
+    is the point of it — so a suite that served somebody and then walked on
+    would find every later click swallowed by the overlay. Tapping OK is what a
+    cashier does, and it is what makes the reads between serve() and here safe:
+    the receipt is still there while its values are read, and gone before
+    anything else is pressed.
+  */
+  const ok = staff.locator('[data-receipt] button:has-text("OK")');
+  if (await ok.count()) await ok.click().catch(() => {});
   await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await staff.locator('button:has-text("Donner des points")').waitFor({ timeout: 20000 });
+  await staff.locator('button:has-text("Donner")').waitFor({ timeout: 20000 });
 };
 
 /** Open a FICHE: corrections, history, the secret code. */
@@ -112,28 +124,28 @@ const openCustomer = async (who) => {
  * call slipped in between (a `.textContent()` on an absent [role="alert"] waits
  * thirty seconds before it fails) arrives to find nothing.
  */
+let lastConfirm = "";
 const serve = async (who, amount) => {
   await till();
-  await staff.locator('button:has-text("Donner des points")').click();
-  if (amount === null) {
-    /* A stamp needs no amount, so it still has its own identify screen. */
-    await staff.locator('button:has-text("+1 tampon")').click();
-    await staff.locator('input[name="customer"]').waitFor({ timeout: 15000 });
-    await staff.fill('input[name="customer"]', who);
-    await staff.locator('button:has-text("Confirmer")').click();
-  } else {
-    /*
-      ONE SCREEN FOR A SALE NOW. The amount and the customer are keyed on the
-      same screen — the camera is live there, and "Créditer" is the field's own
-      submit rather than a door to a second screen — and the tap that spends the
-      points is the yes on the confirmation, which is the whole point of it.
-    */
+  /* /owner IS the counter now — there is no home screen to open, so the
+     amount, the stamps, the camera and the field are already on screen. */
+  if (amount !== null) {
     await staff.locator('input[name="amount"]').waitFor({ timeout: 15000 });
     await staff.fill('input[name="amount"]', String(amount));
-    await staff.fill('input[name="customer"]', who);
-    await staff.locator('button:has-text("Créditer")').click();
-    await staff.locator('button:has-text("Oui, créditer")').click({ timeout: 20000 });
+  } else {
+    /* Stamp-only: the stepper replaced the "+1 tampon" button, and it can go
+       past one — which is why a cashier no longer scans the same card twice. */
+    await staff.locator('button[aria-label="Un tampon de plus"]').click();
   }
+  await staff.fill('input[name="customer"]', who);
+  await staff.locator('.a-card:has(input[name="customer"]) button').click();
+  /* The confirmation is where a wrong card is caught now — before the points
+     move — so its wording is kept for the checks that used to read the
+     receipt's. */
+  const confirm = staff.locator('[role="dialog"]:not([data-nextjs-dialog])');
+  await confirm.waitFor({ timeout: 20000 }).catch(() => {});
+  lastConfirm = await confirm.innerText().catch(() => "");
+  await staff.locator('button:has-text("Oui")').first().click({ timeout: 20000 });
   const receipt = staff.locator("[data-receipt]");
   await receipt.waitFor({ timeout: 20000 }).catch(() => {});
   return receipt;
@@ -181,7 +193,7 @@ check("credit result hides the phone", !credTxt.includes(LOCAL) && !credTxt.incl
     });
     check("the same sale sent twice is counted once",
       replay?.replayed === true && (await bal()) === before,
-      `replayed=${replay?.replayed} balance ${before} → ${await bal()}`);
+      `${JSON.stringify(replay)} · balance ${before} → ${await bal()}`);
 
     /* The other half, and the one a lazy de-duplicator would fail: a genuinely
        separate sale — two customers, same coffee, same price — must still go
@@ -212,8 +224,18 @@ check("credit result hides the phone", !credTxt.includes(LOCAL) && !credTxt.incl
   await till();
   const acts = await staff.locator("main button, main a").count();
   const bodyTxt = await staff.locator("main").innerText();
-  check("the till offers the two acts and no third",
-    /Donner des points/.test(bodyTxt) && /Valider une récompense/.test(bodyTxt) &&
+  /*
+    ONE SCREEN, NOT TWO ACTS BEHIND TWO BUTTONS.
+
+    The home of two buttons is gone: /owner IS the counter. What used to be
+    "Donner" and "Récompense" is one camera and one field that tell a card from
+    a voucher by its shape, so the cashier never picks a mode — and the things
+    that are not serving a customer (the lookup, the handover) are still behind
+    the menu rather than on the screen.
+  */
+  check("the counter is one screen, with the amount and the field on it",
+    (await staff.locator('input[name="amount"]').count()) === 1 &&
+      (await staff.locator('input[name="customer"]').count()) === 1 &&
       !/Chercher un client/.test(bodyTxt) && !/Quitter —/.test(bodyTxt),
     `${acts} controls in main`);
 
@@ -235,9 +257,19 @@ check("credit result hides the phone", !credTxt.includes(LOCAL) && !credTxt.incl
      A menu that stops linking here would leave corrections unreachable, and
      every other check in this file would still pass. */
   await sheet.locator('a[href="/owner?client=1"]').click();
-  await staff.locator('input[name="customer"]').waitFor({ timeout: 20000 }).catch(() => {});
+  /*
+    Wait for the ADDRESS, not for the field.
+
+    The counter carries an input[name="customer"] of its own now — it is the
+    one field that takes a card, a phone or a voucher — so waiting for that
+    element resolved instantly against the screen underneath the sheet, before
+    the navigation had even begun. The sheet was then measured mid-flight and
+    reported as still open, which it was, correctly.
+  */
+  await staff.waitForURL((u) => u.search.includes("client=1"), { timeout: 20000 }).catch(() => {});
+  await staff.locator('button:has-text("Chercher")').waitFor({ timeout: 20000 }).catch(() => {});
   check("the menu opens the customer lookup",
-    (await staff.locator('input[name="customer"]').count()) === 1,
+    (await staff.locator('button:has-text("Chercher")').count()) === 1,
     new URL(staff.url()).search || "(no query)");
   /* And it gets out of the way once it has taken you somewhere. */
   check("the sheet closes once it has moved you", (await sheet.count()) === 0);
@@ -251,17 +283,35 @@ check("credit result hides the phone", !credTxt.includes(LOCAL) && !credTxt.incl
   have — and the answer to the question they are asked out loud. Both used to
   mean closing the confirmation and searching the same person again.
 */
-check("the receipt names them and prints their card code",
-  credTxt.includes("Habitué") && credTxt.includes(card.code),
-  credTxt.replace(/\n+/g, " · ").slice(0, 90));
-check("it says this shop knows them", /Client de la maison/i.test(credTxt));
-check("it shows the balance MOVING, not just the new total", credTxt.includes("→"));
+/*
+  THE CATCH MOVED EARLIER, WHICH IS THE WHOLE POINT.
+
+  These used to read the RECEIPT, on the reasoning above: a scan spent the
+  points the instant the lens decoded, so the receipt was the first place a
+  cashier could see whose card they had just charged — the catch had to be there
+  because there was nowhere earlier to put it.
+
+  There is now. A scan identifies and asks, and the confirmation carries the
+  name, the card code, whether the shop knows them, and the balance before and
+  after — all of it BEFORE anything is spent. Asserting this on the receipt
+  would now mean asserting that we tell a cashier who they charged after
+  charging them.
+*/
+check("the confirmation names them and prints their card code",
+  lastConfirm.includes("Habitué") && lastConfirm.includes(card.code),
+  lastConfirm.split(String.fromCharCode(10)).join(" · ").slice(0, 90));
+check("it says this shop knows them", /Client de la maison/i.test(lastConfirm));
+check("it shows the balance MOVING, not just the new total", lastConfirm.includes("→"));
+/* And the receipt still states what actually happened, in one line. */
+check("the receipt states the outcome",
+  /\+10/.test(credTxt) && /Solde/i.test(credTxt),
+  credTxt.split(String.fromCharCode(10)).join(" · ").slice(0, 80));
 
 /* ── 3. A bad amount is refused before anyone is even identified ──────
    The amount is keyed on its own screen now, so an impossible one never
    reaches a customer: the step simply does not open. */
 await till();
-await staff.locator('button:has-text("Donner des points")').click();
+await staff.locator('button:has-text("Donner")').click();
 await staff.locator('input[name="amount"]').waitFor({ timeout: 15000 });
 await staff.fill('input[name="amount"]', "-5");
 const giveTxt = await staff.locator("main").innerText();
@@ -274,7 +324,7 @@ check("a negative amount is named as invalid", /Montant invalide/i.test(giveTxt)
   when somebody is identified against an amount that is not a number.
 */
 await staff.fill('input[name="customer"]', "ABCD");
-await staff.locator('button:has-text("Créditer")').click();
+await staff.locator('.a-card:has(input[name="customer"]) button').click();
 const badAmountTxt = await staff
   .waitForSelector('main [role="alert"]', { timeout: 15000 })
   .then((el) => el.innerText())
@@ -282,7 +332,7 @@ const badAmountTxt = await staff
 check("...and it cannot be spent on anybody", /Montant invalide/i.test(badAmountTxt),
   badAmountTxt || "no refusal shown");
 check("...and no confirmation was ever offered for it",
-  (await staff.locator('button:has-text("Oui, créditer")').count()) === 0);
+  (await staff.locator('button:has-text("Oui")').count()) === 0);
 
 /* ── 3b. WHAT THE RECEIPT HAS TO SURVIVE ───────────────────────
    A scan spends money with no confirmation in front of it, so two things have
@@ -293,9 +343,32 @@ check("...and no confirmation was ever offered for it",
    The camera cannot be driven from a test and does not need to be: the lens and
    the code field pour into the same apply(), so the typed door exercises every
    line downstream of a read. */
+/*
+  A FAILED READ IS NOT A BALANCE OF ZERO.
+
+  This was `Number(data ?? 0)`, which turns a dropped connection into the
+  number zero — and zero is a perfectly plausible balance, so the suite
+  reported it as fact. That is exactly how "…and nothing reached the ledger"
+  came back as `0 → 37` on one run and `37 → 0` on the next: not a ledger
+  moving, a read failing, in a different position each time. Two checks were
+  accusing the till of losing money because the harness could not tell "I do
+  not know" from "nothing".
+
+  It retries — the cause is the transatlantic hop, not a refusal — and then
+  says so out loud rather than answering with a number it does not have.
+*/
 const balanceNow = async () => {
-  const { data } = await admin.rpc("pointili_balance", { p_business_id: cafeId, p_phone: NORM });
-  return Number(data ?? 0);
+  let last;
+  for (let i = 0; i < 4; i++) {
+    const { data, error } = await admin.rpc("pointili_balance", {
+      p_business_id: cafeId,
+      p_phone: NORM,
+    });
+    if (!error && data !== null) return Number(data);
+    last = error;
+    await staff.waitForTimeout(400 * (i + 1));
+  }
+  throw new Error(`balance unreadable: ${last?.message ?? "no data"}`);
 };
 /* Poll, never sleep: every one of these round-trips to Postgres in Zurich. */
 const balanceReaches = async (want) => {
@@ -318,18 +391,32 @@ check("it carries what it just gave", saleEarned === 7, `data-earned=${saleEarne
 check("the ledger moved by exactly that", (await balanceReaches(beforeSale + 7)) === beforeSale + 7,
   `${beforeSale} → ${await balanceNow()}`);
 
+/*
+  ── THE RECEIPT WAITS, AND THERE IS NOTHING TO UNDO ─────────────────────────
+
+  Both halves of this changed on purpose.
+
+  It used to take itself off the screen after four seconds, which is why the
+  undo had to outlive it — a cashier bagging an order missed the whole thing.
+  It waits for a tap now, so the confirmation is one a cashier actually
+  receives.
+
+  And the undo is gone. It existed because a scan CREDITED the instant the lens
+  decoded: the undo was the only pause anywhere in the flow. The pause moved to
+  the confirmation, which carries the customer name and the arithmetic before
+  anything is spent — a second one afterwards is the kind cashiers learn to tap
+  through. A genuine mistake is a Correction on the customer fiche, which is
+  where a reversal belongs and where it leaves a record.
+*/
 await staff.waitForTimeout(5500);
-check("the till comes back to its two buttons on its own",
-  (await staff.locator('button:has-text("Donner des points")').count()) === 1);
-const undoLine = staff.locator('main [role="status"]').first();
-const undoBtn = undoLine.locator('button:has-text("Annuler")');
-check("the undo outlives the receipt", (await undoBtn.count()) === 1,
-  (await undoLine.innerText().catch(() => "")).replace(/\n/g, " · "));
-if (await undoBtn.count()) {
-  await undoBtn.click();
-  check("...and it puts the sale back", (await balanceReaches(beforeSale)) === beforeSale,
-    `balance=${await balanceNow()}`);
-}
+check("the receipt waits to be read rather than vanishing",
+  (await staff.locator("[data-receipt]").count()) === 1);
+check("...and offers no undo, because nothing was spent unasked",
+  (await staff.locator('[data-receipt] button:has-text("Annuler")').count()) === 0);
+await staff.locator('[data-receipt] button:has-text("OK")').click();
+await staff.waitForTimeout(800);
+check("...and OK returns the counter, ready for the next customer",
+  (await staff.locator('input[name="amount"]').inputValue()) === "");
 
 /* ── 3c. A VOUCHER IS NOT A CUSTOMER ──────────────────────────
    Both live behind the same lens and look identical in a customer's hand — 4
@@ -339,22 +426,32 @@ if (await undoBtn.count()) {
    `main [role=alert]`: the Next dev overlay owns a role="alert" of its own. */
 const strayBefore = await balanceNow();
 await till();
-await staff.locator('button:has-text("Donner des points")').click();
-await staff.locator('input[name="amount"]').waitFor({ timeout: 15000 });
+/*
+  ── A VOUCHER IS NOT REFUSED ANY MORE; IT IS SERVED ─────────────────────────
+
+  This used to check that handing a reward code to a half-finished sale named
+  the mistake and pointed at the other screen. There is no other screen: the
+  counter's one field takes a card or a voucher and tells them apart by shape,
+  so a voucher is no longer a wrong answer to the wrong question — it opens the
+  reward it names.
+
+  What still has to hold is the half that protects money: a voucher must not be
+  credited as a customer, and a voucher that does not exist must say so rather
+  than charge somebody.
+*/
 await staff.fill('input[name="amount"]', "9");
 await staff.fill('input[name="customer"]', "ZZZZZZ");
-await staff.locator('button:has-text("Créditer")').click();
-const strayTxt = await staff
-  .waitForSelector('main [role="alert"]', { timeout: 15000 })
-  .then((el) => el.innerText())
-  .catch(() => "");
-check("a reward code is named, not credited", /récompense/i.test(strayTxt), strayTxt.replace(/\n/g, " "));
-/* The amount used to be carried to a second screen and echoed there as "9 DT".
-   It is now keyed and kept on the one screen a sale happens on, so what proves
-   the sale survived the interruption is the field itself still holding it. */
-check("...and the sale it interrupted is still armed",
-  (await staff.locator('input[name="amount"]').inputValue()) === "9");
-check("...and nothing reached the ledger", (await balanceNow()) === strayBefore);
+await staff.locator('.a-card:has(input[name="customer"]) button').click();
+await staff.waitForTimeout(3000);
+const strayTxt = await staff.locator("main").innerText().catch(() => "");
+check("an unknown voucher is named as unknown, not credited",
+  /introuvable|invalide/i.test(strayTxt),
+  strayTxt.split(String.fromCharCode(10)).filter(Boolean).slice(-2).join(" · "));
+check("...and no confirmation to spend was ever offered",
+  (await staff.locator('[role="dialog"] button:has-text("Oui")').count()) === 0);
+const strayAfter = await balanceNow();
+check("...and nothing reached the ledger", strayAfter === strayBefore,
+  `${strayBefore} → ${strayAfter}`);
 
 
 /* ── 4. An unknown code is refused ─────────────────────────────────── */
@@ -424,23 +521,26 @@ check("the stamp receipt answers the points question too", /Solde/i.test(full));
 const SEC = "main";
 const collect = async (code) => {
   await till();
-  await staff.locator('button:has-text("Valider une récompense")').click();
-  await staff.locator('input[name="code"]').waitFor({ timeout: 15000 });
-  await staff.fill('input[name="code"]', code);
-  await staff.locator(`${SEC} button:has-text("Vérifier")`).click();
-  const btn = staff.locator(`${SEC} button:has-text("Collecter")`);
+  /* A voucher goes in the same field a customer code does — the shape tells
+     them apart (isVoucher), so the cashier never chooses a mode. */
+  await staff.locator('input[name="customer"]').waitFor({ timeout: 15000 });
+  await staff.fill('input[name="customer"]', code);
+  await staff.locator('.a-card:has(input[name="customer"]) button').click();
+  const btn = staff.locator('[role="dialog"] button:has-text("Remettre")');
   await btn.waitFor({ timeout: 10000 }).catch(() => {});
   if (await btn.count()) {
     await btn.click();
-    await staff.locator(`${SEC} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
+    /* The outcome lands in the same receipt a sale uses. */
+    await staff.locator("[data-receipt]").waitFor({ timeout: 20000 }).catch(() => {});
   }
-  return staff.locator(SEC).innerText();
+  const dlg = staff.locator('[role="dialog"]:not([data-nextjs-dialog])');
+  return (await dlg.count()) ? dlg.innerText() : staff.locator(SEC).innerText();
 };
 if (stampCode) {
   const first = await collect(stampCode);
-  check("code collects at the counter", /collecté/i.test(first), first.replace(/\n/g, " · ").slice(0, 50));
+  check("code collects at the counter", /remis/i.test(first), first.replace(/\n/g, " · ").slice(0, 50));
   const again = await collect(stampCode);
-  check("the same code cannot be reused", /déjà.*utilisé/i.test(again), again.replace(/\n/g, " · ").slice(0, 50));
+  check("the same code cannot be reused", /déjà/i.test(again), again.replace(/\n/g, " · ").slice(0, 50));
 }
 
 /* ── 7. Open the cardholder at the till, correct points + stamps ────

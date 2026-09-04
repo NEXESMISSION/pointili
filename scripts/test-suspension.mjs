@@ -38,8 +38,23 @@ const before = await bal();
 console.log(`live: balance ${before}\n`);
 
 // now switch it off
-await svc.rpc("admin_set_suspended", { p_actor: op.id, p_business_id: cafe.id, p_suspended: true, p_reason: "verify" });
-console.log(`suspended → cafe_is_live = ${(await sql.query(`select cafe_is_live($1) l`, [cafe.id])).rows[0].l}\n`);
+/*
+  AND CHECK THAT IT ACTUALLY WENT DARK.
+
+  The result of this call was ignored. When it failed — a dropped connection is
+  enough — the café stayed live, every probe below succeeded exactly as it
+  should on a working shop, and the suite reported FOUR LEAKS in the suspension
+  boundary. A security suite that announces a breach because its own setup
+  quietly failed is one that gets ignored the day it is right.
+*/
+const { error: suspendErr } = await svc.rpc("admin_set_suspended", {
+  p_actor: op.id, p_business_id: cafe.id, p_suspended: true, p_reason: "verify",
+});
+if (suspendErr) throw new Error(`could not suspend the fixture: ${suspendErr.message}`);
+const wentDark = (await sql.query(`select cafe_is_live($1) l`, [cafe.id])).rows[0].l;
+console.log(`suspended → cafe_is_live = ${wentDark}
+`);
+if (wentDark) throw new Error("the fixture is still live — nothing below would mean anything");
 
 const bad = (r) => !r || r.ok === false;
 

@@ -274,17 +274,20 @@ async function tap(page, locator, ms = 850) {
  */
 async function serve(page, amount) {
   await ready(page, `${BASE}/owner`);
-  await page.locator('button:has-text("Donner des points")').waitFor({ timeout: 20000 });
+  await page.locator('button:has-text("Donner")').waitFor({ timeout: 20000 });
   await beat(page, 600);
-  await tap(page, page.locator('button:has-text("Donner des points")'));
+  await tap(page, page.locator('button:has-text("Donner")'));
   await beat(page, 500);
   if (amount === null) {
-    await tap(page, page.locator('button:has-text("+1 tampon")'));
-    await page.locator('input[name="customer"]').waitFor({ timeout: 20000 });
-    await beat(page, 500);
+    /* Stamps are a stepper on the same card now — no second screen, no second
+       camera, and it can go past one. */
+    await tap(page, page.locator('button[aria-label="Un tampon de plus"]'));
+    await beat(page, 400);
     await human(page, 'input[name="customer"]', NUM, 130);
     await beat(page, 400);
-    await tap(page, page.locator('button:has-text("Confirmer")'));
+    await tap(page, page.locator('.a-card:has(input[name="customer"]) button'));
+    await beat(page, 600);
+    await tap(page, page.locator('button:has-text("Oui")').first());
   } else {
     /* A sale is one screen now — amount, customer, then the confirmation. */
     await page.locator('input[name="amount"]').waitFor({ timeout: 20000 });
@@ -292,9 +295,9 @@ async function serve(page, amount) {
     await beat(page, 450);
     await human(page, 'input[name="customer"]', NUM, 130);
     await beat(page, 400);
-    await tap(page, page.locator('button:has-text("Créditer")'));
+    await tap(page, page.locator('.a-card:has(input[name="customer"]) button'));
     await beat(page, 600);
-    await tap(page, page.locator('button:has-text("Oui, créditer")'));
+    await tap(page, page.locator('button:has-text("Oui")').first());
   }
   await page.locator("[data-receipt]").waitFor({ timeout: 20000 }).catch(() => {});
 }
@@ -443,7 +446,7 @@ const owner = await context();
     So: load the till, wait for it to settle, and only then let the clips run.
   */
   await settle(page, `${BASE}/owner`);
-  await page.locator('button:has-text("Donner des points")').waitFor({ timeout: 20000 });
+  await page.locator('button:has-text("Donner")').waitFor({ timeout: 20000 });
   await page.waitForTimeout(1800);
   console.log("signed in — every owner clip shares this session\n");
   await page.close();

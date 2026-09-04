@@ -261,6 +261,140 @@ export type CreditState = {
   };
 };
 
+/* ── ONE ACT: THE POINTS AND THE STAMPS TOGETHER ─────────────────────────── */
+
+export type GiveState = {
+  /** Nothing happened at all, and why — in words a cashier can act on. */
+  error?: string;
+  ok?: {
+    who: Whom;
+    /** null when no amount was keyed — a stamp-only act is ordinary. */
+    points: { earned: number; welcome: number; balance: number; amount: number } | null;
+    /** null when no stamps were asked for. */
+    stamps: {
+      added: number;
+      count: number;
+      required: number;
+      completed: boolean;
+      /** The VOUCHER a filled card just minted — the cashier can serve it now. */
+      code: string | null;
+    } | null;
+    /**
+     * The half that did NOT land, when only one of them did.
+     *
+     * A sale can legitimately be "8 dinars and 2 stamps", and those are two
+     * writes. Reporting a partial as a success is how a customer walks away
+     * short; reporting it as a failure is how a cashier credits the points
+     * twice. So it is neither: both halves are named, and this says which one
+     * is missing and why.
+     */
+    partial?: string;
+  };
+};
+
+/**
+ * Consume → Earn, and the stamp card, in the same breath.
+ *
+ * The till used to make these two separate journeys — an amount screen with a
+ * "Créditer" button, and a "+1 tampon" button that went to its own identify
+ * screen with its own camera. A shop that runs both gave one customer two
+ * scans for one purchase, and the cashier had to remember the second.
+ *
+ * They are one act now, identified once. Either half may be zero.
+ */
+export async function giveAction(
+  _prev: GiveState,
+  formData: FormData,
+): Promise<GiveState> {
+  const cafe = await ownerCafe();
+  if (!cafe) return { error: "Non autorisé." };
+
+  const amount = Number(String(formData.get("amount") ?? "").replace(",", "."));
+  const stamps = Math.trunc(Number(String(formData.get("stamps") ?? "0")) || 0);
+
+  const wantsPoints = Number.isFinite(amount) && amount > 0;
+  const wantsStamps = stamps > 0;
+  if (!wantsPoints && !wantsStamps) return { error: "Rien à donner — un montant ou un tampon." };
+  if (wantsPoints && (!Number.isFinite(amount) || amount > 10_000)) {
+    return { error: "Montant invalide — de 0,01 à 10 000 DT." };
+  }
+  /* A cashier keying twelve stamps has slipped, not had a remarkable morning. */
+  if (stamps > 10) return { error: "Trop de tampons d'un coup — 10 au maximum." };
+
+  const who = await resolveCustomer(cafe.id, String(formData.get("customer") ?? ""));
+  if ("error" in who) return { error: who.error };
+
+  const program = await getLoyaltyProgram(cafe.id);
+  if (wantsPoints && !program.active) return { error: "Programme de fidélité désactivé." };
+  if (wantsStamps && !program.stampsEnabled) return { error: "Carte à tampons désactivée." };
+
+  const rawKey = String(formData.get("opKey") ?? "");
+  const opKey = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawKey)
+    ? rawKey
+    : null;
+
+  /*
+    POINTS FIRST, and the order matters.
+
+    Points are the half carrying money and the half protected by an idempotency
+    key (0049). Stamps are not keyed, so a stamp is the half that can double on
+    a retry — doing it second means a lost answer leaves the SMALLER doubt, and
+    the message below can say exactly which half is in question.
+  */
+  let points: NonNullable<GiveState["ok"]>["points"] = null;
+  if (wantsPoints) {
+    const res = await creditPoints(cafe.id, who.phone, amount, opKey);
+    if (!res.ok) return { error: tillMessage(res.reason) };
+    points = {
+      earned: res.earned,
+      welcome: res.welcome,
+      balance: res.balance,
+      amount,
+    };
+  }
+
+  let stampsOut: NonNullable<GiveState["ok"]>["stamps"] = null;
+  let partial: string | undefined;
+  if (wantsStamps) {
+    const res = await addStamp(cafe.id, who.phone, stamps);
+    if (res.ok) {
+      stampsOut = {
+        added: stamps,
+        count: res.count,
+        required: res.required,
+        completed: res.completed,
+        code: res.code ?? null,
+      };
+    } else if (points) {
+      /* The points landed and the stamps did not. Say both, so nobody redoes
+         the half that worked. */
+      partial = `Les points sont passés, pas les tampons : ${tillMessage(res.reason)}`;
+    } else {
+      return { error: tillMessage(res.reason) };
+    }
+  }
+
+  await logStaffAction(cafe.id, wantsPoints ? "credit" : "stamp", {
+    customer: who.code ?? who.phone.slice(-4),
+    points: points?.earned ?? 0,
+    amountTnd: points?.amount ?? null,
+    label: stampsOut ? `${stampsOut.added} tampon${stampsOut.added > 1 ? "s" : ""}` : null,
+  });
+
+  revalidatePath("/owner");
+  revalidatePath("/owner/clients");
+  revalidatePath(`/${cafe.slug}`);
+
+  return {
+    ok: {
+      who: await whomIs(cafe.id, who, points?.balance ?? (await getBalance(cafe.id, who.phone))),
+      points,
+      stamps: stampsOut,
+      partial,
+    },
+  };
+}
+
 export type StampState = {
   error?: string;
   ok?: {

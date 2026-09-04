@@ -52,18 +52,36 @@ await s.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 20000 }).ca
 */
 const DESK = '[role="dialog"]';
 const till = async () => {
+  /*
+    Dismiss a receipt still on screen.
+
+    It waits for a tap now instead of removing itself after four seconds — that
+    is the point of it — so a suite that served somebody and then walked on
+    would find every later click swallowed by the overlay. Tapping OK is what a
+    cashier does, and it is what makes the reads between serve() and here safe:
+    the receipt is still there while its values are read, and gone before
+    anything else is pressed.
+  */
+  const ok = s.locator('[data-receipt] button:has-text("OK")');
+  if (await ok.count()) await ok.click().catch(() => {});
   await s.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await s.locator('button:has-text("Donner des points")').waitFor({ timeout: 20000 });
+  await s.locator('button:has-text("Donner")').waitFor({ timeout: 20000 });
 };
 const serve = async (who, amount) => {
   await till();
-  await s.locator('button:has-text("Donner des points")').click();
-  await s.locator('input[name="amount"]').waitFor({ timeout: 15000 });
-  await s.fill('input[name="amount"]', String(amount));
-  /* One screen: amount and customer together, then the confirmation. */
+  /* /owner IS the counter now — there is no home screen to open, so the
+     amount, the stamps, the camera and the field are already on screen. */
+  if (amount !== null) {
+    await s.locator('input[name="amount"]').waitFor({ timeout: 15000 });
+    await s.fill('input[name="amount"]', String(amount));
+  } else {
+    /* Stamp-only: the stepper replaced the "+1 tampon" button, and it can go
+       past one — which is why a cashier no longer scans the same card twice. */
+    await s.locator('button[aria-label="Un tampon de plus"]').click();
+  }
   await s.fill('input[name="customer"]', who);
-  await s.locator('button:has-text("Créditer")').click();
-  await s.locator('button:has-text("Oui, créditer")').click({ timeout: 20000 });
+  await s.locator('.a-card:has(input[name="customer"]) button').click();
+  await s.locator('button:has-text("Oui")').first().click({ timeout: 20000 });
   const receipt = s.locator("[data-receipt]");
   await receipt.waitFor({ timeout: 20000 }).catch(() => {});
   return receipt;

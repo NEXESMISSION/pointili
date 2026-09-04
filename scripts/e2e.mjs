@@ -113,8 +113,20 @@ const DESK = '[role="dialog"]';
 
 /** Home: the two buttons. */
 async function till(page) {
+  /*
+    Dismiss a receipt still on screen.
+
+    It waits for a tap now instead of removing itself after four seconds — that
+    is the point of it — so a suite that served somebody and then walked on
+    would find every later click swallowed by the overlay. Tapping OK is what a
+    cashier does, and it is what makes the reads between serve() and here safe:
+    the receipt is still there while its values are read, and gone before
+    anything else is pressed.
+  */
+  const ok = page.locator('[data-receipt] button:has-text("OK")');
+  if (await ok.count()) await ok.click().catch(() => {});
   await page.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-  await page.locator('button:has-text("Donner des points")').waitFor({ timeout: 20000 });
+  await page.locator('button:has-text("Donner")').waitFor({ timeout: 20000 });
 }
 
 /** Open somebody's FICHE. Reading and correcting only — no sale lives here. */
@@ -144,23 +156,19 @@ async function openCustomer(page, who) {
  */
 async function serve(page, who, amount) {
   await till(page);
-  await page.locator('button:has-text("Donner des points")').click();
-  if (amount === null) {
-    /* A stamp needs no amount, so it keeps its own identify screen. */
-    await page.locator('button:has-text("+1 tampon")').click();
-    await page.locator('input[name="customer"]').waitFor({ timeout: 15000 });
-    await page.fill('input[name="customer"]', who);
-    await page.locator('button:has-text("Confirmer")').click();
-  } else {
-    /* A sale is one screen now: the amount and the customer together, the
-       camera live beside them, and the yes on the confirmation is what spends
-       the points. */
+  /* /owner IS the counter now — there is no home screen to open, so the
+     amount, the stamps, the camera and the field are already on screen. */
+  if (amount !== null) {
     await page.locator('input[name="amount"]').waitFor({ timeout: 15000 });
     await page.fill('input[name="amount"]', String(amount));
-    await page.fill('input[name="customer"]', who);
-    await page.locator('button:has-text("Créditer")').click();
-    await page.locator('button:has-text("Oui, créditer")').click({ timeout: 20000 });
+  } else {
+    /* Stamp-only: the stepper replaced the "+1 tampon" button, and it can go
+       past one — which is why a cashier no longer scans the same card twice. */
+    await page.locator('button[aria-label="Un tampon de plus"]').click();
   }
+  await page.fill('input[name="customer"]', who);
+  await page.locator('.a-card:has(input[name="customer"]) button').click();
+  await page.locator('button:has-text("Oui")').first().click({ timeout: 20000 });
   const receipt = page.locator("[data-receipt]");
   await receipt.waitFor({ timeout: 20000 }).catch(() => {});
   return receipt;
@@ -176,9 +184,11 @@ async function serve(page, who, amount) {
  * change here and nothing else.
  */
 async function openCodeMode(page) {
+  /* There is no code MODE any more. The counter's one field takes a customer
+     code, a phone, or a voucher, and tells them apart by shape (isVoucher) —
+     so "opening" it is just being on the counter. */
   await till(page);
-  await page.locator('button:has-text("Valider une récompense")').click();
-  await page.locator('input[name="code"]').waitFor({ timeout: 15000 });
+  await page.locator('input[name="customer"]').waitFor({ timeout: 15000 });
 }
 
 /** Réglages is a settings list — each knob lives one tap deep in its own editor. */
@@ -356,33 +366,36 @@ if (redeemCode) {
   const SEC = "main";
   const claim = async () => {
     await openCodeMode(staff);
-    await staff.fill(`${SEC} input[name="code"]`, redeemCode);
-    await staff.locator(`${SEC} button:has-text("Vérifier")`).click();
-    const collect = staff.locator(`${SEC} button:has-text("Collecter")`);
+    await staff.fill('input[name="customer"]', redeemCode);
+    await staff.locator('.a-card:has(input[name="customer"]) button').click();
+    const collect = staff.locator('[role="dialog"] button:has-text("Remettre")');
     await collect.waitFor({ timeout: 8000 }).catch(() => {});
     if (await collect.count()) {
       await collect.click();
-      await staff.locator(`${SEC} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
+      await staff.locator("[data-receipt]").waitFor({ timeout: 20000 }).catch(() => {});
     }
-    return staff.locator(SEC).innerText().catch(() => "");
+    const dlg = staff.locator('[role="dialog"]:not([data-nextjs-dialog])');
+    return (await dlg.count()) ? dlg.innerText().catch(() => "") : "";
   };
 
   // A peek alone must not serve it: look up, then leave without collecting.
   await openCodeMode(staff);
-  await staff.fill(`${SEC} input[name="code"]`, redeemCode);
-  await staff.locator(`${SEC} button:has-text("Vérifier")`).click();
-  await staff.locator(`${SEC} button:has-text("Collecter")`).waitFor({ timeout: 8000 }).catch(() => {});
-  const peeked = await staff.locator(SEC).innerText().catch(() => "");
+  await staff.fill('input[name="customer"]', redeemCode);
+  await staff.locator('.a-card:has(input[name="customer"]) button').click();
+  await staff.locator('[role="dialog"] button:has-text("Remettre")').waitFor({ timeout: 8000 }).catch(() => {});
+  const peeked = await staff.locator('[role="dialog"]:not([data-nextjs-dialog])').innerText().catch(() => "");
   check(
+    /* The wording moved with the screen: a voucher read on the counter offers
+       "Remettre" — hand it over — and says nothing about it having happened. */
     "peek shows the code without serving it",
-    /Collecter/i.test(peeked) && !/collecté/i.test(peeked),
-    peeked.replace(/\n/g, " · "),
+    /Remettre/i.test(peeked) && !/remis/i.test(peeked),
+    peeked.split(String.fromCharCode(10)).join(" · "),
   );
 
   const first = await claim();
-  check("code collects once", /collecté/i.test(first), first.replace(/\n/g, " · "));
+  check("code collects once", /remis/i.test(first), first.split(String.fromCharCode(10)).join(" · "));
   const second = await claim();
-  check("same code cannot be reused", /déjà.*utilisé/i.test(second), second.replace(/\n/g, " · "));
+  check("same code cannot be reused", /déjà/i.test(second), second.split(String.fromCharCode(10)).join(" · "));
 
   // and the collected reward shows up in the diner's own history (Historique)
   await diner.goto(`${BASE}/${SLUG}/historique`, { waitUntil: "networkidle" });
@@ -577,16 +590,19 @@ if (redeemCode) {
 
   // the diner can collect that code at the counter, exactly like any reward
   if (stampCode) {
-    const SEC = "main";
     await openCodeMode(staff);
-    await staff.fill(`${SEC} input[name="code"]`, stampCode);
-    await staff.locator(`${SEC} button:has-text("Vérifier")`).click();
-    const collect = staff.locator(`${SEC} button:has-text("Collecter")`);
+    await staff.fill('input[name="customer"]', stampCode);
+    await staff.locator('.a-card:has(input[name="customer"]) button').click();
+    const collect = staff.locator('[role="dialog"] button:has-text("Remettre")');
     await collect.waitFor({ timeout: 8000 }).catch(() => {});
     if (await collect.count()) await collect.click();
-    await staff.locator(`${SEC} [role="status"]`).waitFor({ timeout: 20000 }).catch(() => {});
-    const collected = await staff.locator(SEC).innerText().catch(() => "");
-    check("stamp reward collects at the counter", /collecté/i.test(collected), collected.replace(/\n/g, " · ").slice(0, 60));
+    await staff.locator("[data-receipt]").waitFor({ timeout: 20000 }).catch(() => {});
+    const collected = await staff
+      .locator('[role="dialog"]:not([data-nextjs-dialog])')
+      .innerText()
+      .catch(() => "");
+    check("stamp reward collects at the counter", /remis/i.test(collected),
+      collected.split(String.fromCharCode(10)).join(" · ").slice(0, 60));
   }
 
   // it shows on the diner's Historique

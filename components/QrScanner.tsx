@@ -152,7 +152,15 @@ export function QrScanner({
       />
       {/* viewfinder: a bright frame, the rest dimmed by a huge spread shadow */}
       <div className="pointer-events-none absolute inset-0 grid place-items-center">
-        <div className="h-[62%] w-[62%] rounded-3xl border-2 border-white/85 shadow-[0_0_0_2000px_rgba(0,0,0,.45)]" />
+        {/*
+          SMALLER, because it is a sight and not a shutter.
+
+          At 62% it filled the frame and read as the thing being scanned — on
+          the short band the till uses it was a white box with a face in it. The
+          decoder reads the WHOLE video either way; this rectangle only tells a
+          hand where to hold the card, so it can be modest.
+        */}
+        <div className="h-[52%] w-[42%] min-w-[104px] rounded-2xl border-2 border-white/80 shadow-[0_0_0_2000px_rgba(0,0,0,.42)]" />
       </div>
 
       <button
