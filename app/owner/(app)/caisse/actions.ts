@@ -430,6 +430,16 @@ export type ResolveState = {
     multiplier: number;
     carry: number;
   };
+  /**
+   * THE PROGRAMME AS IT IS RIGHT NOW, not as it was when the till was opened.
+   *
+   * A counter phone stays on one screen all day. If the owner switches the
+   * stamp card off from another device, this screen keeps offering a stepper
+   * for an act the server will refuse — and the refusal used to arrive AFTER
+   * the cashier had confirmed, in front of the customer. Identifying somebody
+   * is already a round trip, so the truth rides back on it.
+   */
+  program?: { active: boolean; stampsEnabled: boolean; stampsRequired: number };
 };
 
 /**
@@ -443,11 +453,15 @@ export async function resolveCustomerAction(idOrPhone: string): Promise<ResolveS
   const who = await resolveCustomer(cafe.id, idOrPhone);
   if ("error" in who) return { error: who.error };
 
-  const [enrolled, balance, stamps, preview] = await Promise.all([
+  const [enrolled, balance, stamps, preview, program] = await Promise.all([
     isCardholder(cafe.id, who.phone),
     getBalance(cafe.id, who.phone),
     getStamps(cafe.id, who.phone),
     pointsPreviewInputs(cafe.id, who.phone),
+    /* Free: it rides the round trip the till was making anyway, and it is what
+       keeps a screen that has been open all day from offering an act the
+       server will refuse. */
+    getLoyaltyProgram(cafe.id),
   ]);
 
   /*
@@ -459,6 +473,11 @@ export async function resolveCustomerAction(idOrPhone: string): Promise<ResolveS
     cashier to turn a paying customer away at the till.
   */
   return {
+    program: {
+      active: program.active,
+      stampsEnabled: program.stampsEnabled,
+      stampsRequired: program.stampsRequired,
+    },
     customer: {
       ref: who.code || who.phone,
       code: who.code,

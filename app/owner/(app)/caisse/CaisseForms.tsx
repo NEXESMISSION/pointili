@@ -401,6 +401,17 @@ export function CaisseDesk({
   const [stamps, setStamps] = useState(0);
 
   /*
+    THE PROGRAMME, AS OF THE LAST TIME WE ASKED.
+
+    Seeded from the server render, then corrected by every resolve. A counter
+    phone sits on this screen all day: if the owner switches the stamp card off
+    from another device, the props here are simply out of date, and the till
+    went on offering a stepper for an act the server would refuse — with the
+    refusal arriving AFTER the cashier had confirmed, in front of the customer.
+  */
+  const [liveStamps, setLiveStamps] = useState(stampsEnabled);
+
+  /*
     What happened, held until somebody says OK.
 
     Deliberately not a timed flash: a confirmation that removes itself while the
@@ -576,6 +587,31 @@ export function CaisseDesk({
       /* Minted HERE, with the customer: this pairing is the act. A retry of the
          same confirmation carries it; cancelling and scanning somebody else
          mints a new one (0049). */
+      /*
+        CORRECT THE SCREEN BEFORE ASKING THE CASHIER TO COMMIT.
+
+        The resolve carries the programme as it is right now. If the stamp card
+        has been switched off since this screen loaded, the stepper was offering
+        something the server will refuse — so it is dropped HERE, with a word,
+        rather than after a confirmation the cashier gave in front of a
+        customer. Same for a paused programme.
+      */
+      const live = res.program;
+      if (live) {
+        setLiveStamps(live.stampsEnabled);
+        if (stamps > 0 && !live.stampsEnabled) {
+          setStamps(0);
+          setError("La carte à tampons vient d'être désactivée — les tampons ont été retirés.");
+          setScanNonce((k) => k + 1);
+          if (!valid) return;
+        }
+        if (valid && !live.active) {
+          setError("Programme de fidélité désactivé.");
+          setScanNonce((k) => k + 1);
+          return;
+        }
+      }
+
       setIntent({ kind: "credit", amount: n, key: newOpKey() });
       setPending(res.customer);
       setTyped("");
@@ -776,7 +812,7 @@ export function CaisseDesk({
         <Step
           title="Caisse"
           hint={
-            stampsEnabled
+            liveStamps
               ? `${pointsPerTnd} point par dinar · tampons · récompenses`
               : `${pointsPerTnd} point par dinar · récompenses`
           }
@@ -822,7 +858,7 @@ export function CaisseDesk({
               />
             </div>
 
-            {stampsEnabled && (
+            {liveStamps && (
               /*
                 MORE THAN ONE, because a customer who buys two coffees has
                 earned two. The old button could only ever add one, so the
