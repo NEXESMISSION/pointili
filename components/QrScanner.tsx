@@ -26,9 +26,20 @@ import { useEffect, useRef, useState } from "react";
 export function QrScanner({
   onScan,
   onUnavailable,
+  aspect = "aspect-[4/5]",
 }: {
   onScan: (text: string) => void;
   onUnavailable?: () => void;
+  /**
+   * How tall the viewfinder is, as a Tailwind aspect class.
+   *
+   * 4/5 is a portrait window: right when scanning IS the screen. It is wrong
+   * when the camera shares a screen with a keypad, where a tall box pushes the
+   * thing being scanned for off the bottom. The video is object-cover either
+   * way, so a shorter frame crops the view rather than shrinking the picture —
+   * a card held up to the phone still fills it.
+   */
+  aspect?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const scanRef = useRef(onScan);
@@ -131,7 +142,7 @@ export function QrScanner({
   }, [facing]);
 
   return (
-    <div className="relative aspect-[4/5] w-full bg-black">
+    <div className={`relative w-full bg-black ${aspect}`}>
       <video
         ref={videoRef}
         playsInline

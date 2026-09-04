@@ -60,10 +60,10 @@ const serve = async (who, amount) => {
   await s.locator('button:has-text("Donner des points")').click();
   await s.locator('input[name="amount"]').waitFor({ timeout: 15000 });
   await s.fill('input[name="amount"]', String(amount));
-  await s.locator('button:has-text("Créditer")').click();
-  await s.locator('input[name="customer"]').waitFor({ timeout: 15000 });
+  /* One screen: amount and customer together, then the confirmation. */
   await s.fill('input[name="customer"]', who);
-  await s.locator('button:has-text("Confirmer")').click();
+  await s.locator('button:has-text("Créditer")').click();
+  await s.locator('button:has-text("Oui, créditer")').click({ timeout: 20000 });
   const receipt = s.locator("[data-receipt]");
   await receipt.waitFor({ timeout: 20000 }).catch(() => {});
   return receipt;

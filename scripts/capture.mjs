@@ -280,17 +280,22 @@ async function serve(page, amount) {
   await beat(page, 500);
   if (amount === null) {
     await tap(page, page.locator('button:has-text("+1 tampon")'));
+    await page.locator('input[name="customer"]').waitFor({ timeout: 20000 });
+    await beat(page, 500);
+    await human(page, 'input[name="customer"]', NUM, 130);
+    await beat(page, 400);
+    await tap(page, page.locator('button:has-text("Confirmer")'));
   } else {
+    /* A sale is one screen now — amount, customer, then the confirmation. */
     await page.locator('input[name="amount"]').waitFor({ timeout: 20000 });
     await human(page, 'input[name="amount"]', String(amount), 190);
     await beat(page, 450);
+    await human(page, 'input[name="customer"]', NUM, 130);
+    await beat(page, 400);
     await tap(page, page.locator('button:has-text("Créditer")'));
+    await beat(page, 600);
+    await tap(page, page.locator('button:has-text("Oui, créditer")'));
   }
-  await page.locator('input[name="customer"]').waitFor({ timeout: 20000 });
-  await beat(page, 500);
-  await human(page, 'input[name="customer"]', NUM, 130);
-  await beat(page, 400);
-  await tap(page, page.locator('button:has-text("Confirmer")'));
   await page.locator("[data-receipt]").waitFor({ timeout: 20000 }).catch(() => {});
 }
 

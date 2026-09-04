@@ -116,15 +116,24 @@ const serve = async (who, amount) => {
   await till();
   await staff.locator('button:has-text("Donner des points")').click();
   if (amount === null) {
+    /* A stamp needs no amount, so it still has its own identify screen. */
     await staff.locator('button:has-text("+1 tampon")').click();
+    await staff.locator('input[name="customer"]').waitFor({ timeout: 15000 });
+    await staff.fill('input[name="customer"]', who);
+    await staff.locator('button:has-text("Confirmer")').click();
   } else {
+    /*
+      ONE SCREEN FOR A SALE NOW. The amount and the customer are keyed on the
+      same screen — the camera is live there, and "Créditer" is the field's own
+      submit rather than a door to a second screen — and the tap that spends the
+      points is the yes on the confirmation, which is the whole point of it.
+    */
     await staff.locator('input[name="amount"]').waitFor({ timeout: 15000 });
     await staff.fill('input[name="amount"]', String(amount));
+    await staff.fill('input[name="customer"]', who);
     await staff.locator('button:has-text("Créditer")').click();
+    await staff.locator('button:has-text("Oui, créditer")').click({ timeout: 20000 });
   }
-  await staff.locator('input[name="customer"]').waitFor({ timeout: 15000 });
-  await staff.fill('input[name="customer"]', who);
-  await staff.locator('button:has-text("Confirmer")').click();
   const receipt = staff.locator("[data-receipt]");
   await receipt.waitFor({ timeout: 20000 }).catch(() => {});
   return receipt;
@@ -258,8 +267,22 @@ await staff.fill('input[name="amount"]', "-5");
 const giveTxt = await staff.locator("main").innerText();
 check("a negative amount is named as invalid", /Montant invalide/i.test(giveTxt),
   giveTxt.split("\n").find((l) => /invalide/i.test(l)) ?? giveTxt.split("\n").slice(0, 4).join(" · "));
-check("...and it cannot be carried to a customer",
-  await staff.locator('button:has-text("Créditer")').isDisabled());
+/*
+  There is no longer a door to carry a bad amount THROUGH — the amount and the
+  customer live on one screen. So the guarantee moved: the camera runs from the
+  moment the screen opens, and what stops a bad sale is the refusal, in words,
+  when somebody is identified against an amount that is not a number.
+*/
+await staff.fill('input[name="customer"]', "ABCD");
+await staff.locator('button:has-text("Créditer")').click();
+const badAmountTxt = await staff
+  .waitForSelector('main [role="alert"]', { timeout: 15000 })
+  .then((el) => el.innerText())
+  .catch(() => "");
+check("...and it cannot be spent on anybody", /Montant invalide/i.test(badAmountTxt),
+  badAmountTxt || "no refusal shown");
+check("...and no confirmation was ever offered for it",
+  (await staff.locator('button:has-text("Oui, créditer")').count()) === 0);
 
 /* ── 3b. WHAT THE RECEIPT HAS TO SURVIVE ───────────────────────
    A scan spends money with no confirmation in front of it, so two things have
@@ -319,17 +342,18 @@ await till();
 await staff.locator('button:has-text("Donner des points")').click();
 await staff.locator('input[name="amount"]').waitFor({ timeout: 15000 });
 await staff.fill('input[name="amount"]', "9");
-await staff.locator('button:has-text("Créditer")').click();
-await staff.locator('input[name="customer"]').waitFor({ timeout: 15000 });
 await staff.fill('input[name="customer"]', "ZZZZZZ");
-await staff.locator('button:has-text("Confirmer")').click();
+await staff.locator('button:has-text("Créditer")').click();
 const strayTxt = await staff
   .waitForSelector('main [role="alert"]', { timeout: 15000 })
   .then((el) => el.innerText())
   .catch(() => "");
 check("a reward code is named, not credited", /récompense/i.test(strayTxt), strayTxt.replace(/\n/g, " "));
+/* The amount used to be carried to a second screen and echoed there as "9 DT".
+   It is now keyed and kept on the one screen a sale happens on, so what proves
+   the sale survived the interruption is the field itself still holding it. */
 check("...and the sale it interrupted is still armed",
-  /9 DT/.test(await staff.locator("main").innerText()));
+  (await staff.locator('input[name="amount"]').inputValue()) === "9");
 check("...and nothing reached the ledger", (await balanceNow()) === strayBefore);
 
 

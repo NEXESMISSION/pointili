@@ -73,8 +73,23 @@ await till();
 check("a shop that never asked for this sees no gate",
   (await staff.locator('button:has-text("Donner des points")').count()) === 1 &&
   !/Qui est à la caisse/i.test(await staff.locator("main").innerText()));
-check("...and no red button on the till",
+check("...and nobody's name is on the till",
+  (await staff.locator('button[aria-haspopup="dialog"]:has-text("Menu")').count()) === 1 &&
   (await staff.locator('button:has-text("Quitter —")').count()) === 0);
+
+/*
+  The staff identity and the way out live in the floating menu now
+  (components/OwnerMenu), not in a red panel on the till. Every question this
+  suite asks about either one has to open it first — otherwise the answer is
+  "absent" for everybody, which is a permissions check that has stopped
+  checking.
+*/
+const openMenu = async () => {
+  await staff.locator('button[aria-haspopup="dialog"]').click();
+  const sheet = staff.locator('[role="dialog"][aria-modal="true"]');
+  await sheet.waitFor({ timeout: 10000 });
+  return sheet;
+};
 
 /* ── 2. The owner builds a team ────────────────────────────────────── */
 await staff.goto(`${BASE}/owner/equipe`, { waitUntil: "networkidle" });
@@ -149,10 +164,33 @@ await staff.fill('input[name="pin"]', "2222");
 await staff.waitForTimeout(4000);
 const tillTxt = await staff.locator("main").innerText();
 check("the right code opens the till", /Donner des points/i.test(tillTxt), tillTxt.split("\n").slice(0, 2).join(" · "));
-check("the till says whose name is on it, in red",
-  (await staff.locator('button:has-text("Quitter — Sami")').count()) === 1);
-check("a cashier gets no Réglages tab",
-  (await staff.locator('a[href="/owner/reglages"]').count()) === 0);
+/*
+  WHOSE NAME IS ON THE TILL — now carried by the floating button rather than a
+  red panel on the till itself (components/OwnerMenu). The panel scrolled away
+  and existed only on this one screen; the button is on every screen and never
+  scrolls, so the question is answered without scrolling to find the answer.
+*/
+check("the till says whose name is on it",
+  (await staff.locator('button[aria-haspopup="dialog"]:has-text("Sami")').count()) === 1);
+
+/* And the way out is still one tap, still red, one level in. */
+await staff.locator('button[aria-haspopup="dialog"]').click();
+const sheet = staff.locator('[role="dialog"][aria-modal="true"]');
+await sheet.waitFor({ timeout: 10000 });
+check("...and leaving is one tap from wherever they are",
+  (await sheet.locator('button:has-text("Quitter — Sami")').count()) === 1);
+
+/*
+  The role check has to look INSIDE the menu now.
+
+  With the tab bar gone, `a[href="/owner/reglages"]` is absent from a closed
+  screen whatever the role — so the old assertion would pass for an owner too,
+  which is the shape of a permissions test that has quietly stopped testing
+  anything. Open the sheet first, then ask.
+*/
+check("a cashier gets no Réglages in the menu",
+  (await sheet.locator('a[href="/owner/reglages"]').count()) === 0);
+await sheet.locator('button:has-text("Fermer")').click();
 
 await staff.goto(`${BASE}/owner/reglages`, { waitUntil: "networkidle" });
 check("a cashier typing the URL lands back on the till", staff.url().endsWith("/owner"), staff.url().replace(BASE, ""));
@@ -205,10 +243,10 @@ await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
 await staff.locator('button:has-text("Donner des points")').click();
 await staff.locator('input[name="amount"]').waitFor({ timeout: 15000 });
 await staff.fill('input[name="amount"]', "8");
-await staff.locator('button:has-text("Créditer")').click();
-await staff.locator('input[name="customer"]').waitFor({ timeout: 15000 });
+/* One screen: amount and customer together, then the confirmation. */
 await staff.fill('input[name="customer"]', card.code);
-await staff.locator('button:has-text("Confirmer")').click();
+await staff.locator('button:has-text("Créditer")').click();
+await staff.locator('button:has-text("Oui, créditer")').click({ timeout: 20000 });
 await staff.locator("[data-receipt]").waitFor({ timeout: 20000 }).catch(() => {});
 await staff.waitForTimeout(2500);
 
@@ -223,7 +261,10 @@ check("the record holds the card code, never the phone",
 
 /* ── 7. The red button ends the shift ──────────────────────────────── */
 await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-await staff.locator('button:has-text("Quitter — Sami")').click();
+/* One level in, behind the button that carries the name — see the note at the
+   first check. Still one tap once the menu is open, and now reachable from any
+   screen rather than only from the till. */
+await (await openMenu()).locator('button:has-text("Quitter — Sami")').click();
 await staff.waitForTimeout(4000);
 check("the red button hands the till back to the gate",
   /Qui est à la caisse/i.test(await staff.locator("body").innerText()));
@@ -245,7 +286,7 @@ check("the journal names the cashier's sale", /Sami/.test(teamTxt) && /crédité
    the credential that already means "I am this business", and it is the one
    thing the person holding the counter phone does not have. */
 await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
-await staff.locator('button:has-text("Quitter")').click();
+await (await openMenu()).locator('button:has-text("Quitter")').click();
 await staff.waitForTimeout(3500);
 await staff.locator('button:has-text("Sami")').click();
 check("a cashier's tile offers no password door",
@@ -274,7 +315,8 @@ await staff.waitForTimeout(2500);
 await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
 check("switching it off puts the app back as it was",
   (await staff.locator('button:has-text("Donner des points")').count()) === 1 &&
-  (await staff.locator('button:has-text("Quitter —")').count()) === 0);
+  (await staff.locator('button[aria-haspopup="dialog"]:has-text("Menu")').count()) === 1 &&
+  (await (await openMenu()).locator('button:has-text("Quitter —")').count()) === 0);
 
 await browser.close();
 await dropTestCafe();

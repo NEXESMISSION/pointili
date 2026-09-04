@@ -146,15 +146,21 @@ async function serve(page, who, amount) {
   await till(page);
   await page.locator('button:has-text("Donner des points")').click();
   if (amount === null) {
+    /* A stamp needs no amount, so it keeps its own identify screen. */
     await page.locator('button:has-text("+1 tampon")').click();
+    await page.locator('input[name="customer"]').waitFor({ timeout: 15000 });
+    await page.fill('input[name="customer"]', who);
+    await page.locator('button:has-text("Confirmer")').click();
   } else {
+    /* A sale is one screen now: the amount and the customer together, the
+       camera live beside them, and the yes on the confirmation is what spends
+       the points. */
     await page.locator('input[name="amount"]').waitFor({ timeout: 15000 });
     await page.fill('input[name="amount"]', String(amount));
+    await page.fill('input[name="customer"]', who);
     await page.locator('button:has-text("Créditer")').click();
+    await page.locator('button:has-text("Oui, créditer")').click({ timeout: 20000 });
   }
-  await page.locator('input[name="customer"]').waitFor({ timeout: 15000 });
-  await page.fill('input[name="customer"]', who);
-  await page.locator('button:has-text("Confirmer")').click();
   const receipt = page.locator("[data-receipt]");
   await receipt.waitFor({ timeout: 20000 }).catch(() => {});
   return receipt;

@@ -200,13 +200,16 @@ const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "⌫"];
 
 function Keypad({ onKey }: { onKey: (k: string) => void }) {
   return (
-    <div className="grid grid-cols-3 gap-2">
+    /* 46px keys, not 58, and a tighter gutter. The pad gave up ~50px of
+       height so the viewfinder underneath could exist without pushing the code
+       field off the bottom — and 46px is still above the 44px a thumb needs. */
+    <div className="grid grid-cols-3 gap-1.5">
       {KEYS.map((k) => (
         <button
           key={k}
           type="button"
           onClick={() => onKey(k)}
-          className={`h-[58px] rounded-2xl text-[24px] font-bold tabular-nums transition active:scale-95 ${
+          className={`h-[46px] rounded-xl text-[21px] font-bold tabular-nums transition active:scale-95 ${
             k === "⌫" ? "bg-[var(--o-inset)] text-slate" : "bg-[var(--o-inset)] text-charcoal"
           }`}
         >
@@ -230,6 +233,7 @@ function Lens({
   nonce,
   label,
   busy,
+  compact = false,
   onRead,
   onUnavailable,
 }: {
@@ -237,16 +241,23 @@ function Lens({
   nonce: number;
   label: string;
   busy: boolean;
+  /** Shares the screen with something else — see QrScanner's `aspect`. */
+  compact?: boolean;
   onRead: (text: string) => void;
   onUnavailable: () => void;
 }) {
   return (
     <div>
-      <div className="overflow-hidden rounded-3xl border border-[var(--o-edge)]">
+      <div className="overflow-hidden rounded-2xl border border-[var(--o-edge)]">
         {/* no camera on this device → drop straight back to the field */}
-        <QrScanner key={nonce} onScan={onRead} onUnavailable={onUnavailable} />
+        <QrScanner
+          key={nonce}
+          onScan={onRead}
+          onUnavailable={onUnavailable}
+          aspect={compact ? "aspect-[2/1]" : "aspect-[4/5]"}
+        />
       </div>
-      <p className="mt-3 text-center text-[13px] font-semibold text-slate">
+      <p className={`text-center text-[12.5px] font-semibold text-slate ${compact ? "mt-1.5" : "mt-3"}`}>
         {busy ? "Un instant…" : label}
       </p>
     </div>
@@ -377,6 +388,28 @@ export function CaisseDesk({
     if (openLookup) setView("lookup");
   }
   const [intent, setIntent] = useState<Intent | null>(null);
+
+  /*
+    ── THE SALE, RESOLVED BUT NOT YET DONE ─────────────────────────────────
+
+    A scan on the amount screen no longer credits. It identifies, and then this
+    holds who it found until somebody says yes.
+
+    The old flow spent a whole screen on identification — key the amount, press
+    Créditer, arrive somewhere new, scan, and the points were gone the instant
+    the camera decoded, with no moment in between. That is a sale committed by a
+    reflex of the lens rather than a decision of the cashier, and the only thing
+    standing between a customer's card drifting into frame and a real credit was
+    that the camera had not been switched on yet.
+
+    So the camera is on from the start — there is nothing to press to reach it —
+    and the pause moved to the end, where it is worth something: the amount, the
+    points, and WHO, on one card, with a yes and a no. A cashier reads that in
+    the second they were already spending on pressing Créditer.
+  */
+  const [pending, setPending] = useState<
+    NonNullable<ResolveState["customer"]> | null
+  >(null);
   const [amount, setAmount] = useState("");
   const [typed, setTyped] = useState("");
   /*
@@ -456,6 +489,7 @@ export function CaisseDesk({
     setIntent(null);
     setAmount("");
     setCustomer(null);
+    setPending(null);
     go("home");
   }
 
@@ -470,10 +504,66 @@ export function CaisseDesk({
         : "";
 
   /** Hand the keyed amount to the second step. */
-  function toWho() {
-    if (!valid) return setError("Montant invalide — de 0,01 à 10 000 DT.");
-    setIntent({ kind: "credit", amount: n, key: newOpKey() });
-    go("who");
+  /**
+   * A card was read (or a code typed) while an amount was on screen.
+   *
+   * Identifies only. It resolves the customer, mints the key for THIS sale, and
+   * hands both to the confirmation — which is the thing that credits.
+   */
+  function offer(raw: string) {
+    const code = extractCode(raw);
+    if (!code || sending.current || pending) return;
+
+    /*
+      The amount is the gate, not a button. The lens runs from the moment the
+      screen opens — a cashier should never have to arm a camera — so a card
+      that drifts into frame before anything is keyed has to be refused, and
+      refused in words, or it reads as a camera that does not work.
+    */
+    if (!valid) {
+      setError(
+        amount.trim() === ""
+          ? "Entrez d'abord le montant, puis pointez la carte."
+          : "Montant invalide — de 0,01 à 10 000 DT.",
+      );
+      return;
+    }
+
+    /* A voucher is not a customer — same refusal as the receipt path, because
+       this is the screen where somebody holds up the wrong code. */
+    if (isVoucher(code)) {
+      setError(
+        `${code.toUpperCase()} est un code de récompense, pas une carte client. ` +
+          `Terminez la vente, puis passez par « Valider une récompense ».`,
+      );
+      return;
+    }
+
+    setError("");
+    setFlash({ text: "Lecture…" });
+    start(async () => {
+      const res = await resolveCustomerAction(code);
+      setFlash(null);
+      if (res.error || !res.customer) {
+        setError(res.error ?? "Client introuvable — vérifiez le code.");
+        return;
+      }
+      /* Minted HERE, with the customer: this pairing is the act. A retry of the
+         same confirmation carries it; cancelling and scanning somebody else
+         mints a new one (0049). */
+      setIntent({ kind: "credit", amount: n, key: newOpKey() });
+      setPending(res.customer);
+      setTyped("");
+    });
+  }
+
+  /** Back to the keypad with nothing spent. */
+  function cancelOffer() {
+    setPending(null);
+    setIntent(null);
+    setError("");
+    /* Remount the lens: it stopped itself on the read that opened the dialog. */
+    setScanNonce((k) => k + 1);
   }
 
   /* ── undo ─────────────────────────────────────────────────────────── */
@@ -562,6 +652,10 @@ export function CaisseDesk({
           return;
         }
         if (!res.ok) return;
+
+        /* The sale landed: the confirmation has nothing left to agree to, and
+           the receipt is what the cashier reads next. */
+        setPending(null);
 
         if ("earned" in res.ok) {
           const c = res.ok;
@@ -809,8 +903,22 @@ export function CaisseDesk({
 
       {/* ── 1 · what is being given ───────────────────────────────────── */}
       {view === "give" && (
+        /*
+          ── ONE SCREEN, NOT TWO ────────────────────────────────────────────
+
+          Keying the amount and identifying the customer used to be separate
+          screens with a "Créditer" button between them. That button did no
+          work: it neither took the money nor chose the person, it only carried
+          you to the camera — and it sat between a cashier and the camera on
+          every single sale of the day.
+
+          The camera is here, live, from the moment the screen opens. The amount
+          is the only thing keyed; the card in the customer's hand does the rest.
+          What used to be the button's tap is now the yes on the confirmation,
+          which is a tap that actually decides something.
+        */
         <Step title="Donner des points" hint={`${pointsPerTnd} point par dinar`} onBack={home}>
-          <div className="a-card p-4">
+          <div className="a-card p-3.5">
             <input
               name="amount"
               value={amount}
@@ -818,31 +926,22 @@ export function CaisseDesk({
                 setAmount(e.target.value);
                 setError("");
               }}
-              onKeyDown={(e) => e.key === "Enter" && toWho()}
               placeholder="0"
               /*
-                inputMode="none": the KEYPAD below is the only way in.
-
-                As a decimal input this raised the phone's own keyboard on focus
-                — over the top of the keypad drawn for it — so the screen offered
-                two number pads, and the one the OS supplied pushed Créditer off
-                the bottom. It is still a real input (a caret, a value, something
-                a test can fill); it simply stops asking the OS for help it
-                already has on screen.
+                inputMode="none": the KEYPAD below is the only way in. As a
+                decimal input this raised the phone's own keyboard on focus, over
+                the top of the keypad drawn for it. It is still a real input (a
+                caret, a value, something a test can fill); it simply stops
+                asking the OS for help it already has on screen.
               */
               inputMode="none"
               aria-label="Montant en dinars"
-              className="w-full rounded-2xl bg-[var(--o-inset)] px-4 py-4 text-center text-[34px] font-extrabold tabular-nums text-charcoal outline-none placeholder:text-slate"
+              className="w-full rounded-xl bg-[var(--o-inset)] px-4 py-2.5 text-center text-[28px] font-extrabold leading-none tabular-nums text-charcoal outline-none placeholder:text-slate"
             />
-            {/*
-              THE UNIT NEVER LEAVES THE SCREEN — «12,5 dinars · +12,5 points»,
-              two facts in the order they happen. This line used to swap to the
-              points alone the moment anything was typed, which took the one word
-              saying DINARS off the screen at exactly the keystroke where it
-              matters.
-            */}
+            {/* «12,5 dinars · +12,5 points» — two facts in the order they
+                happen, and the word DINARS never leaves the screen. */}
             <p
-              className={`mt-2 text-center text-[13px] font-semibold ${
+              className={`mt-1.5 text-center text-[12.5px] font-semibold ${
                 amount.trim() !== "" && !valid ? "text-[#e5484d]" : "text-slate"
               }`}
             >
@@ -853,7 +952,8 @@ export function CaisseDesk({
                   : `${fmtDinars(n)} dinars · +${fmtPoints(earned)} points` +
                     (multiplier > 1 ? ` · ×${multiplier} en cours` : "")}
             </p>
-            <div className="mt-3">
+
+            <div className="mt-2.5">
               <Keypad
                 onKey={(k) => {
                   setError("");
@@ -866,43 +966,150 @@ export function CaisseDesk({
                 }}
               />
             </div>
-            <button
-              type="button"
-              onClick={toWho}
-              disabled={!valid}
-              className="a-btn mt-3 !min-h-[56px] !text-[17px] disabled:opacity-50"
-            >
-              Créditer
-            </button>
+          </div>
+
+          {/*
+            THE CAMERA, ALREADY OPEN.
+
+            Compact on purpose: it shares the screen with a keypad, so it is a
+            band rather than a window. The video is object-cover, so a shorter
+            frame crops the view instead of shrinking it — a card held up to the
+            phone still fills the box.
+
+            It runs whether or not an amount has been keyed. Arming it only on a
+            valid amount would mean a black rectangle for the first taps of every
+            sale, which reads as a broken camera; refusing the read in words
+            (see offer) says the true thing instead.
+          */}
+          {!lensDown && !pending && (
+            <div className="mt-2.5">
+              <Lens
+                compact
+                nonce={scanNonce}
+                busy={busy}
+                label={valid ? `Pointez la carte — ${intentLine}` : "Pointez la carte du client"}
+                onRead={(text) => {
+                  setScanNonce((k) => k + 1);
+                  offer(text);
+                }}
+                onUnavailable={() => setLensDown(true)}
+              />
+            </div>
+          )}
+
+          {/*
+            And the field is on the same screen, not behind an "ou" — both doors
+            open at once, so the cashier never picks a mode. It is also what a
+            laptop with no camera gets, without anything having to fail first.
+          */}
+          <div className="a-card mt-2.5 p-3">
+            <div className="flex gap-2">
+              <input
+                name="customer"
+                value={typed}
+                onChange={(e) => setTyped(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && offer(typed)}
+                placeholder="Code client ou numéro"
+                inputMode="text"
+                autoCapitalize="characters"
+                className="min-w-0 flex-1 rounded-xl bg-[var(--o-inset)] px-3 py-3 text-center text-[17px] font-extrabold tracking-[0.05em] text-charcoal outline-none placeholder:text-[13.5px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-slate"
+              />
+              <button
+                type="button"
+                onClick={() => offer(typed)}
+                disabled={busy || !typed.trim()}
+                className="a-btn !w-auto shrink-0 px-5"
+              >
+                {busy ? "· · ·" : "Créditer"}
+              </button>
+            </div>
           </div>
 
           {stampsEnabled && (
-            <>
-              <p className="my-3 text-center text-[12px] font-bold uppercase tracking-[0.08em] text-slate">
-                ou
-              </p>
-              {/*
-                A STAMP NEEDS NO CONFIRMATION HERE ANY MORE.
-
-                It used to ask before it wrote, because it was one tap on an open
-                fiche and at 9/10 that tap hands out the free coffee. It is now
-                three deliberate acts — this screen, this button, then a scan —
-                and the identification step IS the pause. A second "are you
-                sure?" on top of that is the kind cashiers learn to tap through.
-              */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIntent({ kind: "stamp", key: newOpKey() });
-                  go("who");
-                }}
-                className="a-btn a-btn--dark flex !min-h-[56px] items-center justify-center gap-2"
-              >
-                <StampIcon className="h-5 w-5" /> +1 tampon
-              </button>
-            </>
+            /*
+              A stamp is the other thing this screen can do, and it needs no
+              amount — so it is a quiet line, not a second big button competing
+              with the sale being composed above it.
+            */
+            <button
+              type="button"
+              onClick={() => {
+                setIntent({ kind: "stamp", key: newOpKey() });
+                go("who");
+              }}
+              className="mt-2.5 flex w-full items-center justify-center gap-2 py-2.5 text-[13.5px] font-bold text-slate"
+            >
+              <StampIcon className="h-[18px] w-[18px]" /> ou donner +1 tampon
+            </button>
           )}
           {errorLine}
+
+          {/* ── the yes, with what it is agreeing to ─────────────────────── */}
+          {pending && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Confirmer le crédit"
+              className="d-veil fixed inset-0 z-50 flex items-end justify-center bg-[#14101f]/50 px-3 pb-3 backdrop-blur-sm md:items-center md:pb-3"
+              onClick={() => !busy && cancelOffer()}
+            >
+              <div
+                className="d-sheet a-card w-full max-w-[420px] p-5 text-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-slate">
+                  Confirmer
+                </p>
+                {/* WHO — the reason this dialog exists. A cashier can see the
+                    card in their hand and the name on the screen at once. */}
+                <p className="mt-1.5 text-[20px] font-extrabold leading-tight text-charcoal">
+                  {pending.name ?? pending.code ?? "Client"}
+                </p>
+                {pending.code && pending.name && (
+                  <p className="k-num mt-0.5 text-[12.5px] text-slate">{pending.code}</p>
+                )}
+
+                {/* WHAT — the arithmetic, spelled out, in the units it happens
+                    in. This is the sentence the old flow never showed. */}
+                <div className="mt-3 rounded-2xl bg-[var(--o-inset)] px-4 py-3">
+                  <p className="text-[17px] font-extrabold text-charcoal">
+                    {fmtDinars(n)} dinars → +{fmtPoints(earned)} points
+                    {multiplier > 1 && (
+                      <span className="ms-1 text-[13px] font-bold text-[#2f9e6e]">×{multiplier}</span>
+                    )}
+                  </p>
+                  <p className="mt-1 text-[12.5px] font-semibold text-slate">
+                    Solde {fmtPoints(pending.balance)} → {fmtPoints(pending.balance + earned)}
+                  </p>
+                </div>
+
+                {!pending.enrolled && (
+                  <p className="mt-2 text-[12px] font-semibold text-[#8a5a00]">
+                    Première visite ici — sa carte sera créée.
+                  </p>
+                )}
+
+                <div className="mt-4 grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={cancelOffer}
+                    disabled={busy}
+                    className="a-btn a-btn--ghost !min-h-[52px]"
+                  >
+                    Non
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => apply(pending.ref)}
+                    disabled={busy}
+                    className="a-btn !min-h-[52px]"
+                  >
+                    {busy ? "· · ·" : "Oui, créditer"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </Step>
       )}
 
@@ -918,6 +1125,7 @@ export function CaisseDesk({
         >
           {!lensDown && (
             <Lens
+              compact
               nonce={scanNonce}
               busy={busy}
               label={`Pointez la carte — ${intentLine}`}
@@ -976,8 +1184,13 @@ export function CaisseDesk({
             or not — and a live camera above that decision is only a way to
             replace the thing being decided.
           */}
+          {/* Compact, like the sale screen: a 4/5 window took most of a phone
+              and pushed the code field — the fallback for a smudged screen or a
+              dead lens — off the bottom, so the one thing a cashier needs when
+              scanning fails was the thing scanning hid. */}
           {!lensDown && !voucher && (
             <Lens
+              compact
               nonce={scanNonce}
               busy={busy}
               label="Pointez le QR de la récompense"
