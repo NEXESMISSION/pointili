@@ -106,7 +106,16 @@ const qrsIn = async (scope) =>
 check("the list carries no scannable picture at all", (await qrsIn("main ul")) === 0);
 
 await rows.first().click();
-const sheet = page.locator('[role="dialog"]');
+/*
+  Scoped to the APP's dialog, not to any dialog.
+
+  Next's dev overlay is itself a [role="dialog"], so a bare selector resolves to
+  two elements the moment the page reports a recoverable error and Playwright
+  refuses the ambiguity — the suite dies pointing at the overlay rather than at
+  whatever caused it. Same lesson as the dev overlay owning [role=alert]: in
+  development, the app does not have these roles to itself.
+*/
+const sheet = page.locator('[role="dialog"]:not([data-nextjs-dialog])');
 await sheet.waitFor({ timeout: 10000 });
 check("tapping a reward opens it", await sheet.isVisible());
 check("...with exactly ONE QR on the screen", (await qrsIn("body")) === 1, `${await qrsIn("body")} picture(s)`);
@@ -131,12 +140,32 @@ check("...and only that one", issued.filter((c) => sheetTxt.includes(c)).length 
   blink out from under the customer's thumb.
 */
 await admin.rpc("claim_code", { p_business_id: cafeId, p_code: shownCode });
+/*
+  THE ANNOUNCEMENT MOVED, AND THIS CHECK HAD NOT.
+
+  The sheet used to print "Récupéré" in green and then close. Commit 5333349
+  took that out and replaced it with a full-screen celebration — the reward
+  crossing the counter is the end of the whole loop, and a line inside a sheet
+  the customer may already have thumbed away was the wrong place for it. That
+  commit updated test-live; this suite still waited for the deleted text, so it
+  failed on behaviour that is correct and better.
+
+  It asserts the celebration by its own hook now, and then the thing that is
+  genuinely this suite's subject: the sheet does not blink out from under the
+  thumb — it holds a beat, then closes.
+*/
 const taken = await page
-  .locator('[role="dialog"]:has-text("Récupéré")')
+  .locator('[data-live-celebration="collected"]')
   .waitFor({ timeout: 20000 })
   .then(() => true)
   .catch(() => false);
 check("the counter taking it says so on the customer's screen", taken);
+const closed = await page
+  .locator('[role="dialog"]:not([data-nextjs-dialog])')
+  .waitFor({ state: "detached", timeout: 10000 })
+  .then(() => true)
+  .catch(() => false);
+check("...and the ticket closes itself rather than vanishing mid-tap", closed);
 
 await page.waitForTimeout(2600);
 check("...and then the sheet closes itself", (await page.locator('[role="dialog"]').count()) === 0);

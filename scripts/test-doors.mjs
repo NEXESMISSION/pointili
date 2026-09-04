@@ -72,6 +72,16 @@ const { data: acc } = await admin.from("accounts").select("code, name").eq("phon
 check("the account exists, with a platform-wide code", Boolean(acc?.code) && acc.code.length === 4, acc?.code ?? "none");
 check("...and the name they gave", acc?.name === "Nouveau", acc?.name ?? "none");
 
+/*
+  Wait for the WALLET, not for the address.
+
+  /cartes has a loading.tsx now, so the URL is the new one while the column is
+  still a skeleton — and a skeleton contains neither the account code nor the
+  empty-state sentence. Reading the body straight after waitForURL was only ever
+  safe because navigation used to block; it reported a wallet that shows nothing
+  when the wallet had simply not been drawn yet.
+*/
+await p.locator("body").getByText(acc.code).first().waitFor({ timeout: 20000 }).catch(() => {});
 const walletTxt = await p.locator("body").innerText();
 check("the wallet shows them that code", walletTxt.includes(acc.code), acc.code);
 check("...and says what to do with an empty one",
