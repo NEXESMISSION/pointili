@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { ownerCafe, ownerHome } from "@/lib/auth/owner";
 import { getLoyaltyProgram } from "@/lib/data";
-import { ROLE_LABEL, currentStaff } from "@/lib/auth/staff";
 import { activePointsMultiplier, ownerToday } from "@/lib/db";
 import { CaisseDesk } from "./caisse/CaisseForms";
 import { Today } from "./caisse/Today";
@@ -48,7 +47,6 @@ export default async function OwnerHome() {
 
   /* Who is on the till, so the screen can offer them the way out. Null unless
      the shop asked to be told (0048). */
-  const staff = cafe.staffPinsEnabled ? await currentStaff(cafe.id) : null;
 
   return (
     <CaisseDesk
@@ -59,7 +57,6 @@ export default async function OwnerHome() {
       /* Rendered here and handed down: CaisseDesk is a Client Component and
          these figures are a server read. */
       today={<Today day={day} pointsPerTnd={program.pointsPerTnd} />}
-      onDuty={staff ? { name: staff.name, role: ROLE_LABEL[staff.role] } : null}
     />
   );
 }

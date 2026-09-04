@@ -2096,3 +2096,28 @@ body:has(.landing-light) {
 @media (prefers-reduced-motion: reduce) {
   .d-sheet { animation: sk-appear 120ms ease-out both; }
 }
+
+/*
+  THE FLOATING BUTTON THAT REPLACED THE TAB BAR (components/OwnerMenu).
+
+  It floats over a scrolling till, so it needs to be readable against whatever
+  happens to be underneath — a white receipt, a green flash, a photo of a
+  pastry. That rules out a tint or a translucent chip: it is the solid brand
+  purple with a real shadow, the same object the primary action on this screen
+  is made of, so it reads as part of the app rather than a browser control.
+
+  The shadow is tinted with the purple rather than black. A neutral drop shadow
+  under a saturated colour greys the pixels around it and makes the button look
+  dirty on the pale panel this app is built on.
+*/
+.a-fab {
+  background: #5b3fd1;
+  color: #ffffff;
+  box-shadow:
+    0 10px 24px -8px rgba(91, 63, 209, 0.55),
+    0 2px 6px rgba(20, 16, 31, 0.14);
+  transition: transform 0.08s, box-shadow 0.15s;
+}
+.a-fab:active {
+  box-shadow: 0 6px 14px -8px rgba(91, 63, 209, 0.5);
+}

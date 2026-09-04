@@ -49,7 +49,7 @@ import { ChartIcon, GiftIcon, QrIcon, SlidersIcon, TillIcon } from "./icons";
   revalidatePath — which drops the client cache for the path it just changed.
 */
 /* Real paths. The host split does not rewrite them — see proxy.ts. */
-const TABS = [
+export const TABS = [
   { label: "Caisse", short: "Caisse", Icon: TillIcon, href: "/owner", area: "caisse" },
   { label: "Clients", short: "Clients", Icon: ChartIcon, href: "/owner/clients", area: "clients" },
   { label: "Récompenses", short: "Cadeaux", Icon: GiftIcon, href: "/owner/recompenses", area: "recompenses" },
@@ -67,7 +67,7 @@ const TABS = [
  * server-side and every action behind it does too — a tab bar is markup, and
  * the person it is hiding things from is holding the device it renders on.
  */
-function visible(areas?: readonly string[]) {
+export function visible(areas?: readonly string[]) {
   return areas ? TABS.filter((t) => areas.includes(t.area)) : TABS;
 }
 
@@ -78,7 +78,7 @@ function visible(areas?: readonly string[]) {
  * screen reached from the till should not leave the till unlit. The QR has its
  * own tab, so that exception is a bug: it would light two.
  */
-function isActive(pathname: string, href: string) {
+export function isActive(pathname: string, href: string) {
   return href === "/owner" ? pathname === "/owner" : pathname.startsWith(href);
 }
 

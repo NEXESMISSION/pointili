@@ -119,8 +119,15 @@ async function till(page) {
 
 /** Open somebody's FICHE. Reading and correcting only — no sale lives here. */
 async function openCustomer(page, who) {
-  await till(page);
-  await page.locator('button:has-text("Chercher un client")').click();
+  /*
+    The lookup is not a button on the till any more — the till is two acts, and
+    this is the third thing (see components/OwnerMenu). It lives in the floating
+    menu and travels as an address, so that is what this opens. Clicking through
+    the sheet instead would tie every one of these helpers to the menu's markup;
+    the ADDRESS is the contract the menu itself uses, and test-owner exercises
+    the sheet once so the item cannot silently stop linking here.
+  */
+  await page.goto(`${BASE}/owner?client=1`, { waitUntil: "networkidle" });
   await page.locator('input[name="customer"]').waitFor({ timeout: 15000 });
   await page.fill('input[name="customer"]', who);
   await page.locator('button:has-text("Chercher")').click();

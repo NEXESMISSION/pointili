@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { OwnerSidebar, OwnerTabs } from "@/components/OwnerNav";
+import { OwnerSidebar } from "@/components/OwnerNav";
+import { OwnerMenu } from "@/components/OwnerMenu";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { ownerAccess, ownerCafe, ownerHome } from "@/lib/auth/owner";
 import { ROLE_LABEL, can, currentStaff, type Area } from "@/lib/auth/staff";
@@ -240,11 +241,23 @@ export default async function OwnerLayout({
         as before. The receipt sheet makes the same argument in its own file; it
         is the same trick and the same reason.
       */}
-      <main className="owner-main safe-t flex flex-1 flex-col px-5 pb-5 md:px-8 md:py-8 md:[--safe-pt:2rem] [--safe-pt:1.25rem]">
+      {/* pb-24 on a phone: the menu button floats OVER this column now, where
+          the tab bar used to take its own height. Without the room, the button
+          sits on top of the last row of whatever screen you are reading. */}
+      <main className="owner-main safe-t flex flex-1 flex-col px-5 pb-24 md:px-8 md:py-8 md:pb-8 md:[--safe-pt:2rem] [--safe-pt:1.25rem]">
         <div className="m-auto w-full max-w-[680px]">{children}</div>
       </main>
 
-      <OwnerTabs areas={areas} />
+      {/*
+        The tab bar is gone from the phone. Everything that is not one of the
+        till's two acts lives behind one floating button now — see OwnerMenu for
+        why five peers was the wrong claim about these screens.
+      */}
+      <OwnerMenu
+        areas={areas}
+        slug={cafe.slug}
+        staff={staff ? { name: staff.name, role: ROLE_LABEL[staff.role] } : null}
+      />
       {/* the till is opened dozens of times a shift, on one phone */}
       <InstallPrompt audience="owner" />
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { QrScanner } from "@/components/QrScanner";
 import { CheckIcon, StampIcon } from "@/components/icons";
 import { DoneSheet, type Done } from "./DoneSheet";
@@ -20,7 +20,6 @@ import {
   type PeekState,
   type ResolveState,
 } from "./actions";
-import { signOutAction } from "../equipe/actions";
 
 /*
   THE TILL IS A MENU OF TWO ACTS, NOT A DASHBOARD OF FIELDS.
@@ -315,7 +314,6 @@ export function CaisseDesk({
   stampsEnabled,
   stampsRequired,
   today,
-  onDuty,
 }: {
   pointsPerTnd: number;
   /**
@@ -339,16 +337,45 @@ export function CaisseDesk({
     on the one screen that must be instant.
   */
   today: React.ReactNode;
-  /**
-   * Who is signed in at the counter, when the shop asks (0048).
-   *
-   * null covers both "this shop has not switched staff codes on" and "nobody
-   * has said who they are" — and the second cannot reach this screen, because
-   * the layout renders the sign-in gate instead of the app.
-   */
-  onDuty: { name: string; role: string } | null;
 }) {
-  const [view, setView] = useState<View>("home");
+  /*
+    ?client=1 OPENS THE CUSTOMER LOOKUP.
+
+    "Chercher un client" left this screen when the till went down to two acts;
+    it lives in the floating menu, which is a global component and knows nothing
+    about this file's `view` state. An address is the one thing they can both
+    speak. It is also better than the button was: the lookup is now reachable
+    from Réglages or the client list, not only from the till.
+
+    Read once, on arrival, and only to choose the STARTING view — after that the
+    screen is the cashier's. Treating it as live state would drag them back here
+    every time they pressed the back arrow.
+  */
+  const openLookup = useSearchParams().get("client") === "1";
+  const [view, setView] = useState<View>(openLookup ? "lookup" : "home");
+
+  /*
+    AND IT HAS TO REACT, not just start.
+
+    Reading the param into useState's initial value only worked on a cold load.
+    Arriving from the menu is a client navigation from /owner to /owner?client=1
+    — same route, same component, no remount — so the initial value was never
+    computed again and the link did nothing at all. It looked like the menu item
+    was dead.
+
+    Adjusting state during render is React's own answer to "a prop changed and
+    some state should follow": it re-renders before anything is painted, so the
+    lookup is the first thing drawn rather than a flash of the till. An effect
+    would paint the wrong screen first, and would fight the cashier every time
+    they pressed the back arrow.
+  */
+  const [lastLookupParam, setLastLookupParam] = useState(openLookup);
+  if (openLookup !== lastLookupParam) {
+    setLastLookupParam(openLookup);
+    /* Only ever OPENS. Losing the param — which is what the back arrow out of
+       the lookup does — must not slam the screen back to the till under them. */
+    if (openLookup) setView("lookup");
+  }
   const [intent, setIntent] = useState<Intent | null>(null);
   const [amount, setAmount] = useState("");
   const [typed, setTyped] = useState("");
@@ -721,20 +748,16 @@ export function CaisseDesk({
             </button>
 
             {/*
-              THE THIRD THING IS NOT A SALE, so it is not a button beside them.
+              THE THIRD THING IS NOT A SALE, and it is no longer on this screen.
 
-              Corrections, the history and the secret-code reset are what an
-              owner does a few times a week, standing still. Giving them equal
-              weight is what made this screen a form to read instead of a
-              terminal to press.
+              Corrections, a customer's history and the secret-code reset are
+              what an owner does a few times a week, standing still. It used to
+              be an underlined line under the two acts, which is still a third
+              control on a screen whose whole argument is that it has two. It
+              lives in the menu now (components/OwnerMenu) and arrives here as
+              ?client=1 — reachable from every screen in the app, instead of
+              only from this one.
             */}
-            <button
-              type="button"
-              onClick={() => go("lookup")}
-              className="w-full py-2 text-center text-[13px] font-bold text-slate underline decoration-[var(--o-edge)] underline-offset-4"
-            >
-              Chercher un client
-            </button>
 
             {/*
               THE LINE THAT OUTLIVES THE RECEIPT.
@@ -764,23 +787,20 @@ export function CaisseDesk({
             {errorLine}
 
             {/*
-              THE WAY OUT, AND IT IS RED ON PURPOSE.
+              THE WAY OUT MOVED, AND THE REASONING CAME WITH IT.
 
-              One phone lives behind a counter and it gets handed over. Without
-              this, everything the next person does carries the last person's
-              name — which is worse than no record at all, because it is a
-              record that reads as true.
+              One phone lives behind a counter and it gets handed over; without
+              a way out, everything the next person does carries the last
+              person's name — a record that reads as true and is not. That was
+              right, and the red panel here was still the wrong shape for it: a
+              panel scrolls away, it only existed on THIS screen, and it was a
+              third block on a till that should hold two acts.
 
-              So leaving is one tap from the screen they are already looking at,
-              it says whose name is on the till right now, and it is the colour
-              of a thing you press deliberately. Anything quieter and nobody
-              presses it; anything further away and nobody finds it.
-
-              The session also expires after twelve hours, for the evening
-              somebody forgets — but an expiry is not a substitute for a button,
-              because the handover happens mid-shift.
+              The floating menu carries the name on every screen and never
+              scrolls, and the red button is the first thing inside it. Same one
+              tap, from anywhere, and now the question "whose name is on this?"
+              is answered without scrolling to find out.
             */}
-            {onDuty && <LeaveButton name={onDuty.name} role={onDuty.role} />}
           </div>
 
           <div className="lg:col-span-5">{today}</div>
@@ -1033,38 +1053,6 @@ export function CaisseDesk({
 
 }
 
-/** "C'est Sami qui tient la caisse" — and the tap that ends that. */
-function LeaveButton({ name, role }: { name: string; role: string }) {
-  const router = useRouter();
-  const [busy, start] = useTransition();
-  return (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={() =>
-        start(async () => {
-          await signOutAction();
-          /* The layout renders the gate again the moment the cookie is gone —
-             same URL, different screen. There is nothing to navigate to. */
-          router.refresh();
-        })
-      }
-      className="flex w-full items-center justify-center gap-3 rounded-2xl border border-[#e5484d]/35 bg-[#e5484d]/[0.07] px-4 py-3 text-center active:scale-[0.99] disabled:opacity-60"
-    >
-      <span className="min-w-0">
-        <span className="block truncate text-[13px] font-extrabold text-[#e5484d]">
-          {busy ? "À bientôt…" : `Quitter — ${name}`}
-        </span>
-        <span className="block text-[11.5px] font-semibold text-[#e5484d]/80">
-          {role} · les opérations sont à votre nom
-        </span>
-      </span>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0 text-[#e5484d]">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
-      </svg>
-    </button>
-  );
-}
 
 /* ══════════════════════════════════════════════════════════════════════ */
 /*  THE FICHE — everything about one customer that is NOT a sale          */

@@ -296,11 +296,11 @@ async function serve(page, amount) {
 
 /** The fiche — reading and correcting. It sells nothing any more. */
 async function findByPhone(page) {
-  await ready(page, `${BASE}/owner`);
-  await page.locator('button:has-text("Chercher un client")').waitFor({ timeout: 20000 });
-  await beat(page, 500);
-  await tap(page, page.locator('button:has-text("Chercher un client")'));
+  /* The lookup is reached by address now, not by a button on the till — the
+     till is its two acts (components/OwnerMenu). */
+  await ready(page, `${BASE}/owner?client=1`);
   await page.locator('input[name="customer"]').waitFor({ timeout: 20000 });
+  await beat(page, 500);
   await human(page, 'input[name="customer"]', NUM, 130);
   await beat(page, 400);
   await tap(page, page.locator('button:has-text("Chercher")'));
@@ -510,9 +510,7 @@ await clip(owner, "correction", async (page) => {
 {
   const page = await owner.newPage();
   const unknown = `2${String(Date.now()).slice(-7)}`;
-  await settle(page, `${BASE}/owner`);
-  await page.locator('button:has-text("Chercher un client")').waitFor({ timeout: 20000 });
-  await page.locator('button:has-text("Chercher un client")').click();
+  await settle(page, `${BASE}/owner?client=1`);
   await page.locator('input[name="customer"]').waitFor({ timeout: 20000 });
   await page.fill('input[name="customer"]', unknown);
   await page.locator('button:has-text("Chercher")').click();

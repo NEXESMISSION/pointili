@@ -93,8 +93,10 @@ const till = async () => {
 
 /** Open a FICHE: corrections, history, the secret code. */
 const openCustomer = async (who) => {
-  await till();
-  await staff.locator('button:has-text("Chercher un client")').click();
+  /* The lookup left the till when the till went down to two acts; it travels as
+     an address now (see components/OwnerMenu). The menu item that points here is
+     exercised on its own further down. */
+  await staff.goto(`${BASE}/owner?client=1`, { waitUntil: "networkidle" });
   await staff.locator('input[name="customer"]').waitFor({ timeout: 15000 });
   await staff.fill('input[name="customer"]', who);
   await staff.locator('button:has-text("Chercher")').click();
@@ -183,6 +185,53 @@ check("credit result hides the phone", !credTxt.includes(LOCAL) && !credTxt.incl
       fresh?.replayed === false && (await bal()) > before,
       `balance ${before} → ${await bal()}`);
   }
+}
+
+/*
+  ── THE TILL IS TWO ACTS, AND THE REST IS BEHIND ONE BUTTON ─────────────────
+
+  The five-tab bar is gone from the phone. That is a large claim to make about
+  a screen used all day, and it rests on two things being true at once: the
+  till really does show only its two acts, and everything that left is really
+  reachable. Either half alone is a regression — two buttons with no way to
+  Réglages is an app with a missing half, and a menu over a cluttered till is
+  just more clutter.
+
+  So both are checked here, on the phone viewport this suite already uses.
+*/
+{
+  await till();
+  const acts = await staff.locator("main button, main a").count();
+  const bodyTxt = await staff.locator("main").innerText();
+  check("the till offers the two acts and no third",
+    /Donner des points/.test(bodyTxt) && /Valider une récompense/.test(bodyTxt) &&
+      !/Chercher un client/.test(bodyTxt) && !/Quitter —/.test(bodyTxt),
+    `${acts} controls in main`);
+
+  /* The button says a word, because a bare floating circle is a guess. */
+  const fab = staff.locator('button[aria-haspopup="dialog"]');
+  check("a floating button stands in for the tab bar", (await fab.count()) === 1);
+
+  await fab.click();
+  const sheet = staff.locator('[role="dialog"][aria-modal="true"]');
+  await sheet.waitFor({ timeout: 10000 });
+  const menuTxt = await sheet.innerText();
+  /* Every destination the tab bar used to carry, plus the two that were only
+     ever reachable from the till itself. */
+  check("the menu carries every destination the bar did",
+    ["Caisse", "Clients", "Récompenses", "Mon QR", "Réglages"].every((t) => menuTxt.includes(t)),
+    menuTxt.split(String.fromCharCode(10)).join(' · ').slice(0, 90));
+
+  /* The promise made in the helpers above: the item still points at ?client=1.
+     A menu that stops linking here would leave corrections unreachable, and
+     every other check in this file would still pass. */
+  await sheet.locator('a[href="/owner?client=1"]').click();
+  await staff.locator('input[name="customer"]').waitFor({ timeout: 20000 }).catch(() => {});
+  check("the menu opens the customer lookup",
+    (await staff.locator('input[name="customer"]').count()) === 1,
+    new URL(staff.url()).search || "(no query)");
+  /* And it gets out of the way once it has taken you somewhere. */
+  check("the sheet closes once it has moved you", (await sheet.count()) === 0);
 }
 
 /*
@@ -299,8 +348,15 @@ for (let i = 0; i < 50 && !freeCode; i++) {
   const { data } = await admin.from("accounts").select("phone").eq("code", c).maybeSingle();
   if (!data) freeCode = c;
 }
-await till();
-await staff.locator('button:has-text("Chercher un client")').click();
+/*
+  The lookup is not a button on the till any more — the till is two acts, and
+  this is the third thing (see components/OwnerMenu). It lives in the floating
+  menu and travels as an address, so that is what this opens. Clicking through
+  the sheet instead would tie every one of these helpers to the menu's markup;
+  the ADDRESS is the contract the menu itself uses, and test-owner exercises
+  the sheet once so the item cannot silently stop linking here.
+*/
+await staff.goto(`${BASE}/owner?client=1`, { waitUntil: "networkidle" });
 await staff.locator('input[name="customer"]').waitFor({ timeout: 15000 });
 await staff.locator('input[name="customer"]').fill(freeCode);
 await staff.locator('input[name="customer"]').press("Enter");
