@@ -44,36 +44,48 @@ export function QrScreen({
   return (
     <div
       data-owner-wide
-      /* One column at every width now. The 12-column split existed to seat the
-         print kit beside the code; with the kit gone, a 430px card in the middle
-         of a laptop is the right amount of screen for one QR and two buttons. */
-      className="mx-auto w-full max-w-[430px]"
+      /* One column at every width. A 430px card in the middle of a laptop is
+         the right amount of screen for one code and two things to do with it. */
+      className="mx-auto w-full max-w-[400px]"
     >
-      {/* ── the code, which is the page ── */}
-      <div className="rounded-[30px] border border-[var(--o-edge)] bg-[var(--o-inset)] px-5 py-5">
-        <div className="relative mx-auto w-full max-w-[min(300px,46vh)]">
-          <span
-            aria-hidden
-            className="absolute inset-[-9%] rounded-[36px]"
-            style={{ background: "radial-gradient(closest-side, rgba(124,86,232,.85), transparent 78%)" }}
-          />
-          {/* White plate, dark modules — the polarity every scanner accepts. */}
-          <div className="relative rounded-[26px] bg-white p-4 shadow-[0_20px_60px_-20px_rgba(124,86,232,.9)]">
-            <div className="[&>svg]:block [&>svg]:h-auto [&>svg]:w-full">
-              <div dangerouslySetInnerHTML={{ __html: svg }} />
-            </div>
-          </div>
+      {/*
+        ── ONE FRAME, NOT THREE ───────────────────────────────────────────────
+
+        This was a bordered card, holding a purple radial glow, holding a white
+        plate with a 60px purple drop shadow. Three nested surfaces to present a
+        square of black and white — and the glow and the shadow were doing the
+        same job twice, both there to stop a white slab reading as a broken
+        image. One hairline border does that, costs nothing, and does not put a
+        coloured haze around the one thing on this screen a camera has to read.
+
+        The plate stays white with dark modules: that is the polarity every
+        scanner is built for, and it is not a style choice.
+      */}
+      <div className="rounded-[26px] border border-[var(--o-edge)] bg-white p-4">
+        <div className="[&>svg]:block [&>svg]:h-auto [&>svg]:w-full">
+          <div dangerouslySetInnerHTML={{ __html: svg }} />
         </div>
       </div>
 
-      {/* ── the two things you do with it ── */}
-      <div className="mt-3 space-y-2.5">
-        {/* The address, in full and selectable. It is what an owner reads out
-            over the phone and types into another device, and the only place it
-            appeared was inside the QR itself. */}
-        <p className="k-num break-all rounded-[18px] border border-[var(--o-edge)] px-4 py-3 text-[13px] text-slate">
-          {url}
-        </p>
+      {/*
+        The address, plain. It is what an owner reads out over the phone and
+        types into another device, so it stays — but it is a fact, not a
+        paragraph, and it does not need a box of its own to be one.
+      */}
+      <p className="k-num mt-3 break-all px-1 text-center text-[12.5px] text-slate">{url}</p>
+
+      <div className="mt-4 space-y-2.5">
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          /* No shadow. A flat fill is already the loudest thing on a white
+             page; the glow under it only made the edge look soft. */
+          className="flex w-full items-center justify-center rounded-[20px] bg-[#5b3fd1] py-3.5 text-[15px] font-bold text-white transition active:scale-[0.99]"
+        >
+          Voir la carte client
+        </a>
+
         <button
           type="button"
           onClick={() => {
@@ -85,39 +97,19 @@ export function QrScreen({
               () => {},
             );
           }}
-          className="flex w-full items-center justify-center gap-2.5 rounded-[22px] border border-[var(--o-edge)] bg-[var(--o-inset)] py-3.5 text-[15px] font-bold text-charcoal transition active:scale-[0.99]"
+          className="flex w-full items-center justify-center rounded-[20px] border border-[var(--o-edge)] py-3.5 text-[15px] font-bold text-charcoal transition active:scale-[0.99]"
         >
-          {copied ? (
-            <>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px] text-[#2f9e6e]">
-                <path d="m5 13 4 4L19 7" />
-              </svg>
-              Lien copié
-            </>
-          ) : (
-            <>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#5b3fd1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px]">
-                <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5" />
-                <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19" />
-              </svg>
-              Copier le lien
-            </>
-          )}
+          {/*
+            The icons went with the boxes. "Copier le lien" and "Voir la carte
+            client" are four words each and neither is ambiguous; a chain link
+            and an arrow-out beside them were decoration on a screen whose whole
+            job is to be scanned and left.
+
+            The confirmation stays, because a copy that says nothing is a copy
+            you do twice.
+          */}
+          {copied ? "Lien copié" : "Copier le lien"}
         </button>
-
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex w-full items-center justify-center gap-2.5 rounded-[22px] bg-[#5b3fd1] py-3.5 text-[15px] font-bold text-white shadow-[0_18px_40px_-16px_rgba(124,58,237,1)] transition active:scale-[0.99]"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-[22px] w-[22px]">
-            <path d="M15 3h6v6M10 14 21 3" />
-            <path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5" />
-          </svg>
-          Voir la carte client
-        </a>
-
       </div>
     </div>
   );

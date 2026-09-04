@@ -64,11 +64,11 @@ export function SettingsList({
    * A panel to open on arrival, from ?panel= on the URL.
    *
    * These editors were reachable only by tapping a row on this screen, which
-   * made every one of them un-linkable: /owner/recompenses can tell an owner
-   * that a reward has never been taken and then had no way to send them to the
-   * form that fixes it — the best it could do was "go to Réglages and look for
-   * it". A deep link into a sheet is worth having precisely because the sheet
-   * is where the decision gets acted on.
+   * made every one of them un-linkable: anything that can tell an owner a
+   * reward has never been taken — the operator console does, per shop — had no
+   * way to send them to the form that fixes it, and the best it could do was
+   * "go to Réglages and look for it". A deep link into a sheet is worth having
+   * precisely because the sheet is where the decision gets acted on.
    */
   openPanel?: PanelId | null;
 }) {

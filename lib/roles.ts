@@ -31,7 +31,7 @@ export const ROLE_NOTE: Record<StaffRole, string> = {
 export const ROLES: StaffRole[] = ["owner", "manager", "cashier"];
 
 /** The areas of the owner app. One name per screen a role can be kept out of. */
-export type Area = "caisse" | "qr" | "clients" | "recompenses" | "analyses" | "reglages" | "equipe";
+export type Area = "caisse" | "qr" | "clients" | "analyses" | "reglages" | "equipe";
 
 /**
  * THE LOAD-BEARING LINE IS `reglages`.
@@ -45,8 +45,8 @@ export type Area = "caisse" | "qr" | "clients" | "recompenses" | "analyses" | "r
  * queue, a manager also reads the numbers and the customers.
  */
 const ALLOWED: Record<StaffRole, Area[]> = {
-  owner: ["caisse", "qr", "clients", "recompenses", "analyses", "reglages", "equipe"],
-  manager: ["caisse", "qr", "clients", "recompenses", "analyses"],
+  owner: ["caisse", "qr", "clients", "analyses", "reglages", "equipe"],
+  manager: ["caisse", "qr", "clients", "analyses"],
   cashier: ["caisse", "qr"],
 };
 

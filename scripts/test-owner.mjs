@@ -219,7 +219,7 @@ check("credit result hides the phone", !credTxt.includes(LOCAL) && !credTxt.incl
   /* Every destination the tab bar used to carry, plus the two that were only
      ever reachable from the till itself. */
   check("the menu carries every destination the bar did",
-    ["Caisse", "Clients", "Récompenses", "Mon QR", "Réglages"].every((t) => menuTxt.includes(t)),
+    ["Caisse", "Clients", "Mon QR", "Réglages"].every((t) => menuTxt.includes(t)),
     menuTxt.split(String.fromCharCode(10)).join(' · ').slice(0, 90));
 
   /* The promise made in the helpers above: the item still points at ?client=1.

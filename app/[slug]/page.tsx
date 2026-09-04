@@ -410,34 +410,57 @@ export default async function Carte({
           caption; a caption goes underneath.
         */}
         {program.stampsEnabled && (
-          <div className="mt-4">
-            <div className="flex flex-wrap gap-1.5">
+          /*
+            ── THE STAMP CARD IS A CARD ────────────────────────────────────────
+
+            These were 22px rings drawn straight onto the shop's colour, with a
+            1px dashed border at 45% opacity. On a mid-tone field that is a row
+            of faint scratches: you could not count them at arm's length, which
+            is the only thing a stamp card is for. Two separate mistakes were
+            doing it — the size, and drawing a light-on-light outline on a
+            saturated ground.
+
+            So it gets its own plate. On white the empty ring can be a real
+            line instead of a hint, the filled one can be the shop's own colour
+            at full strength, and 30px is a countable circle rather than a dot.
+            It also stops the card saying two different things in one breath:
+            the tinted half is the points, this is the visits.
+          */
+          <div className="mt-4 rounded-[20px] bg-white px-4 py-3.5">
+            <div className="flex flex-wrap gap-2">
               {Array.from({ length: program.stampsRequired }).map((_, i) => {
                 const filled = i < stampView.shown;
                 const isReward = i === program.stampsRequired - 1;
                 return (
                   <span
                     key={i}
-                    className="grid h-[22px] w-[22px] place-items-center rounded-full"
+                    className="grid h-[30px] w-[30px] place-items-center rounded-full"
                     style={
                       filled
-                        ? { background: "var(--cafe-ink)", color: "var(--cafe)" }
+                        ? { background: "var(--cafe-text)", color: "#ffffff" }
                         : {
-                            border: "1px dashed color-mix(in oklab, var(--cafe-ink) 45%, transparent)",
-                            color: "color-mix(in oklab, var(--cafe-ink) 55%, transparent)",
+                            /* A real 2px line, and dashed only on the ones still
+                               to come — the last ring holds the reward, so it is
+                               solid and tinted: the thing you are walking to
+                               should not look like another empty slot. */
+                            border: isReward
+                              ? "2px solid var(--cafe-text)"
+                              : "2px dashed var(--cafe-line)",
+                            color: "var(--cafe-text)",
+                            background: isReward ? "var(--cafe-soft)" : undefined,
                           }
                     }
                   >
                     {filled ? (
-                      <Sparkle className="h-[11px] w-[11px]" />
+                      <Sparkle className="h-[14px] w-[14px]" />
                     ) : isReward ? (
-                      <GiftIcon className="h-[11px] w-[11px]" />
+                      <GiftIcon className="h-[14px] w-[14px]" />
                     ) : null}
                   </span>
                 );
               })}
             </div>
-            <p className="mt-2 text-[11.5px] leading-snug opacity-80">
+            <p className="mt-2.5 text-[12.5px] leading-snug text-charcoal">
               {stampsLeft <= 0 ? (
                 <b className="font-extrabold">
                   {t("{reward} t'attend 🎉", { reward: t(program.stampReward) })}

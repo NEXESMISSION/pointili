@@ -66,7 +66,7 @@ export default async function OwnerLayout({
   /* What this person's role allows. undefined when the gate is off — the nav
      reads it as "everything", and every page re-asks server-side anyway. */
   const areas: Area[] | undefined = staff
-    ? (["caisse", "qr", "clients", "recompenses", "analyses", "reglages", "equipe"] as Area[]).filter((a) =>
+    ? (["caisse", "qr", "clients", "analyses", "reglages", "equipe"] as Area[]).filter((a) =>
         can(staff, a),
       )
     : undefined;

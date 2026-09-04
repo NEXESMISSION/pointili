@@ -93,64 +93,24 @@ export function Today({ day, pointsPerTnd }: { day: OwnerToday; pointsPerTnd: nu
         </>
       )}
 
-      {day.feed.length > 0 && (
-        <>
-          <h3 className="border-t border-[var(--o-edge)] px-4 pt-3 text-[11px] font-bold uppercase tracking-[0.08em] text-slate">
-            Dernières opérations
-          </h3>
-          <ul className="px-4 pb-4 pt-1">
-            {day.feed.map((f, i) => (
-              <li
-                key={i}
-                className="flex items-baseline gap-2.5 border-b border-[var(--o-edge)] py-2 last:border-b-0 text-[13px]"
-              >
-                <span className="min-w-0 flex-1 truncate font-semibold text-charcoal">
-                  {f.who}
-                  {/* The last three digits, so a cashier can match the row to
-                      the person in front of them. Never the whole number — the
-                      till has never shown one and this feed faces the room. */}
-                  <span className="ms-1.5 font-mono text-[11px] font-normal text-slate">
-                    ···{f.tail}
-                  </span>
-                </span>
-                {f.tnd ? (
-                  <span className="shrink-0 font-mono text-[11.5px] text-slate">
-                    {f.tnd} TND
-                  </span>
-                ) : (
-                  <span className="shrink-0 text-[11.5px] text-slate">{REASON[f.reason] ?? f.reason}</span>
-                )}
-                <span
-                  className={`w-[62px] shrink-0 text-end font-mono text-[13px] font-bold ${
-                    f.delta >= 0 ? "text-[#2f9e6e]" : "text-[#b3202f]"
-                  }`}
-                >
-                  {f.delta > 0 ? "+" : ""}
-                  {fmtPoints(f.delta)}
-                </span>
-                <span className="hidden w-[46px] shrink-0 text-end font-mono text-[11px] text-slate sm:block">
-                  {new Date(f.at).toLocaleTimeString("fr-FR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      {/*
+        THE DAY'S LEDGER IS NOT THE TILL'S JOB.
+
+        "Dernières opérations" listed every credit and redemption of the shift
+        under the two buttons — six rows of names, amounts and times on the one
+        screen a cashier looks at with a customer waiting. It reads as a report,
+        and it turned the till into something to scroll.
+
+        The numbers above already answer the question the counter asks ("how is
+        today going?"). Who exactly bought what, at what time, is a question
+        asked afterwards and standing still — and it is answered in full on the
+        client list and in a customer's own fiche, both of which are one tap
+        away in the menu.
+      */}
     </section>
   );
 }
 
-const REASON: Record<string, string> = {
-  earn: "Achat",
-  welcome: "Bienvenue",
-  redeem: "Échange",
-  adjust: "Correction",
-  spin: "Roue",
-  expire: "Expiré",
-};
 
 /**
  * How today compares — as YESTERDAY'S NUMBER, never as a percentage.

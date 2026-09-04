@@ -2,7 +2,7 @@
 
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartIcon, GiftIcon, QrIcon, SlidersIcon, TillIcon } from "./icons";
+import { ChartIcon, QrIcon, SlidersIcon, TillIcon } from "./icons";
 
 /*
   Owner navigation, in two shapes for two machines.
@@ -16,7 +16,15 @@ import { ChartIcon, GiftIcon, QrIcon, SlidersIcon, TillIcon } from "./icons";
   Both read from one list, so a destination can never exist in one and not the
   other.
 
-  ── FIVE, NOT THREE ───────────────────────────────────────────────────────
+  ── FOUR ──────────────────────────────────────────────────────────────────
+
+  It was five. "Récompenses" was a READ-ONLY view — "prise 7 fois", "jamais
+  prise" — and a destination that only reports is a destination an owner opens
+  once and never again. Editing them was never here: it is in Réglages, where
+  the rest of the programme is set, and it still is. The same counts are in the
+  operator console, per shop.
+
+  ── AND IT WAS THREE BEFORE THAT ──────────────────────────────────────────
 
   It was Caisse / Clients / Réglages, and the other half of the app was
   unreachable except by remembering a URL:
@@ -39,10 +47,14 @@ import { ChartIcon, GiftIcon, QrIcon, SlidersIcon, TillIcon } from "./icons";
 
   These screens are DYNAMIC — they read the shop's own data on every request —
   and Next's default only prefetches a dynamic route as far as its nearest
-  loading.js boundary. This app deliberately has none (see useLit below), so the
-  default prefetched nothing at all and each tab cost a full server round trip
-  after the tap. `prefetch` fetches the whole payload while the tab sits in the
-  thumb row, which is where it always sits, so switching screens is a cache read.
+  loading.js boundary. `prefetch` fetches the WHOLE payload instead, so
+  switching screens is a cache read rather than a server round trip after the
+  tap.
+
+  There is a loading.tsx now (app/owner/(app)/loading.tsx), which is what the
+  default would stop at — so this stays `true` on purpose. The boundary is for
+  the navigations prefetch cannot help: a direct load, a cold start, and the
+  first visit to Réglages.
 
   It is safe to cache because everything that changes a shop's data goes through
   a server action on this same device, and every one of them calls
@@ -52,7 +64,6 @@ import { ChartIcon, GiftIcon, QrIcon, SlidersIcon, TillIcon } from "./icons";
 export const TABS = [
   { label: "Caisse", short: "Caisse", Icon: TillIcon, href: "/owner", area: "caisse" },
   { label: "Clients", short: "Clients", Icon: ChartIcon, href: "/owner/clients", area: "clients" },
-  { label: "Récompenses", short: "Cadeaux", Icon: GiftIcon, href: "/owner/recompenses", area: "recompenses" },
   { label: "Mon QR", short: "QR", Icon: QrIcon, href: "/owner/qr", area: "qr" },
   { label: "Réglages", short: "Réglages", Icon: SlidersIcon, href: "/owner/reglages", area: "reglages" },
 ] as const;
@@ -83,17 +94,17 @@ export function isActive(pathname: string, href: string) {
 }
 
 /**
- * THE TAB IS THE LOADING INDICATOR.
+ * THE ROW IS THE LOADING INDICATOR.
  *
- * There used to be a loading.tsx here that replaced the whole page with the
- * Pointili mark and a sliding bar, on every single navigation. It answered "is
- * this alive?" by throwing away the screen you were looking at — which made a
- * 300ms move between two of your own tabs feel like a cold launch of a
- * different app, and it is the reason routing felt slow.
+ * There used to be a loading.tsx that replaced the whole page with the Pointili
+ * mark and a sliding bar, on every navigation. It answered "is this alive?" by
+ * throwing away the screen you were looking at, which made a 300ms move between
+ * two of your own tabs feel like a cold launch — and that splash is not coming
+ * back. The skeleton that replaced it keeps the page's shape instead of
+ * erasing it, and on a prefetched hop it never appears at all.
  *
- * It is gone. The page you are on stays until the next one is ready, the way a
- * native app behaves, and the ONE thing that changes on tap is the tab you
- * pressed: it lights up immediately, then the screen arrives under it.
+ * This is still the first thing that answers, and it answers instantly: the row
+ * you pressed lights up on the tap, before anything has been fetched.
  */
 function useLit(active: boolean) {
   const { pending } = useLinkStatus();

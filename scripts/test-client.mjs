@@ -396,6 +396,16 @@ check("it does not offer a new account", !/Nouveau compte/i.test(lost));
 await d.fill('input[name="pin"]', PIN);
 await d.locator('button[type="submit"]').first().click();
 await d.waitForURL((u) => u.pathname === `/${TEST_SLUG}`, { timeout: 20000 }).catch(() => {});
+/*
+  Wait for the CARD, not for the address — the second place this bit me.
+
+  /[slug] has a loading.tsx now, so the URL is the new one while the column is
+  still a skeleton, and a skeleton has no digits in it. Reading main here used
+  to be safe only because navigation blocked. It reported that a balance had
+  been lost when the balance was simply not drawn yet, which is the worst
+  possible false alarm on this particular check.
+*/
+await d.locator("main").getByText(/\d/).first().waitFor({ timeout: 20000 }).catch(() => {});
 const reopened = await d.locator("main").innerText();
 check("the secret code alone reopens the card", new URL(d.url()).pathname === `/${TEST_SLUG}`,
   new URL(d.url()).pathname);
