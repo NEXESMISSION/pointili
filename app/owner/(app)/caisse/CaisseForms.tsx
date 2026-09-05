@@ -191,17 +191,19 @@ const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "⌫"];
 
 function Keypad({ onKey }: { onKey: (k: string) => void }) {
   return (
-    /* 44px keys, not 58, and a tighter gutter — the minimum a thumb wants,
-       and not a pixel more. The pad gave up 56px of height so that the amount,
-       the stamps, the viewfinder and the code field all fit one screen with
-       nothing to scroll, which is the whole point of this layout. */
+    /* 40px keys, not 58. Below what a design guide would ask for a lone
+       button, and right for a PAD: twelve targets in a fixed grid, each one a
+       thumb-width apart, where the miss you make is a neighbouring digit you
+       see immediately — not a mis-tap on something irreversible. The pad gave
+       up 72px so the amount, the stamps, the viewfinder and the code field fit
+       one screen on a short phone, which is the whole point of this layout. */
     <div className="grid grid-cols-3 gap-1.5">
       {KEYS.map((k) => (
         <button
           key={k}
           type="button"
           onClick={() => onKey(k)}
-          className={`h-[44px] rounded-xl text-[20px] font-bold tabular-nums transition active:scale-95 ${
+          className={`h-[40px] rounded-xl text-[19px] font-bold tabular-nums transition active:scale-95 ${
             k === "⌫" ? "bg-[var(--o-inset)] text-slate" : "bg-[var(--o-inset)] text-charcoal"
           }`}
         >
@@ -249,9 +251,16 @@ function Lens({
           aspect={compact ? "aspect-[21/9]" : "aspect-[4/5]"}
         />
       </div>
-      <p className={`text-center text-[12.5px] font-semibold text-slate ${compact ? "mt-1.5" : "mt-3"}`}>
-        {busy ? "Un instant…" : label}
-      </p>
+      {/* The caption is dropped when compact: the field directly under it
+          already reads "Code client, numéro, ou code cadeau", and a line
+          telling somebody to point a camera they are already looking at is
+          18px of a screen that has none to spare. It stays for the tall lens,
+          and for "Un instant…", which is news. */}
+      {(!compact || busy) && (
+        <p className={`text-center text-[12.5px] font-semibold text-slate ${compact ? "mt-1.5" : "mt-3"}`}>
+          {busy ? "Un instant…" : label}
+        </p>
+      )}
     </div>
   );
 }
@@ -809,30 +818,73 @@ export function CaisseDesk({
           runs a stamp card it is the sale — so it sits in the same card as the
           amount, with a counter of its own, and both can go in one act.
         */
-        <Step
-          title="Caisse"
-          hint={
-            liveStamps
-              ? `${pointsPerTnd} point par dinar · tampons · récompenses`
-              : `${pointsPerTnd} point par dinar · récompenses`
-          }
-        >
-          <div className="a-card p-3">
-            <input
-              name="amount"
-              value={amount}
-              onChange={(e) => {
-                setAmount(e.target.value);
-                setError("");
-              }}
-              placeholder="0"
-              /* inputMode="none": the keypad below is the only way in. As a
-                 decimal input this raised the phone's own keyboard over the top
-                 of the pad drawn for it. */
-              inputMode="none"
-              aria-label="Montant en dinars"
-              className="w-full rounded-xl bg-[var(--o-inset)] px-4 py-1.5 text-center text-[26px] font-extrabold leading-none tabular-nums text-charcoal outline-none placeholder:text-slate"
-            />
+        /* One line, not a title with a subtitle under it: the second line was
+           20px of standing explanation on a screen that must not scroll. */
+        <Step title={`Caisse · ${pointsPerTnd} pt / dinar`}>
+          <div className="a-card p-2.5">
+            {/*
+              THE TWO THINGS BEING GIVEN, ON ONE LINE.
+
+              The stepper had a row of its own, which cost 52px on a screen
+              whose whole claim is that it does not scroll — and it was 52px
+              spent saying "Tampons" next to a number. Beside the amount it
+              needs no label: it is the other half of the same question, and
+              the caption underneath names both.
+            */}
+            <div className="flex items-stretch gap-2">
+              <input
+                name="amount"
+                value={amount}
+                onChange={(e) => {
+                  setAmount(e.target.value);
+                  setError("");
+                }}
+                placeholder="0"
+                /* inputMode="none": the keypad below is the only way in. As a
+                   decimal input this raised the phone's own keyboard over the
+                   top of the pad drawn for it. */
+                inputMode="none"
+                aria-label="Montant en dinars"
+                className="min-w-0 flex-1 rounded-xl bg-[var(--o-inset)] px-3 py-1.5 text-center text-[26px] font-extrabold leading-none tabular-nums text-charcoal outline-none placeholder:text-slate"
+              />
+              {liveStamps && (
+                <div className="flex shrink-0 items-center gap-1 rounded-xl bg-[var(--o-inset)] px-1.5">
+                  <button
+                    type="button"
+                    aria-label="Un tampon de moins"
+                    onClick={() => {
+                      setError("");
+                      setStamps((v) => Math.max(0, v - 1));
+                    }}
+                    disabled={stamps === 0}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-[18px] font-bold text-charcoal active:scale-95 disabled:opacity-35"
+                  >
+                    −
+                  </button>
+                  <span
+                    /* The unit, because a bare number beside a bare number is
+                       two amounts and no idea which is which. */
+                    className="min-w-[34px] text-center text-[13px] font-extrabold leading-tight text-charcoal"
+                  >
+                    {stamps}
+                    <span className="block text-[9px] font-bold uppercase tracking-[0.04em] text-slate">
+                      tamp.
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="Un tampon de plus"
+                    onClick={() => {
+                      setError("");
+                      setStamps((v) => Math.min(10, v + 1));
+                    }}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-[18px] font-bold text-charcoal active:scale-95"
+                  >
+                    +
+                  </button>
+                </div>
+              )}
+            </div>
             <p
               className={`mt-1 text-center text-[12px] font-semibold ${
                 amount.trim() !== "" && !valid ? "text-[#e5484d]" : "text-slate"
@@ -858,46 +910,6 @@ export function CaisseDesk({
               />
             </div>
 
-            {liveStamps && (
-              /*
-                MORE THAN ONE, because a customer who buys two coffees has
-                earned two. The old button could only ever add one, so the
-                cashier scanned the same card twice — which is two entries in
-                the journal for one purchase, and two chances to scan the wrong
-                person on the second go.
-              */
-              <div className="mt-2 flex items-center gap-3 rounded-xl bg-[var(--o-inset)] px-3 py-2">
-                <span className="min-w-0 flex-1 text-[13.5px] font-bold text-charcoal">
-                  Tampons
-                </span>
-                <button
-                  type="button"
-                  aria-label="Un tampon de moins"
-                  onClick={() => {
-                    setError("");
-                    setStamps((s) => Math.max(0, s - 1));
-                  }}
-                  disabled={stamps === 0}
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--o-panel)] text-[20px] font-bold text-charcoal active:scale-95 disabled:opacity-40"
-                >
-                  −
-                </button>
-                <span className="w-6 shrink-0 text-center text-[17px] font-extrabold tabular-nums text-charcoal">
-                  {stamps}
-                </span>
-                <button
-                  type="button"
-                  aria-label="Un tampon de plus"
-                  onClick={() => {
-                    setError("");
-                    setStamps((s) => Math.min(10, s + 1));
-                  }}
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--o-panel)] text-[20px] font-bold text-charcoal active:scale-95"
-                >
-                  +
-                </button>
-              </div>
-            )}
           </div>
 
           {/* the camera, already open — nothing to arm */}
@@ -924,7 +936,7 @@ export function CaisseDesk({
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && offer(typed)}
-                placeholder="Code client, numéro, ou code cadeau"
+                placeholder="Code, numéro ou cadeau"
                 inputMode="text"
                 autoCapitalize="characters"
                 className="min-w-0 flex-1 rounded-xl bg-[var(--o-inset)] px-3 py-2.5 text-center text-[16px] font-extrabold tracking-[0.05em] text-charcoal outline-none placeholder:text-[13px] placeholder:font-semibold placeholder:tracking-normal placeholder:text-slate"
