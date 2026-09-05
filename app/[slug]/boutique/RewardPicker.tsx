@@ -370,67 +370,93 @@ function CodeReveal({
   }, []);
 
   return (
-    <div ref={ref} className="text-center">
-      <p className="inline-flex items-center gap-2 rounded-full bg-ok/10 px-3.5 py-1.5 text-[12.5px] font-bold text-ok">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden>
-          <path d="m5 12.5 4.5 4.5L19 7" />
-        </svg>
-        {t("Récompense réservée")}
-      </p>
-
-      <p className="mt-5 text-[14px] text-slate">{t("Fais scanner ça :")}</p>
-
+    <div ref={ref}>
       {/*
-        THE PICTURE FIRST, THE CHARACTERS UNDER IT.
+        ── THE SAME OBJECT THE CODES PAGE SHOWS ──────────────────────────────
 
-        This panel used to be six glowing characters and nothing else, because
-        reading them aloud was the only way to spend the code. It is not any
-        more — the till has a camera pointed at this exact screen — and a
-        counter goes faster when nobody has to spell "B, not 8" over a grinder.
+        This said the same thing four times: a green "Récompense réservée"
+        badge, then "Fais scanner ça :", then the code, then "Le serveur scanne
+        le QR — ou tape le code." A customer holding out a phone at a counter
+        reads none of that; they hold it out.
 
-        The QR keeps its own white plate even here: the page is white already,
-        but the plate is what guarantees the quiet zone around the modules that
-        decoders need, and this is the one screen where a failed read costs a
-        queue.
+        So it is the ticket from /codes, exactly — the shop's tint on top with
+        what it is, a perforation, and a white pass zone with the picture and
+        the characters. One object in two places rather than two designs for
+        one idea, and the customer meets the same thing whichever way they
+        arrive at it.
       */}
-      <div
-        className="mt-3 rounded-3xl px-4 py-5"
-        style={{ background: "var(--cafe-soft)", border: "1px solid var(--cafe-line)" }}
-      >
-        <div className="mx-auto w-[168px] rounded-2xl bg-white p-3.5">
+      <div className="d-card overflow-hidden">
+        <div className="px-4 pb-3 pt-3.5" style={{ background: "var(--cafe-soft)" }}>
+          <span
+            className="block text-[10.5px] font-bold uppercase tracking-[0.06em]"
+            style={{ color: "var(--cafe-text)" }}
+          >
+            {t("Récompense")}
+          </span>
+          <span className="mt-0.5 block truncate text-[15px] font-bold text-charcoal">
+            {t(issued.label)}
+          </span>
+        </div>
+
+        {/* the perforation — tint above it, the white pass below */}
+        <div
+          aria-hidden
+          className="border-t-2 border-dashed"
+          style={{ borderColor: "var(--cafe-line)" }}
+        />
+
+        <div className="d-pass flex items-center gap-4 !rounded-none px-4 py-4">
+          {/*
+            The QR keeps its own white plate: the pass is white already, but the
+            plate is what guarantees the quiet zone decoders need, and this is
+            the one screen where a failed read costs a queue.
+          */}
           <div
-            className="[&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+            className="w-[86px] shrink-0 [&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
             dangerouslySetInnerHTML={{ __html: issued.qr }}
           />
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate">
+              {t("À scanner au comptoir")}
+            </p>
+            {/* dir=ltr: six Latin characters with trailing letter-spacing,
+                which RTL would put on the wrong side of the last glyph — on the
+                string a customer reads out at a counter. */}
+            <p
+              dir="ltr"
+              /* data-code so a suite reads the code from the element that HOLDS
+                 it. They used to scrape /[A-Z2-9]{6,8}/ out of the panel's
+                 text, which silently matched the word RÉCOMPENSE the moment
+                 this became a ticket with a header — the É is not in [A-Z], so
+                 "COMPENSE" scans as a perfectly good code. Three checks then
+                 failed against a working product. */
+              data-code={issued.code}
+              className="mt-1 font-mono text-[26px] font-extrabold leading-none tracking-[0.14em] rtl:text-right"
+              style={{ color: "var(--cafe-text)" }}
+            >
+              {issued.code}
+            </p>
+            <p className="mt-1.5 text-[11.5px] leading-snug text-slate">
+              {t("Ou dicte le code — les deux marchent.")}
+            </p>
+          </div>
         </div>
-        {/* Still large: the fallback for a lens that will not focus, and the
-            thing a cashier types when the shop's phone is in a pocket. */}
-        {/* dir=ltr: the code is a Latin-and-digits string read out loud at a
-            counter. Left in the RTL flow its characters keep their order but
-            the trailing punctuation and the tracking flip, and a cashier
-            comparing it to their own screen should never have to wonder. */}
-        <p
-          dir="ltr"
-          className="mt-4 font-mono text-[30px] font-extrabold leading-none tracking-[0.18em]"
-          style={{ color: "var(--cafe-text)" }}
-        >
-          {issued.code}
-        </p>
       </div>
 
-      <p className="mt-3 text-[14px] font-bold text-charcoal">{t(issued.label)}</p>
-      <p className="mt-1 text-[13px] leading-relaxed text-slate">
-        {t("Le serveur scanne le QR — ou tape le code.")}
-      </p>
-      {/* The clock belongs HERE, where the points were actually spent. */}
-      <p className="mt-1.5 text-[12.5px] font-bold text-gold-deep">
+      {/*
+        KEPT, though it is one more line: 0031 removed code expiry, and silence
+        about it reads as "we forgot to tell you" rather than as "this does not
+        run out". It is the one piece of reassurance a customer who cannot come
+        back today actually needs.
+      */}
+      <p className="mt-2.5 text-center text-[12px] font-bold text-gold-deep">
         {t("Pas de date limite")}
       </p>
 
       <button
         type="button"
         onClick={onAgain}
-        className="d-card mt-6 w-full py-3.5 text-[14px] font-bold text-charcoal active:scale-[0.99]"
+        className="mt-4 w-full py-3 text-center text-[13.5px] font-bold text-slate underline decoration-[var(--cafe-line)] underline-offset-4"
       >
         {t("Échanger autre chose")}
       </button>

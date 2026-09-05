@@ -503,16 +503,18 @@ await admin
 */
 const stampOnce = async () => {
   const receipt = await serve(card.code, null);
-  return (await receipt.count()) ? receipt.innerText() : "";
+  if (!(await receipt.count())) return { text: "", code: "" };
+  return { text: await receipt.innerText(), code: (await receipt.getAttribute("data-voucher")) ?? "" };
 };
 await stampOnce();
 const full = await stampOnce();
-/* The receipt prints the voucher on its own line, under the reward's name —
-   not inside a "… — code XXXXXX" sentence any more. */
-const stampCode = full.match(/\b([A-Z2-9]{6,8})\b/)?.[1] ?? "";
-check("a full stamp card issues a code", /Carte pleine/i.test(full) && !!stampCode,
-  stampCode || full.replace(/\n+/g, " · ").slice(0, 80));
-check("the stamp receipt answers the points question too", /Solde/i.test(full));
+/* data-voucher, not a scrape: /[A-Z2-9]{6,8}/ over a receipt matches any
+   accented uppercase word whose tail is long enough — RÉCOMPENSE reads as
+   COMPENSE. The receipt carries the code as an attribute for exactly this. */
+const stampCode = full.code;
+check("a full stamp card issues a code", /Carte pleine/i.test(full.text) && !!stampCode,
+  stampCode || full.text.replace(/\n+/g, " · ").slice(0, 80));
+check("the stamp receipt answers the points question too", /Solde/i.test(full.text));
 
 /* ── 6. The counter validates that code exactly once ───────────────── */
 /* No scoping any more: the voucher panel IS the screen behind its own button,

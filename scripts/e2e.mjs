@@ -337,16 +337,18 @@ if (await redeemBtn.count()) {
   */
   await diner.locator('button:has-text("Oui, échanger")').click({ timeout: 15000 });
   // Poll for the issued code rather than sleeping — same Zurich round-trip.
+  /*
+    READ THE CODE OFF THE ELEMENT THAT HOLDS IT, never out of the panel's text.
+    This used to scrape /[A-Z2-9]{6,8}/ from main's innerText. The reveal then
+    became a ticket with a "Recompense" header, and the scrape started matching
+    COMPENSE -- the accented E is not in [A-Z], so the tail of the label reads
+    as a flawless code. Four checks failed against a product that worked.
+  */
   const gotCode = await diner
-    .waitForFunction(
-      () => /\b[A-Z2-9]{6,8}\b/.test(document.querySelector("main")?.innerText ?? ""),
-      undefined,
-      { timeout: 20000 },
-    )
+    .waitForSelector("[data-code]", { timeout: 20000 })
     .then(() => true)
     .catch(() => false);
-  const boutiqueTxt = await diner.locator("main").innerText();
-  redeemCode = boutiqueTxt.match(/\b[A-Z2-9]{6,8}\b/)?.[0] ?? "";
+  redeemCode = gotCode ? ((await diner.getAttribute("[data-code]", "data-code")) ?? "") : "";
   check("redeem debits points and issues a code", gotCode && !!redeemCode, redeemCode || "no code");
 
   /*

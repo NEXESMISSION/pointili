@@ -427,7 +427,19 @@ export function CaisseDesk({
     cashier is counting out change is a confirmation they never received.
   */
   const [result, setResult] = useState<
-    { ok: boolean; title: string; detail?: string; earned?: number; stampsAdded?: number; balance?: number } | null
+    {
+      ok: boolean;
+      title: string;
+      detail?: string;
+      earned?: number;
+      stampsAdded?: number;
+      balance?: number;
+      /* The voucher a filled card just minted. Carried apart from `detail` so
+         a suite reads it off an attribute instead of hunting a six-character
+         run in the receipt's prose — that scrape matched RÉCOMPENSE elsewhere
+         in this app and failed four checks against working code. */
+      voucher?: string;
+    } | null
   >(null);
   const [amount, setAmount] = useState("");
   const [typed, setTyped] = useState("");
@@ -707,6 +719,7 @@ export function CaisseDesk({
             ]
               .filter(Boolean)
               .join(" · "),
+          voucher: g.stamps?.code ?? undefined,
         });
 
         /* The act is spent. Clear it so the next customer starts from zero
@@ -1140,6 +1153,7 @@ export function CaisseDesk({
                 data-earned={result.earned ?? undefined}
                 data-stamps={result.stampsAdded ?? undefined}
                 data-balance={result.balance ?? undefined}
+                data-voucher={result.voucher ?? undefined}
                 className="d-pop a-card w-full max-w-[360px] px-5 py-6 text-center"
                 onClick={(e) => e.stopPropagation()}
               >

@@ -109,7 +109,22 @@ export function OwnerMenu({
   return (
     <>
       {/* ── the button ─────────────────────────────────────────────────── */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-end px-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden print:hidden">
+      {/*
+        ── BOTTOM-LEFT, BECAUSE THE RIGHT BELONGS TO THE SALE ────────────────
+
+        It floated bottom-RIGHT, which is exactly where the counter's own
+        "Donner" sits — the field and its button are a row, and the button ends
+        at the right edge. On a short screen the two overlapped: the menu came
+        down on top of the one control a cashier presses on every sale.
+
+        Reserving more height would not have fixed it, only postponed it to the
+        next screen height. The right fix is that the thumb's best corner
+        belongs to the act done a hundred times a day, and the menu — Clients,
+        QR, Réglages, the handover, all of them weekly at most — takes the
+        other one. `justify-start`, not `left`, so it follows the shell when it
+        flips to RTL.
+      */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-start px-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden print:hidden">
         <button
           type="button"
           onClick={() => setOpen(true)}
