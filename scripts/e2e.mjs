@@ -164,6 +164,7 @@ async function openCustomer(page, who) {
  * doing anything else with the page, because it takes itself off the screen
  * four seconds after it appears.
  */
+let lastConfirm = "";
 async function serve(page, who, amount) {
   await till(page);
   /* /owner IS the counter now — there is no home screen to open, so the
@@ -178,6 +179,12 @@ async function serve(page, who, amount) {
   }
   await page.fill('input[name="customer"]', who);
   await page.locator('.a-card:has(input[name="customer"]) button').click();
+  /* The confirmation is where a wrong card is caught now — before the points
+     move — so its wording is kept for the checks that used to read the
+     receipt's. */
+  const confirm = page.locator('[role="dialog"]:not([data-nextjs-dialog])');
+  await confirm.waitFor({ timeout: 20000 }).catch(() => {});
+  lastConfirm = await confirm.innerText().catch(() => "");
   await page.locator('button:has-text("Oui")').first().click({ timeout: 20000 });
   const receipt = page.locator("[data-receipt]");
   await receipt.waitFor({ timeout: 20000 }).catch(() => {});
@@ -644,14 +651,21 @@ if (redeemCode) {
   check("crediting by the short code works", /\+5/.test(credTxt), credTxt.split("\n").find((l) => /\+5/.test(l)) ?? "");
   check("credit result shows a name, not the phone", !credTxt.includes(`+216${PHONE}`));
   /*
-    The receipt answers the two questions a cashier is asked out loud. Both used
-    to require closing the confirmation and searching the same person again,
-    which is why nobody ever answered them.
+    THESE MOVED TO THE CONFIRMATION, AND THAT IS THE POINT.
+
+    They used to read the receipt, because a scan spent the points the instant
+    the lens decoded — the receipt was the first place a cashier could see whose
+    card they had charged. There is somewhere earlier now: the confirmation
+    carries the name, the card code, whether the shop knows them, and the
+    balance before and after, all BEFORE anything is spent. Asserting them on
+    the receipt would be asserting that we say who was charged after charging
+    them.
   */
-  check("the receipt says whether this shop knows them", /Client de la maison/i.test(credTxt),
-    credTxt.replace(/\n+/g, " · ").slice(0, 90));
-  check("the receipt prints their card code", credTxt.includes(card.code));
-  check("the receipt shows the balance MOVING, not just the new total", credTxt.includes("→"));
+  check("the confirmation says whether this shop knows them",
+    /Client de la maison/i.test(lastConfirm),
+    lastConfirm.split(String.fromCharCode(10)).join(" · ").slice(0, 90));
+  check("the confirmation prints their card code", lastConfirm.includes(card.code));
+  check("it shows the balance MOVING, not just the new total", lastConfirm.includes("→"));
 
   await admin.from("loyalty_programs").update({ stamps_enabled: false }).eq("business_id", biz.id);
 }
