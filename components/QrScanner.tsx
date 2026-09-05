@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { translator, type Lang } from "@/lib/dict";
 
 /**
  * A camera QR reader — a bare viewfinder. The caller owns the surrounding
@@ -12,23 +13,58 @@ import { useEffect, useRef, useState } from "react";
  * their lenses in an order the hint can't express — so there is a flip button
  * that switches sides and restarts the stream.
  *
- * Only mounted once the operator asks for it: getUserMedia lights the lens and
- * (on first use) raises a permission prompt, and neither should happen just
- * because someone opened the till.
+ * ── IT MOUNTS WITH THE SCREEN, WHICH IS WHY THE PROMPT NEEDS A BUTTON ───────
  *
- * Fails soft: if the camera is blocked or missing it says so and calls
- * onUnavailable, so the caller can fall back to typing.
+ * The till used to hide this behind "Scanner le QR" and the tap bought nothing,
+ * so the lens is live the moment the counter opens. That is right for the
+ * hundred sales after the first one — and it is exactly what broke the
+ * installed app, because a getUserMedia on mount carries NO USER GESTURE.
  *
- * The callbacks are held in refs on purpose. The parent re-renders often
- * (recents polling, transitions); putting onScan in the effect deps would tear
- * the camera down and restart it on every one of those renders.
+ * A browser tab gets away with it: the permission was granted months ago on the
+ * same origin, so nothing is asked. A PWA added to the home screen is a fresh
+ * permission context. The first call there has to raise a prompt, a prompt with
+ * no gesture behind it is suppressed, and the answer comes back exactly like a
+ * phone with no camera at all. The cashier landed on the typed field with
+ * "Caméra indisponible" and no way back but a reload.
+ *
+ * So a refusal is not the same news as an absence. `blocked` and `busy` are
+ * recoverable and say so with a button — and that button is a real tap, which
+ * is the whole point: it asks inside a gesture, so the prompt actually appears.
+ * Only a genuine absence calls onUnavailable and sends the caller to the field.
  */
+
+/** Why there is no picture. The kinds differ in ONE way that matters: whether
+ *  the operator can do something about it. */
+type Trouble = "blocked" | "busy" | "none" | "insecure";
+
+/**
+ * getUserMedia's failures all arrive as a DOMException and only the NAME
+ * separates them. Collapsing them into one string is what made a permission
+ * prompt indistinguishable from a back-office laptop.
+ */
+function classify(e: unknown): Trouble {
+  if (typeof window !== "undefined" && !window.isSecureContext) return "insecure";
+  if (!navigator.mediaDevices?.getUserMedia) return "none";
+  const name = e instanceof DOMException ? e.name : "";
+  /* SecurityError is how some browsers phrase a policy refusal. */
+  if (name === "NotAllowedError" || name === "SecurityError") return "blocked";
+  /* The lens exists but something else holds it — another app, or the previous
+     scanner on this very screen, which does not release instantly. */
+  if (name === "NotReadableError" || name === "AbortError" || name === "TrackStartError") return "busy";
+  /* NotFoundError, OverconstrainedError, DevicesNotFoundError: no such camera. */
+  return "none";
+}
+
 export function QrScanner({
   onScan,
   onUnavailable,
   aspect = "aspect-[4/5]",
+  lang = "fr",
 }: {
   onScan: (text: string) => void;
+  /** Called ONLY when the device genuinely has no camera. A blocked or busy
+   *  lens is recoverable, and telling the caller to fall back would throw away
+   *  the one screen that can still fix it. */
   onUnavailable?: () => void;
   /**
    * How tall the viewfinder is, as a Tailwind aspect class.
@@ -40,12 +76,18 @@ export function QrScanner({
    * a card held up to the phone still fills it.
    */
   aspect?: string;
+  /** The owner app is French; the customer's Add-card is whatever they chose. */
+  lang?: Lang;
 }) {
+  const t = translator(lang);
   const videoRef = useRef<HTMLVideoElement>(null);
   const scanRef = useRef(onScan);
   const failRef = useRef(onUnavailable);
   const [facing, setFacing] = useState<"environment" | "user">("environment");
-  const [error, setError] = useState("");
+  const [trouble, setTrouble] = useState<Trouble | null>(null);
+  /* Bumped by the retry button to re-run the effect. */
+  const [attempt, setAttempt] = useState(0);
+  const [asking, setAsking] = useState(false);
 
   useEffect(() => {
     scanRef.current = onScan;
@@ -60,19 +102,17 @@ export function QrScanner({
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
     /*
-      ONE RETRY, BECAUSE THE LAST LENS MAY NOT HAVE LET GO YET.
+      ONE RETRY, BUT ONLY FOR THE FAILURE THAT DESERVES ONE.
 
-      The till now keeps a viewfinder live on the screens that need one, so two
-      of them can exist within a second of each other — finish a sale, go
-      straight to validating a reward. The first scanner stops its tracks on
-      unmount, but the release is not instantaneous, and a getUserMedia landing
-      inside that window fails with the same error as "this device has no
-      camera". Treating those two as the same thing is what put a cashier on the
-      typed field for the rest of the visit, on a phone whose camera was
-      perfectly fine.
+      The till keeps a viewfinder live on the screens that need one, so two of
+      them can exist within a second of each other — finish a sale, go straight
+      to validating a reward. The first scanner stops its tracks on unmount, but
+      the release is not instantaneous, and a getUserMedia landing inside that
+      window fails. That one is worth asking again.
 
-      So the first failure is not an answer. A short wait, one more attempt, and
-      only then is the camera genuinely unavailable.
+      A refusal is NOT: re-asking a permission the browser just declined buys
+      nothing, and repeating it is how an origin gets its prompt suppressed for
+      good. Same for a device with no lens. Those two answer on the first try.
     */
     async function open(): Promise<MediaStream> {
       const ask = () =>
@@ -80,6 +120,7 @@ export function QrScanner({
       try {
         return await ask();
       } catch (first) {
+        if (classify(first) !== "busy") throw first;
         await new Promise((r) => setTimeout(r, 400));
         if (cancelled) throw first;
         return ask();
@@ -91,10 +132,13 @@ export function QrScanner({
       try {
         jsQR = (await import("jsqr")).default;
         stream = await open();
-      } catch {
+      } catch (e) {
         if (!cancelled) {
-          setError("Caméra indisponible");
-          failRef.current?.();
+          const why = classify(e);
+          setTrouble(why);
+          /* Only an absence sends the caller to the typed field. A prompt that
+             has not been answered yet is not an absence. */
+          if (why === "none" || why === "insecure") failRef.current?.();
         }
         return;
       }
@@ -102,7 +146,7 @@ export function QrScanner({
         stream.getTracks().forEach((t) => t.stop());
         return;
       }
-      setError("");
+      setTrouble(null);
       const v = videoRef.current;
       if (!v) return;
       v.srcObject = stream;
@@ -139,7 +183,46 @@ export function QrScanner({
       cancelAnimationFrame(raf);
       stream?.getTracks().forEach((t) => t.stop());
     };
-  }, [facing]);
+  }, [facing, attempt]);
+
+  /*
+    THE ASK HAPPENS HERE, INSIDE THE TAP.
+
+    Not by bumping `attempt` and letting the effect do it: the prompt has to be
+    raised while the browser still counts the click as user activation, and an
+    effect is a frame later and a different call stack. So this awaits the real
+    getUserMedia, throws the stream away the moment permission lands, and only
+    then re-runs the effect — which now finds the permission already granted and
+    opens the lens for good.
+  */
+  async function allow() {
+    setAsking(true);
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facing } },
+        audio: false,
+      });
+      s.getTracks().forEach((tr) => tr.stop());
+      setTrouble(null);
+      setAttempt((n) => n + 1);
+    } catch (e) {
+      const why = classify(e);
+      setTrouble(why);
+      if (why === "none" || why === "insecure") failRef.current?.();
+    } finally {
+      setAsking(false);
+    }
+  }
+
+  const say: Record<Trouble, string> = {
+    blocked: t("Autorise la caméra pour scanner."),
+    busy: t("La caméra est prise par une autre app."),
+    none: t("Pas de caméra sur cet appareil."),
+    insecure: t("La caméra a besoin d'une connexion sécurisée."),
+  };
+  /* The two the operator can act on. The other two are statements of fact and a
+     button under them would be a lie. */
+  const fixable = trouble === "blocked" || trouble === "busy";
 
   return (
     <div className={`relative w-full bg-black ${aspect}`}>
@@ -163,19 +246,56 @@ export function QrScanner({
         <div className="h-[52%] w-[42%] min-w-[104px] rounded-2xl border-2 border-white/80 shadow-[0_0_0_2000px_rgba(0,0,0,.42)]" />
       </div>
 
-      <button
-        type="button"
-        onClick={() => setFacing((f) => (f === "environment" ? "user" : "environment"))}
-        aria-label="Changer de caméra"
-        className="absolute right-3 top-3 grid h-11 w-11 place-items-center rounded-full bg-black/55 text-[18px] text-white backdrop-blur active:scale-95"
-      >
-        ⟳
-      </button>
+      {/* Hidden while there is nothing to see: flipping a dead lens is noise. */}
+      {!trouble && (
+        <button
+          type="button"
+          onClick={() => setFacing((f) => (f === "environment" ? "user" : "environment"))}
+          aria-label="Changer de caméra"
+          className="absolute right-3 top-3 grid h-11 w-11 place-items-center rounded-full bg-black/55 text-[18px] text-white backdrop-blur active:scale-95"
+        >
+          ⟳
+        </button>
+      )}
 
-      {error && (
-        <p className="absolute inset-x-0 bottom-0 bg-black/70 px-4 py-3 text-center text-[13px] font-bold text-white">
-          {error}
-        </p>
+      {/*
+        COVERS THE FRAME, rather than sitting in a strip along the bottom.
+
+        The old line lived under a black rectangle that still looked like a
+        camera warming up, so the message read as a caption on a working
+        viewfinder. There is no picture here; the panel should say so with the
+        whole space, and put the way out in the middle of it.
+      */}
+      {trouble && (
+        <div className="absolute inset-0 grid place-items-center bg-black/85 px-4 text-center">
+          <div>
+            {/*
+              role="status", NOT role="alert", and data-camera so a suite can
+              name it. [role=alert] in this app means "the form refused what you
+              just did" — the till waits on exactly that to prove a bad amount is
+              rejected. A camera message wearing the same role answered that wait
+              instead, and a working refusal read as broken. The lens having no
+              picture is a state of the screen, not a verdict on an act.
+            */}
+            <p
+              role="status"
+              data-camera={trouble}
+              className="text-[13px] font-bold leading-snug text-white"
+            >
+              {say[trouble]}
+            </p>
+            {fixable && (
+              <button
+                type="button"
+                onClick={allow}
+                disabled={asking}
+                className="mt-2.5 rounded-full bg-white px-4 py-2 text-[13px] font-extrabold text-black active:scale-95 disabled:opacity-70"
+              >
+                {asking ? "…" : trouble === "blocked" ? t("Autoriser") : t("Réessayer")}
+              </button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

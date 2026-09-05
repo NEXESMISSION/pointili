@@ -424,6 +424,15 @@ const TN: Record<string, string> = {
   "Pointe le QR posé au comptoir.": "وجّه الكاميرا للكود اللي في الكونتوار.",
   "Ce QR n'est pas une carte Pointili.": "هذا الكود موش كارط Pointili.",
   "Caméra indisponible.": "الكاميرا موش خدّامة.",
+  /* ── why there is no picture, told apart (QrScanner) ──
+     One string for every camera failure sent a cashier to the typed field for
+     the rest of the shift on a phone whose camera was fine — the installed app
+     just had not been asked yet. These four are the four different answers. */
+  "Autorise la caméra pour scanner.": "أعطي إذن للكاميرا باش تسكاني.",
+  "La caméra est prise par une autre app.": "الكاميرا مشغولة في application أخرى.",
+  "Pas de caméra sur cet appareil.": "ما فماش كاميرا في هذا الجهاز.",
+  "La caméra a besoin d'une connexion sécurisée.": "الكاميرا تلزمها connexion sécurisée.",
+  "Autoriser": "أعطي الإذن",
   "Scanne le QR d'un commerce pour ajouter ta première carte.":
     "اسكاني الكود متاع محلّ باش تزيد أوّل كارت متاعك.",
   "Espace boutique": "فضاء المحلّ",

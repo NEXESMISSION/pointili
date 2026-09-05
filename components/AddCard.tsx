@@ -82,8 +82,13 @@ export function AddCard({ lang }: { lang: Lang }) {
             <div className="mt-3 overflow-hidden rounded-2xl">
               <QrScanner
                 key={nonce}
+                lang={lang}
                 onScan={read}
-                onUnavailable={() => setError(t("Caméra indisponible."))}
+                /* Fires only for a device with no lens now — a blocked or busy
+                   camera says so inside the viewfinder, with the button that
+                   fixes it. Repeating that here would be two messages for one
+                   problem, and the wrong one would be the louder. */
+                onUnavailable={() => setError(t("Pas de caméra sur cet appareil."))}
               />
             </div>
 

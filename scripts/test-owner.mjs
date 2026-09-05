@@ -635,6 +635,52 @@ await staff.goto(`${BASE}/owner/qr`, { waitUntil: "networkidle" });
 const qrHref = await staff.locator('main a[href*="/"]').first().getAttribute("href");
 check("QR page points at this shop's card", (qrHref ?? "").includes(TEST_SLUG), qrHref ?? "none");
 
+/* ── N. A refused camera is not a missing one ──────────────────────────
+   The till opens its lens on mount, which has NO user gesture behind it. A
+   browser tab does not care — permission was granted long ago on this origin.
+   An installed PWA is a fresh permission context: the prompt is suppressed and
+   getUserMedia comes back NotAllowedError, which used to read exactly like a
+   back-office laptop with no webcam. The cashier was dropped on the typed field
+   for the rest of the shift, on a phone whose camera was perfectly fine.
+
+   Its own context, because the stub below must not reach any other check. */
+for (const [name, wants] of [
+  ["NotAllowedError", { msg: "Autorise la caméra pour scanner.", button: "Autoriser", keepsLens: true }],
+  ["NotReadableError", { msg: "La caméra est prise par une autre app.", button: "Réessayer", keepsLens: true }],
+  ["NotFoundError", { msg: null, button: null, keepsLens: false }],
+]) {
+  const cam = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await cam.addCookies([LANG_FR]);
+  await cam.addInitScript((n) => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: { getUserMedia: () => Promise.reject(new DOMException("stubbed", n)) },
+    });
+  }, name);
+  const cp = await cam.newPage();
+  await cp.goto(`${BASE}/owner/login`, { waitUntil: "networkidle" });
+  if (cp.url().includes("/login")) {
+    await cp.fill('input[name="email"]', OWNER_EMAIL);
+    await cp.fill('input[name="password"]', OWNER_PASSWORD);
+    await cp.click('button[type="submit"]');
+    await cp.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 20000 }).catch(() => {});
+  }
+  await cp.waitForTimeout(2500);
+  const seen = await cp.evaluate(() => ({
+    msg: document.querySelector("[data-camera]")?.textContent.trim() ?? null,
+    buttons: [...document.querySelectorAll("button")].map((b) => b.textContent.trim()),
+    lens: !!document.querySelector("video"),
+  }));
+  check(
+    `${name}: the till says what is actually wrong`,
+    seen.msg === wants.msg &&
+      (wants.button === null || seen.buttons.includes(wants.button)) &&
+      seen.lens === wants.keepsLens,
+    `${seen.msg ?? "no message"} · lens=${seen.lens}`,
+  );
+  await cam.close();
+}
+
 await browser.close();
 
 /* ── clean up: this runs against the REAL database ─────────────────── */
