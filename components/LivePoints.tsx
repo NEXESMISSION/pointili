@@ -71,7 +71,25 @@ type Celebration =
   | { kind: "points"; amount: number; balance: number }
   | { kind: "stamp"; count: number; required: number }
   | { kind: "full"; label: string | null }
-  | { kind: "collected"; label: string };
+  | { kind: "collected"; label: string }
+  /*
+    ONE SALE THAT DID TWO THINGS.
+
+    The till gives points and a stamp in a single act, and the branch below used
+    to be a chain of `else if` with stamps tested before points — so a sale that
+    did both announced the stamp and swallowed the points entirely. The customer
+    watched 8 dinars turn into "1/2 tampons" and had no idea the money had
+    counted. This is the pair, told as one event.
+  */
+  | {
+      kind: "both";
+      amount: number;
+      balance: number;
+      count: number;
+      required: number;
+      /** the stamp that completed the card, rather than merely advancing it */
+      filled: boolean;
+    };
 
 export function LivePoints({
   slug,
@@ -124,7 +142,9 @@ export function LivePoints({
       /* some browsers throw on a blocked gesture policy — never the caller's problem */
     }
     if (hide.current) clearTimeout(hide.current);
-    hide.current = setTimeout(() => setShow(null), 2600);
+    /* The pair says two things in sequence, so it is given the time to say the
+       second one. Everything else keeps the beat it had. */
+    hide.current = setTimeout(() => setShow(null), next.kind === "both" ? 3600 : 2600);
   }, []);
 
   useEffect(() => {
@@ -185,24 +205,43 @@ export function LivePoints({
           window.dispatchEvent(
             new CustomEvent("pointili:collected", { detail: { code: gone.code } }),
           );
-        } else if (now.codes.length > was.codes.length && now.stamps < was.stamps) {
+        } else {
           /*
-            A CARD THAT FILLED LOOKS LIKE STAMPS GOING BACKWARDS.
+            WHAT HAPPENED IS READ FIRST, AND JUDGED AFTER.
 
-            add_stamp resets the counter to 0 the moment it completes and issues
-            a voucher instead, so the honest signal is "stamps dropped AND a new
-            code appeared". Checked before the plain stamp case, or a full card
-            would celebrate nothing at all.
+            This was a chain of `else if`, and the order of the arms was the
+            answer: stamps were tested before points, so the till's one act that
+            gives BOTH — which is how a café that stamps and counts dinars
+            actually serves somebody — announced the stamp and said nothing
+            about the money. Reading the three facts up front is what lets the
+            pair be a case of its own instead of a casualty of the ordering.
+
+            A CARD THAT FILLED LOOKS LIKE STAMPS GOING BACKWARDS: add_stamp
+            resets the counter to 0 the moment it completes and issues a voucher
+            instead, so the honest signal is "stamps dropped AND a new code
+            appeared", never a rising count.
           */
-          celebrate({ kind: "full", label: now.codes[0]?.label ?? null });
-        } else if (now.stamps > was.stamps) {
-          celebrate({ kind: "stamp", count: now.stamps, required: stampsRequired });
-        } else if (now.balance > was.balance) {
-          celebrate({
-            kind: "points",
-            amount: Math.round((now.balance - was.balance) * 100) / 100,
-            balance: now.balance,
-          });
+          const gotPoints = now.balance > was.balance;
+          const filled = now.codes.length > was.codes.length && now.stamps < was.stamps;
+          const gotStamp = now.stamps > was.stamps;
+          const amount = Math.round((now.balance - was.balance) * 100) / 100;
+
+          if (gotPoints && (gotStamp || filled)) {
+            celebrate({
+              kind: "both",
+              amount,
+              balance: now.balance,
+              count: now.stamps,
+              required: stampsRequired,
+              filled,
+            });
+          } else if (filled) {
+            celebrate({ kind: "full", label: now.codes[0]?.label ?? null });
+          } else if (gotStamp) {
+            celebrate({ kind: "stamp", count: now.stamps, required: stampsRequired });
+          } else if (gotPoints) {
+            celebrate({ kind: "points", amount, balance: now.balance });
+          }
         }
 
         const changed =
@@ -313,6 +352,59 @@ export function LivePoints({
               {show.label}
             </p>
             <p className="live-chip">{t("Récupéré")}</p>
+          </>
+        )}
+
+        {/*
+          THE PAIR, AS ONE EVENT.
+
+          Side by side rather than stacked, with the sale's own "+" between
+          them: two figures in a row read as one sale that gave two things,
+          where a vertical list reads as two separate pieces of news. The stamp
+          half lands a beat after the points half — the stagger is what makes it
+          a sentence instead of a collision — and the balance closes it.
+        */}
+        {show.kind === "both" && (
+          <>
+            <div className="live-pair">
+              <div>
+                {/* dir=ltr: the "+" and "/" are bidi-neutral and land on the
+                    wrong side of the figure in Tunisian. See above. */}
+                <p className="live-figure live-figure--pair" dir="ltr" style={{ color: colour }}>
+                  +{fmtPoints(show.amount)}
+                </p>
+                <p className="live-unit live-unit--pair">{t("points")}</p>
+              </div>
+
+              <span className="live-plus" aria-hidden>
+                +
+              </span>
+
+              <div className="live-pair__late">
+                {show.filled ? (
+                  <>
+                    <p className="live-burst live-burst--pair" aria-hidden>
+                      🎁
+                    </p>
+                    <p className="live-unit live-unit--pair" style={{ color: colour }}>
+                      {t("Carte pleine !")}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="live-figure live-figure--pair" dir="ltr" style={{ color: colour }}>
+                      {show.count}
+                      <span className="live-of live-of--pair">/{show.required}</span>
+                    </p>
+                    <p className="live-unit live-unit--pair">{t("tampons")}</p>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <p className="live-chip live-chip--pair">
+              {t("Nouveau solde")} : <b>{fmtPoints(show.balance)}</b>
+            </p>
           </>
         )}
 

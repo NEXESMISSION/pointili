@@ -1856,6 +1856,52 @@ body:has(.landing-light) {
   animation: live-rise 520ms 120ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/*
+  ══ ONE SALE, TWO GAINS ═══════════════════════════════════════════════════
+
+  A café that stamps AND counts dinars gives both in a single act at the till.
+  Two overlays would be two pieces of news about one thing; a stacked list
+  would read as a receipt. So the two figures sit in a row with the sale's own
+  "+" between them, at a size that lets both stay legible on a phone, and the
+  second half arrives a beat after the first — the stagger is what turns two
+  numbers into one sentence.
+*/
+.live-pair {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+}
+.live-figure--pair {
+  font-size: 44px;
+}
+.live-of--pair {
+  font-size: 22px;
+}
+.live-unit--pair {
+  margin-top: 2px;
+  font-size: 14px;
+}
+.live-burst--pair {
+  font-size: 34px;
+}
+/* Quiet on purpose: it is punctuation between the two halves, not a third
+   thing to read. */
+.live-plus {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--color-slate);
+  opacity: 0.42;
+  animation: live-rise 420ms 170ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.live-pair__late {
+  animation: live-rise 560ms 260ms cubic-bezier(0.16, 1.3, 0.3, 1) both;
+}
+/* Last in, after both halves have landed. */
+.live-chip--pair {
+  animation-delay: 420ms;
+}
+
 @keyframes live-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -1888,7 +1934,12 @@ body:has(.landing-light) {
   .live-veil,
   .live-card,
   .live-chip,
-  .live-burst {
+  .live-burst,
+  /* The pair's halves are staggered by animation DELAY, so leaving them out
+     here would hide the second gain from somebody who asked for less motion —
+     the one person who cannot wait it out. They arrive together instead. */
+  .live-plus,
+  .live-pair__late {
     animation: live-in 160ms ease-out both;
   }
   .live-ring {

@@ -190,6 +190,38 @@ check("nothing about it is cacheable", /no-store/i.test(res.headers()["cache-con
 const bogus = await anon.request.get(`${BASE}/api/pulse?s=definitely-not-a-shop`);
 check("an unknown shop is answered the same way", bogus.ok(), `status ${bogus.status()}`);
 
+/* ── ONE SALE THAT GIVES BOTH ────────────────────
+   The till credits dinars and adds a stamp in a SINGLE act — that is how a
+   café which does both actually serves somebody. The overlay used to test
+   stamps before points in an `else if` chain, so the money was announced as a
+   stamp and the customer never learned it had counted.
+
+   Driven through the real till rather than the RPCs, because it is the till
+   that does the two together. LAST in the file on purpose: it moves the
+   balance and the stamp count, and sitting mid-sequence it rewrote the state
+   the checks after it were asserting on. */
+await diner.waitForTimeout(3000); // let the previous overlay retire
+await staff.goto(`${BASE}/owner`, { waitUntil: "networkidle" });
+await staff.locator('input[name="amount"]').waitFor({ timeout: 15000 });
+await staff.fill('input[name="amount"]', "7");
+await staff.locator('[aria-label="Un tampon de plus"]').click();
+await staff.fill('input[name="customer"]', card.code);
+await staff.locator('.a-card:has(input[name="customer"]) button').click();
+await staff.locator('button:has-text("Oui")').first().click({ timeout: 20000 });
+await staff.locator("[data-receipt]").waitFor({ timeout: 20000 }).catch(() => {});
+
+const pair = await celebration("both");
+check("a sale that gives points AND a stamp says both", Boolean(pair), pair ?? "nothing appeared");
+check("...the points are named", /\+7(?!\d)/.test(pair ?? ""), pair ?? "");
+/* The stamp half is a progress dial, or "carte pleine" when that stamp was the
+   one that completed the card. Either is the stamp being named; pinning only
+   the dial would fail on a full card, which is the better outcome. */
+check("...and the stamp is named in the same breath",
+  /\d\s*\/\s*2/.test(pair ?? "") || /pleine/i.test(pair ?? ""), pair ?? "");
+check("...as ONE piece of news, not two racing each other",
+  (await diner.locator("[data-live-celebration]").count()) === 1,
+  `${await diner.locator("[data-live-celebration]").count()} overlay(s)`);
+
 await browser.close();
 await dropTestCafe();
 
