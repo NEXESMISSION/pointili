@@ -69,7 +69,17 @@ await diner.fill('input[name="phone"]', PHONE);
 await diner.fill('input[name="pin"]', PIN);
 await diner.fill('input[name="name"]', "E2E");
 await diner.click('button[type="submit"]');
-await diner.waitForURL(`**/${SLUG}`, { timeout: 15000 });
+/*
+  A PREDICATE, NOT A GLOB.
+
+  Joining lands on /e2etest?nouveau=1 — the card reads that flag to know it is
+  somebody's first sight of it — and a glob ending in the slug does not match a
+  URL carrying a query. The suite sat waiting for an address it was already at.
+
+  (Writing that glob out in this comment would have ended it early: it contains
+  a star followed by a slash.)
+*/
+await diner.waitForURL((u) => u.pathname === "/" + SLUG, { timeout: 15000 });
 
 const balAfterJoin = await diner
   .locator("section")

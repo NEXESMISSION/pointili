@@ -85,6 +85,11 @@ check("...and nobody's name is on the till",
   checking.
 */
 const openMenu = async () => {
+  /* A receipt waits for a tap now instead of removing itself, so one left on
+     screen swallows the click on the button underneath it. Tapping OK is what
+     a cashier does. */
+  const ok = staff.locator('[data-receipt] button:has-text("OK")');
+  if (await ok.count()) await ok.click().catch(() => {});
   await staff.locator('button[aria-haspopup="dialog"]').click();
   const sheet = staff.locator('[role="dialog"][aria-modal="true"]');
   await sheet.waitFor({ timeout: 10000 });

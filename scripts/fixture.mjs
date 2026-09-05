@@ -93,6 +93,33 @@ const svc = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
+/*
+  ── AUTH CALLS RETRY, BECAUSE THE LINE IS THE FLAKY PART ──────────────────
+
+  Every browser suite starts by minting or rotating the fixture owner, and a
+  single dropped request there kills the whole run before its first assertion —
+  `status: 0`, no code, thrown straight out of setup. On a bad connection that
+  took out e2e, test-staff and test-console one after another and made three
+  perfectly good suites look broken.
+
+  A transport failure is not an answer, so it is retried. A real refusal (a
+  duplicate email, a bad password) has a status and is thrown at once — this
+  must not paper over those, only over the wire.
+*/
+async function authRetry(what, run) {
+  let last;
+  for (let i = 0; i < 4; i++) {
+    const res = await run();
+    if (!res.error) return res;
+    last = res.error;
+    /* status 0 means the request never completed. Anything with a real status
+       is the server answering, and answering "no" — surface it now. */
+    if (last.status) throw last;
+    await new Promise((r) => setTimeout(r, 700 * (i + 1)));
+  }
+  throw new Error(`${what}: unreachable after 4 attempts (${last?.message ?? "no message"})`);
+}
+
 /**
  * Make sure `email` exists as a plain owner and return a password that works
  * for exactly this run. Creates the account the first time, rotates the
@@ -145,18 +172,20 @@ export async function ensureTestOwner(email = OWNER_EMAIL) {
     /* Rotate, so a password that leaked out of one run's memory is already
        dead by the next. Skipped when the caller supplied one on purpose. */
     if (!override) {
-      const { error } = await svc.auth.admin.updateUserById(id, { password });
-      if (error) throw error;
+      await authRetry("rotate the fixture password", () =>
+        svc.auth.admin.updateUserById(id, { password }),
+      );
     }
     return { id, password };
   }
 
-  const { data, error } = await svc.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true, // no inbox exists for @pointili.test, and none should
-  });
-  if (error) throw error;
+  const { data } = await authRetry("create the fixture owner", () =>
+    svc.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true, // no inbox exists for @pointili.test, and none should
+    }),
+  );
   id = data.user.id;
 
   /* The profiles row arrives via a trigger on auth.users, but not necessarily
