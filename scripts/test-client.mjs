@@ -255,6 +255,45 @@ const { count: redemptions } = await admin
 check("a second purchase is possible (codes stack)", (redemptions ?? 0) >= 2, `redemptions=${redemptions}`);
 
 /*
+  ── THE COUNTER TAKES IT, AND THE SCREEN STOPS ASKING ──────────────────────
+
+  After buying, the boutique shows one instruction full-screen: "fais scanner
+  ça", the code, and the reward's name. The moment the cashier scans it that
+  instruction is spent — and the screen used to stay up regardless, so the
+  customer was left holding a code that no longer existed, being told to do a
+  thing that had already happened. They had to press "Échanger autre chose" to
+  leave a screen whose whole purpose had just been fulfilled.
+
+  LivePoints already polls and already notices a code leaving the list — it is
+  what raises the celebration — so it announces it and this screen steps aside,
+  rather than a second poller being added to say the same thing.
+
+  The code comes from the DATABASE, not from a regex over the screen: an
+  earlier draft scraped it, matched the word "ESPRESSO" instead of a code, and
+  skipped itself in silence — which is how a check ends up guarding nothing.
+*/
+{
+  const { data: pending } = await admin.rpc("diner_codes", {
+    p_business_id: cafeA,
+    p_phone: NORM,
+  });
+  const shownText = await d.locator("main").innerText();
+  const live = (pending ?? []).find((c) => shownText.includes(c.code))?.code ?? "";
+  check("the reveal is showing one of their real codes", Boolean(live),
+    `${(pending ?? []).map((c) => c.code).join("/")} vs ${shownText.slice(0, 50)}`);
+
+  await admin.rpc("claim_code", { p_business_id: cafeA, p_code: live });
+  /* One poll, plus the beat it waits so the celebration is what gets read. */
+  const closed = await d
+    .locator(`main:has-text("${live}")`)
+    .waitFor({ state: "detached", timeout: 25000 })
+    .then(() => true)
+    .catch(() => false);
+  check("the reveal closes itself once the counter has scanned it", closed,
+    closed ? live : (await d.locator("main").innerText()).slice(0, 60));
+}
+
+/*
   ── THE ANSWER GOES MISSING AFTER THE POINTS ARE SPENT ─────────────────────
 
   The reported bug, and the worst shape a bug in this product can take: a

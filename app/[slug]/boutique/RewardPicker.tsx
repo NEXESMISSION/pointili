@@ -85,6 +85,29 @@ export function RewardPicker({
     setConfirming(false);
   }, [state.ok]);
 
+  /*
+    ── THE COUNTER TOOK IT: STEP OUT OF THE WAY ────────────────────────────
+
+    This screen is one instruction — "fais scanner ça" — and the moment it has
+    been scanned the instruction is spent. It used to stay up regardless, so the
+    customer was left holding a code that no longer existed, reading a sentence
+    telling them to do a thing that had already happened.
+
+    A beat first, not a slam: LivePoints raises its celebration over the top of
+    this, and a screen that vanishes in the same frame reads as a glitch rather
+    than as the reward being handed over. Same 700ms the ticket sheet uses.
+  */
+  useEffect(() => {
+    if (!issued) return;
+    const onCollected = (e: Event) => {
+      const code = (e as CustomEvent<{ code?: string }>).detail?.code;
+      if (code && code !== issued.code) return;
+      setTimeout(() => setIssued(null), 700);
+    };
+    window.addEventListener("pointili:collected", onCollected);
+    return () => window.removeEventListener("pointili:collected", onCollected);
+  }, [issued]);
+
   // A buy changed the balance — re-read so every row's affordability is honest.
   useEffect(() => {
     if (state.ok) startRefresh(() => router.refresh());

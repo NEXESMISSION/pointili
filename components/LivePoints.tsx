@@ -168,6 +168,23 @@ export function LivePoints({
 
         if (gone) {
           celebrate({ kind: "collected", label: gone.label });
+          /*
+            AND SAY SO OUT LOUD, for anything else on the page holding that code.
+
+            The boutique reveals a freshly bought code full-screen — "fais
+            scanner ça" — and that screen has no idea when the counter takes it.
+            A customer stood looking at a code that had already been served,
+            with the celebration playing over the top of it, and had to press
+            "Échanger autre chose" to get out of a screen whose whole purpose
+            had just been fulfilled.
+
+            An event rather than a second poller: this component already asks,
+            once, on a schedule that respects the tab being hidden. Two pollers
+            on one page would double the traffic to say the same thing.
+          */
+          window.dispatchEvent(
+            new CustomEvent("pointili:collected", { detail: { code: gone.code } }),
+          );
         } else if (now.codes.length > was.codes.length && now.stamps < was.stamps) {
           /*
             A CARD THAT FILLED LOOKS LIKE STAMPS GOING BACKWARDS.
